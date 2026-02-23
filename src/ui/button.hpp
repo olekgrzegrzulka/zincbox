@@ -46,6 +46,8 @@ public:
     set_nine_slice_margin(3.0f);
     set_nine_slice_scale(1.0f);
 
+    get_label().set_text_color({1.0, 0.85, 0.95});
+
     set_sprite_idle();
   }
 

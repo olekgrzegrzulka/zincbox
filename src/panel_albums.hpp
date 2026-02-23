@@ -34,17 +34,18 @@ protected:
 
 class WidgetAlbumCover : public Button {
 public:
-  WidgetAlbumCover(UI& ui_, const musicdb::Album* album, TextureAtlas& album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
+  WidgetAlbumCover(UI& ui_, musicdb::album_id_t album_id_, TextureAtlas& album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
+    album_id = album_id_;
     get_children()[0]->set_ignore_parents_layout(true);
     set_clip_children(true);
     set_size(COVER_WIDTH, COVER_HEIGHT);
     set_layout("m:0 s:8 ttb");
     std::stringstream texture_id;
-    texture_id << album->id;
+    texture_id << album_id;
     std::string sprite_id = album_covers_atlas.has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
     auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
     label_title = &add_child<Label>();
-    label_title->set_text(album->title);
+    label_title->set_text(musicdb::get_albums()[album_id].title);
     label_title->set_width(COVER_WIDTH);
     label_title->set_height(label_title->get_text_extents().y);
     label_title->set_label_anchor(Anchor::LEFT);
@@ -68,6 +69,7 @@ public:
   }
 
 protected:
+  musicdb::album_id_t album_id;
   Label* label_title{};
   TextureAtlas& album_covers_atlas;
 };
@@ -111,7 +113,7 @@ public:
     i32 i = 0;
     for (auto& album : musicdb::get_albums()) {
       std::stringstream texture_id;
-      texture_id << album.id;
+      texture_id << album.album_id;
       album_covers_atlas.add_texture(texture_id.str(), album.cover_art, 64, 64);
       if (i++ >= 2048) { break; }
     }
@@ -123,12 +125,10 @@ public:
     }
     album_widgets.clear();
 
-    i32 id = 0;
-    for (auto& album : musicdb::get_albums()) {
-      auto& album_widget = add_child<WidgetAlbumCover>(&album, album_covers_atlas);
+    for (musicdb::album_id_t album_id : musicdb::get_albums_sorted_by_name()) {
+      auto& album_widget = add_child<WidgetAlbumCover>(album_id, album_covers_atlas);
       album_widgets.emplace_back(&album_widget);
-      album_widget.on_press([=]() { bridge::on_album_clicked(&album); });
-      id += 1;
+      album_widget.on_press([=]() { bridge::on_album_clicked(album_id); });
     }
   }
 

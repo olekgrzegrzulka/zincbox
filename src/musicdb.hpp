@@ -1,6 +1,7 @@
 #pragma once
+#include <limits>
 #include <memory>
-#include <set>
+#include <optional>
 #include <string>
 #include <vector>
 #include "types.hpp"
@@ -10,40 +11,43 @@ namespace TagLib {
 }
 
 namespace musicdb {
+  using track_id_t = size_t;
+  using album_id_t = size_t;
 
   struct Track {
-    i32 track;
+    track_id_t track_id = std::numeric_limits<size_t>::max();
+    track_id_t prev_track_id = std::numeric_limits<size_t>::max();
+    track_id_t next_track_id = std::numeric_limits<size_t>::max();
+
+    album_id_t album_id = std::numeric_limits<size_t>::max();
+
+    i32 track_number;
     std::wstring title;
     std::wstring artist;
-    std::wstring comment;
     std::wstring genre;
     i32 year;
     i32 bitrate;
     i32 length_seconds;
     std::string path;
-
-    bool operator<(const Track& other) const {
-      return track < other.track;
-    }
   };
 
   struct Album {
-    i32 id;
+    album_id_t album_id = std::numeric_limits<size_t>::max();
+    album_id_t prev_album_id = std::numeric_limits<size_t>::max();
+    album_id_t next_album_id = std::numeric_limits<size_t>::max();
+
+    track_id_t first_track_id = std::numeric_limits<size_t>::max();
+    track_id_t last_track_id = std::numeric_limits<size_t>::max();
+
     std::wstring title;
     std::vector<uint8_t> cover_art;
-    std::multiset<Track> tracks;
+    std::vector<track_id_t> track_ids;
 
     bool operator==(const Album& other) const {
       return title == other.title;
     }
 
-    i32 length_seconds() const {
-      i32 ret = 0;
-      for (auto& t : tracks) {
-        ret += t.length_seconds;
-      }
-      return ret;
-    }
+    i32 length_seconds() const;
   };
 
   struct AlbumComparer {
@@ -77,8 +81,6 @@ namespace musicdb {
     bool operator()(const std::wstring& lhs_title, const Album& rhs) const { return lhs_title == rhs.title; }
   };
 
-  void print_shit();
-
   std::vector<uint8_t> fetch_album_art(TagLib::FileRef& ref);
 
   void load(std::string path);
@@ -86,11 +88,19 @@ namespace musicdb {
   void load_from_path(std::string path);
 
   const std::vector<Album>& get_albums();
+  const Album& get_album(album_id_t);
+  const std::vector<album_id_t>& get_albums_sorted_by_name();
+  const std::vector<Track>& get_tracks();
 
   void clear_albums();
 
-  void add_album(Album);
+  track_id_t add_track(Track, album_id_t);
+  album_id_t add_album(Album);
 
   Album* get_album_by_title(const std::wstring& title);
+
+  // const Track* next_track(const Track*);
+
+  void check_integrity();
 
 } // namespace musicdb
