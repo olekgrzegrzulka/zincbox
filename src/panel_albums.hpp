@@ -3,6 +3,7 @@
 #include "debug.hpp"
 #include "musicdb.hpp"
 #include "texture_atlas.hpp"
+#include "ui/button.hpp"
 #include "ui/panel.hpp"
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
@@ -25,28 +26,42 @@ protected:
   TextureAtlas& album_covers_atlas;
 };
 
-class WidgetAlbumCover : public Widget {
+class WidgetAlbumCover : public Button {
 public:
-  WidgetAlbumCover(UI& ui_, i32 id_, const musicdb::Album* album, TextureAtlas& album_covers_atlas_) : Widget(ui_), id(id_), album_covers_atlas(album_covers_atlas_) {
+  WidgetAlbumCover(UI& ui_, const musicdb::Album* album, TextureAtlas& album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
+    get_children()[0]->set_ignore_parents_layout(true);
     set_clip_children(true);
     set_size(COVER_WIDTH, COVER_HEIGHT);
     set_layout("m:0 s:8 ttb");
+    // set_is_self_drawn(false);s
     std::string sprite_id = album_covers_atlas.has_texture(album->id) ? album->id : "cover_unknown";
     auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
-    auto& label_title = add_child<Label>();
-    label_title.set_text(album->title);
-    label_title.set_height(label_title.get_text_extents().y);
-    label_title.set_width(64);
-    label_title.set_label_anchor(Anchor::LEFT);
-    label_title.set_text_color({0.75, 0.75, 0.75});
+    label_title = &add_child<Label>();
+    label_title->set_text(album->title);
+    label_title->set_width(64);
+    label_title->set_height(label_title->get_text_extents().y);
+    label_title->set_label_anchor(Anchor::LEFT);
+    label_title->set_text_color({0.75, 0.75, 0.75});
   }
 
   void draw() override {
     Widget::draw();
   }
 
+  void update() override {
+    if (is_mouse_hovering() && label_title->get_text_extents().x > COVER_WIDTH + 8) {
+      label_title->set_x(label_title->get_x() - 1);
+      if (label_title->get_x() <= -label_title->get_text_extents().x - 8) {
+        label_title->set_x(COVER_WIDTH + 8);
+      }
+    } else {
+      label_title->set_x(0);
+    }
+    Widget::update();
+  }
+
 protected:
-  i32 id = 0;
+  Label* label_title{};
   TextureAtlas& album_covers_atlas;
 };
 
@@ -79,7 +94,8 @@ public:
 
     i32 id = 0;
     for (auto& album : musicdb::get_albums()) {
-      auto& sprite = add_child<WidgetAlbumCover>(&album, id, album_covers_atlas);
+      auto& album_widget = add_child<WidgetAlbumCover>(&album, album_covers_atlas);
+      album_widget.on_press([=]() { debug_log(id); });
       id += 1;
     }
   }
