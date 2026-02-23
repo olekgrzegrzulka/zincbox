@@ -1,4 +1,3 @@
-#include "musicdb_serialize.hpp"
 #include "opengl_includes.hpp"
 
 #include <cstddef>
@@ -159,6 +158,7 @@ int main() {
   atlas.add_texture("repeat_album", "./assets/icons/repeat_album.png");
   atlas.add_texture("repeat_track", "./assets/icons/repeat_track.png");
   atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
+  atlas.add_texture("shuffle_off", "./assets/icons/shuffle_off.png");
 
   atlas.save_to_file("atlas.png");
 
@@ -184,7 +184,7 @@ int main() {
   bridge::init(&panel_left, &panel_right);
 
   button_scan.on_press([&]() {
-    musicdb::load("/home/olek/Muzyka/");
+    musicdb::load("/home/olek/Muzyka");
 
     panel_left.recreate();
     panel_right.recreate();

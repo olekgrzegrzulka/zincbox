@@ -28,6 +28,8 @@ protected:
   i32 drag_start_thumb_pos = 0;
   i32 drag_start_scroll_offset = 0;
 
+  double scroll_pos = 0.0;
+
   ScrollBarOrientation orientation{};
 
 public:

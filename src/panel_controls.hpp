@@ -11,6 +11,7 @@
 #include "ui/panel.hpp"
 #include "ui/slider.hpp"
 #include "ui/sprite.hpp"
+#include "ui/tooltip.hpp"
 #include "ui/ui.hpp"
 
 class PanelControls : public Panel {
@@ -27,17 +28,11 @@ public:
     button_prev_img.set_anchor(Anchor::CENTER);
     button_prev_img.set_parent_anchor(Anchor::CENTER);
 
-    button_play = &add_child<Button>("");
-    button_play->set_max_width(36);
-    auto& button_play_img = button_play->add_child<Sprite>("play");
-    button_play_img.set_anchor(Anchor::CENTER);
-    button_play_img.set_parent_anchor(Anchor::CENTER);
-
-    button_pause = &add_child<Button>("");
-    button_pause->set_max_width(36);
-    auto& button_pause_img = button_pause->add_child<Sprite>("pause");
-    button_pause_img.set_anchor(Anchor::CENTER);
-    button_pause_img.set_parent_anchor(Anchor::CENTER);
+    button_play_pause = &add_child<Button>("");
+    button_play_pause->set_max_width(36);
+    button_play_pause_img = &button_play_pause->add_child<Sprite>("play");
+    button_play_pause_img->set_anchor(Anchor::CENTER);
+    button_play_pause_img->set_parent_anchor(Anchor::CENTER);
 
     button_stop = &add_child<Button>("");
     button_stop->set_max_width(36);
@@ -56,9 +51,9 @@ public:
     auto& panel_bottom_right = add_child<Widget>();
     panel_bottom_right.set_layout("m:0 s:6 rtl expand fill");
 
-    auto& button_repeat = panel_bottom_right.add_child<Button>("");
-    button_repeat.set_max_width(36);
-    auto& button_repeat_img = button_repeat.add_child<Sprite>("repeat");
+    button_repeat = &panel_bottom_right.add_child<Button>("");
+    button_repeat->set_max_width(36);
+    auto& button_repeat_img = button_repeat->add_child<Sprite>("repeat");
     auto r = player::get_repeat_mode();
     if (r == player::RepeatMode::OFF) {
       button_repeat_img.set_texture("repeat_off");
@@ -69,12 +64,20 @@ public:
     }
     button_repeat_img.set_anchor(Anchor::CENTER);
     button_repeat_img.set_parent_anchor(Anchor::CENTER);
+    button_repeat_tooltip = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-    auto& btn8 = panel_bottom_right.add_child<Button>("");
-    btn8.set_max_width(36);
-    auto& btn8_img = btn8.add_child<Sprite>("shuffle");
-    btn8_img.set_anchor(Anchor::CENTER);
-    btn8_img.set_parent_anchor(Anchor::CENTER);
+    button_shuffle = &panel_bottom_right.add_child<Button>("");
+    button_shuffle->set_max_width(36);
+    auto& button_shuffle_img = button_shuffle->add_child<Sprite>("shuffle");
+    auto s = player::get_shuffle_mode();
+    if (s == player::ShuffleMode::OFF) {
+      button_shuffle_img.set_texture("shuffle_off");
+    } else if (s == player::ShuffleMode::ON) {
+      button_shuffle_img.set_texture("shuffle");
+    }
+    button_shuffle_img.set_anchor(Anchor::CENTER);
+    button_shuffle_img.set_parent_anchor(Anchor::CENTER);
+    button_shuffle_tooltip = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
     auto& volume_bar = panel_bottom_right.add_child<Slider>();
     volume_bar.set_max_width(70);
@@ -84,12 +87,12 @@ public:
 
     seekbar = &panel_bottom_right.add_child<SeekBar>();
 
-    button_play->on_press([&]() {
-      player::play();
-    });
-
-    button_pause->on_press([&]() {
-      player::pause();
+    button_play_pause->on_press([&]() {
+      if (is_playing) {
+        player::pause();
+      } else {
+        player::play(false);
+      }
     });
 
     button_stop->on_press([&]() {
@@ -104,7 +107,7 @@ public:
       player::next_track();
     });
 
-    button_repeat.on_press([&]() {
+    button_repeat->on_press([&]() {
       auto r = player::get_repeat_mode();
       if (r == player::RepeatMode::OFF) {
         player::set_repeat_mode(player::RepeatMode::TRACK);
@@ -115,6 +118,17 @@ public:
       } else if (r == player::RepeatMode::ALBUM) {
         player::set_repeat_mode(player::RepeatMode::OFF);
         button_repeat_img.set_texture("repeat_off");
+      }
+    });
+
+    button_shuffle->on_press([&]() {
+      auto s = player::get_shuffle_mode();
+      if (s == player::ShuffleMode::OFF) {
+        player::set_shuffle_mode(player::ShuffleMode::ON);
+        button_shuffle_img.set_texture("shuffle");
+      } else if (s == player::ShuffleMode::ON) {
+        player::set_shuffle_mode(player::ShuffleMode::OFF);
+        button_shuffle_img.set_texture("shuffle_off");
       }
     });
   }
@@ -148,15 +162,57 @@ public:
     ss << std::setw(2) << total_duration_s;
 
     progress_label->set_text(ss.str());
+
+    if (is_playing != player::is_playing()) {
+      is_playing = player::is_playing();
+      if (is_playing) {
+        button_play_pause_img->set_texture("pause");
+      } else {
+        button_play_pause_img->set_texture("play");
+      }
+    }
+
+    if (button_shuffle->is_mouse_hovering()) {
+      button_shuffle_tooltip->set_is_drawn(true);
+      auto s = player::get_shuffle_mode();
+      if (s == player::ShuffleMode::OFF) {
+        button_shuffle_tooltip->set_text("Shuffle: Off");
+      } else if (s == player::ShuffleMode::ON) {
+        button_shuffle_tooltip->set_text("Shuffle: On");
+      }
+    } else {
+      button_shuffle_tooltip->set_is_drawn(false);
+    }
+
+    if (button_repeat->is_mouse_hovering()) {
+      button_repeat_tooltip->set_is_drawn(true);
+      auto r = player::get_repeat_mode();
+      if (r == player::RepeatMode::OFF) {
+        button_repeat_tooltip->set_text("Repeat: Off");
+      } else if (r == player::RepeatMode::TRACK) {
+        button_repeat_tooltip->set_text("Repeat: Track");
+      } else if (r == player::RepeatMode::ALBUM) {
+        button_repeat_tooltip->set_text("Repeat: Album");
+      }
+    } else {
+      button_repeat_tooltip->set_is_drawn(false);
+    }
+
     Panel::update();
   }
 
-public:
-  Button* button_play{};
-  Button* button_pause{};
+protected:
+  Button* button_play_pause{};
+  Sprite* button_play_pause_img{};
   Button* button_stop{};
   Button* button_next{};
   Button* button_prev{};
+  Button* button_shuffle{};
+  Button* button_repeat{};
+  ToolTip* button_shuffle_tooltip{};
+  ToolTip* button_repeat_tooltip{};
   SeekBar* seekbar{};
   Label* progress_label{};
+
+  bool is_playing = false;
 };

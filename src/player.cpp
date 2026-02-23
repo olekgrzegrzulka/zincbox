@@ -1,9 +1,11 @@
+#include "player.hpp"
+#include <algorithm>
 #include <optional>
 #include <string>
 #include "../lib/miniaudio/miniaudio.h"
 #include "debug.hpp"
 #include "musicdb.hpp"
-#include "player.hpp"
+#include "random.hpp"
 
 ma_engine engine{};
 ma_sound sound{};
@@ -46,8 +48,8 @@ void player::deinit() {
 }
 
 void player::update() {
-  debug_log("tracks_history: ", tracks_history);
-  debug_log("index         : ", tracks_history_current_index.value_or(2137));
+  // debug_log("tracks_history: ", tracks_history);
+  // debug_log("index         : ", tracks_history_current_index.value_or(2137));
   if (is_at_end()) {
     if (auto curr_track = get_track(); curr_track.has_value()) {
       next_track();
@@ -123,12 +125,10 @@ void player::play(musicdb::track_id_t track_id_, bool clear_history) {
     }
   }
 
-  if (tracks_history.size() > 10 && tracks_history_current_index == tracks_history.size() - 1) {
-    for (size_t i = 0; i < 5; i += 1) {
-      tracks_history[i] = tracks_history[i + 5];
-    }
-    std::copy(tracks_history.begin() + 5, tracks_history.end(), tracks_history.begin());
-    tracks_history.resize(tracks_history.size() - 5);
+  if (tracks_history.size() >= (4096 - 1) && tracks_history_current_index.value_or(0) == tracks_history.size() - 1) {
+    std::copy(tracks_history.begin() + 2048, tracks_history.end(), tracks_history.begin());
+    tracks_history.resize(tracks_history.size() - 2048);
+    tracks_history_current_index = tracks_history.size() - 1;
   }
 }
 
@@ -146,20 +146,64 @@ void player::seek_ms(i32 ms) {
 }
 
 void player::next_track() {
-  if (repeat_mode == RepeatMode::OFF) {
-    auto& track_curr = musicdb::get_tracks()[track_id.value()];
-    play(track_curr.next_track_id, false);
-  } else if (repeat_mode == RepeatMode::TRACK) {
+  static Random rng = Random();
+
+  using namespace musicdb;
+
+  auto is_in_tracks_history = [&](track_id_t track_id, i32 last_n_to_check) {
+    for (i32 i = std::max(0, (i32)tracks_history.size() - last_n_to_check); i < (i32)tracks_history.size(); i += 1) {
+      if (track_id == tracks_history[i]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  if (!track_id.has_value()) { return; }
+
+  if (repeat_mode == RepeatMode::TRACK) {
     seek_ms(0);
     play(false);
-  } else if (repeat_mode == RepeatMode::ALBUM && track_id.has_value()) {
-    auto& track_curr = musicdb::get_tracks()[track_id.value()];
-    auto& track_next = musicdb::get_tracks()[track_curr.next_track_id];
-    if (track_next.album_id == track_curr.album_id) {
-      play(track_next.track_id, false);
-    } else {
-      musicdb::track_id_t track_first = musicdb::get_albums()[track_curr.album_id].first_track_id;
-      play(track_first, false);
+    return;
+  }
+
+  if (shuffle_mode == ShuffleMode::OFF) {
+    if (repeat_mode == RepeatMode::OFF) {
+      auto& track_curr = musicdb::get_tracks()[track_id.value()];
+      play(track_curr.next_track_id, false);
+    } else if (repeat_mode == RepeatMode::ALBUM && track_id.has_value()) {
+      auto& track_curr = musicdb::get_tracks()[track_id.value()];
+      auto& track_next = musicdb::get_tracks()[track_curr.next_track_id];
+      if (track_next.album_id == track_curr.album_id) {
+        play(track_next.track_id, false);
+      } else {
+        track_id_t track_first = musicdb::get_albums()[track_curr.album_id].first_track_id;
+        play(track_first, false);
+      }
+    }
+  } else if (shuffle_mode == ShuffleMode::ON) {
+    if (repeat_mode == RepeatMode::OFF) {
+      i32 tries_left = 32;
+      track_id_t random_track_id = 0;
+      while (tries_left-- > 0) {
+        random_track_id = rng.next<track_id_t>(0, musicdb::get_tracks().size() - 1);
+        bool found = is_in_tracks_history(random_track_id, 20);
+        if (!found) { break; }
+      }
+      play(random_track_id, false);
+    } else if (repeat_mode == RepeatMode::ALBUM && track_id.has_value()) {
+      auto& track_curr = musicdb::get_tracks()[track_id.value()];
+      auto& album = musicdb::get_album(track_curr.album_id);
+
+      i32 tries_left = 32;
+      musicdb::track_id_t random_track_id = 0;
+      while (tries_left-- > 0) {
+        i32 random_album_track_index = rng.next<size_t>(0, album.track_ids.size() - 1);
+        random_track_id = album.track_ids[random_album_track_index];
+        bool found = is_in_tracks_history(random_track_id, album.track_ids.size() / 2);
+        if (!found) { break; }
+      }
+      play(random_track_id, false);
     }
   }
 }

@@ -1,7 +1,6 @@
 #pragma once
 #include <limits>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 #include "types.hpp"
@@ -83,9 +82,9 @@ namespace musicdb {
 
   std::vector<uint8_t> fetch_album_art(TagLib::FileRef& ref);
 
-  void load(std::string path);
-
-  void load_from_path(std::string path);
+  void load(const std::string& path);
+  void save_to_file(const std::string& path);
+  void load_from_file(const std::string& path);
 
   const std::vector<Album>& get_albums();
   const Album& get_album(album_id_t);

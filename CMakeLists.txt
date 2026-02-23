@@ -77,7 +77,6 @@ set(SOURCES
     ./src/ui/scrollbar.cpp
 
     ./src/musicdb.cpp
-    ./src/musicdb_serialize.cpp
     ./src/bridge.cpp
     ./src/player.cpp
 
