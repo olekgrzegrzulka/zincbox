@@ -11,7 +11,6 @@
 #include "texture_atlas.hpp"
 #include "types.hpp"
 
-
 TextureAtlas::TextureAtlas(i32 atlas_size_, i32 margin_px_, i32 min_texture_size_px_) {
   atlas_size = atlas_size_;
   margin_px = margin_px_;

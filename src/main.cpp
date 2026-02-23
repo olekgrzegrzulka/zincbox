@@ -147,12 +147,18 @@ int main() {
   atlas.add_texture("seekbar_thumb", "./assets/seekbar_thumb.png");
   atlas.add_texture("track_bg1", "./assets/track_bg1.png");
   atlas.add_texture("track_bg2", "./assets/track_bg2.png");
+  atlas.add_texture("track_bg_playing", "./assets/track_bg_playing.png");
 
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
   atlas.add_texture("stop", "./assets/icons/stop.png");
   atlas.add_texture("next", "./assets/icons/next.png");
   atlas.add_texture("prev", "./assets/icons/prev.png");
+  atlas.add_texture("repeat", "./assets/icons/repeat.png");
+  atlas.add_texture("repeat_off", "./assets/icons/repeat_off.png");
+  atlas.add_texture("repeat_album", "./assets/icons/repeat_album.png");
+  atlas.add_texture("repeat_track", "./assets/icons/repeat_track.png");
+  atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
 
   atlas.save_to_file("atlas.png");
 
@@ -212,12 +218,11 @@ int main() {
     panel_main.set_width(window_size.x);
     panel_bottom.set_width(window_size.x);
 
-    debug_log("get_progress_ms ", player::get_current_time_ms());
-    debug_log("get_length_ms   ", player::get_total_duration_ms());
-    debug_log("is_playing      ", player::is_playing());
-
     panel_main.set_y(panel_top.get_height());
     panel_main.set_height(window_size.y - panel_top.get_height() - panel_bottom.get_height());
+
+    // FIXME: run this on different thread as it doesn't run when window is minimized!
+    player::update();
 
     // redrawn.input();
     Input::clear();

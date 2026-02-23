@@ -96,6 +96,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=unused-result
     -Werror=return-type
 )
+
 target_compile_options(${PROJECT_NAME} PRIVATE -O3)
 
 # target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)

@@ -25,8 +25,10 @@ public:
   }
 
   void update() override {
-    if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
+    bool thumb_just_released = false;
+    if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT) && is_thumb_dragged) {
       is_thumb_dragged = false;
+      thumb_just_released = true;
     }
 
     set_current_time_ms(player::get_current_time_ms());
@@ -37,16 +39,24 @@ public:
     progress_bar.set_width(width);
     progress_bar.set_height(12);
 
-    static i32 t = 0;
-    t += 1;
-
-    if (total_duration_ms > 0) {
-      progress_bar.set_width(current_time_ms / (double)total_duration_ms * width);
+    if (!is_thumb_dragged && !thumb_just_released) {
+      if (total_duration_ms > 0) {
+        progress_bar.set_width(current_time_ms / (double)total_duration_ms * width);
+      } else {
+        progress_bar.set_width(width);
+      }
     } else {
-      progress_bar.set_width(0);
+      i32 w = Input::get_mouse_x() - progress_bar.get_position(Anchor::LEFT).x;
+      w = std::clamp(w, 0, get_width());
+      progress_bar.set_width(w);
     }
 
     thumb.set_x(progress_bar.get_width());
+
+    if (thumb_just_released) {
+      player::seek_ms(get_current_time_ms_from_thumb_pos());
+    }
+
     Widget::update();
   }
 
@@ -79,4 +89,10 @@ public:
   WIDGET_DEF_SETTER_DIRTY(total_duration_ms)
   WIDGET_DEF_SETTER_DIRTY(current_time_ms)
   WIDGET_DEF_SETTER_DIRTY(is_active)
+
+  WIDGET_DEF_GETTER(is_thumb_dragged)
+
+  i32 get_current_time_ms_from_thumb_pos() {
+    return thumb.get_x() / (double)get_width() * player::get_total_duration_ms();
+  }
 };

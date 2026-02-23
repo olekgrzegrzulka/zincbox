@@ -1,8 +1,8 @@
 #include "musicdb.hpp"
+#include <algorithm>
+#include <cstddef>
 #include <filesystem>
 #include <iostream>
-#include <set>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <taglib/fileref.h>
@@ -24,8 +24,18 @@
 namespace fs = std::filesystem;
 using namespace musicdb;
 
-// main data structure: hashmap for quick access
 std::vector<Album> albums;
+std::vector<Track> tracks;
+
+std::vector<size_t> album_indices_sorted_by_name;
+
+i32 musicdb::Album::length_seconds() const {
+  i32 ret = 0;
+  for (track_id_t id : track_ids) {
+    ret += tracks[id].length_seconds;
+  }
+  return ret;
+}
 
 std::vector<u8> resize_album_art_to_64x64(const std::vector<u8>& raw_data) {
   if (raw_data.empty()) return {};
@@ -139,17 +149,15 @@ void scan_directory(std::string path) {
       TagLib::Tag* tag = f.tag();
       TagLib::AudioProperties* audio_props = f.audioProperties();
 
-      Track track{
-        .track = (i32)tag->track(),
-        .title = tag->title().toWString(),
-        .artist = tag->artist().toWString(),
-        .comment = tag->comment().toWString(),
-        .genre = tag->genre().toWString(),
-        .year = (i32)tag->year(),
-        .bitrate = audio_props->bitrate(),
-        .length_seconds = audio_props->lengthInSeconds(),
-        .path = entry.path().string(),
-      };
+      Track track{};
+      track.track_number = (i32)tag->track();
+      track.title = tag->title().toWString();
+      track.artist = tag->artist().toWString();
+      track.genre = tag->genre().toWString();
+      track.year = (i32)tag->year();
+      track.bitrate = audio_props->bitrate();
+      track.length_seconds = audio_props->lengthInSeconds();
+      track.path = entry.path().string();
 
       std::wstring album_title = tag->album().toWString();
       Album* album = get_album_by_title(album_title);
@@ -160,15 +168,16 @@ void scan_directory(std::string path) {
           cover_art = cover_art_from_image_in_directory;
         }
         i32 id = albums.size();
+        track.album_id = id;
+        track.track_id = 0;
         Album a{
-          .id = id,
           .title = album_title,
           .cover_art = cover_art,
-          .tracks = {track},
         };
-        add_album(std::move(a));
+        album_id_t album_id = add_album(std::move(a));
+        add_track(track, album_id);
       } else {
-        album->tracks.emplace(track);
+        add_track(track, album->album_id);
       }
     }
   }
@@ -192,8 +201,58 @@ void musicdb::load(std::string path) {
     return;
   }
 
-  auto s = ScopeTimer{"scan_directory"};
-  scan_directory(path);
+  {
+    auto s = ScopeTimer{"scan_directory"};
+    scan_directory(path);
+  }
+
+  {
+    auto s = ScopeTimer{"sort_albums_and_tracks"};
+    std::sort(album_indices_sorted_by_name.begin(), album_indices_sorted_by_name.end(), [](album_id_t lhs, album_id_t rhs) {
+      return albums[lhs].title < albums[rhs].title;
+    });
+
+    for (album_id_t album_id = 1; album_id < albums.size() - 1; album_id += 1) {
+      albums[album_indices_sorted_by_name[album_id]].next_album_id = album_indices_sorted_by_name[album_id + 1];
+      albums[album_indices_sorted_by_name[album_id]].prev_album_id = album_indices_sorted_by_name[album_id - 1];
+    }
+
+    if (albums.size() > 0) {
+      albums[album_indices_sorted_by_name.front()].prev_album_id = album_indices_sorted_by_name.back();
+      albums[album_indices_sorted_by_name.back()].next_album_id = album_indices_sorted_by_name.front();
+    }
+
+    if (albums.size() >= 2) {
+      albums[album_indices_sorted_by_name.front()].next_album_id = album_indices_sorted_by_name[1];
+      albums[album_indices_sorted_by_name.back()].prev_album_id = album_indices_sorted_by_name[album_indices_sorted_by_name.size() - 2];
+    }
+
+    for (auto& a : albums) {
+      std::sort(a.track_ids.begin(), a.track_ids.end(), [](track_id_t lhs, track_id_t rhs) {
+        return tracks[lhs].track_number < tracks[rhs].track_number;
+      });
+
+      for (size_t i = 1; i < a.track_ids.size() - 1; i += 1) {
+        tracks[a.track_ids[i]].next_track_id = a.track_ids[i + 1];
+        tracks[a.track_ids[i]].prev_track_id = a.track_ids[i - 1];
+      }
+
+      a.first_track_id = a.track_ids.front();
+      a.last_track_id = a.track_ids.back();
+    }
+
+    for (auto& a : albums) {
+      tracks[a.first_track_id].prev_track_id = albums[a.prev_album_id].last_track_id;
+      tracks[a.last_track_id].next_track_id = albums[a.next_album_id].first_track_id;
+
+      if (a.track_ids.size() >= 2) {
+        tracks[a.first_track_id].next_track_id = a.track_ids[1];
+        tracks[a.last_track_id].prev_track_id = a.track_ids[a.track_ids.size() - 2];
+      }
+    }
+  }
+
+  check_integrity();
 }
 
 void musicdb::load_from_path(std::string path) {
@@ -212,16 +271,159 @@ void musicdb::load_from_path(std::string path) {
   debug_log(i);
 }
 
+const Album& musicdb::get_album(album_id_t id) {
+  return albums[id];
+}
+
 const std::vector<Album>& musicdb::get_albums() {
   return albums;
+}
+
+const std::vector<album_id_t>& musicdb::get_albums_sorted_by_name() {
+  return album_indices_sorted_by_name;
+}
+
+const std::vector<Track>& musicdb::get_tracks() {
+  return tracks;
 }
 
 void musicdb::clear_albums() {
   albums.clear();
 }
 
-void musicdb::add_album(Album a) {
-  std::stringstream ss;
-  a.id = albums.size();
+track_id_t musicdb::add_track(Track t, album_id_t album_id) {
+  t.track_id = tracks.size();
+  t.album_id = album_id;
+  tracks.emplace_back(t);
+  albums[album_id].track_ids.emplace_back(t.track_id);
+
+  // sort album.tracks by track_number
+  // auto& album = albums[album_id];
+  // auto& album_track_ids = album.track_ids;
+
+  // auto it = std::lower_bound(album_track_ids.begin(), album_track_ids.end(), t.track_number,
+  //                            [&](track_id_t lhs, track_id_t rhs) -> bool {
+  //                              return tracks[album_track_ids[lhs]].track_number < tracks[album_track_ids[rhs]].track_number;
+  //                            });
+  // it = album_track_ids.insert(it, t.track_number);
+
+  // // update next_album_id and prev_album_id
+  // if (std::next(it) != album_track_ids.end()) {
+  //   tracks[*it].next_track_id = album_indices_sorted_by_name[*std::next(it)];
+  //   albums[album_indices_sorted_by_name[*std::next(it)]].prev_album_id = album_indices_sorted_by_name[*it];
+  // } else {
+  //   albums[album_indices_sorted_by_name[*it]].next_album_id = album_indices_sorted_by_name[0];
+  // }
+
+  // if (std::prev(it) != album_indices_sorted_by_name.end()) {
+  //   albums[album_indices_sorted_by_name[*it]].prev_album_id = album_indices_sorted_by_name[*std::prev(it)];
+  //   albums[album_indices_sorted_by_name[*std::prev(it)]].prev_album_id = album_indices_sorted_by_name[*it];
+  // } else {
+  //   albums[album_indices_sorted_by_name[*it]].prev_album_id = album_indices_sorted_by_name[album_indices_sorted_by_name.size() - 1];
+  // }
+
+  // albums[album_indices_sorted_by_name[0]].prev_album_id = album_indices_sorted_by_name[album_indices_sorted_by_name.size() - 1];
+
+  // album.first_track_id = album.track_ids[0];
+
+  // check_integrity();
+  return tracks.size() - 1;
+}
+
+album_id_t musicdb::add_album(Album a) {
+  a.album_id = albums.size();
   albums.emplace_back(a);
+  album_indices_sorted_by_name.emplace_back(a.album_id);
+
+  // sort album_indices_sorted_by_name
+  // album_indices_sorted_by_name.emplace_back(a.album_id);
+  // auto it = std::lower_bound(album_indices_sorted_by_name.begin(), album_indices_sorted_by_name.end(), album_indices_sorted_by_name.size() - 1,
+  //                            [&](size_t lhs, size_t rhs) -> bool { return albums[lhs].title < albums[rhs].title; });
+  // album_indices_sorted_by_name.pop_back();
+  // it = album_indices_sorted_by_name.insert(it, a.album_id);
+
+  // // update next_album_id and prev_album_id
+  // if (std::next(it) != album_indices_sorted_by_name.end()) {
+  //   albums[album_indices_sorted_by_name[*it]].next_album_id = album_indices_sorted_by_name[*std::next(it)];
+  //   albums[album_indices_sorted_by_name[*std::next(it)]].prev_album_id = album_indices_sorted_by_name[*it];
+  // } else {
+  //   albums[album_indices_sorted_by_name[*it]].next_album_id = album_indices_sorted_by_name[0];
+  // }
+
+  // if (std::prev(it) != album_indices_sorted_by_name.end()) {
+  //   albums[album_indices_sorted_by_name[*it]].prev_album_id = album_indices_sorted_by_name[*std::prev(it)];
+  //   albums[album_indices_sorted_by_name[*std::prev(it)]].prev_album_id = album_indices_sorted_by_name[*it];
+  // } else {
+  //   albums[album_indices_sorted_by_name[*it]].prev_album_id = album_indices_sorted_by_name[album_indices_sorted_by_name.size() - 1];
+  // }
+
+  // albums[album_indices_sorted_by_name[0]].prev_album_id = album_indices_sorted_by_name[album_indices_sorted_by_name.size() - 1];
+  // check_integrity();
+  return albums.size() - 1;
+}
+
+void musicdb::check_integrity() {
+  static constexpr size_t INVALID_ID = std::numeric_limits<size_t>::max();
+
+  debug_log("musicdb::check_integrity()");
+
+  ensure(album_indices_sorted_by_name.size() == albums.size());
+
+  if (albums.size() > 0) {
+    size_t album_id_first = album_indices_sorted_by_name[0];
+    size_t album_id_last = album_indices_sorted_by_name[albums.size() - 1];
+    ensure(albums[album_id_first].prev_album_id == album_id_last);
+    ensure(albums[album_id_last].next_album_id == album_id_first);
+  }
+
+  for (size_t i = 1; i < album_indices_sorted_by_name.size() - 1; i += 1) {
+    size_t album_id_curr = album_indices_sorted_by_name[i];
+    size_t album_id_prev = album_indices_sorted_by_name[i - 1];
+    size_t album_id_next = album_indices_sorted_by_name[i + 1];
+
+    ensure(album_id_curr >= 0 && album_id_curr < albums.size());
+    ensure(album_id_prev >= 0 && album_id_prev < albums.size());
+    ensure(album_id_next >= 0 && album_id_next < albums.size());
+
+    ensure(albums[album_id_curr].next_album_id == album_id_next);
+    ensure(albums[album_id_curr].prev_album_id == album_id_prev);
+
+    // FIXME: we assume that all albums are non-empty
+    if (albums[album_id_curr].track_ids.size() > 0 && albums[album_id_next].track_ids.size() > 0) {
+      ensure(tracks[albums[album_id_curr].last_track_id].next_track_id == albums[album_id_next].first_track_id);
+    }
+    if (albums[album_id_curr].track_ids.size() > 0 && albums[album_id_prev].track_ids.size() > 0) {
+      ensure(tracks[albums[album_id_curr].first_track_id].prev_track_id == albums[album_id_prev].last_track_id);
+    }
+  }
+
+  if (tracks.size() > 0) {
+    size_t album_id_first = album_indices_sorted_by_name[0];
+    size_t album_id_last = album_indices_sorted_by_name[albums.size() - 1];
+
+    ensure(album_id_first >= 0 && album_id_first < albums.size());
+    ensure(album_id_last >= 0 && album_id_last < albums.size());
+
+    ensure(albums[album_id_first].prev_album_id == album_id_last);
+    ensure(albums[album_id_last].next_album_id == album_id_first);
+  }
+
+  for (size_t i = 1; i < tracks.size() - 1; i += 1) {
+    ensure(tracks[i].album_id != INVALID_ID);
+    auto& album = albums[tracks[i].album_id];
+    ensure(album.album_id == tracks[i].album_id);
+    bool album_contains_track = std::any_of(album.track_ids.begin(),
+                                            album.track_ids.end(),
+                                            [&](track_id_t track_id) { return tracks[i].track_id == track_id; });
+    ensure(album_contains_track);
+
+    size_t track_id_prev = tracks[i].prev_track_id;
+    size_t track_id_next = tracks[i].next_track_id;
+
+    ensure(track_id_prev >= 0 && track_id_prev < tracks.size());
+    ensure(track_id_next >= 0 && track_id_next < tracks.size());
+
+    ensure(tracks[i].next_track_id == track_id_next);
+    ensure(tracks[i].prev_track_id == track_id_prev);
+  }
 }

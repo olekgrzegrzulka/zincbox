@@ -16,14 +16,17 @@
 #include "widget.hpp"
 
 Label::Label(UI& ui_) : Widget::Widget(ui_) {
+  set_text_color({1.0, 0.85, 0.95});
 }
 
 Label::Label(UI& ui_, std::string text_) : Widget::Widget(ui_) {
+  set_text_color({1.0, 0.85, 0.95});
   set_text(text_);
   update_mesh();
 }
 
 Label::Label(UI& ui_, std::wstring text_) : Widget::Widget(ui_) {
+  set_text_color({1.0, 0.85, 0.95});
   set_text(text_);
   update_mesh();
 }

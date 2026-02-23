@@ -1,7 +1,7 @@
 #include <fstream>
-#include <set>
 #include <string>
 #include <vector>
+#include "debug.hpp"
 #include "musicdb.hpp"
 #include "musicdb_serialize.hpp"
 
@@ -55,14 +55,17 @@ void musicdb::save_to_file(const std::string& path) {
     write_str(os, album.title);
     write_blob(os, album.cover_art);
 
-    uint64_t track_count = album.tracks.size();
+    uint64_t track_count = album.track_ids.size();
     write_bin(os, track_count);
 
-    for (const auto& t : album.tracks) {
-      write_bin(os, t.track);
+    for (track_id_t track_id : album.track_ids) {
+      auto& t = get_tracks()[track_id];
+
+      write_bin(os, t.track_id);
+      write_bin(os, t.album_id);
+      write_bin(os, t.track_number);
       write_str(os, t.title);
       write_str(os, t.artist);
-      write_str(os, t.comment);
       write_str(os, t.genre);
       write_bin(os, t.year);
       write_bin(os, t.bitrate);
@@ -91,16 +94,17 @@ void musicdb::load_from_file(const std::string& path) {
 
     for (uint64_t j = 0; j < track_count; ++j) {
       Track t;
-      read_bin(is, t.track);
+      read_bin(is, t.track_id);
+      read_bin(is, t.album_id);
+      read_bin(is, t.track_number);
       read_str(is, t.title);
       read_str(is, t.artist);
-      read_str(is, t.comment);
       read_str(is, t.genre);
       read_bin(is, t.year);
       read_bin(is, t.bitrate);
       read_bin(is, t.length_seconds);
       read_str(is, t.path);
-      album.tracks.insert(std::move(t));
+      add_track(std::move(t), t.album_id);
     }
     musicdb::add_album(std::move(album));
   }

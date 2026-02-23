@@ -36,23 +36,23 @@ public:
 
     orientation = orientation_;
 
-    set_size(8, 8);
+    set_size(10, 10);
 
     track.set_texture("scrollbar_track");
     track.set_nine_slice_margin(6.0f);
     if (orientation_ == HORIZONTAL) {
-      track.set_height(8);
+      track.set_height(10);
       track.set_parent_anchor(Anchor::CENTER_LEFT);
       track.set_anchor(Anchor::CENTER_LEFT);
     } else {
-      track.set_width(8);
+      track.set_width(10);
       track.set_parent_anchor(Anchor::TOP_CENTER);
       track.set_anchor(Anchor::TOP_CENTER);
     }
 
     thumb.set_nine_slice_margin(6.0f);
-    thumb.set_width(8);
-    thumb.set_height(8);
+    thumb.set_width(10);
+    thumb.set_height(10);
     if (orientation_ == HORIZONTAL) {
       thumb.set_parent_anchor(Anchor::CENTER_LEFT);
       thumb.set_anchor(Anchor::CENTER_LEFT);

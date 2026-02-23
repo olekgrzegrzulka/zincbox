@@ -13,7 +13,7 @@ void bridge::init(PanelTracks* panel_tracks_, PanelAlbums* panel_albums_) {
   panel_albums = panel_albums_;
 }
 
-void bridge::on_album_clicked(const musicdb::Album* album) {
+void bridge::on_album_clicked(musicdb::album_id_t album_id) {
   ensure(panel_tracks);
-  panel_tracks->on_album_clicked(album);
+  panel_tracks->on_album_clicked(album_id);
 }

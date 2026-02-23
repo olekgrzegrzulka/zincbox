@@ -1,6 +1,5 @@
 #include "scrollbar.hpp"
 #include <algorithm>
-#include <cmath>
 #include "../input.hpp"
 #include "../types.hpp"
 #include "sprite.hpp"
