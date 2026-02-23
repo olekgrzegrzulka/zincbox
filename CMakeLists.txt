@@ -84,6 +84,7 @@ set(SOURCES
 
     ./src/musicdb.cpp
     ./src/musicdb_serialize.cpp
+    ./src/bridge.cpp
 
     ./lib/glad/glad.c
 )

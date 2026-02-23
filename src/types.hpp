@@ -104,6 +104,27 @@ struct rect2i {
       .expanded(to.begin + to.size - vec2i{1, 1});
   }
 
+  [[nodiscard]] rect2i intersected(const rect2i& b) const {
+    vec2i min_a = begin;
+    vec2i max_a = begin + size;
+
+    vec2i min_b = b.begin;
+    vec2i max_b = b.begin + b.size;
+
+    vec2i intersect_min = glm::max(min_a, min_b);
+    vec2i intersect_max = glm::min(max_a, max_b);
+
+    vec2i intersect_size = intersect_max - intersect_min;
+
+    if (intersect_size.x <= 0 || intersect_size.y <= 0) {
+      return rect2i{.begin = {0, 0}, .size = {0, 0}};
+    }
+
+    return rect2i{
+      .begin = intersect_min,
+      .size = intersect_size};
+  }
+
   bool is_empty() const {
     return size.x <= 0 || size.y <= 0;
   }

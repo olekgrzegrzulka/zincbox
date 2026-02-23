@@ -113,6 +113,7 @@ namespace Input {
 class Widget {
 protected:
   UI& ui;
+  std::string name;
   i32 x = 0;
   i32 y = 0;
 
@@ -168,6 +169,8 @@ public:
   // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
   vec2i get_position(Anchor relative_to = Anchor::TOP_LEFT) const;
 
+  WIDGET_DEF_GETTER(name);
+  WIDGET_DEF_SETTER(name);
   WIDGET_DEF_SETTER(marked_for_deletion)
   WIDGET_DEF_SETTER_DIRTY(is_updated)
   WIDGET_DEF_SETTER_DIRTY(x)
@@ -245,37 +248,11 @@ public:
 
   void set_layout(const std::string& def);
 
-  void set_pos(i32 x_, i32 y_) {
-    if (x_ != x || y_ != y) {
-      x = x_;
-      y = y_;
-      dirty = true;
-    }
-  }
+  void set_pos(i32 x, i32 y);
+  void set_pos(vec2i);
 
-  void set_pos(vec2i pos) {
-    if (pos.x != x || pos.y != y) {
-      x = pos.x;
-      y = pos.y;
-      dirty = true;
-    }
-  }
-
-  void set_size(i32 w_, i32 h_) {
-    if (w_ != width || h_ != height) {
-      width = w_;
-      height = h_;
-      dirty = true;
-    }
-  }
-
-  void set_size(vec2i size_) {
-    if (width != x || height != y) {
-      width = size_.x;
-      height = size_.y;
-      dirty = true;
-    }
-  }
+  void set_size(i32 w, i32 h);
+  void set_size(vec2i);
 
   void mark_dirty() {
     dirty = true;

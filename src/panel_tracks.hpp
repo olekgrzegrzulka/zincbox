@@ -31,19 +31,33 @@ public:
 
     auto& s = album_title_panel.add_child<Label>();
     s.set_text(album->title);
+    s.set_text_color({1.0, 0.85, 0.95});
     s.set_anchor(Anchor::CENTER);
     s.set_parent_anchor(Anchor::CENTER);
     s.set_label_anchor(Anchor::CENTER);
     s.set_height(ALBUM_HEIGHT);
 
     for (auto& track : album->tracks) {
-      auto& t = add_child<Label>();
-      std::wstringstream track_number;
-      track_number << std::left << std::setw(4) << track.track;
-      t.set_text(track_number.str() + track.title);
-      t.set_label_anchor(Anchor::LEFT);
-      t.set_height(TRACK_HEIGHT);
-      t.set_text_color({0.75, 0.75, 0.75});
+      auto& labels = add_child<Widget>();
+      labels.set_layout("m:0 s:12 ltr expand");
+      labels.set_height(TRACK_HEIGHT);
+
+      std::stringstream track_number;
+      track_number << track.track;
+      auto& label_track_number = labels.add_child<Label>(track_number.str());
+      label_track_number.set_label_anchor(Anchor::LEFT);
+      label_track_number.set_size(20, TRACK_HEIGHT);
+      label_track_number.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
+
+      auto& label_track_artist = labels.add_child<Label>(track.artist);
+      label_track_artist.set_label_anchor(Anchor::LEFT);
+      label_track_artist.set_size(label_track_artist.get_text_extents().x, TRACK_HEIGHT);
+      label_track_artist.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
+
+      auto& label_track_title = labels.add_child<Label>(track.title);
+      label_track_title.set_label_anchor(Anchor::LEFT);
+      label_track_title.set_size(label_track_title.get_text_extents().x, TRACK_HEIGHT);
+      label_track_title.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
     }
   }
 
@@ -65,7 +79,6 @@ public:
     scrollbar = &add_child<ScrollBar>();
     scrollbar->set_anchor(Anchor::LEFT);
     scrollbar->set_parent_anchor(Anchor::LEFT);
-    scrollbar->set_is_drawn_on_top(true);
     scrollbar->on_scroll_offset_changed([&](i32 scroll_offset) {
       target_scroll_px = scroll_offset;
     });
@@ -137,32 +150,29 @@ public:
     visible_album_widgets.emplace_back(&w);
   }
 
+  void on_album_clicked(i32 id) {
+    i32 s = album_scroll_px[id].first;
+    target_scroll_px = s;
+    scrollbar->set_scroll_offset(s);
+  }
+
   void update() override {
-    scroll_px += scroll_velocity;
+    scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 
-    double apply_friction = scroll_velocity * scroll_velocity * SCROLL_FRICTION_QUADRATIC;
-    apply_friction += std::abs(scroll_velocity) * SCROLL_FRICTION_LINEAR;
-    apply_friction = std::min(apply_friction, std::abs(scroll_velocity));
-
-    scroll_velocity -= apply_friction * glm::sign(scroll_velocity);
-    scroll_velocity = std::clamp(scroll_velocity, -SCROLL_MAX_SPEED, SCROLL_MAX_SPEED);
-    scroll_px = std::clamp(scroll_px, 0.0, (double)(max_scroll_px - get_height()));
-
-    if ((i32)scroll_px != (i32)old_scroll_px) {
+    if ((i32)scroll_px != (i32)old_scroll_px || width != old_width) {
       recreate();
 
       // FIXME: WHYYYYYYYYYYYY ????????????????
       for (auto& v : visible_album_widgets) {
-        for (auto& c : v->get_children()) {
-          c->mark_dirty();
-        }
+        ui.mark_dirty_recursive(v);
       }
     }
 
     old_scroll_px = scroll_px;
-    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.001, 0.2, 0.75);
+    old_width = width;
+
+    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.3, 0.75);
     scroll_px = std::lerp(scroll_px, target_scroll_px, t);
-    // scrollbar->set_scroll_offset(scroll_px);
 
     scrollbar->set_page_size(height);
     scrollbar->set_height(height);
@@ -171,14 +181,17 @@ public:
   }
 
   void handle_event(Input::InputEventMouseScroll& e) override {
-    scrollbar->scroll(e.offset.y);
+    if (is_mouse_hovering()) {
+      scrollbar->scroll(e.offset.y);
+      e.handled = true;
+    }
   }
 
 protected:
   double scroll_px{};
   double target_scroll_px{};
   double old_scroll_px{};
-  double scroll_velocity{};
+  i32 old_width{};
   i32 max_scroll_px{};
   ScrollBar* scrollbar{};
   std::vector<std::pair<i32, const musicdb::Album*>> album_scroll_px;

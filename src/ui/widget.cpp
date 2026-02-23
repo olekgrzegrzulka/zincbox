@@ -185,7 +185,7 @@ bool Widget::is_mouse_hovering(vec2i at) const {
 
 void Widget::set_layout(const std::string& def) {
   Layout l;
-  l.enabled = true; // "Syntax: enabled: always true"
+  l.enabled = true;
 
   std::stringstream ss(def);
   std::string token;
@@ -198,10 +198,7 @@ void Widget::set_layout(const std::string& def) {
       l.expand_children = true;
     } else if (token == "fill") {
       l.fill = true;
-    }
-    // 2. Integer Fields (margin/spacing)
-    else if (token.rfind("m:", 0) == 0 || token.rfind("s:", 0) == 0) {
-      // Check if value exists after colon
+    } else if (token.rfind("m:", 0) == 0 || token.rfind("s:", 0) == 0) {
       if (token.length() <= 2) {
         debug_warn("Missing value for field: ", token);
         return;
@@ -211,7 +208,6 @@ void Widget::set_layout(const std::string& def) {
       const char* num_start = token.c_str() + 2;
       long val = std::strtol(num_start, &end_ptr, 10);
 
-      // Error if: pointer didn't move (no number) OR didn't reach end (e.g. "1.2" or "1a")
       if (num_start == end_ptr || *end_ptr != '\0') {
         debug_warn("Invalid integer value: ", token);
         return;
@@ -219,28 +215,17 @@ void Widget::set_layout(const std::string& def) {
 
       if (token[0] == 'm') l.margin = static_cast<i32>(val);
       else l.spacing = static_cast<i32>(val);
-    }
-    // 3. Directions
-    // LTR Aliases
-    else if (token == "ltr" || token == "left_to_right" ||
-             token == "h" || token == "hor" || token == "horizontal") {
+    } else if (token == "ltr" || token == "left_to_right" ||
+               token == "h" || token == "hor" || token == "horizontal") {
       l.direction = LayoutDirection::LEFT_TO_RIGHT;
-    }
-    // RTL Aliases
-    else if (token == "rtl" || token == "right_to_left") {
+    } else if (token == "rtl" || token == "right_to_left") {
       l.direction = LayoutDirection::RIGHT_TO_LEFT;
-    }
-    // TTB Aliases
-    else if (token == "ttb" || token == "top_to_bottom" ||
-             token == "v" || token == "ver" || token == "vertical") {
+    } else if (token == "ttb" || token == "top_to_bottom" ||
+               token == "v" || token == "ver" || token == "vertical") {
       l.direction = LayoutDirection::TOP_TO_BOTTOM;
-    }
-    // BTT Aliases
-    else if (token == "btt" || token == "bottom_to_top") {
+    } else if (token == "btt" || token == "bottom_to_top") {
       l.direction = LayoutDirection::BOTTOM_TO_TOP;
-    }
-    // 4. Unknown Token
-    else {
+    } else {
       debug_warn("Unknown layout keyword: ", token);
       return;
     }
@@ -249,6 +234,42 @@ void Widget::set_layout(const std::string& def) {
   if (layout != l) {
     mark_dirty();
     layout = l;
+  }
+}
+
+void Widget::set_pos(i32 x_, i32 y_) {
+  if (x_ != x || y_ != y) {
+    x = x_;
+    y = y_;
+    ui.mark_dirty_recursive(this);
+  }
+}
+
+void Widget::set_pos(vec2i pos) {
+  if (pos.x != x || pos.y != y) {
+    x = pos.x;
+    y = pos.y;
+    ui.mark_dirty_recursive(this);
+  }
+}
+
+void Widget::set_size(i32 w_, i32 h_) {
+  if (w_ != width || h_ != height) {
+    width = w_;
+    height = h_;
+    if (layout.enabled) {
+      ui.mark_dirty_recursive(this);
+    }
+  }
+}
+
+void Widget::set_size(vec2i size_) {
+  if (width != x || height != y) {
+    width = size_.x;
+    height = size_.y;
+    if (layout.enabled) {
+      ui.mark_dirty_recursive(this);
+    }
   }
 }
 
