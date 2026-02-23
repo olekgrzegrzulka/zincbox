@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 #include <glm/ext/matrix_transform.hpp>
@@ -52,7 +53,7 @@ public:
 private:
   void update_widget_recursive(std::unique_ptr<Widget>& widget);
 
-  void draw_widget_recursive(Widget* widget, std::vector<Widget*>* to_be_drawn_later);
+  void draw_widget_recursive(Widget* widget, std::vector<Widget*>* to_be_drawn_later, std::optional<rect2i> scissor_rect = std::nullopt);
 
 protected:
   glm::mat4 matrix;

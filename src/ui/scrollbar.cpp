@@ -28,14 +28,15 @@ void ScrollBar::update() {
   };
 
   auto scrollbar_pos_to_document_pos = [&](i32 scrollbar_pos) {
+    i32 scrollable_area = std::max(0, content_size - page_size);
     if (orientation == HORIZONTAL) {
       return std::clamp<i32>(
-        (i32)(scrollbar_pos / (double)(width - thumb.get_width()) * (content_size - page_size)),
-        0, content_size - page_size);
+        (i32)(scrollbar_pos / (double)(width - thumb.get_width()) * scrollable_area),
+        0, scrollable_area);
     } else {
       return std::clamp<i32>(
-        (i32)(scrollbar_pos / (double)(height - thumb.get_height()) * (content_size - page_size)),
-        0, content_size - page_size);
+        (i32)(scrollbar_pos / (double)(height - thumb.get_height()) * scrollable_area),
+        0, scrollable_area);
     }
   };
 
@@ -95,7 +96,7 @@ void ScrollBar::update() {
   } else {
     track.set_height(height);
     if (content_size != 0 && height != 0) {
-      i32 thumb_height = std::max(16.0, page_size / (double)content_size * height);
+      i32 thumb_height = std::clamp((i32)(page_size * height / content_size), 16, height);
       thumb.set_height(thumb_height);
     }
 
@@ -123,6 +124,8 @@ void ScrollBar::update() {
     thumb.set_texture("scrollbar_thumb_idle", false);
   }
 
+  scroll_offset = std::clamp(scroll_offset, 0, std::max(0, content_size - page_size));
+
   if (old_scroll_offset != scroll_offset) {
     old_scroll_offset = scroll_offset;
     if (lambda) {
@@ -135,7 +138,7 @@ void ScrollBar::update() {
 
 void ScrollBar::scroll(float force) {
   scroll_offset -= force * 40;
-  scroll_offset = std::clamp(scroll_offset, 0, content_size - page_size);
+  scroll_offset = std::clamp(scroll_offset, 0, std::max(0, content_size - page_size));
 }
 
 void ScrollBar::handle_event(Input::InputEventMouseButton&) {

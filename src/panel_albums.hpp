@@ -1,14 +1,19 @@
 #pragma once
 #include <cassert>
+#include <vector>
+#include "bridge.hpp"
 #include "debug.hpp"
+#include "input.hpp"
 #include "musicdb.hpp"
+#include "opengl_includes.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
 #include "ui/panel.hpp"
+#include "ui/scrollbar.hpp"
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
 
-static constexpr i32 COVER_WIDTH = 64 + 4;
+static constexpr i32 COVER_WIDTH = 64 + 12;
 static constexpr i32 COVER_HEIGHT = 64 + 32;
 
 class SpriteAlbumCover : public Sprite {
@@ -33,15 +38,14 @@ public:
     set_clip_children(true);
     set_size(COVER_WIDTH, COVER_HEIGHT);
     set_layout("m:0 s:8 ttb");
-    // set_is_self_drawn(false);s
     std::string sprite_id = album_covers_atlas.has_texture(album->id) ? album->id : "cover_unknown";
     auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
     label_title = &add_child<Label>();
     label_title->set_text(album->title);
-    label_title->set_width(64);
+    label_title->set_width(COVER_WIDTH);
     label_title->set_height(label_title->get_text_extents().y);
     label_title->set_label_anchor(Anchor::LEFT);
-    label_title->set_text_color({0.75, 0.75, 0.75});
+    label_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.65f);
   }
 
   void draw() override {
@@ -68,6 +72,15 @@ protected:
 class PanelAlbums : public Panel {
 public:
   PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RoundedDark, false) {
+    set_clip_children(true);
+
+    scrollbar = &add_child<ScrollBar>();
+    scrollbar->set_anchor(Anchor::RIGHT);
+    scrollbar->set_parent_anchor(Anchor::RIGHT);
+    scrollbar->set_ignore_parents_layout(true);
+    scrollbar->on_scroll_offset_changed([&](i32 scroll_offset) {
+      target_scroll_px = scroll_offset;
+    });
   }
 
   void draw() override {
@@ -77,45 +90,83 @@ public:
   }
 
   void recreate() {
-    album_covers_atlas = TextureAtlas{};
+    i32 album_count = musicdb::get_albums().size();
+    i32 atlas_resolution = std::sqrt(album_count) * 64;
+    if (atlas_resolution < 512) {
+      atlas_resolution = 512;
+    } else if (atlas_resolution < 1024) {
+      atlas_resolution = 1024;
+    } else if (atlas_resolution < 2048) {
+      atlas_resolution = 2048;
+    } else {
+      atlas_resolution = 2048;
+      debug_warn("album_count = ", album_count, ", not supported!");
+    }
+    album_covers_atlas = TextureAtlas{atlas_resolution, 0, 64};
     album_covers_atlas.add_texture("cover_unknown", "./assets/cover_unknown.png");
 
+    i32 i = 0;
     for (auto& album : musicdb::get_albums()) {
       album_covers_atlas.add_texture(album.id, album.cover_art, 64, 64);
+      if (i++ >= 2048) { break; }
     }
-
-    ensure(album_covers_atlas.get("0").has_value());
 
     album_covers_atlas.save_to_file("albums.png");
 
-    for (auto& c : get_children()) {
+    for (auto& c : album_widgets) {
       c->set_marked_for_deletion(true);
     }
+    album_widgets.clear();
 
     i32 id = 0;
     for (auto& album : musicdb::get_albums()) {
       auto& album_widget = add_child<WidgetAlbumCover>(&album, album_covers_atlas);
-      album_widget.on_press([=]() { debug_log(id); });
+      album_widgets.emplace_back(&album_widget);
+      album_widget.on_press([=]() { bridge::on_album_clicked(id); });
       id += 1;
     }
   }
 
   void update() override {
+    i32 albums_area_width = get_width() - scrollbar->get_width();
     i32 album_covers_in_one_row = get_width() / COVER_WIDTH;
+
     if (album_covers_in_one_row > 0) {
       i32 i = 0;
-      for (auto& cover : get_children()) {
-        i32 x = (i % album_covers_in_one_row) * (get_width()) / album_covers_in_one_row;
-        i32 y = (i / album_covers_in_one_row) * (COVER_HEIGHT);
+      for (auto& cover : album_widgets) {
+        i32 x = (i % album_covers_in_one_row) * (albums_area_width) / album_covers_in_one_row;
+        i32 y = ((i32)(i / album_covers_in_one_row) * (COVER_HEIGHT)) - scroll_px;
         cover->set_pos(x, y);
 
         i += 1;
       }
+
+      i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) / album_covers_in_one_row;
+      i32 content_size = row_count * COVER_HEIGHT;
+      scrollbar->set_content_size(content_size);
+      scrollbar->set_page_size(height);
+      scrollbar->set_height(height);
+      scrollbar->set_is_drawn(content_size > height);
+      scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
     }
+
+    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.3, 0.75);
+    scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
     Panel::update();
   }
 
+  void handle_event(Input::InputEventMouseScroll& e) override {
+    if (is_mouse_hovering()) {
+      scrollbar->scroll(e.offset.y);
+      e.handled = true;
+    }
+  }
+
 protected:
+  double scroll_px = 0.0;
+  double target_scroll_px = 0.0;
+  std::vector<WidgetAlbumCover*> album_widgets;
   TextureAtlas album_covers_atlas;
+  ScrollBar* scrollbar{};
 };

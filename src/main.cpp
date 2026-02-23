@@ -9,12 +9,14 @@
 #include <glm/vec2.hpp>
 #include <nfd.hpp>
 #include <unistd.h>
+#include "bridge.hpp"
 #include "config.hpp"
 #include "debug.hpp"
 #include "input.hpp"
-
+#include "musicdb.hpp"
 #include "panel_albums.hpp"
 #include "panel_tracks.hpp"
+#include "seekbar.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
 #include "ui/panel.hpp"
@@ -36,8 +38,6 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "../lib/stb_image_resize2.h"
 #undef STB_IMAGE_RESIZE_IMPLEMENTATION
-
-#include "musicdb.hpp"
 
 const char* get_opengl_error_string(GLenum err) {
   switch (err) {
@@ -135,6 +135,9 @@ int main() {
   atlas.add_texture("text_input_caret", "./assets/text_input_caret.png");
   atlas.add_texture("text_input_focused", "./assets/text_input_focused.png");
   atlas.add_texture("text_input_idle", "./assets/text_input_idle.png");
+  atlas.add_texture("seekbar_bg", "./assets/seekbar_bg.png");
+  atlas.add_texture("seekbar_progress", "./assets/seekbar_progress.png");
+  atlas.add_texture("seekbar_thumb", "./assets/seekbar_thumb.png");
 
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
@@ -155,32 +158,39 @@ int main() {
   panel_bottom.set_anchor(Anchor::BOTTOM);
   panel_bottom.set_parent_anchor(Anchor::BOTTOM);
   panel_bottom.set_height(40);
-  panel_bottom.set_layout("m:4 s:4 ltr expand");
+  panel_bottom.set_layout("m:4 s:4 ltr expand fill");
 
   auto& btn2 = panel_bottom.add_child<Button>("");
+  btn2.set_max_width(36);
   auto& btn2_img = btn2.add_child<Sprite>("play");
   btn2_img.set_anchor(Anchor::CENTER);
   btn2_img.set_parent_anchor(Anchor::CENTER);
 
   auto& btn3 = panel_bottom.add_child<Button>("");
+  btn3.set_max_width(36);
   auto& btn3_img = btn3.add_child<Sprite>("pause");
   btn3_img.set_anchor(Anchor::CENTER);
   btn3_img.set_parent_anchor(Anchor::CENTER);
 
   auto& btn4 = panel_bottom.add_child<Button>("");
+  btn4.set_max_width(36);
   auto& btn4_img = btn4.add_child<Sprite>("stop");
   btn4_img.set_anchor(Anchor::CENTER);
   btn4_img.set_parent_anchor(Anchor::CENTER);
 
   auto& btn5 = panel_bottom.add_child<Button>("");
+  btn5.set_max_width(36);
   auto& btn5_img = btn5.add_child<Sprite>("next");
   btn5_img.set_anchor(Anchor::CENTER);
   btn5_img.set_parent_anchor(Anchor::CENTER);
 
   auto& btn6 = panel_bottom.add_child<Button>("");
+  btn6.set_max_width(36);
   auto& btn6_img = btn6.add_child<Sprite>("prev");
   btn6_img.set_anchor(Anchor::CENTER);
   btn6_img.set_parent_anchor(Anchor::CENTER);
+
+  auto& seekbar = panel_bottom.add_child<SeekBar>();
 
   auto& panel_left = panel_main.add_child<PanelTracks>();
   auto& panel_right = panel_main.add_child<PanelAlbums>();
@@ -191,6 +201,8 @@ int main() {
   button_load.set_width(120);
   auto& button_save = panel_top.add_child<Button>("Save to file");
   button_save.set_width(120);
+
+  bridge::init(&panel_left, &panel_right);
 
   button_scan.on_press([&]() {
     musicdb::load("/home/olek/Muzyka/");

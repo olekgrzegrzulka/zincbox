@@ -17,7 +17,7 @@ struct TextureAtlasData {
 
 class TextureAtlas {
 public:
-  TextureAtlas();
+  TextureAtlas(i32 atlas_size_ = 512, i32 margin_px_ = 2, i32 min_texture_size_px_ = 4);
 
   bool has_texture(std::string id) const {
     return textures.contains(id);
@@ -49,9 +49,10 @@ protected:
   bool dirty = true;
   std::vector<u8> image;
   std::unordered_map<std::string, TextureAtlasData> textures;
-  i32 atlas_size = 1024;
+
   std::vector<bool> free_16x16_squares;
 
-  static constexpr i32 margin_px = 2;
-  static constexpr i32 square_size_px = 4;
+  i32 atlas_size = 512;
+  i32 margin_px = 2;
+  i32 min_texture_size_px = 4;
 };
