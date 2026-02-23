@@ -3,9 +3,9 @@
 #include <cmath>
 #include <sstream>
 #include <glm/common.hpp>
-#include "debug.hpp"
 #include "input.hpp"
 #include "musicdb.hpp"
+#include "player.hpp"
 #include "ui/label.hpp"
 #include "ui/panel.hpp"
 #include "ui/scrollbar.hpp"
@@ -13,21 +13,66 @@
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
 
-static constexpr i32 ALBUM_HEIGHT = 28;
-static constexpr i32 TRACK_HEIGHT = 20;
+static constexpr i32 ALBUM_HEIGHT = 48;
+static constexpr i32 TRACK_HEIGHT = 22;
 
-static constexpr double SCROLL_SPEED = 12.0;
-static constexpr double SCROLL_MAX_SPEED = 100.0;
-static constexpr double SCROLL_FRICTION_LINEAR = 0.17;
-static constexpr double SCROLL_FRICTION_QUADRATIC = 0.005;
+class WidgetTrack : public Sprite {
+public:
+  WidgetTrack(UI& ui_, const musicdb::Track* track_, bool even) : Sprite(ui_), track(track_) {
+    set_texture(even ? "track_bg2" : "track_bg1");
+    set_nine_slice_margin(4.0);
+    set_layout("m:0 s:12 ltr expand");
+    set_height(TRACK_HEIGHT);
+
+    std::stringstream track_number;
+    track_number << track->track;
+    auto& label_track_number = add_child<Label>(track_number.str());
+    label_track_number.set_label_anchor(Anchor::LEFT);
+    label_track_number.set_size(20, TRACK_HEIGHT);
+    label_track_number.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
+
+    auto& label_track_artist = add_child<Label>(track->artist);
+    label_track_artist.set_label_anchor(Anchor::LEFT);
+    label_track_artist.set_size(label_track_artist.get_text_extents().x, TRACK_HEIGHT);
+    label_track_artist.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
+
+    auto& label_track_title = add_child<Label>(track->title);
+    label_track_title.set_label_anchor(Anchor::LEFT);
+    label_track_title.set_size(label_track_title.get_text_extents().x, TRACK_HEIGHT);
+    label_track_title.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
+  }
+
+  void handle_event(Input::InputEventMouseButton& ev) override {
+    if (is_mouse_hovering() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
+      if (ev.action == Input::MouseAction::PRESS) {
+        pressed = true;
+      }
+      if (ev.action == Input::MouseAction::RELEASE && pressed) {
+        player::play(track->path);
+      }
+      ev.handled = true;
+    }
+  }
+
+protected:
+  const musicdb::Track* track{};
+  bool pressed = false;
+};
 
 class WidgetAlbum : public Widget {
 public:
   WidgetAlbum(UI& ui_, const musicdb::Album* album_) : Widget(ui_), album(album_) {
     set_layout("ttb m:0 s:0 fit expand");
 
-    auto& album_title_panel = add_child<Panel>(Panel::PanelStyle::Rounded, false);
-    album_title_panel.set_height(ALBUM_HEIGHT);
+    auto& album_title_holder = add_child<Widget>();
+    album_title_holder.set_height(ALBUM_HEIGHT);
+    album_title_holder.set_layout("m:0 s:0 fit fill");
+
+    auto& album_title_panel = album_title_holder.add_child<Panel>(Panel::PanelStyle::Rounded, false);
+    album_title_panel.set_anchor(Anchor::CENTER);
+    album_title_panel.set_parent_anchor(Anchor::CENTER);
+    album_title_panel.set_height(ALBUM_HEIGHT - 20);
+    album_title_panel.set_y(6);
 
     auto& s = album_title_panel.add_child<Label>();
     s.set_text(album->title);
@@ -37,27 +82,10 @@ public:
     s.set_label_anchor(Anchor::CENTER);
     s.set_height(ALBUM_HEIGHT);
 
+    bool even = false;
     for (auto& track : album->tracks) {
-      auto& labels = add_child<Widget>();
-      labels.set_layout("m:0 s:12 ltr expand");
-      labels.set_height(TRACK_HEIGHT);
-
-      std::stringstream track_number;
-      track_number << track.track;
-      auto& label_track_number = labels.add_child<Label>(track_number.str());
-      label_track_number.set_label_anchor(Anchor::LEFT);
-      label_track_number.set_size(20, TRACK_HEIGHT);
-      label_track_number.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
-
-      auto& label_track_artist = labels.add_child<Label>(track.artist);
-      label_track_artist.set_label_anchor(Anchor::LEFT);
-      label_track_artist.set_size(label_track_artist.get_text_extents().x, TRACK_HEIGHT);
-      label_track_artist.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
-
-      auto& label_track_title = labels.add_child<Label>(track.title);
-      label_track_title.set_label_anchor(Anchor::LEFT);
-      label_track_title.set_size(label_track_title.get_text_extents().x, TRACK_HEIGHT);
-      label_track_title.set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
+      add_child<WidgetTrack>(&track, even);
+      even = !even;
     }
   }
 
@@ -73,7 +101,7 @@ public:
 
 class PanelTracks : public Panel {
 public:
-  PanelTracks(UI& ui_) : Panel(ui_, Panel::PanelStyle::RoundedDark, false) {
+  PanelTracks(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark, false) {
     set_clip_children(true);
 
     scrollbar = &add_child<ScrollBar>();
@@ -150,8 +178,8 @@ public:
     visible_album_widgets.emplace_back(&w);
   }
 
-  void on_album_clicked(i32 id) {
-    i32 s = album_scroll_px[id].first;
+  void on_album_clicked(const musicdb::Album* album) {
+    i32 s = album_scroll_px[album->id].first;
     target_scroll_px = s;
     scrollbar->set_scroll_offset(s);
   }
@@ -162,7 +190,7 @@ public:
     if ((i32)scroll_px != (i32)old_scroll_px || width != old_width) {
       recreate();
 
-      // FIXME: WHYYYYYYYYYYYY ????????????????
+      // FIXME: why?
       for (auto& v : visible_album_widgets) {
         ui.mark_dirty_recursive(v);
       }

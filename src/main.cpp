@@ -15,10 +15,13 @@
 #include "input.hpp"
 #include "musicdb.hpp"
 #include "panel_albums.hpp"
+#include "panel_controls.hpp"
 #include "panel_tracks.hpp"
+#include "player.hpp"
 #include "seekbar.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
+#include "ui/label.hpp"
 #include "ui/panel.hpp"
 #include "ui/sprite.hpp"
 #include "ui/ui.hpp"
@@ -64,6 +67,8 @@ void check_opengl_errors() {
 
 int main() {
   NFD::Init();
+
+  player::init();
 
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
 
@@ -116,8 +121,10 @@ int main() {
   atlas.add_texture("dim", "./assets/dim.png");
   atlas.add_texture("panel_rectangular_highlighted", "./assets/panel_rectangular_highlighted.png");
   atlas.add_texture("panel_rectangular", "./assets/panel_rectangular.png");
+  atlas.add_texture("panel_rectangular_dark", "./assets/panel_rectangular_dark.png");
   atlas.add_texture("panel_rounded_dark", "./assets/panel_rounded_dark.png");
   atlas.add_texture("panel_rounded_light", "./assets/panel_rounded_light.png");
+  atlas.add_texture("panel_rectangular_light", "./assets/panel_rectangular_light.png");
   atlas.add_texture("panel_rounded", "./assets/panel_rounded.png");
   atlas.add_texture("panel_shadow", "./assets/panel_shadow.png");
   atlas.add_texture("red", "./assets/red.png");
@@ -138,6 +145,8 @@ int main() {
   atlas.add_texture("seekbar_bg", "./assets/seekbar_bg.png");
   atlas.add_texture("seekbar_progress", "./assets/seekbar_progress.png");
   atlas.add_texture("seekbar_thumb", "./assets/seekbar_thumb.png");
+  atlas.add_texture("track_bg1", "./assets/track_bg1.png");
+  atlas.add_texture("track_bg2", "./assets/track_bg2.png");
 
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
@@ -151,46 +160,10 @@ int main() {
   panel_top.set_height(40);
   panel_top.set_layout("m:4 s:4 ltr expand");
 
+  auto& panel_bottom = ui.add_widget<PanelControls>();
+
   auto& panel_main = ui.add_widget<Panel>();
-  panel_main.set_layout("m:4 s:4 ltr expand fill");
-
-  auto& panel_bottom = ui.add_widget<Panel>();
-  panel_bottom.set_anchor(Anchor::BOTTOM);
-  panel_bottom.set_parent_anchor(Anchor::BOTTOM);
-  panel_bottom.set_height(40);
-  panel_bottom.set_layout("m:4 s:4 ltr expand fill");
-
-  auto& btn2 = panel_bottom.add_child<Button>("");
-  btn2.set_max_width(36);
-  auto& btn2_img = btn2.add_child<Sprite>("play");
-  btn2_img.set_anchor(Anchor::CENTER);
-  btn2_img.set_parent_anchor(Anchor::CENTER);
-
-  auto& btn3 = panel_bottom.add_child<Button>("");
-  btn3.set_max_width(36);
-  auto& btn3_img = btn3.add_child<Sprite>("pause");
-  btn3_img.set_anchor(Anchor::CENTER);
-  btn3_img.set_parent_anchor(Anchor::CENTER);
-
-  auto& btn4 = panel_bottom.add_child<Button>("");
-  btn4.set_max_width(36);
-  auto& btn4_img = btn4.add_child<Sprite>("stop");
-  btn4_img.set_anchor(Anchor::CENTER);
-  btn4_img.set_parent_anchor(Anchor::CENTER);
-
-  auto& btn5 = panel_bottom.add_child<Button>("");
-  btn5.set_max_width(36);
-  auto& btn5_img = btn5.add_child<Sprite>("next");
-  btn5_img.set_anchor(Anchor::CENTER);
-  btn5_img.set_parent_anchor(Anchor::CENTER);
-
-  auto& btn6 = panel_bottom.add_child<Button>("");
-  btn6.set_max_width(36);
-  auto& btn6_img = btn6.add_child<Sprite>("prev");
-  btn6_img.set_anchor(Anchor::CENTER);
-  btn6_img.set_parent_anchor(Anchor::CENTER);
-
-  auto& seekbar = panel_bottom.add_child<SeekBar>();
+  panel_main.set_layout("m:0 s:0 ltr expand fill");
 
   auto& panel_left = panel_main.add_child<PanelTracks>();
   auto& panel_right = panel_main.add_child<PanelAlbums>();
@@ -239,8 +212,12 @@ int main() {
     panel_main.set_width(window_size.x);
     panel_bottom.set_width(window_size.x);
 
-    panel_main.set_y(panel_top.get_height() + 4);
-    panel_main.set_height(window_size.y - panel_top.get_height() - panel_bottom.get_height() - 2 * 4);
+    debug_log("get_progress_ms ", player::get_current_time_ms());
+    debug_log("get_length_ms   ", player::get_total_duration_ms());
+    debug_log("is_playing      ", player::is_playing());
+
+    panel_main.set_y(panel_top.get_height());
+    panel_main.set_height(window_size.y - panel_top.get_height() - panel_bottom.get_height());
 
     // redrawn.input();
     Input::clear();
@@ -261,4 +238,5 @@ int main() {
   }
 
   config_save_to_file("music.cfg");
+  player::deinit();
 }

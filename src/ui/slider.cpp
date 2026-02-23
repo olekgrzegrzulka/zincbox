@@ -17,11 +17,7 @@ void Slider::update() {
   }
 
   static constexpr i32 x_margin = 10;
-  bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x - x_margin &&
-                           Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x + x_margin;
-  bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y &&
-                           Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
-  bool mouse_on_widget = mouse_on_widget_x && mouse_on_widget_y;
+  bool mouse_on_widget = is_mouse_hovering();
   bool lmb_pressed = Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
   bool lmb_just_pressed = Input::mouse_just_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
   bool lmb_just_released = Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT);
@@ -50,11 +46,7 @@ void Slider::update() {
   thumb_x = m + thumb_x * (width - 2 * m);
   thumb.set_x(std::lerp(thumb.get_x(), thumb_x, 0.9f));
 
-  bool mouse_on_thumb_x = Input::get_mouse_x() >= thumb.get_position(Anchor::TOP_LEFT).x &&
-                          Input::get_mouse_x() < thumb.get_position(Anchor::BOTTOM_RIGHT).x;
-  bool mouse_on_thumb_y = Input::get_mouse_y() >= thumb.get_position(Anchor::TOP_LEFT).y &&
-                          Input::get_mouse_y() < thumb.get_position(Anchor::BOTTOM_RIGHT).y;
-  bool mouse_on_thumb = mouse_on_thumb_x && mouse_on_thumb_y;
+  bool mouse_on_thumb = thumb.is_mouse_hovering();
   if (is_dragged) {
     thumb.set_texture("slider_thumb_pressed");
   } else if (mouse_on_thumb && !lmb_pressed) {

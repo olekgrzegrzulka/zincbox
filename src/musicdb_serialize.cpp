@@ -67,6 +67,7 @@ void musicdb::save_to_file(const std::string& path) {
       write_bin(os, t.year);
       write_bin(os, t.bitrate);
       write_bin(os, t.length_seconds);
+      write_str(os, t.path);
     }
   }
 }
@@ -98,6 +99,7 @@ void musicdb::load_from_file(const std::string& path) {
       read_bin(is, t.year);
       read_bin(is, t.bitrate);
       read_bin(is, t.length_seconds);
+      read_str(is, t.path);
       album.tracks.insert(std::move(t));
     }
     musicdb::add_album(std::move(album));

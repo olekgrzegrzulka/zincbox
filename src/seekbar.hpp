@@ -1,4 +1,6 @@
 #pragma once
+#include "input.hpp"
+#include "player.hpp"
 #include "ui/sprite.hpp"
 #include "ui/widget.hpp"
 
@@ -23,6 +25,13 @@ public:
   }
 
   void update() override {
+    if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
+      is_thumb_dragged = false;
+    }
+
+    set_current_time_ms(player::get_current_time_ms());
+    set_total_duration_ms(player::get_total_duration_ms());
+
     bg.set_width(width);
     bg.set_height(12);
     progress_bar.set_width(width);
@@ -30,13 +39,44 @@ public:
 
     static i32 t = 0;
     t += 1;
-    progress_bar.set_width(((std::sin(t * 0.005) * 0.8 + std::sin(t * 0.01178) * 0.2) + 1.0) * 0.5 * width);
+
+    if (total_duration_ms > 0) {
+      progress_bar.set_width(current_time_ms / (double)total_duration_ms * width);
+    } else {
+      progress_bar.set_width(0);
+    }
+
     thumb.set_x(progress_bar.get_width());
     Widget::update();
+  }
+
+  void handle_event(Input::InputEventMouseButton& ev) override {
+    if (is_mouse_hovering()) {
+      ev.handled = true;
+    }
+
+    if (thumb.is_mouse_hovering()) {
+      ev.handled = true;
+      if (ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
+        if (ev.action == Input::MouseAction::PRESS) {
+          is_thumb_dragged = true;
+        }
+      }
+    }
   }
 
 protected:
   Sprite& bg;
   Sprite& progress_bar;
   Sprite& thumb;
+  bool is_thumb_dragged = false;
+
+  i32 total_duration_ms = 0;
+  i32 current_time_ms = 0;
+  bool is_active = false;
+
+public:
+  WIDGET_DEF_SETTER_DIRTY(total_duration_ms)
+  WIDGET_DEF_SETTER_DIRTY(current_time_ms)
+  WIDGET_DEF_SETTER_DIRTY(is_active)
 };

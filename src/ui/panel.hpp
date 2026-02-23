@@ -5,12 +5,14 @@ class Panel : public Sprite {
 public:
   enum PanelStyle {
     Rectangular,
+    RectangularDark,
+    RectangularLight,
     Rounded,
     RoundedDark,
     RoundedLight,
     Invisible,
   };
-  Panel(UI& ui_, PanelStyle style = PanelStyle::Rectangular, bool has_shadow = true) : Sprite::Sprite(ui_) {
+  Panel(UI& ui_, PanelStyle style = PanelStyle::Rectangular, bool has_shadow = false) : Sprite::Sprite(ui_) {
     if (has_shadow) {
       shadow = &add_child<Sprite>("panel_shadow");
     }
@@ -26,6 +28,12 @@ public:
     }
     if (style == PanelStyle::RoundedLight) {
       set_texture("panel_rounded_light");
+    }
+    if (style == PanelStyle::RectangularDark) {
+      set_texture("panel_rectangular_dark");
+    }
+    if (style == PanelStyle::RectangularLight) {
+      set_texture("panel_rectangular_light");
     }
     if (style == PanelStyle::Invisible) {
       set_is_self_drawn(false);

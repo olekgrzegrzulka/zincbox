@@ -1,11 +1,9 @@
 #include "musicdb.hpp"
 #include <filesystem>
 #include <iostream>
-#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include <taglib/fileref.h>
 #include <taglib/mpeg/mpegfile.h>
@@ -20,6 +18,7 @@
 #include "mpeg/id3v2/id3v2tag.h"
 #include "ogg/vorbis/vorbisfile.h"
 #include "ogg/xiphcomment.h"
+#include "tfilestream.h"
 #include "types.hpp"
 
 namespace fs = std::filesystem;
@@ -27,19 +26,6 @@ using namespace musicdb;
 
 // main data structure: hashmap for quick access
 std::vector<Album> albums;
-
-void musicdb::print_shit() {
-  for (auto& album : albums) {
-    debug_log(album.title);
-    for (auto& track : album.tracks) {
-      if (track.track < 10) {
-        debug_log("\t", track.track, ".  ", track.artist, " - ", track.title);
-      } else {
-        debug_log("\t", track.track, ". ", track.artist, " - ", track.title);
-      }
-    }
-  }
-}
 
 std::vector<u8> resize_album_art_to_64x64(const std::vector<u8>& raw_data) {
   if (raw_data.empty()) return {};
@@ -145,7 +131,9 @@ void scan_directory(std::string path) {
     if (entry.is_directory()) {
       scan_directory(entry.path());
     } else if (entry.is_regular_file()) {
-      TagLib::FileRef f(entry.path().c_str());
+      TagLib::FileStream fstream(entry.path().c_str(), true);
+      TagLib::FileRef f(&fstream);
+
       if (f.isNull()) { continue; }
 
       TagLib::Tag* tag = f.tag();
@@ -160,20 +148,20 @@ void scan_directory(std::string path) {
         .year = (i32)tag->year(),
         .bitrate = audio_props->bitrate(),
         .length_seconds = audio_props->lengthInSeconds(),
+        .path = entry.path().string(),
       };
 
       std::wstring album_title = tag->album().toWString();
       Album* album = get_album_by_title(album_title);
 
       if (!album) {
-        std::stringstream album_id;
-        album_id << albums.size();
         std::vector<u8> cover_art = fetch_album_art(f);
         if (cover_art.empty()) {
           cover_art = cover_art_from_image_in_directory;
         }
+        i32 id = albums.size();
         Album a{
-          .id = album_id.str(),
+          .id = id,
           .title = album_title,
           .cover_art = cover_art,
           .tracks = {track},
@@ -204,6 +192,7 @@ void musicdb::load(std::string path) {
     return;
   }
 
+  auto s = ScopeTimer{"scan_directory"};
   scan_directory(path);
 }
 
@@ -233,7 +222,6 @@ void musicdb::clear_albums() {
 
 void musicdb::add_album(Album a) {
   std::stringstream ss;
-  ss << albums.size();
-  a.id = ss.str();
+  a.id = albums.size();
   albums.emplace_back(a);
 }
