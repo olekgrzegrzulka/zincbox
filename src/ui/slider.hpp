@@ -12,13 +12,18 @@ enum class SliderOrientation {
   VERTICAL,
 };
 
+enum class ThumbConstraint {
+  INSIDE_TRACK,
+  FULL_RANGE,
+};
+
 class Slider : public Widget {
 protected:
   Sprite& track;
   Sprite& thumb;
 
+  ThumbConstraint thumb_constraint = ThumbConstraint::INSIDE_TRACK;
   SliderOrientation orientation = SliderOrientation::HORIZONTAL;
-  i32 track_length = 100;
   i32 track_thickness = 10;
   i32 thumb_length = 10;
   i32 thumb_thickness = 10;
@@ -35,6 +40,15 @@ protected:
   i32 drag_start_mouse_pos = 0;
   i32 drag_start_thumb_pos = 0;
   float drag_start_value = 0.0;
+
+  vec2f uv_start_thumb_pressed{};
+  vec2f uv_start_thumb_hovered{};
+  vec2f uv_start_thumb_idle{};
+  vec2f uv_start_track{};
+  vec2f uv_end_thumb_pressed{};
+  vec2f uv_end_thumb_hovered{};
+  vec2f uv_end_thumb_idle{};
+  vec2f uv_end_track{};
 
 public:
   Slider(UI& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
@@ -78,9 +92,14 @@ public:
   WIDGET_DEF_SETTER_DIRTY(min_value)
   WIDGET_DEF_SETTER_DIRTY(max_value)
 
+  WIDGET_DEF_SETTER_DIRTY(thumb_constraint)
   WIDGET_DEF_SETTER_DIRTY(orientation)
-  WIDGET_DEF_SETTER_DIRTY(track_length)
   WIDGET_DEF_SETTER_DIRTY(track_thickness)
   WIDGET_DEF_SETTER_DIRTY(thumb_length)
   WIDGET_DEF_SETTER_DIRTY(thumb_thickness)
+
+  void set_texture_thumb_pressed(const std::string& id);
+  void set_texture_thumb_hovered(const std::string& id);
+  void set_texture_thumb_idle(const std::string& id);
+  void set_texture_track(const std::string& id);
 };
