@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <sstream>
 #include <vector>
 #include "bridge.hpp"
 #include "debug.hpp"
@@ -38,7 +39,9 @@ public:
     set_clip_children(true);
     set_size(COVER_WIDTH, COVER_HEIGHT);
     set_layout("m:0 s:8 ttb");
-    std::string sprite_id = album_covers_atlas.has_texture(album->id) ? album->id : "cover_unknown";
+    std::stringstream texture_id;
+    texture_id << album->id;
+    std::string sprite_id = album_covers_atlas.has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
     auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
     label_title = &add_child<Label>();
     label_title->set_text(album->title);
@@ -71,7 +74,7 @@ protected:
 
 class PanelAlbums : public Panel {
 public:
-  PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RoundedDark, false) {
+  PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark, false) {
     set_clip_children(true);
 
     scrollbar = &add_child<ScrollBar>();
@@ -107,7 +110,9 @@ public:
 
     i32 i = 0;
     for (auto& album : musicdb::get_albums()) {
-      album_covers_atlas.add_texture(album.id, album.cover_art, 64, 64);
+      std::stringstream texture_id;
+      texture_id << album.id;
+      album_covers_atlas.add_texture(texture_id.str(), album.cover_art, 64, 64);
       if (i++ >= 2048) { break; }
     }
 
@@ -122,7 +127,7 @@ public:
     for (auto& album : musicdb::get_albums()) {
       auto& album_widget = add_child<WidgetAlbumCover>(&album, album_covers_atlas);
       album_widgets.emplace_back(&album_widget);
-      album_widget.on_press([=]() { bridge::on_album_clicked(id); });
+      album_widget.on_press([=]() { bridge::on_album_clicked(&album); });
       id += 1;
     }
   }

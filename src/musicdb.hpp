@@ -2,7 +2,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include "types.hpp"
 
@@ -21,6 +20,7 @@ namespace musicdb {
     i32 year;
     i32 bitrate;
     i32 length_seconds;
+    std::string path;
 
     bool operator<(const Track& other) const {
       return track < other.track;
@@ -28,7 +28,7 @@ namespace musicdb {
   };
 
   struct Album {
-    std::string id;
+    i32 id;
     std::wstring title;
     std::vector<uint8_t> cover_art;
     std::multiset<Track> tracks;

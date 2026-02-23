@@ -187,7 +187,7 @@ void Widget::set_layout(const std::string& def) {
   Layout l;
   l.enabled = true;
 
-  std::stringstream ss(def);
+  std::stringstream ss(def);  
   std::string token;
 
   while (ss >> token) {
