@@ -11,9 +11,6 @@ class UI;
 class Sprite;
 
 class Label final : public Widget {
-public:
-  static constexpr i32 max_text_length = 512;
-
 private:
   std::string text;
   Anchor label_anchor = Anchor::CENTER;
@@ -26,6 +23,7 @@ private:
 public:
   Label(UI&);
   Label(UI&, std::string);
+  Label(UI&, std::wstring);
 
   ~Label() override;
 

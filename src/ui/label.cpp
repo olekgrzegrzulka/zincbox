@@ -23,10 +23,18 @@ Label::Label(UI& ui_, std::string text_) : Widget::Widget(ui_) {
   update_mesh();
 }
 
+Label::Label(UI& ui_, std::wstring text_) : Widget::Widget(ui_) {
+  set_text(text_);
+  update_mesh();
+}
+
 Label::~Label() {
+  if (vbo != 0) { glDeleteBuffers(1, &vbo); }
+  if (vao != 0) { glDeleteVertexArrays(1, &vao); }
 }
 
 void Label::update() {
+  Widget::update();
 }
 
 void Label::draw() {
@@ -45,6 +53,8 @@ void Label::draw() {
   font_face.bind(0);
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+  Widget::draw();
 }
 
 void Label::update_mesh() {
