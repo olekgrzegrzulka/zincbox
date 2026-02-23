@@ -80,6 +80,7 @@ set(SOURCES
     ./src/ui/widget.cpp
     ./src/ui/text_input.cpp
     ./src/ui/selectbar.cpp
+    ./src/ui/scrollbar.cpp
 
     ./src/musicdb.cpp
     ./src/musicdb_serialize.cpp
@@ -101,11 +102,14 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=switch
     -Werror=unused-result
     -Werror=return-type
+    # -fsanitize=address
+    # -fno-omit-frame-pointer
+    # -g
+    # -O1
 )
 target_compile_options(${PROJECT_NAME} PRIVATE -O3)
 
-
-
+# target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)

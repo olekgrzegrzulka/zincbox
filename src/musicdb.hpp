@@ -31,10 +31,18 @@ namespace musicdb {
     std::string id;
     std::wstring title;
     std::vector<uint8_t> cover_art;
-    mutable std::multiset<Track> tracks;
+    std::multiset<Track> tracks;
 
     bool operator==(const Album& other) const {
       return title == other.title;
+    }
+
+    i32 length_seconds() const {
+      i32 ret = 0;
+      for (auto& t : tracks) {
+        ret += t.length_seconds;
+      }
+      return ret;
     }
   };
 

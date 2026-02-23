@@ -127,6 +127,10 @@ int main() {
   atlas.add_texture("slider_thumb_idle", "./assets/slider_thumb_idle.png");
   atlas.add_texture("slider_thumb_pressed", "./assets/slider_thumb_pressed.png");
   atlas.add_texture("slider_track", "./assets/slider_track.png");
+  atlas.add_texture("scrollbar_thumb_hovered", "./assets/scrollbar_thumb_hovered.png");
+  atlas.add_texture("scrollbar_thumb_idle", "./assets/scrollbar_thumb_idle.png");
+  atlas.add_texture("scrollbar_thumb_pressed", "./assets/scrollbar_thumb_pressed.png");
+  atlas.add_texture("scrollbar_track", "./assets/scrollbar_track.png");
   atlas.add_texture("spinner_buttons", "./assets/spinner_buttons.png");
   atlas.add_texture("text_input_caret", "./assets/text_input_caret.png");
   atlas.add_texture("text_input_focused", "./assets/text_input_focused.png");
