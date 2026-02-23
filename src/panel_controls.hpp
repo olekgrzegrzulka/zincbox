@@ -95,6 +95,7 @@ public:
     seekbar->set_track_thickness(12);
     seekbar->set_thumb_thickness(12);
     seekbar->set_thumb_length(12);
+    seekbar->set_thumb_constraint(ThumbConstraint::FULL_RANGE);
 
     seekbar->on_drag_ended([](float, float ms) {
       if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) {
@@ -159,7 +160,6 @@ public:
   void update() override {
     i32 current_time_s;
 
-    seekbar->set_track_length(seekbar->get_width());
     seekbar->set_min_value(0);
     seekbar->set_max_value(player::get_total_duration_ms());
 

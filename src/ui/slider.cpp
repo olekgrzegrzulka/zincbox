@@ -3,15 +3,21 @@
 #include "../types.hpp"
 #include "slider.hpp"
 #include "sprite.hpp"
+#include "ui.hpp"
 #include "widget.hpp"
 
 Slider::Slider(UI& ui_, SliderOrientation orientation_) : Widget::Widget(ui_), track(add_child<Sprite>()), thumb(track.add_child<Sprite>()) {
   orientation = orientation_;
 
   set_size(100, 10);
-  track.set_texture("scrollbar_track");
   track.set_nine_slice_margin(6.0f);
   thumb.set_nine_slice_margin(6.0f);
+
+  set_texture_track("slider_track");
+  set_texture_thumb_pressed("slider_thumb_pressed");
+  set_texture_thumb_hovered("slider_thumb_hovered");
+  set_texture_thumb_idle("slider_thumb_idle");
+  set_texture_track("slider_track");
 }
 
 void Slider::update() {
@@ -19,10 +25,12 @@ void Slider::update() {
   using enum Input::MouseButton;
   using enum SliderOrientation;
 
-  i32 actual_track_length = 0;
+  track.set_uv_start(uv_start_track);
+  track.set_uv_end(uv_end_track);
+
+  i32 track_length = (orientation == HORIZONTAL) ? width : height;
   if (orientation == HORIZONTAL) {
-    actual_track_length = std::min(track_length, width);
-    track.set_width(actual_track_length);
+    track.set_width(track_length);
     track.set_height(track_thickness);
     track.set_parent_anchor(CENTER);
     track.set_anchor(CENTER);
@@ -34,8 +42,7 @@ void Slider::update() {
 
   } else {
     track.set_width(track_thickness);
-    actual_track_length = std::min(track_length, height);
-    track.set_height(actual_track_length);
+    track.set_height(track_length);
     track.set_parent_anchor(CENTER);
     track.set_anchor(CENTER);
 
@@ -79,7 +86,7 @@ void Slider::update() {
     i32 drag_px = Input::get_mouse_x() - drag_start_mouse_pos;
     if (orientation == VERTICAL) { drag_px = Input::get_mouse_y() - drag_start_mouse_pos; }
 
-    float drag = drag_px / (float)(actual_track_length - thumb_length) * (max_value - min_value);
+    float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
     value = std::clamp(drag_start_value + drag, min_value, max_value);
   }
 
@@ -94,20 +101,30 @@ void Slider::update() {
   }
 
   if (is_dragged) {
-    thumb.set_texture("scrollbar_thumb_pressed", false);
+    thumb.set_uv_start(uv_start_thumb_pressed);
+    thumb.set_uv_end(uv_end_thumb_pressed);
   } else if (mouse_on_thumb && !lmb_pressed) {
-    thumb.set_texture("scrollbar_thumb_hovered", false);
+    thumb.set_uv_start(uv_start_thumb_hovered);
+    thumb.set_uv_end(uv_end_thumb_hovered);
   } else {
-    thumb.set_texture("scrollbar_thumb_idle", false);
+    thumb.set_uv_start(uv_start_thumb_idle);
+    thumb.set_uv_end(uv_end_thumb_idle);
   }
 
-  float thumb_pos = ((value - min_value) / (float)(max_value - min_value)) * (actual_track_length - thumb_length);
+  float thumb_old_pos = (orientation == HORIZONTAL) ? thumb.get_x() : thumb.get_y();
+  float thumb_pos_target = 0.0f;
+  if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
+    thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length);
+    thumb_pos_target -= thumb_length * 0.5f;
+  } else {
+    thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length - thumb_length);
+  }
+  double t = std::clamp(std::abs(thumb_old_pos - thumb_pos_target) * 0.004, 0.6, 0.95);
+  float thumb_pos_lerped = std::lerp(thumb_old_pos, thumb_pos_target, t);
   if (orientation == HORIZONTAL) {
-    double t = std::clamp(std::abs(thumb.get_x() - thumb_pos) * 0.004, 0.6, 0.95);
-    thumb.set_x(std::lerp(thumb.get_x(), thumb_pos, t));
+    thumb.set_x(thumb_pos_lerped);
   } else if (orientation == VERTICAL) {
-    double t = std::clamp(std::abs(thumb.get_y() - thumb_pos) * 0.004, 0.6, 0.95);
-    thumb.set_y(std::lerp(thumb.get_y(), thumb_pos, t));
+    thumb.set_y(thumb_pos_lerped);
   }
 
   if (old_value != value) {
@@ -132,4 +149,45 @@ void Slider::handle_event(Input::InputEventMouseEntered&) {
 void Slider::handle_event(Input::InputEventMouseLeft&) {
 }
 void Slider::handle_event(Input::InputEventCloseWindow&) {
+}
+
+void Slider::set_texture_thumb_pressed(const std::string& id) {
+  auto t_ = ui.get_texture_atlas().get(id);
+  if (t_.has_value()) {
+    if ((*t_).get().start != uv_start_thumb_pressed) {
+      uv_start_thumb_pressed = (*t_).get().start;
+      uv_end_thumb_pressed = (*t_).get().end;
+      mark_dirty();
+    }
+  }
+}
+void Slider::set_texture_thumb_hovered(const std::string& id) {
+  auto t_ = ui.get_texture_atlas().get(id);
+  if (t_.has_value()) {
+    if ((*t_).get().start != uv_start_thumb_hovered) {
+      uv_start_thumb_hovered = (*t_).get().start;
+      uv_end_thumb_hovered = (*t_).get().end;
+      mark_dirty();
+    }
+  }
+}
+void Slider::set_texture_thumb_idle(const std::string& id) {
+  auto t_ = ui.get_texture_atlas().get(id);
+  if (t_.has_value()) {
+    if ((*t_).get().start != uv_start_thumb_idle) {
+      uv_start_thumb_idle = (*t_).get().start;
+      uv_end_thumb_idle = (*t_).get().end;
+      mark_dirty();
+    }
+  }
+}
+void Slider::set_texture_track(const std::string& id) {
+  auto t_ = ui.get_texture_atlas().get(id);
+  if (t_.has_value()) {
+    if ((*t_).get().start != uv_start_track) {
+      uv_start_track = (*t_).get().start;
+      uv_end_track = (*t_).get().end;
+      mark_dirty();
+    }
+  }
 }

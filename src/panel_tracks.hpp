@@ -244,7 +244,6 @@ public:
 
     scrollbar->set_page_size(height);
     scrollbar->set_height(height);
-    scrollbar->set_track_length(height);
 
     Panel::update();
   }
