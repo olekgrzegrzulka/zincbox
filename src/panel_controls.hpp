@@ -2,10 +2,8 @@
 #include <iomanip>
 #include <ios>
 #include <sstream>
-#include "debug.hpp"
 #include "input.hpp"
 #include "player.hpp"
-#include "seekbar.hpp"
 #include "ui/button.hpp"
 #include "ui/label.hpp"
 #include "ui/panel.hpp"
@@ -79,13 +77,30 @@ public:
     button_shuffle_img.set_parent_anchor(Anchor::CENTER);
     button_shuffle_tooltip = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-    auto& volume_bar = panel_bottom_right.add_child<Slider>();
-    volume_bar.set_max_width(70);
+    volume_bar = &panel_bottom_right.add_child<Slider>();
+    volume_bar->set_max_width(70);
+    volume_bar->set_track_thickness(12);
+    volume_bar->set_thumb_thickness(12);
+    volume_bar->set_thumb_length(12);
+    volume_bar->set_min_value(0.0f);
+    volume_bar->set_max_value(1.0f);
+    volume_bar->on_value_changed([](float, float volume) {
+      player::set_volume(volume);
+    });
 
     progress_label = &panel_bottom_right.add_child<Label>("0:00 / 0:00");
     progress_label->set_max_width(80);
 
-    seekbar = &panel_bottom_right.add_child<SeekBar>();
+    seekbar = &panel_bottom_right.add_child<Slider>();
+    seekbar->set_track_thickness(12);
+    seekbar->set_thumb_thickness(12);
+    seekbar->set_thumb_length(12);
+
+    seekbar->on_drag_ended([](float, float ms) {
+      if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) {
+        player::seek_ms(ms);
+      }
+    });
 
     button_play_pause->on_press([&]() {
       if (is_playing) {
@@ -134,6 +149,8 @@ public:
   }
 
   void handle_event(Input::InputEventMouseButton& ev) override {
+    using enum Input::MouseAction;
+    using enum Input::MouseButton;
     if (is_mouse_hovering()) {
       ev.handled = true;
     }
@@ -141,8 +158,17 @@ public:
 
   void update() override {
     i32 current_time_s;
-    if (seekbar->get_is_thumb_dragged()) {
-      current_time_s = seekbar->get_current_time_ms_from_thumb_pos() / 1000;
+
+    seekbar->set_track_length(seekbar->get_width());
+    seekbar->set_min_value(0);
+    seekbar->set_max_value(player::get_total_duration_ms());
+
+    if (!volume_bar->is_being_dragged()) {
+      volume_bar->set_value(player::get_volume(), false);
+    }
+
+    if (seekbar->is_being_dragged()) {
+      current_time_s = seekbar->get_value() / 1000;
     } else {
       current_time_s = player::get_current_time_ms() / 1000;
     }
@@ -160,6 +186,8 @@ public:
     ss << " / ";
     ss << std::setw(0) << total_duration_m << ":";
     ss << std::setw(2) << total_duration_s;
+
+    seekbar->set_value(player::get_current_time_ms(), false);
 
     progress_label->set_text(ss.str());
 
@@ -211,7 +239,8 @@ protected:
   Button* button_repeat{};
   ToolTip* button_shuffle_tooltip{};
   ToolTip* button_repeat_tooltip{};
-  SeekBar* seekbar{};
+  Slider* seekbar{};
+  Slider* volume_bar{};
   Label* progress_label{};
 
   bool is_playing = false;

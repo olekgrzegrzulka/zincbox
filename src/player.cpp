@@ -13,6 +13,7 @@ ma_device device{};
 
 std::optional<musicdb::track_id_t> track_id{};
 i32 total_duration_ms{};
+float volume = 0.5f;
 
 player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
 player::RepeatMode repeat_mode = player::RepeatMode::OFF;
@@ -63,6 +64,7 @@ void player::play(bool clear_history) {
     tracks_history_current_index = std::nullopt;
   }
   ma_sound_start(&sound);
+  ma_sound_set_volume(&sound, volume);
 }
 
 void player::play(musicdb::track_id_t track_id_, bool clear_history) {
@@ -96,13 +98,12 @@ void player::play(musicdb::track_id_t track_id_, bool clear_history) {
   }
   total_duration_ms = ret * 1000.0f;
 
-  ma_sound_set_volume(&sound, 0.5f);
-
   result = ma_sound_start(&sound);
   if (result != MA_SUCCESS) {
     debug_warn(result);
     return;
   }
+  ma_sound_set_volume(&sound, volume);
   result = ma_engine_start(&engine);
   if (result != MA_SUCCESS) {
     ma_sound_stop(&sound);
@@ -143,6 +144,15 @@ void player::stop() {
 
 void player::seek_ms(i32 ms) {
   ma_sound_seek_to_second(&sound, ms * 0.001f);
+}
+
+void player::set_volume(float v) {
+  volume = std::clamp(v, 0.0f, 1.0f);
+  ma_sound_set_volume(&sound, volume);
+}
+
+float player::get_volume() {
+  return volume;
 }
 
 void player::next_track() {

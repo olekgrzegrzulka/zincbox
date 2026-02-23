@@ -31,6 +31,8 @@ namespace player {
   void pause();
   void stop();
   void seek_ms(i32 ms);
+  void set_volume(float);
+  float get_volume();
 
   void next_track();
   void prev_track();
