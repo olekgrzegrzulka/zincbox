@@ -9,6 +9,7 @@
 #include "ui/label.hpp"
 #include "ui/panel.hpp"
 #include "ui/scrollbar.hpp"
+#include "ui/slider.hpp"
 #include "ui/sprite.hpp"
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
@@ -141,9 +142,13 @@ public:
     scrollbar = &add_child<ScrollBar>();
     scrollbar->set_anchor(Anchor::LEFT);
     scrollbar->set_parent_anchor(Anchor::LEFT);
-    scrollbar->on_scroll_offset_changed([&](i32 scroll_offset) {
+    scrollbar->on_value_changed([&](i32 old, i32 scroll_offset) {
       target_scroll_px = scroll_offset;
     });
+    scrollbar->set_width(12);
+    scrollbar->set_thumb_thickness(12);
+    scrollbar->set_track_thickness(12);
+    scrollbar->set_orientation(SliderOrientation::VERTICAL);
 
     recreate();
   }
@@ -239,6 +244,7 @@ public:
 
     scrollbar->set_page_size(height);
     scrollbar->set_height(height);
+    scrollbar->set_track_length(height);
 
     Panel::update();
   }

@@ -47,11 +47,15 @@ public:
     std::discrete_distribution<int> distribution(weights.begin(), weights.end());
     return values[distribution(rng)];
   }
+
+  bool rand_bool() {
+    return next<i32>(0, 1) == 1;
+  }
 };
 
 namespace StaticRandom {
-inline Random& get() {
-  thread_local Random r;
-  return r;
-}
+  inline Random& get() {
+    thread_local Random r;
+    return r;
+  }
 }; // namespace StaticRandom

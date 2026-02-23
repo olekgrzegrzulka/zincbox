@@ -83,7 +83,11 @@ public:
     scrollbar->set_anchor(Anchor::RIGHT);
     scrollbar->set_parent_anchor(Anchor::RIGHT);
     scrollbar->set_ignore_parents_layout(true);
-    scrollbar->on_scroll_offset_changed([&](i32 scroll_offset) {
+    scrollbar->set_width(12);
+    scrollbar->set_thumb_thickness(12);
+    scrollbar->set_orientation(SliderOrientation::VERTICAL);
+    scrollbar->set_track_thickness(12);
+    scrollbar->on_value_changed([&](i32 old, i32 scroll_offset) {
       target_scroll_px = scroll_offset;
     });
   }
@@ -152,6 +156,8 @@ public:
       i32 content_size = row_count * COVER_HEIGHT;
       scrollbar->set_content_size(content_size);
       scrollbar->set_page_size(height);
+      scrollbar->set_height(height);
+      scrollbar->set_track_length(height);
       scrollbar->set_height(height);
       scrollbar->set_is_drawn(content_size > height);
       scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));

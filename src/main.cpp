@@ -17,7 +17,6 @@
 #include "panel_controls.hpp"
 #include "panel_tracks.hpp"
 #include "player.hpp"
-#include "seekbar.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
 #include "ui/label.hpp"
