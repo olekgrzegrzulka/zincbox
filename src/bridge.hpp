@@ -15,5 +15,5 @@ namespace musicdb {
 namespace bridge {
   void init(PanelTracks*, PanelAlbums*);
 
-  void on_album_clicked(musicdb::album_id_t);
+  void on_album_clicked(musicdb::album_id_t, size_t album_index_sorted);
 }; // namespace bridge

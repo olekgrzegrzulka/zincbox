@@ -125,10 +125,12 @@ public:
     }
     album_widgets.clear();
 
+    size_t album_index_sorted = 0;
     for (musicdb::album_id_t album_id : musicdb::get_albums_sorted_by_name()) {
       auto& album_widget = add_child<WidgetAlbumCover>(album_id, album_covers_atlas);
       album_widgets.emplace_back(&album_widget);
-      album_widget.on_press([=]() { bridge::on_album_clicked(album_id); });
+      album_widget.on_press([=]() { bridge::on_album_clicked(album_id, album_index_sorted); });
+      album_index_sorted += 1;
     }
   }
 
@@ -155,7 +157,7 @@ public:
       scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
     }
 
-    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.3, 0.75);
+    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
     scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
     Panel::update();

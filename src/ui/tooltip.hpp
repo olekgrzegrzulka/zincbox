@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "../types.hpp"
 #include "label.hpp"
 #include "panel.hpp"
@@ -13,16 +14,29 @@ enum class ToolTipPosition {
 
 class ToolTip : public Panel {
 public:
-  ToolTip(UI& ui_, std::string name, ToolTipPosition pos = ToolTipPosition::RIGHT, i32 distance = 16) : Panel(ui_, Panel::PanelStyle::Rounded) {
+  ToolTip(UI& ui_, std::string name, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16) : Panel(ui_, Panel::PanelStyle::Rounded) {
+    pos = pos_;
+    distance = distance_;
     set_ignore_parents_layout(true);
     set_is_drawn_on_top(true);
 
-    auto& lab = add_child<Label>(name);
-    lab.set_parent_anchor(Anchor::CENTER);
-    lab.set_anchor(Anchor::CENTER);
+    label = &add_child<Label>(name);
+    label->set_parent_anchor(Anchor::CENTER);
+    label->set_anchor(Anchor::CENTER);
 
-    lab.set_size(vec2i{lab.get_text_extents()});
-    set_size(vec2i{lab.get_text_extents()} + vec2i{16, 16});
+    set_size_and_position();
+  }
+
+  void set_text(const std::string& s) {
+    label->set_text(s);
+    label->set_size(vec2i{label->get_text_extents()});
+
+    set_size_and_position();
+  }
+
+  void set_size_and_position() {
+    label->set_size(vec2i{label->get_text_extents()});
+    set_size(vec2i{label->get_text_extents()} + vec2i{20, 20});
 
     if (pos == ToolTipPosition::LEFT) {
       set_parent_anchor(Anchor::CENTER_LEFT);
@@ -57,4 +71,9 @@ public:
 
     Panel::draw();
   }
+
+protected:
+  Label* label{};
+  ToolTipPosition pos{};
+  i32 distance{};
 };

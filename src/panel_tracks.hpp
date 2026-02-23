@@ -213,8 +213,8 @@ public:
     visible_album_widgets.emplace_back(&w);
   }
 
-  void on_album_clicked(musicdb::album_id_t album_id) {
-    i32 s = album_scroll_px[album_id].first;
+  void on_album_clicked(musicdb::album_id_t, size_t album_index_sorted) {
+    i32 s = album_scroll_px[album_index_sorted].first;
     target_scroll_px = s;
     scrollbar->set_scroll_offset(s);
   }
@@ -234,7 +234,7 @@ public:
     old_scroll_px = scroll_px;
     old_width = width;
 
-    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.3, 0.75);
+    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
     scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
     scrollbar->set_page_size(height);
