@@ -174,16 +174,16 @@ protected:
   void on_state_changed(ButtonState /* prev_state */) {
     if (state == ButtonState::HOVERED) {
       set_sprite_hovered();
-      get_label().set_text_color({1.0, 1.0, 1.0});
+      get_label().set_text_color({1.0, 0.85, 0.95});
     } else if (state == ButtonState::IDLE) {
       set_sprite_idle();
-      get_label().set_text_color({1.0, 1.0, 1.0});
+      get_label().set_text_color({1.0, 0.85, 0.95});
     } else if (state == ButtonState::PRESSED) {
       set_sprite_pressed();
-      get_label().set_text_color({1.0, 1.0, 1.0});
+      get_label().set_text_color({1.0, 0.85, 0.95});
     } else if (state == ButtonState::DISABLED) {
       set_sprite_disabled();
-      get_label().set_text_color({0.6, 0.6, 0.6});
+      get_label().set_text_color({0.60, 0.51, 0.57});
     }
   }
 
