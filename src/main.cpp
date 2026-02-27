@@ -1,22 +1,27 @@
 #include "opengl_includes.hpp"
 
 #include <cstddef>
+#include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <optional>
+#include <string_view>
 #include <GLFW/glfw3.h>
 #include <glm/ext/vector_float2.hpp>
 #include <glm/vec2.hpp>
 #include <nfd.hpp>
 #include <unistd.h>
-#include "bridge.hpp"
 #include "config.hpp"
 #include "debug.hpp"
 #include "input.hpp"
 #include "musicdb.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
+#include "panel_top.hpp"
 #include "panel_tracks.hpp"
 #include "player.hpp"
+#include "popup_controller.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
 #include "ui/label.hpp"
@@ -146,6 +151,16 @@ int main() {
   atlas.add_texture("track_bg1", "./assets/track_bg1.png");
   atlas.add_texture("track_bg2", "./assets/track_bg2.png");
   atlas.add_texture("track_bg_playing", "./assets/track_bg_playing.png");
+  atlas.add_texture("tab_active_disabled", "./assets/tab_active_disabled.png");
+  atlas.add_texture("tab_active_hovered", "./assets/tab_active_hovered.png");
+  atlas.add_texture("tab_active_idle", "./assets/tab_active_idle.png");
+  atlas.add_texture("tab_active_pressed", "./assets/tab_active_pressed.png");
+  atlas.add_texture("tab_inactive_disabled", "./assets/tab_inactive_disabled.png");
+  atlas.add_texture("tab_inactive_hovered", "./assets/tab_inactive_hovered.png");
+  atlas.add_texture("tab_inactive_idle", "./assets/tab_inactive_idle.png");
+  atlas.add_texture("tab_inactive_pressed", "./assets/tab_inactive_pressed.png");
+  atlas.add_texture("popover_panel", "./assets/popover_panel.png");
+  atlas.add_texture("popover_arrow", "./assets/popover_arrow.png");
 
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
@@ -158,50 +173,44 @@ int main() {
   atlas.add_texture("repeat_track", "./assets/icons/repeat_track.png");
   atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
   atlas.add_texture("shuffle_off", "./assets/icons/shuffle_off.png");
-
   atlas.save_to_file("atlas.png");
 
-  auto& panel_top = ui.add_widget<Panel>();
-  panel_top.set_height(40);
-  panel_top.set_layout("m:4 s:4 ltr expand");
+  ui.get_popup_controller().set_dimmer_texture("dim");
+
+  std::optional<musicdb::collection_id_t> active_collection_id;
 
   auto& panel_bottom = ui.add_widget<PanelControls>();
-
+  auto& panel_top = ui.add_widget<PanelTop>();
   auto& panel_main = ui.add_widget<Panel>();
   panel_main.set_layout("m:0 s:0 ltr expand fill");
+  auto& panel_tracks = panel_main.add_child<PanelTracks>();
+  auto& panel_albums = panel_main.add_child<PanelAlbums>();
 
-  auto& panel_left = panel_main.add_child<PanelTracks>();
-  auto& panel_right = panel_main.add_child<PanelAlbums>();
+  auto on_album_clicked = [&](size_t album_index_sorted) {
+    panel_tracks.scroll_to_album(album_index_sorted);
+  };
 
-  auto& button_scan = panel_top.add_child<Button>("Scan for music");
-  button_scan.set_width(120);
-  auto& button_load = panel_top.add_child<Button>("Load from file");
-  button_load.set_width(120);
-  auto& button_save = panel_top.add_child<Button>("Save to file");
-  button_save.set_width(120);
+  auto on_collection_opened = [&](musicdb::collection_id_t collection_id) {
+    active_collection_id = collection_id;
+    panel_tracks.recreate(active_collection_id);
+    panel_albums.recreate(active_collection_id);
+  };
 
-  bridge::init(&panel_left, &panel_right);
+  panel_top.on_collection_opened = on_collection_opened;
+  panel_albums.on_album_clicked = on_album_clicked;
 
-  button_scan.on_press([&]() {
-    musicdb::load("/home/olek/Muzyka");
+  if (std::filesystem::exists("musicdb")) {
+    std::ifstream is("musicdb", std::ios::binary);
+    musicdb::load_collections_from_file(is);
+  }
 
-    panel_left.recreate();
-    panel_right.recreate();
-  });
-
-  button_save.on_press([&]() {
-    musicdb::save_to_file("musicdb");
-  });
-
-  button_load.on_press([&]() {
-    musicdb::load_from_file("musicdb");
-
-    panel_left.recreate();
-    panel_right.recreate();
-  });
+  if (auto& c = musicdb::get_collections(); c.size() > 0) {
+    panel_tracks.recreate(0);
+    panel_albums.recreate(0);
+    panel_top.recreate();
+  }
 
   glfwSwapInterval(1);
-
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -209,6 +218,33 @@ int main() {
     // auto start_time = std::chrono::high_resolution_clock::now();
     glfwPollEvents();
     Input::update();
+
+    std::vector<std::string> dropped_directories{};
+    for (auto& path : Input::get_dropped_paths()) {
+      if (std::filesystem::is_directory(path)) {
+        dropped_directories.emplace_back(path);
+      }
+    }
+    std::string content;
+    i32 longest_path_length = 0;
+    i32 index = 1;
+    for (auto& dir : dropped_directories) {
+      content += std::to_string(index) + ". " + dir + "\n";
+      longest_path_length = std::max(longest_path_length, (i32)dir.length());
+      index += 1;
+    }
+
+    if (dropped_directories.size() > 0) {
+      popup_descriptor d{
+        .id = "a",
+        .title = "Do you want to create the following collections?",
+        .content = content,
+        .button_labels = {"Cancel", "Add"},
+        .button_actions = {[] {}, [] {}},
+      };
+      ui.get_popup_controller().create_popup(d);
+    }
+
     ui.process_input();
     ui.update(window_size.x, window_size.y);
     ui.draw();
@@ -240,6 +276,9 @@ int main() {
     config_set_i32("window_width", window_size.x);
     config_set_i32("window_height", window_size.y);
   }
+
+  std::ofstream os("musicdb", std::ios::binary);
+  musicdb::save_collections_to_file(os);
 
   config_save_to_file("music.cfg");
   player::deinit();

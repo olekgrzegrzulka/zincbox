@@ -5,6 +5,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include "../opengl_includes.hpp"
+#include "../popup_controller.hpp"
 #include "../shader.hpp"
 #include "../types.hpp"
 #include "font_face.hpp"
@@ -15,7 +16,8 @@
 #include "widget.hpp"
 
 UI::UI(i32 window_width_, i32 window_height_)
-  : sprite_shader{"sprite"}, text_shader{"text"} {
+  : sprite_shader{"sprite"}, text_shader{"text"}, popup_controller(add_widget<PopupController>()) {
+  popup_controller.set_is_drawn_on_top(true);
   window_width = window_width_;
   window_height = window_height_;
   if (FT_Init_FreeType(&freetype_lib)) {

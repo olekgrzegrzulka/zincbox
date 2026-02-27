@@ -77,7 +77,6 @@ set(SOURCES
     ./src/ui/scrollbar.cpp
 
     ./src/musicdb.cpp
-    ./src/bridge.cpp
     ./src/player.cpp
 
     ./lib/glad/glad.c
