@@ -1,4 +1,5 @@
 #pragma once
+#include "../input.hpp"
 #include "../ui/sprite.hpp"
 
 class Panel : public Sprite {
@@ -61,6 +62,12 @@ public:
       shadow->set_height(get_height() + 2 * 4);
     }
     Sprite::update();
+  }
+
+  void handle_event(Input::InputEventMouseButton& ev) override {
+    if (is_mouse_hovering()) {
+      ev.handled = true;
+    }
   }
 
 public:
