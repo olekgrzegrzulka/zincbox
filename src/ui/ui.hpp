@@ -21,8 +21,8 @@ public:
 
   template <class T, class... Args>
   T& add_widget(Args&&... args) {
-    widgets.emplace_back(std::make_unique<T>(*this, std::forward<Args>(args)...));
-    T& widget = static_cast<T&>(*widgets.back().get());
+    widgets_to_add.emplace_back(std::make_unique<T>(*this, std::forward<Args>(args)...));
+    T& widget = static_cast<T&>(*widgets_to_add.back().get());
     widget.set_window_width(window_width);
     widget.set_window_height(window_height);
     return widget;
@@ -40,7 +40,6 @@ public:
   const FontFace& get_font_face() const { return font_face; }
   const Shader& get_sprite_shader() const { return sprite_shader; }
   const Shader& get_text_shader() const { return text_shader; }
-
   TextureAtlas& get_texture_atlas() { return texture_atlas; }
 
   void mark_dirty_recursive(Widget* w) {
@@ -58,6 +57,7 @@ private:
 protected:
   glm::mat4 matrix;
   std::vector<std::unique_ptr<Widget>> widgets;
+  std::vector<std::unique_ptr<Widget>> widgets_to_add;
   FT_Library freetype_lib;
   Shader sprite_shader;
   FontFace font_face;
