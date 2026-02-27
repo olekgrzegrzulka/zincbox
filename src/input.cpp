@@ -16,6 +16,7 @@ namespace Input {
     static i32 window_x{};
     static i32 window_y{};
     static std::vector<InputEvent> event_queue{};
+    static std::vector<std::string> dropped_paths{};
 
     enum class ButtonState {
       RELEASED,
@@ -44,6 +45,14 @@ namespace Input {
       .action = (action == GLFW_PRESS) ? MouseAction::PRESS : MouseAction::RELEASE,
     };
     detail::event_queue.emplace_back(ev);
+  }
+
+  void glfw_drop_callback(GLFWwindow*, i32 count, const char** paths) {
+    detail::dropped_paths.clear();
+    detail::dropped_paths.resize(count);
+    for (i32 i = 0; i < count; i += 1) {
+      detail::dropped_paths[i] = std::string{paths[i]};
+    }
   }
 
   void glfw_scroll_button_callback(GLFWwindow*, double x, double y) {
@@ -93,6 +102,7 @@ namespace Input {
     glfwSetKeyCallback(window, glfw_key_callback);
     glfwSetCursorEnterCallback(window, glfw_cursor_enter_callback);
     glfwSetWindowCloseCallback(window, glfw_close_window_callback);
+    glfwSetDropCallback(window, glfw_drop_callback);
   }
 
   void update() {
@@ -160,6 +170,8 @@ namespace Input {
     detail::accumulated_scroll_next = vec2f{};
 
     detail::event_queue.clear();
+
+    detail::dropped_paths.clear();
   }
 
   vec2i get_mouse_pos() {
@@ -369,5 +381,9 @@ namespace Input {
     case 348: return "MENU";
     default: return "UNKNOWN";
     };
+  }
+
+  const std::vector<std::string>& get_dropped_paths() {
+    return detail::dropped_paths;
   }
 }; // namespace Input

@@ -206,18 +206,13 @@ namespace Input {
     >;
 
   void glfw_cursor_position_callback(GLFWwindow*, double x, double y);
-
   void glfw_mouse_button_callback(GLFWwindow*, i32 button, i32 action, i32 mods);
-
   void glfw_scroll_button_callback(GLFWwindow*, double xoffset, double yoffset);
-
   void glfw_char_callback(GLFWwindow*, u32 c);
-
   void glfw_key_callback(GLFWwindow*, i32 key, i32 scancode, i32 action, i32 mods);
-
   void glfw_cursor_enter_callback(GLFWwindow*, i32 entered);
-
   void glfw_close_window_callback(GLFWwindow*);
+  void glfw_drop_callback(GLFWwindow* window, int count, const char** paths);
 
   void init(GLFWwindow*);
 
@@ -249,4 +244,6 @@ namespace Input {
   std::string get_typed_characters();
 
   std::string key_to_string(Input::Key key);
+
+  const std::vector<std::string>& get_dropped_paths();
 }; // namespace Input
