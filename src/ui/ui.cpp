@@ -16,8 +16,7 @@
 #include "widget.hpp"
 
 UI::UI(i32 window_width_, i32 window_height_)
-  : sprite_shader{"sprite"}, text_shader{"text"}, popup_controller(add_widget<PopupController>()) {
-  popup_controller.set_is_drawn_on_top(true);
+  : sprite_shader{"sprite"}, text_shader{"text"} {
   window_width = window_width_;
   window_height = window_height_;
   if (FT_Init_FreeType(&freetype_lib)) {

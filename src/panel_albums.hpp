@@ -6,12 +6,10 @@
 #include "debug.hpp"
 #include "input.hpp"
 #include "musicdb.hpp"
-#include "opengl_includes.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
 #include "ui/panel.hpp"
 #include "ui/scrollbar.hpp"
-#include "ui/ui.hpp"
 #include "ui/widget.hpp"
 
 static constexpr i32 COVER_WIDTH = 64 + 12;

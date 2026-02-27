@@ -1,12 +1,11 @@
+#include "interface.hpp"
 #include "opengl_includes.hpp"
 
 #include <cstddef>
 #include <cstdlib>
-#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <optional>
-#include <string_view>
 #include <GLFW/glfw3.h>
 #include <glm/ext/vector_float2.hpp>
 #include <glm/vec2.hpp>
@@ -16,19 +15,7 @@
 #include "debug.hpp"
 #include "input.hpp"
 #include "musicdb.hpp"
-#include "panel_albums.hpp"
-#include "panel_controls.hpp"
-#include "panel_top.hpp"
-#include "panel_tracks.hpp"
 #include "player.hpp"
-#include "popup_controller.hpp"
-#include "texture_atlas.hpp"
-#include "ui/button.hpp"
-#include "ui/label.hpp"
-#include "ui/panel.hpp"
-#include "ui/sprite.hpp"
-#include "ui/ui.hpp"
-#include "ui/widget.hpp"
 
 #define STBI_ASSERT(x) ensure(x);
 #define STB_IMAGE_IMPLEMENTATION
@@ -69,30 +56,20 @@ void check_opengl_errors() {
 }
 
 int main() {
-  NFD::Init();
-
-  player::init();
-
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
-
+  NFD::Init();
+  player::init();
   config_load_from_file("music.cfg");
 
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
-  if (!glfwInit()) {
-    debug_error("Failed to initialzie GLFW");
-  }
-
+  if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
   vec2i window_size = {
     std::clamp(config_get_i32("window_width").value_or(800), 480, 1920 * 4),
     std::clamp(config_get_i32("window_height").value_or(600), 320, 1080 * 4),
   };
-
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "music", NULL, NULL);
-  if (!window) {
-    debug_error("Failed to create window");
-  }
-
+  if (!window) { debug_error("Failed to create window"); }
   glfwMakeContextCurrent(window);
   glfwSetWindowUserPointer(window, &window_size);
   glfwSetWindowSizeCallback(window, [](GLFWwindow* window_, int width, int height) -> void {
@@ -103,171 +80,25 @@ int main() {
   });
   glfwSetWindowSizeLimits(window, 480, 320, GLFW_DONT_CARE, GLFW_DONT_CARE);
   glfwGetWindowSize(window, &window_size.x, &window_size.y);
-
   int o = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-  if (o == 0) {
-    debug_error("failed to load GLAD loader");
-  }
-
-  Input::init(window);
-
-  UI ui = UI(1, 1);
-
-  auto& atlas = ui.get_texture_atlas();
-  atlas.add_texture("button_disabled", "./assets/button_disabled.png");
-  atlas.add_texture("button_hovered", "./assets/button_hovered.png");
-  atlas.add_texture("button_idle", "./assets/button_idle.png");
-  atlas.add_texture("button_pressed", "./assets/button_pressed.png");
-  atlas.add_texture("combo_box_button_contract", "./assets/combo_box_button_contract.png");
-  atlas.add_texture("combo_box_button_expand", "./assets/combo_box_button_expand.png");
-  atlas.add_texture("combo_box", "./assets/combo_box.png");
-  atlas.add_texture("dim", "./assets/dim.png");
-  atlas.add_texture("panel_rectangular_highlighted", "./assets/panel_rectangular_highlighted.png");
-  atlas.add_texture("panel_rectangular", "./assets/panel_rectangular.png");
-  atlas.add_texture("panel_rectangular_dark", "./assets/panel_rectangular_dark.png");
-  atlas.add_texture("panel_rounded_dark", "./assets/panel_rounded_dark.png");
-  atlas.add_texture("panel_rounded_light", "./assets/panel_rounded_light.png");
-  atlas.add_texture("panel_rectangular_light", "./assets/panel_rectangular_light.png");
-  atlas.add_texture("panel_rounded", "./assets/panel_rounded.png");
-  atlas.add_texture("panel_shadow", "./assets/panel_shadow.png");
-  atlas.add_texture("red", "./assets/red.png");
-  atlas.add_texture("selectbar_bg", "./assets/selectbar_bg.png");
-  atlas.add_texture("selectbar_selected", "./assets/selectbar_selected.png");
-  atlas.add_texture("slider_thumb_hovered", "./assets/slider_thumb_hovered.png");
-  atlas.add_texture("slider_thumb_idle", "./assets/slider_thumb_idle.png");
-  atlas.add_texture("slider_thumb_pressed", "./assets/slider_thumb_pressed.png");
-  atlas.add_texture("slider_track", "./assets/slider_track.png");
-  atlas.add_texture("scrollbar_thumb_hovered", "./assets/scrollbar_thumb_hovered.png");
-  atlas.add_texture("scrollbar_thumb_idle", "./assets/scrollbar_thumb_idle.png");
-  atlas.add_texture("scrollbar_thumb_pressed", "./assets/scrollbar_thumb_pressed.png");
-  atlas.add_texture("scrollbar_track", "./assets/scrollbar_track.png");
-  atlas.add_texture("spinner_buttons", "./assets/spinner_buttons.png");
-  atlas.add_texture("text_input_caret", "./assets/text_input_caret.png");
-  atlas.add_texture("text_input_focused", "./assets/text_input_focused.png");
-  atlas.add_texture("text_input_idle", "./assets/text_input_idle.png");
-  atlas.add_texture("seekbar_bg", "./assets/seekbar_bg.png");
-  atlas.add_texture("seekbar_progress", "./assets/seekbar_progress.png");
-  atlas.add_texture("seekbar_thumb", "./assets/seekbar_thumb.png");
-  atlas.add_texture("track_bg1", "./assets/track_bg1.png");
-  atlas.add_texture("track_bg2", "./assets/track_bg2.png");
-  atlas.add_texture("track_bg_playing", "./assets/track_bg_playing.png");
-  atlas.add_texture("tab_active_disabled", "./assets/tab_active_disabled.png");
-  atlas.add_texture("tab_active_hovered", "./assets/tab_active_hovered.png");
-  atlas.add_texture("tab_active_idle", "./assets/tab_active_idle.png");
-  atlas.add_texture("tab_active_pressed", "./assets/tab_active_pressed.png");
-  atlas.add_texture("tab_inactive_disabled", "./assets/tab_inactive_disabled.png");
-  atlas.add_texture("tab_inactive_hovered", "./assets/tab_inactive_hovered.png");
-  atlas.add_texture("tab_inactive_idle", "./assets/tab_inactive_idle.png");
-  atlas.add_texture("tab_inactive_pressed", "./assets/tab_inactive_pressed.png");
-  atlas.add_texture("popover_panel", "./assets/popover_panel.png");
-  atlas.add_texture("popover_arrow", "./assets/popover_arrow.png");
-
-  atlas.add_texture("play", "./assets/icons/play.png");
-  atlas.add_texture("pause", "./assets/icons/pause.png");
-  atlas.add_texture("stop", "./assets/icons/stop.png");
-  atlas.add_texture("next", "./assets/icons/next.png");
-  atlas.add_texture("prev", "./assets/icons/prev.png");
-  atlas.add_texture("repeat", "./assets/icons/repeat.png");
-  atlas.add_texture("repeat_off", "./assets/icons/repeat_off.png");
-  atlas.add_texture("repeat_album", "./assets/icons/repeat_album.png");
-  atlas.add_texture("repeat_track", "./assets/icons/repeat_track.png");
-  atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
-  atlas.add_texture("shuffle_off", "./assets/icons/shuffle_off.png");
-  atlas.save_to_file("atlas.png");
-
-  ui.get_popup_controller().set_dimmer_texture("dim");
-
-  std::optional<musicdb::collection_id_t> active_collection_id;
-
-  auto& panel_bottom = ui.add_widget<PanelControls>();
-  auto& panel_top = ui.add_widget<PanelTop>();
-  auto& panel_main = ui.add_widget<Panel>();
-  panel_main.set_layout("m:0 s:0 ltr expand fill");
-  auto& panel_tracks = panel_main.add_child<PanelTracks>();
-  auto& panel_albums = panel_main.add_child<PanelAlbums>();
-
-  auto on_album_clicked = [&](size_t album_index_sorted) {
-    panel_tracks.scroll_to_album(album_index_sorted);
-  };
-
-  auto on_collection_opened = [&](musicdb::collection_id_t collection_id) {
-    active_collection_id = collection_id;
-    panel_tracks.recreate(active_collection_id);
-    panel_albums.recreate(active_collection_id);
-  };
-
-  panel_top.on_collection_opened = on_collection_opened;
-  panel_albums.on_album_clicked = on_album_clicked;
-
-  if (std::filesystem::exists("musicdb")) {
-    std::ifstream is("musicdb", std::ios::binary);
-    musicdb::load_collections_from_file(is);
-  }
-
-  if (auto& c = musicdb::get_collections(); c.size() > 0) {
-    panel_tracks.recreate(0);
-    panel_albums.recreate(0);
-    panel_top.recreate();
-  }
-
+  if (o == 0) { debug_error("failed to load GLAD loader"); }
   glfwSwapInterval(1);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  Input::init(window);
+  interface::init();
+
   while (!glfwWindowShouldClose(window)) {
-    // auto start_time = std::chrono::high_resolution_clock::now();
     glfwPollEvents();
     Input::update();
-
-    std::vector<std::string> dropped_directories{};
-    for (auto& path : Input::get_dropped_paths()) {
-      if (std::filesystem::is_directory(path)) {
-        dropped_directories.emplace_back(path);
-      }
-    }
-    std::string content;
-    i32 longest_path_length = 0;
-    i32 index = 1;
-    for (auto& dir : dropped_directories) {
-      content += std::to_string(index) + ". " + dir + "\n";
-      longest_path_length = std::max(longest_path_length, (i32)dir.length());
-      index += 1;
-    }
-
-    if (dropped_directories.size() > 0) {
-      popup_descriptor d{
-        .id = "a",
-        .title = "Do you want to create the following collections?",
-        .content = content,
-        .button_labels = {"Cancel", "Add"},
-        .button_actions = {[] {}, [] {}},
-      };
-      ui.get_popup_controller().create_popup(d);
-    }
-
-    ui.process_input();
-    ui.update(window_size.x, window_size.y);
-    ui.draw();
-
-    panel_top.set_width(window_size.x);
-    panel_main.set_width(window_size.x);
-    panel_bottom.set_width(window_size.x);
-
-    panel_main.set_y(panel_top.get_height());
-    panel_main.set_height(window_size.y - panel_top.get_height() - panel_bottom.get_height());
-
-    // FIXME: run this on different thread as it doesn't run when window is minimized!
     player::update();
-
-    // redrawn.input();
+    interface::process_input();
+    interface::update(window_size);
+    interface::draw();
     Input::clear();
-
     check_opengl_errors();
     glfwSwapBuffers(window);
-
-    // auto end_time = std::chrono::high_resolution_clock::now();
-    // uint16_t delta = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-    // usleep(std::max(delta - 16666, 0));
   }
 
   i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
@@ -276,10 +107,9 @@ int main() {
     config_set_i32("window_width", window_size.x);
     config_set_i32("window_height", window_size.y);
   }
-
   std::ofstream os("musicdb", std::ios::binary);
   musicdb::save_collections_to_file(os);
-
   config_save_to_file("music.cfg");
+  interface::deinit();
   player::deinit();
 }
