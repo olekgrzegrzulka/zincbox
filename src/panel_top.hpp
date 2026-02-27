@@ -69,7 +69,7 @@ public:
   }
 
   void update() override {
-    set_width(std::clamp((i32)label.get_text_extents().x + 20, 100, 200));
+    set_width(std::clamp((i32)label.get_width() + 20, 100, 200));
     t = std::clamp(t + 0.2f, 0.0f, 1.0f);
     set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
     Button::update();

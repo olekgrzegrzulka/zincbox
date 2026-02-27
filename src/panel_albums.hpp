@@ -40,12 +40,13 @@ public:
     std::stringstream texture_id;
     texture_id << album->album_id;
     std::string sprite_id = album_covers_atlas.has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
-    auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
-    label_title = &add_child<Label>();
-    label_title->set_text(album->title);
+    add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
+    label_title = &add_child<Label>(album->title);
+    label_title->set_resize_to_text_extents(false);
     label_title->set_width(COVER_WIDTH);
-    label_title->set_height(label_title->get_text_extents().y);
     label_title->set_label_anchor(Anchor::LEFT);
+    label_title->set_anchor(Anchor::LEFT);
+    label_title->set_parent_anchor(Anchor::LEFT);
     label_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.65f);
   }
 
