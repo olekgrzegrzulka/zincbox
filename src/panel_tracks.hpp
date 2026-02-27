@@ -38,11 +38,11 @@ public:
 
     label_track_artist = &add_child<Label>(track->artist);
     label_track_artist->set_label_anchor(Anchor::LEFT);
-    label_track_artist->set_size(label_track_artist->get_text_extents().x, TRACK_HEIGHT);
+    label_track_artist->set_height(TRACK_HEIGHT);
 
     label_track_title = &add_child<Label>(track->title);
     label_track_title->set_label_anchor(Anchor::LEFT);
-    label_track_title->set_size(label_track_title->get_text_extents().x, TRACK_HEIGHT);
+    label_track_title->set_height(TRACK_HEIGHT);
 
     label_track_number->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
     label_track_artist->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);

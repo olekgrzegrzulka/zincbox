@@ -1,11 +1,13 @@
 #include "interface.hpp"
 #include "opengl_includes.hpp"
 
+#include <chrono>
 #include <cstddef>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <thread>
 #include <GLFW/glfw3.h>
 #include <glm/ext/vector_float2.hpp>
 #include <glm/vec2.hpp>
@@ -82,7 +84,10 @@ int main() {
   glfwGetWindowSize(window, &window_size.x, &window_size.y);
   int o = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   if (o == 0) { debug_error("failed to load GLAD loader"); }
-  glfwSwapInterval(1);
+  // FIXME: glfwSwapBuffers hangs with  glfwSwapInterval(1), resulting in app not working in the background
+  // possibly fixed by: https://github.com/glfw/glfw/commit/413ba1dceb77f0d4552d565e7acc69a4379c6df8
+  bool vsync = false;
+  glfwSwapInterval(vsync ? 1 : 0);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -99,6 +104,7 @@ int main() {
     Input::clear();
     check_opengl_errors();
     glfwSwapBuffers(window);
+    if (!vsync) { std::this_thread::sleep_for(std::chrono::microseconds(16666)); }
   }
 
   i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
