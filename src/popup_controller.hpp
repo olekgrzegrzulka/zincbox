@@ -29,7 +29,7 @@ struct popover_descriptor {
 
 class Dimmer : public Sprite {
 public:
-  Dimmer(UI& ui_) : Sprite(ui_) {
+  Dimmer(UI& ui_) : Sprite(ui_, "dim") {
   }
 
   void update() override {
@@ -182,10 +182,6 @@ public:
     dimmer.set_is_updated(dimmer_block_events);
     dimmer.set_is_drawn(dimmer_visible);
     Widget::update();
-  }
-
-  void set_dimmer_texture(std::string_view id) {
-    dimmer.set_texture(std::string{id}, false);
   }
 
 protected:

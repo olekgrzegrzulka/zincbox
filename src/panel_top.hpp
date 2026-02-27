@@ -2,6 +2,7 @@
 #include <functional>
 #include <vector>
 #include "input.hpp"
+#include "interface.hpp"
 #include "musicdb.hpp"
 #include "popup_controller.hpp"
 #include "ui/button.hpp"
@@ -120,7 +121,7 @@ public:
         .button_labels = {"New album collection...", "New playlist collection..."},
         .button_actions = {[]() {}, []() {}},
       };
-      ui.get_popup_controller().create_popover(d);
+      interface::get_popup_controller()->create_popover(d);
     });
   }
 
