@@ -36,6 +36,18 @@ Label::~Label() {
   if (vao != 0) { glDeleteVertexArrays(1, &vao); }
 }
 
+void Label::set_resize_to_text_extents(bool to) {
+  if (to != resize_to_text_extents) {
+    resize_to_text_extents = to;
+  }
+  if (resize_to_text_extents) {
+    set_width(text_extents.x);
+    set_height(text_extents.y);
+    set_min_width(text_extents.x);
+    set_min_height(text_extents.y);
+  }
+}
+
 void Label::update() {
   Widget::update();
 }
@@ -135,6 +147,13 @@ void Label::update_mesh() {
     vertices.emplace_back(vertex2{{start.x, start.y}, {uv_start.x, uv_start.y}});
 
     pen.x += glyph->advance.x / 64.0f;
+  }
+
+  if (resize_to_text_extents) {
+    set_width(text_extents.x);
+    set_height(text_extents.y);
+    set_min_width(text_extents.x);
+    set_min_height(text_extents.y);
   }
 }
 

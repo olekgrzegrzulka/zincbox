@@ -13,6 +13,7 @@ class Sprite;
 class Label final : public Widget {
 private:
   std::string text;
+  bool resize_to_text_extents = true;
   Anchor label_anchor = Anchor::CENTER;
   u32 vao = 0;
   u32 vbo = 0;
@@ -28,6 +29,8 @@ public:
   ~Label() override;
 
   // WIDGET_DEF_GETTER(text_length);
+  void set_resize_to_text_extents(bool to);
+  WIDGET_DEF_GETTER(resize_to_text_extents);
   WIDGET_DEF_GETTER(text);
   WIDGET_DEF_GETTER(text_extents);
   WIDGET_DEF_SETTER_DIRTY(label_anchor);
