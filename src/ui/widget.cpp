@@ -16,10 +16,8 @@ void Widget::draw() {
 }
 
 void Widget::process_input() {
-  std::erase_if(children, [](auto&& child) { return child->get_marked_for_deletion(); });
-
   for (auto&& child : children) {
-    if (child->get_is_updated()) {
+    if (child->get_is_updated() && !child->get_marked_for_deletion()) {
       child->process_input();
     }
   }
@@ -29,7 +27,7 @@ void Widget::process_input() {
   }
 }
 void Widget::update() {
-
+  std::erase_if(children, [](auto&& child) { return child->get_marked_for_deletion(); });
 #ifdef WIDGET_DRAW_DEBUG_RECT
   if (!is_debug_rect) {
     if (!debug_rect) {
@@ -187,11 +185,10 @@ void Widget::set_layout(const std::string& def) {
   Layout l;
   l.enabled = true;
 
-  std::stringstream ss(def);  
+  std::stringstream ss(def);
   std::string token;
 
   while (ss >> token) {
-    // 1. Boolean Flags
     if (token == "fit") {
       l.fit_to_contents = true;
     } else if (token == "expand") {
