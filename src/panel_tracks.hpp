@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <sstream>
 #include <glm/common.hpp>
 #include "input.hpp"
@@ -19,9 +20,10 @@ static constexpr i32 TRACK_HEIGHT = 22;
 
 class WidgetTrack : public Sprite {
 public:
-  WidgetTrack(UI& ui_, musicdb::track_id_t track_id_, bool even_) : Sprite(ui_) {
-    auto& tracks = musicdb::get_tracks();
-    track_id = track_id_;
+  WidgetTrack(UI& ui_, const musicdb::Track* track, bool even_) : Sprite(ui_) {
+    track_id = track->track_id;
+    album_id = track->album_id;
+    collection_id = track->collection_id;
     even = even_;
     set_texture(even ? "track_bg2" : "track_bg1", false);
     set_nine_slice_margin(4.0);
@@ -29,16 +31,16 @@ public:
     set_height(TRACK_HEIGHT);
 
     std::stringstream track_number;
-    track_number << tracks[track_id].track_number;
+    track_number << track->track_number;
     label_track_number = &add_child<Label>(track_number.str());
     label_track_number->set_label_anchor(Anchor::LEFT);
     label_track_number->set_size(20, TRACK_HEIGHT);
 
-    label_track_artist = &add_child<Label>(tracks[track_id].artist);
+    label_track_artist = &add_child<Label>(track->artist);
     label_track_artist->set_label_anchor(Anchor::LEFT);
     label_track_artist->set_size(label_track_artist->get_text_extents().x, TRACK_HEIGHT);
 
-    label_track_title = &add_child<Label>(tracks[track_id].title);
+    label_track_title = &add_child<Label>(track->title);
     label_track_title->set_label_anchor(Anchor::LEFT);
     label_track_title->set_size(label_track_title->get_text_extents().x, TRACK_HEIGHT);
 
@@ -48,7 +50,9 @@ public:
   }
 
   void update() override {
-    playing = track_id == player::get_track();
+    playing = (player::get_playing() &&
+               track_id == player::get_playing()->track_id &&
+               collection_id == player::get_playing()->collection_id);
 
     if (playing != playing_old && playing) {
       set_texture("track_bg_playing", false);
@@ -74,7 +78,12 @@ public:
         pressed = true;
       }
       if (ev.action == Input::MouseAction::RELEASE && pressed) {
-        player::play(track_id);
+        player::now_playing_t now_playing{
+          .track_id = track_id,
+          .album_id = album_id,
+          .collection_id = collection_id,
+        };
+        player::play(now_playing, track_id);
       }
       ev.handled = true;
     }
@@ -87,15 +96,16 @@ protected:
   bool even = false;
   bool playing = false;
   bool playing_old = false;
+  musicdb::collection_id_t collection_id{};
+  musicdb::album_id_t album_id{};
   musicdb::track_id_t track_id{};
   bool pressed = false;
 };
 
 class WidgetAlbum : public Widget {
 public:
-  WidgetAlbum(UI& ui_, musicdb::album_id_t album_id_) : Widget(ui_) {
-    auto& albums = musicdb::get_albums();
-    album_id = album_id_;
+  WidgetAlbum(UI& ui_, const musicdb::Album* album) : Widget(ui_) {
+    album_id = album->album_id;
 
     set_layout("ttb m:0 s:0 fit expand");
 
@@ -110,7 +120,7 @@ public:
     album_title_panel.set_y(6);
 
     auto& s = album_title_panel.add_child<Label>();
-    s.set_text(albums[album_id].title);
+    s.set_text(album->title);
     s.set_text_color({1.0, 0.85, 0.95});
     s.set_anchor(Anchor::CENTER);
     s.set_parent_anchor(Anchor::CENTER);
@@ -118,8 +128,9 @@ public:
     s.set_height(ALBUM_HEIGHT);
 
     bool even = false;
-    for (musicdb::track_id_t track_id : albums[album_id].track_ids) {
-      add_child<WidgetTrack>(track_id, even);
+    for (musicdb::track_id_t track_id : album->track_ids) {
+      auto* track = &musicdb::get_collection(album->collection_id)->get_tracks()[track_id];
+      add_child<WidgetTrack>(track, even);
       even = !even;
     }
   }
@@ -149,21 +160,28 @@ public:
     scrollbar->set_thumb_thickness(12);
     scrollbar->set_track_thickness(12);
     scrollbar->set_orientation(SliderOrientation::VERTICAL);
-
-    recreate();
   }
 
   void draw() override {
     Panel::draw();
   }
 
-  void recreate() {
+  void recreate(std::optional<musicdb::collection_id_t> collection_id_) {
+    collection_id = collection_id_;
+    if (!collection_id.has_value()) {
+      for (auto& w : visible_album_widgets) {
+        w->set_marked_for_deletion(true);
+      }
+      visible_album_widgets.clear();
+      return;
+    }
     album_scroll_px.clear();
     max_scroll_px = 0;
-    for (musicdb::album_id_t album_id : musicdb::get_albums_sorted_by_name()) {
-      auto& album = musicdb::get_album(album_id);
+    auto* c = musicdb::get_collection(*collection_id);
+    for (musicdb::album_id_t album_id : c->get_albums_sorted_by_name()) {
+      auto* album = c->get_album(album_id);
       album_scroll_px.emplace_back(max_scroll_px, album_id);
-      max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * album.track_ids.size();
+      max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * album->track_ids.size();
     }
 
     scrollbar->set_content_size(max_scroll_px);
@@ -185,8 +203,8 @@ public:
 
       if (album_end_px < view_start_px) { continue; }
       if (album_start_px > view_end_px) { break; }
-
-      create_album(album_scroll_px[i].second, album_start_px);
+      auto* album = c->get_album(album_scroll_px[i].second);
+      create_album(album, album_start_px);
     }
 
     for (auto& w : visible_album_widgets) {
@@ -198,12 +216,12 @@ public:
     std::erase_if(visible_album_widgets, [](auto&& w) { return !w->passed_visibility_test; });
   }
 
-  void create_album(musicdb::album_id_t album_id, i32 album_start_px) {
+  void create_album(const musicdb::Album* album, i32 album_start_px) {
     // album widget already exists
     // FIXME: use hashmap for O(1) lookup
     i32 actual_y = album_start_px - scroll_px;
     for (auto& w : visible_album_widgets) {
-      if (w->album_id == album_id) {
+      if (w->album_id == album->album_id) {
         w->set_y(actual_y);
         w->passed_visibility_test = true;
 
@@ -212,23 +230,49 @@ public:
     }
 
     // album widget doesn't exist
-    auto& w = add_child<WidgetAlbum>(album_id);
+    auto& w = add_child<WidgetAlbum>(album);
     w.set_y(actual_y);
     w.passed_visibility_test = true;
     visible_album_widgets.emplace_back(&w);
   }
 
-  void on_album_clicked(musicdb::album_id_t, size_t album_index_sorted) {
+  void scroll_to_album(size_t album_index_sorted) {
     i32 s = album_scroll_px[album_index_sorted].first;
     target_scroll_px = s;
     scrollbar->set_scroll_offset(s);
   }
 
+  void scroll_to_now_playing_album() {
+    auto now_playing = player::get_playing();
+
+    if (!collection_id.has_value()) { return; }
+    if (!now_playing.has_value()) { return; }
+    if (now_playing->collection_id != *collection_id) { return; }
+
+    musicdb::album_id_t album_id = now_playing->album_id;
+    auto* collection = musicdb::get_collection(*collection_id);
+    auto& sorted_indices = collection->get_albums_sorted_by_name();
+
+    size_t i = 0;
+    for (size_t album_id_ : sorted_indices) {
+      if (album_id_ == album_id) {
+        scroll_to_album(i);
+        return;
+      }
+      i += 1;
+    }
+  }
+
   void update() override {
+
+    if (Input::key_just_pressed(Input::Key::KEY_1)) {
+      scroll_to_now_playing_album();
+    }
+
     scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 
     if ((i32)scroll_px != (i32)old_scroll_px || width != old_width) {
-      recreate();
+      recreate(collection_id);
 
       // FIXME: why?
       for (auto& v : visible_album_widgets) {
@@ -256,6 +300,7 @@ public:
   }
 
 protected:
+  std::optional<musicdb::collection_id_t> collection_id{};
   double scroll_px{};
   double target_scroll_px{};
   double old_scroll_px{};

@@ -15,6 +15,8 @@
 #include "sprite.hpp"
 #include "widget.hpp"
 
+class PopupController;
+
 class UI {
 public:
   UI(i32 window_width_, i32 window_height_);
@@ -41,6 +43,7 @@ public:
   const Shader& get_sprite_shader() const { return sprite_shader; }
   const Shader& get_text_shader() const { return text_shader; }
   TextureAtlas& get_texture_atlas() { return texture_atlas; }
+  PopupController& get_popup_controller() { return popup_controller; }
 
   void mark_dirty_recursive(Widget* w) {
     w->mark_dirty();
@@ -65,4 +68,6 @@ protected:
   TextureAtlas texture_atlas;
   i32 window_width = 0;
   i32 window_height = 0;
+
+  PopupController& popup_controller;
 };

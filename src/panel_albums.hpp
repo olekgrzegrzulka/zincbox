@@ -1,8 +1,8 @@
 #pragma once
 #include <cassert>
+#include <functional>
 #include <sstream>
 #include <vector>
-#include "bridge.hpp"
 #include "debug.hpp"
 #include "input.hpp"
 #include "musicdb.hpp"
@@ -34,18 +34,17 @@ protected:
 
 class WidgetAlbumCover : public Button {
 public:
-  WidgetAlbumCover(UI& ui_, musicdb::album_id_t album_id_, TextureAtlas& album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
-    album_id = album_id_;
+  WidgetAlbumCover(UI& ui_, const musicdb::Album* album, TextureAtlas& album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
     get_children()[0]->set_ignore_parents_layout(true);
     set_clip_children(true);
     set_size(COVER_WIDTH, COVER_HEIGHT);
     set_layout("m:0 s:8 ttb");
     std::stringstream texture_id;
-    texture_id << album_id;
+    texture_id << album->album_id;
     std::string sprite_id = album_covers_atlas.has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
     auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
     label_title = &add_child<Label>();
-    label_title->set_text(musicdb::get_albums()[album_id].title);
+    label_title->set_text(album->title);
     label_title->set_width(COVER_WIDTH);
     label_title->set_height(label_title->get_text_extents().y);
     label_title->set_label_anchor(Anchor::LEFT);
@@ -53,7 +52,7 @@ public:
   }
 
   void draw() override {
-    Widget::draw();
+    // Button::draw();
   }
 
   void update() override {
@@ -65,11 +64,10 @@ public:
     } else {
       label_title->set_x(0);
     }
-    Widget::update();
+    Button::update();
   }
 
 protected:
-  musicdb::album_id_t album_id;
   Label* label_title{};
   TextureAtlas& album_covers_atlas;
 };
@@ -98,8 +96,16 @@ public:
     // ui.get_texture_atlas().bind(0);
   }
 
-  void recreate() {
-    i32 album_count = musicdb::get_albums().size();
+  void recreate(std::optional<musicdb::collection_id_t> collection_id_) {
+    if (!collection_id_.has_value()) {
+      for (auto& w : album_widgets) {
+        w->set_marked_for_deletion(true);
+      }
+      album_widgets.clear();
+      return;
+    }
+    auto* c = musicdb::get_collection(*collection_id_);
+    i32 album_count = c->get_albums().size();
     i32 atlas_resolution = std::sqrt(album_count) * 64;
     if (atlas_resolution < 512) {
       atlas_resolution = 512;
@@ -115,7 +121,7 @@ public:
     album_covers_atlas.add_texture("cover_unknown", "./assets/cover_unknown.png");
 
     i32 i = 0;
-    for (auto& album : musicdb::get_albums()) {
+    for (auto& album : c->get_albums()) {
       std::stringstream texture_id;
       texture_id << album.album_id;
       album_covers_atlas.add_texture(texture_id.str(), album.cover_art, 64, 64);
@@ -124,16 +130,16 @@ public:
 
     album_covers_atlas.save_to_file("albums.png");
 
-    for (auto& c : album_widgets) {
-      c->set_marked_for_deletion(true);
+    for (auto& w : album_widgets) {
+      w->set_marked_for_deletion(true);
     }
     album_widgets.clear();
 
     size_t album_index_sorted = 0;
-    for (musicdb::album_id_t album_id : musicdb::get_albums_sorted_by_name()) {
-      auto& album_widget = add_child<WidgetAlbumCover>(album_id, album_covers_atlas);
+    for (musicdb::album_id_t album_id : c->get_albums_sorted_by_name()) {
+      auto& album_widget = add_child<WidgetAlbumCover>(c->get_album(album_id), album_covers_atlas);
       album_widgets.emplace_back(&album_widget);
-      album_widget.on_press([=]() { bridge::on_album_clicked(album_id, album_index_sorted); });
+      album_widget.on_press([this, album_index_sorted]() { on_album_clicked(album_index_sorted); });
       album_index_sorted += 1;
     }
   }
@@ -181,4 +187,7 @@ protected:
   std::vector<WidgetAlbumCover*> album_widgets;
   TextureAtlas album_covers_atlas;
   ScrollBar* scrollbar{};
+
+public:
+  std::function<void(size_t)> on_album_clicked{};
 };
