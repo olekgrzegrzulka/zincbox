@@ -29,9 +29,25 @@ UI::UI(i32 window_width_, i32 window_height_)
 }
 
 void UI::process_input() {
+  std::erase_if(widgets, [](auto&& w) { return w->get_marked_for_deletion(); });
+
+  for (auto&& widget : widgets_to_add) {
+    widgets.emplace_back(std::move(widget));
+  }
+  widgets_to_add.clear();
+
   for (auto&& widget : widgets) {
     if (!widget->get_is_updated()) { continue; }
-    widget->process_input();
+    if (widget->get_is_drawn_on_top()) {
+      widget->process_input();
+    }
+  }
+
+  for (auto&& widget : widgets) {
+    if (!widget->get_is_updated()) { continue; }
+    if (!widget->get_is_drawn_on_top()) {
+      widget->process_input();
+    }
   }
 }
 
