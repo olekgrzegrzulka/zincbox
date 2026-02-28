@@ -14,7 +14,7 @@
 class PanelTop : public Panel {
 public:
   PanelTop(UI& ui_) : Panel(ui_), tab_bar(add_child<TabBar>()) {
-    set_height(30);
+    set_height(32);
 
     auto* btn_settings = &add_child<Button>("");
     btn_settings->set_size(26, 26);
