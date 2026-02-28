@@ -509,8 +509,7 @@ void Collection::check_integrity() {
     ensure(albums[album_id_first].prev_album_id == album_id_last);
     ensure(albums[album_id_last].next_album_id == album_id_first);
   }
-
-  for (size_t i = 1; i < album_ids_by_name.size() - 1; i += 1) {
+  for (i32 i = 1; i < (i32)album_ids_by_name.size() - 1; i += 1) {
     size_t album_id_curr = album_ids_by_name[i];
     size_t album_id_prev = album_ids_by_name[i - 1];
     size_t album_id_next = album_ids_by_name[i + 1];
@@ -541,8 +540,7 @@ void Collection::check_integrity() {
     ensure(albums[album_id_first].prev_album_id == album_id_last);
     ensure(albums[album_id_last].next_album_id == album_id_first);
   }
-
-  for (size_t i = 1; i < tracks.size() - 1; i += 1) {
+  for (i32 i = 1; i < (i32)tracks.size() - 1; i += 1) {
     ensure(tracks[i].album_id != INVALID_ID);
     auto& album = albums[tracks[i].album_id];
     ensure(album.album_id == tracks[i].album_id);
