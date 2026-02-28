@@ -66,6 +66,8 @@ public:
     i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
     i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
 
+    if (label->get_dirty()) { mark_dirty(); }
+
     set_x(get_x() + off_screen_left - off_screen_right);
     set_y(get_y() + off_screen_top - off_screen_bottom);
 

@@ -121,7 +121,8 @@ namespace musicdb {
     bool add_path(std::string_view);
 
     bool operator==(std::string_view sv) const { return sv == name; }
-    std::string get_name() { return name; }
+    collection_id_t get_id() const { return id; }
+    std::string get_name() const { return name; }
     const std::vector<Album>& get_albums();
     const std::vector<album_id_t>& get_albums_sorted_by_name();
     const Album* get_album(album_id_t);

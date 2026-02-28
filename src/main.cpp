@@ -63,6 +63,11 @@ int main() {
   player::init();
   config_load_from_file("music.cfg");
 
+  if (std::filesystem::exists("musicdb")) {
+    std::ifstream is("musicdb", std::ios::binary);
+    musicdb::load_collections_from_file(is);
+  }
+
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
   if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
   vec2i window_size = {
@@ -95,6 +100,8 @@ int main() {
   interface::init();
 
   while (!glfwWindowShouldClose(window)) {
+    using namespace std::chrono;
+    auto t1 = high_resolution_clock::now();
     glfwPollEvents();
     Input::update();
     player::update();
@@ -104,7 +111,11 @@ int main() {
     Input::clear();
     check_opengl_errors();
     glfwSwapBuffers(window);
-    if (!vsync) { std::this_thread::sleep_for(std::chrono::microseconds(16666)); }
+
+    auto t2 = high_resolution_clock::now();
+    long delta_us = duration_cast<microseconds>(t2 - t1).count();
+    long sleep_us = std::max(1000.0, 16666.0 - delta_us);
+    if (!vsync) { std::this_thread::sleep_for(microseconds(sleep_us)); }
   }
 
   i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);

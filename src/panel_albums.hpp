@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <cstddef>
 #include <functional>
 #include <sstream>
 #include <vector>
@@ -17,29 +18,30 @@ static constexpr i32 COVER_HEIGHT = 64 + 32;
 
 class SpriteAlbumCover : public Sprite {
 public:
-  SpriteAlbumCover(UI& ui_, std::string id, TextureAtlas& album_covers_atlas_) : Sprite(ui_), album_covers_atlas(album_covers_atlas_) {
+  SpriteAlbumCover(UI& ui_, std::string id, TextureAtlas* album_covers_atlas_) : Sprite(ui_), album_covers_atlas(album_covers_atlas_) {
     set_texture(id);
     set_nine_slice_margin(0);
   }
 
   TextureAtlas& get_texture_atlas() override {
-    return album_covers_atlas;
+    // FIXME disgusting
+    return *album_covers_atlas;
   }
 
 protected:
-  TextureAtlas& album_covers_atlas;
+  TextureAtlas* album_covers_atlas;
 };
 
 class WidgetAlbumCover : public Button {
 public:
-  WidgetAlbumCover(UI& ui_, const musicdb::Album* album, TextureAtlas& album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
+  WidgetAlbumCover(UI& ui_, const musicdb::Album* album, TextureAtlas* album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
     get_children()[0]->set_ignore_parents_layout(true);
     set_clip_children(true);
     set_size(COVER_WIDTH, COVER_HEIGHT);
     set_layout("m:0 s:8 ttb");
     std::stringstream texture_id;
     texture_id << album->album_id;
-    std::string sprite_id = album_covers_atlas.has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
+    std::string sprite_id = album_covers_atlas->has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
     add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
     label_title = &add_child<Label>(album->title);
     label_title->set_resize_to_text_extents(false);
@@ -68,7 +70,7 @@ public:
 
 protected:
   Label* label_title{};
-  TextureAtlas& album_covers_atlas;
+  TextureAtlas* album_covers_atlas;
 };
 
 class PanelAlbums : public Panel {
@@ -95,39 +97,16 @@ public:
     // ui.get_texture_atlas().bind(0);
   }
 
-  void recreate(std::optional<musicdb::collection_id_t> collection_id_) {
-    if (!collection_id_.has_value()) {
+  void recreate(std::optional<musicdb::collection_id_t> collection_id_, TextureAtlas* album_covers_atlas) {
+    if (!collection_id_.has_value() || album_covers_atlas == nullptr) {
       for (auto& w : album_widgets) {
         w->set_marked_for_deletion(true);
       }
       album_widgets.clear();
       return;
     }
+
     auto* c = musicdb::get_collection(*collection_id_);
-    i32 album_count = c->get_albums().size();
-    i32 atlas_resolution = std::sqrt(album_count) * 64;
-    if (atlas_resolution < 512) {
-      atlas_resolution = 512;
-    } else if (atlas_resolution < 1024) {
-      atlas_resolution = 1024;
-    } else if (atlas_resolution < 2048) {
-      atlas_resolution = 2048;
-    } else {
-      atlas_resolution = 2048;
-      debug_warn("album_count = ", album_count, ", not supported!");
-    }
-    album_covers_atlas = TextureAtlas{atlas_resolution, 0, 64};
-    album_covers_atlas.add_texture("cover_unknown", "./assets/cover_unknown.png");
-
-    i32 i = 0;
-    for (auto& album : c->get_albums()) {
-      std::stringstream texture_id;
-      texture_id << album.album_id;
-      album_covers_atlas.add_texture(texture_id.str(), album.cover_art, 64, 64);
-      if (i++ >= 2048) { break; }
-    }
-
-    album_covers_atlas.save_to_file("albums.png");
 
     for (auto& w : album_widgets) {
       w->set_marked_for_deletion(true);
@@ -184,7 +163,6 @@ protected:
   double scroll_px = 0.0;
   double target_scroll_px = 0.0;
   std::vector<WidgetAlbumCover*> album_widgets;
-  TextureAtlas album_covers_atlas;
   ScrollBar* scrollbar{};
 
 public:
