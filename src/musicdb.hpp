@@ -23,6 +23,7 @@ namespace musicdb {
   using album_id_t = size_t;
 
   collection_id_t add_collection(std::string_view);
+  void mark_collection_as_tombstone(collection_id_t);
 
   std::vector<Collection>& get_collections();
   const Track* get_track(collection_id_t, track_id_t);
@@ -110,6 +111,7 @@ namespace musicdb {
     std::vector<Album> albums;
     std::vector<Track> tracks;
 
+    bool tombstone = false;
     bool is_built = false;
     std::vector<size_t> album_ids_by_name;
 
@@ -128,11 +130,13 @@ namespace musicdb {
     const Album* get_album(album_id_t);
     const Track* get_track(track_id_t);
     const std::vector<Track>& get_tracks();
+    bool is_tombstone() const { return tombstone; }
 
     track_id_t add_track(Track, album_id_t);
     album_id_t add_album(Album);
     Album* get_album_by_title(const std::wstring& title);
 
+    void mark_as_tombstone() { tombstone = true; }
     void check_integrity();
 
   protected:

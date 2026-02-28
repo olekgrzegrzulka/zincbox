@@ -17,8 +17,9 @@ enum class ButtonState {
 class Button : public Sprite {
 protected:
   Label& label;
-  std::function<void()> lambda_press = nullptr;
-  std::function<void()> lambda_depress = nullptr;
+  std::function<void()> lambda_press{};
+  std::function<void()> lambda_press_rmb{};
+  std::function<void()> lambda_depress{};
   ButtonState state = ButtonState::IDLE;
   bool switch_mode = false;
   bool is_switched = false;
@@ -26,6 +27,7 @@ protected:
 
   bool mouse_hovering = false;
   bool mouse_pressed = false;
+  bool rmb_held = false;
 
   vec2f uv_start_idle{};
   vec2f uv_end_idle{};
@@ -59,14 +61,16 @@ public:
     Sprite::draw();
   }
 
-  void press();
-
   void on_press(std::function<void()> lambda_press_) {
     lambda_press = lambda_press_;
   }
 
   void on_depress(std::function<void()> lambda_depress_) {
     lambda_depress = lambda_depress_;
+  }
+
+  void on_press_rmb(std::function<void()> lambda_press_rmb_) {
+    lambda_press_rmb = lambda_press_rmb_;
   }
 
   // Returns true if button's state was changed

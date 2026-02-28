@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include "debug.hpp"
 #include "interface.hpp"
@@ -32,6 +33,7 @@ PanelControls* panel_controls{};
 void init_atlas();
 void init_album_cover_atlases();
 void handle_dropped_files();
+void delete_collection(musicdb::collection_id_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -56,6 +58,18 @@ void interface::init() {
     panel_albums->recreate(active_collection_id, atlas);
   };
 
+  panel_top->on_show_collection_actions_popover = [&](musicdb::collection_id_t collection_id, vec2i at) {
+    popover_descriptor d{
+      .id = "collection_actions",
+      .at = at,
+      .button_labels = {"Delete"},
+      .button_actions = {[collection_id]() {
+        delete_collection(collection_id);
+      }},
+    };
+    popup_controller->create_popover(d);
+  };
+
   panel_albums->on_album_clicked = [&](size_t album_index_sorted) {
     panel_tracks->scroll_to_album(album_index_sorted);
   };
@@ -64,6 +78,10 @@ void interface::init() {
     panel_tracks->recreate(0);
     panel_albums->recreate(0, album_cover_atlases[0].get());
     panel_top->recreate(0);
+  } else {
+    panel_tracks->recreate(std::nullopt);
+    panel_albums->recreate(std::nullopt, nullptr);
+    panel_top->recreate(std::nullopt);
   }
 }
 
@@ -196,6 +214,15 @@ void init_album_cover_atlases() {
   }
 }
 
+void create_collections(std::vector<std::string> directories) {
+  for (auto& str : directories) {
+    std::filesystem::path path = str;
+    std::string collection_name = path.filename().string();
+    auto collection_id = musicdb::add_collection(collection_name);
+    musicdb::get_collection(collection_id)->add_path(str);
+  }
+}
+
 void handle_dropped_files() {
   std::vector<std::string> dropped_directories{};
   for (auto& path : Input::get_dropped_paths()) {
@@ -218,8 +245,31 @@ void handle_dropped_files() {
       .title = "Do you want to create the following collections?",
       .content = content,
       .button_labels = {"Cancel", "Add"},
-      .button_actions = {[] {}, [] {}},
+      .button_actions = {nullptr, [dropped_directories]() {
+                           create_collections(dropped_directories);
+                           init_album_cover_atlases(); // FIXME: do this only for the added collections
+                           panel_top->recreate(active_collection_id);
+                         }},
     };
     interface::get_popup_controller()->create_popup(d);
+  }
+}
+
+void delete_collection(musicdb::collection_id_t collection_id) {
+  musicdb::mark_collection_as_tombstone(collection_id);
+  if (active_collection_id.has_value()) {
+    if (musicdb::get_collection(*active_collection_id)->is_tombstone()) {
+      panel_top->recreate(std::nullopt);
+      panel_albums->recreate(std::nullopt, nullptr);
+      panel_tracks->recreate(std::nullopt);
+    } else {
+      panel_top->recreate(*active_collection_id);
+      panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
+      panel_tracks->recreate(*active_collection_id);
+    }
+  } else {
+    panel_top->recreate(std::nullopt);
+    panel_albums->recreate(std::nullopt, nullptr);
+    panel_tracks->recreate(std::nullopt);
   }
 }
