@@ -117,15 +117,19 @@ protected:
 class TabBar : public Panel {
 public:
   TabBar(UI& ui_) : Panel(ui_) {
-    set_height(30);
+    set_height(32);
     tab_container = &add_child<Widget>();
-    tab_container->set_height(30);
-    button_add = &add_child<Button>("+");
-    button_add->set_max_width(24);
-    button_add->set_size(24, 24);
-    button_add->set_max_height(24);
+    tab_container->set_height(32);
+    button_add = &add_child<Button>();
+    button_add->set_size(32, 32);
     button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
     button_add->set_anchor(Anchor::BOTTOM_LEFT);
+    button_add->set_texture_idle("button_add_tab_idle");
+    button_add->set_texture_hovered("button_add_tab_hovered");
+    button_add->set_texture_pressed("button_add_tab_pressed");
+    button_add->set_texture_disabled("button_add_tab_disabled");
+    button_add->set_nine_slice_margin(0.0f);
+    button_add->set_texture("button_add_tab_idle", true);
     button_add->on_press([this]() {
       if (on_add_tab_button_pressed) { on_add_tab_button_pressed(); };
     });

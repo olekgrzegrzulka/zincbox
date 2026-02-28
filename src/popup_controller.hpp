@@ -89,7 +89,7 @@ public:
     popover.set_nine_slice_margin(8.0f);
     popover.set_anchor(Anchor::TOP);
     popover.set_pos(d.at);
-    popover.set_layout("ttb fit expand fill m:8 s:8");
+    popover.set_layout("ttb fit expand fill m:6 s:6");
     popover.set_width(50);
 
     auto* arrow = &popover.add_child<Sprite>("popover_arrow");
@@ -102,10 +102,15 @@ public:
     for (auto& sv : d.button_labels) {
       auto& btn = popover.add_child<Button>(std::string(sv));
       buttons.emplace_back(&btn);
-      btn.set_min_height(35);
-      btn.set_max_height(35);
-      btn.set_height(35);
-      popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 40));
+      btn.set_texture_idle("button_popover_idle");
+      btn.set_texture_hovered("button_popover_hovered");
+      btn.set_texture_pressed("button_popover_pressed");
+      btn.set_texture_disabled("button_popover_disabled");
+      btn.set_texture("button_popover_idle", false);
+      btn.set_min_height(30);
+      btn.set_max_height(30);
+      btn.set_height(30);
+      popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 30));
     }
 
     size_t button_i = 0;

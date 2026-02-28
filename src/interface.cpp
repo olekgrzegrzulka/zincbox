@@ -161,6 +161,14 @@ void init_atlas() {
   atlas.add_texture("tab_inactive_pressed", "./assets/tab_inactive_pressed.png");
   atlas.add_texture("popover_panel", "./assets/popover_panel.png");
   atlas.add_texture("popover_arrow", "./assets/popover_arrow.png");
+  atlas.add_texture("button_add_tab_disabled", "./assets/button_add_tab_disabled.png");
+  atlas.add_texture("button_add_tab_hovered", "./assets/button_add_tab_hovered.png");
+  atlas.add_texture("button_add_tab_idle", "./assets/button_add_tab_idle.png");
+  atlas.add_texture("button_add_tab_pressed", "./assets/button_add_tab_pressed.png");
+  atlas.add_texture("button_popover_disabled", "./assets/button_popover_disabled.png");
+  atlas.add_texture("button_popover_hovered", "./assets/button_popover_hovered.png");
+  atlas.add_texture("button_popover_idle", "./assets/button_popover_idle.png");
+  atlas.add_texture("button_popover_pressed", "./assets/button_popover_pressed.png");
   // icons
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
