@@ -89,8 +89,8 @@ public:
     popover.set_nine_slice_margin(8.0f);
     popover.set_anchor(Anchor::TOP);
     popover.set_pos(d.at);
-    popover.set_width(200);
     popover.set_layout("ttb fit expand fill m:8 s:8");
+    popover.set_width(50);
 
     auto* arrow = &popover.add_child<Sprite>("popover_arrow");
     arrow->set_ignore_parents_layout(true);
@@ -105,13 +105,14 @@ public:
       btn.set_min_height(35);
       btn.set_max_height(35);
       btn.set_height(35);
+      popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 40));
     }
 
     size_t button_i = 0;
     std::string popover_id = d.id;
     for (auto& l : d.button_actions) {
       auto lambda = [this, l, popover_id, &popover]() {
-        l();
+        if (l) { l(); }
         popovers.erase(popover_id);
         popover.set_marked_for_deletion(true);
       };
@@ -151,7 +152,7 @@ public:
     size_t button_i = 0;
     for (auto& l : d.button_actions) {
       auto lambda = [this, l, &popup, popup_id]() {
-        l();
+        if (l) { l(); }
         popups.erase(popup_id);
         popup.set_marked_for_deletion(true);
       };

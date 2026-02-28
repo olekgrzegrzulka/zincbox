@@ -22,6 +22,10 @@ public:
     on_press([&]() {
       on_active(this);
     });
+
+    on_press_rmb([this]() {
+      if (on_right_click) { on_right_click(this); }
+    });
   }
 
   void set_texture_active() {
@@ -101,6 +105,7 @@ public:
   size_t index = 0;
   std::function<void(i32)> on_drag_start{};
   std::function<void(Tab*)> on_active{};
+  std::function<void(Tab*)> on_right_click{};
 
 protected:
   i32 x_old = 0;
@@ -130,8 +135,9 @@ public:
     i32 id{};
     bool is_draggable{};
     std::string label{};
-    std::function<void()> on_open{};
     i32 padding = 0;
+    std::function<void()> on_open{};
+    std::function<void(Tab*)> on_right_click{};
   };
 
   void add_tab(tab_info tab_info, bool select = false) {
@@ -155,6 +161,7 @@ public:
       if (tab_info.on_open) { tab_info.on_open(); }
       if (on_tab_pressed) { on_tab_pressed(tab_info.id); }
     };
+    t->on_right_click = tab_info.on_right_click;
 
     tabs.emplace(tabs.begin() + at, t);
     t->index = at;

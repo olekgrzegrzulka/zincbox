@@ -198,6 +198,10 @@ collection_id_t musicdb::add_collection(std::string_view name) {
   return collections.size() - 1;
 }
 
+void musicdb::mark_collection_as_tombstone(collection_id_t i) {
+  collections[i].mark_as_tombstone();
+}
+
 std::vector<Collection>& musicdb::get_collections() {
   return collections;
 }
@@ -247,9 +251,13 @@ void musicdb::load_collections_from_file(std::ifstream& is) {
 void musicdb::save_collections_to_file(std::ofstream& os) {
   auto s = ScopeTimer{"save_to_file"};
 
-  write_bin(os, collections.size());
+  u64 number_of_collections = std::count_if(
+    collections.begin(), collections.end(),
+    [](auto& c) { return !c.is_tombstone(); });
+  write_bin(os, number_of_collections);
 
   for (auto& c : collections) {
+    if (c.is_tombstone()) { continue; }
     write_str(os, c.get_name());
     c.save_to_file(os);
   }

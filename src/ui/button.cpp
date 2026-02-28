@@ -16,24 +16,6 @@ void Button::update() {
   label.set_anchor(Anchor::CENTER_CENTER);
 }
 
-void Button::press() {
-  if (state == ButtonState::DISABLED) { return; }
-
-  if (!switch_mode) {
-    set_state(ButtonState::PRESSED);
-    pressed();
-  } else {
-    set_is_switched(!is_switched);
-    if (is_switched) {
-      set_state(ButtonState::PRESSED);
-      pressed();
-    } else {
-      set_state(ButtonState::IDLE);
-      depressed();
-    }
-  }
-}
-
 void Button::set_texture_idle(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
   if (!val.has_value()) {
@@ -92,6 +74,22 @@ void Button::handle_event(Input::InputEventMouseButton& ev) {
 
   bool lmb_pressed = ev.button == MOUSE_BUTTON_LEFT && ev.action == PRESS;
   bool lmb_released = ev.button == MOUSE_BUTTON_LEFT && ev.action == RELEASE;
+
+  bool rmb_pressed = ev.button == MOUSE_BUTTON_RIGHT && ev.action == PRESS;
+  bool rmb_released = ev.button == MOUSE_BUTTON_RIGHT && ev.action == RELEASE;
+
+  if (mouse_hovering && rmb_pressed) {
+    rmb_held = true;
+    set_state(PRESSED);
+    ev.handled = true;
+  }
+
+  if (mouse_hovering && rmb_held && rmb_released) {
+    if (state != ButtonState::DISABLED && lambda_press_rmb) {
+      lambda_press_rmb();
+    }
+    rmb_held = false;
+  }
 
   if (mouse_hovering && lmb_pressed) {
     mouse_pressed = true;
