@@ -1,6 +1,9 @@
 #include <cstddef>
 #include <memory>
+#include <string>
+#include "debug.hpp"
 #include "interface.hpp"
+#include "musicdb.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
 #include "panel_top.hpp"
@@ -16,6 +19,7 @@
 #include "ui/widget.hpp"
 
 std::optional<musicdb::collection_id_t> active_collection_id;
+std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 
 std::unique_ptr<UI> ui;
 PopupController* popup_controller{};
@@ -26,13 +30,16 @@ PanelAlbums* panel_albums{};
 PanelControls* panel_controls{};
 
 void init_atlas();
+void init_album_cover_atlases();
+void handle_dropped_files();
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
+  init_atlas();
+  init_album_cover_atlases();
+
   popup_controller = &ui->add_widget<PopupController>();
   popup_controller->set_is_drawn_on_top(true);
-
-  init_atlas();
 
   panel_controls = &ui->add_widget<PanelControls>();
   panel_top = &ui->add_widget<PanelTop>();
@@ -44,26 +51,24 @@ void interface::init() {
   panel_top->on_collection_opened = [&](musicdb::collection_id_t collection_id) {
     active_collection_id = collection_id;
     panel_tracks->recreate(active_collection_id);
-    panel_albums->recreate(active_collection_id);
+    TextureAtlas* atlas = nullptr;
+    if (active_collection_id.has_value()) { atlas = album_cover_atlases[*active_collection_id].get(); }
+    panel_albums->recreate(active_collection_id, atlas);
   };
 
   panel_albums->on_album_clicked = [&](size_t album_index_sorted) {
     panel_tracks->scroll_to_album(album_index_sorted);
   };
 
-  if (std::filesystem::exists("musicdb")) {
-    std::ifstream is("musicdb", std::ios::binary);
-    musicdb::load_collections_from_file(is);
-  }
-
   if (auto& c = musicdb::get_collections(); c.size() > 0) {
     panel_tracks->recreate(0);
-    panel_albums->recreate(0);
-    panel_top->recreate();
+    panel_albums->recreate(0, album_cover_atlases[0].get());
+    panel_top->recreate(0);
   }
 }
 
 void interface::process_input() {
+  handle_dropped_files();
   ui->process_input();
 }
 
@@ -150,7 +155,45 @@ void init_atlas() {
   atlas.add_texture("repeat_track", "./assets/icons/repeat_track.png");
   atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
   atlas.add_texture("shuffle_off", "./assets/icons/shuffle_off.png");
+  atlas.add_texture("settings", "./assets/icons/settings.png");
   atlas.save_to_file("atlas.png");
+}
+
+void init_album_cover_atlas(musicdb::collection_id_t collection_id) {
+  auto& collections = musicdb::get_collections();
+  ensure(collections.size() > collection_id);
+
+  auto* c = musicdb::get_collection(collection_id);
+  i32 album_count = c->get_albums().size();
+  i32 atlas_resolution = std::sqrt(album_count) * 64;
+  if (atlas_resolution < 512) {
+    atlas_resolution = 512;
+  } else if (atlas_resolution < 1024) {
+    atlas_resolution = 1024;
+  } else if (atlas_resolution < 2048) {
+    atlas_resolution = 2048;
+  } else {
+    atlas_resolution = 2048;
+    debug_warn("album_count = ", album_count, ", not supported!");
+  }
+  album_cover_atlases[collection_id]->add_texture("cover_unknown", "./assets/cover_unknown.png");
+
+  i32 count = 0;
+  album_cover_atlases[collection_id] = std::make_unique<TextureAtlas>(atlas_resolution, 0, 64);
+  for (auto& album : c->get_albums()) {
+    album_cover_atlases[collection_id]->add_texture(std::to_string(album.album_id), album.cover_art, 64, 64);
+    if (count++ >= 1023) { break; }
+  }
+  album_cover_atlases[collection_id]->save_to_file("albums" + std::to_string(collection_id) + ".png");
+}
+
+void init_album_cover_atlases() {
+  album_cover_atlases.clear();
+  auto n = musicdb::get_collections().size();
+  for (musicdb::collection_id_t i = 0; i < n; i += 1) {
+    album_cover_atlases.emplace_back(std::make_unique<TextureAtlas>(512, 0, 64));
+    init_album_cover_atlas(i);
+  }
 }
 
 void handle_dropped_files() {
