@@ -4,27 +4,40 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <variant>
 #include "config.hpp"
-#include "debug.hpp"
 
-std::unordered_map<std::string, ConfigValue> map;
+struct string_hash {
+  using is_transparent = void;
+  [[nodiscard]] size_t operator()(const char* txt) const {
+    return std::hash<std::string_view>{}(txt);
+  }
+  [[nodiscard]] size_t operator()(std::string_view txt) const {
+    return std::hash<std::string_view>{}(txt);
+  }
+  [[nodiscard]] size_t operator()(const std::string& txt) const {
+    return std::hash<std::string>{}(txt);
+  }
+};
 
-void config_set_i32(std::string key, i32 value) {
-  map[key] = ConfigValue{value};
+std::unordered_map<std::string, ConfigValue, string_hash, std::equal_to<>> map{};
+
+void config_set_i32(std::string_view key, i32 value) {
+  map[std::string{key}] = ConfigValue{value};
 }
 
-void config_set_float(std::string key, float value) {
-  map[key] = ConfigValue{value};
+void config_set_float(std::string_view key, float value) {
+  map[std::string{key}] = ConfigValue{value};
 }
 
-void config_set_string(std::string key, std::string value) {
-  map[key] = ConfigValue{value};
+void config_set_string(std::string_view key, std::string value) {
+  map[std::string{key}] = ConfigValue{value};
 }
 
 template <class T>
-std::optional<T> config_get(std::string key) {
+std::optional<T> config_get(std::string_view key) {
   if (auto v = map.find(key); v != map.end() && std::holds_alternative<T>(v->second)) {
     return std::get<T>(v->second);
   } else {
@@ -32,9 +45,22 @@ std::optional<T> config_get(std::string key) {
   }
 }
 
-std::optional<i32> config_get_i32(std::string key) { return config_get<i32>(key); }
-std::optional<float> config_get_float(std::string key) { return config_get<float>(key); }
-std::optional<std::string> config_get_string(std::string key) { return config_get<std::string>(key); }
+std::optional<i32> config_get_i32(std::string_view key) { return config_get<i32>(key); }
+std::optional<float> config_get_float(std::string_view key) { return config_get<float>(key); }
+std::optional<std::string> config_get_string(std::string_view key) { return config_get<std::string>(key); }
+
+void config_get_i32_if_set(std::string_view key, i32& out) {
+  auto value = config_get<i32>(key);
+  if (value.has_value()) { out = *value; }
+}
+void config_get_float_if_set(std::string_view key, float& out) {
+  auto value = config_get<float>(key);
+  if (value.has_value()) { out = *value; }
+}
+void config_get_string_if_set(std::string_view key, std::string& out) {
+  auto value = config_get<std::string>(key);
+  if (value.has_value()) { out = *value; }
+}
 
 void config_save_to_file(std::string file) {
   std::ofstream stream{file};
@@ -63,7 +89,7 @@ void config_load_from_file(std::string file) {
   bool insert_to_map = false;
   std::string* src = &key;
 
-  auto insert_ = [](std::string key_, std::string value_str_) {
+  auto insert_ = [](std::string_view key_, std::string value_str_) {
     try {
       if (value_str_.find('.') != std::string::npos) {
         float value = std::stof(value_str_, nullptr);
