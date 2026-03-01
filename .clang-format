@@ -7,14 +7,14 @@ ColumnLimit: 0
 
 IncludeCategories:
   # Headers in <> without extension.
-  - Regex:           '<([A-Za-z0-9\Q/-_\E])+>'
-    Priority:        0
+  - Regex: '<([A-Za-z0-9\Q/-_\E])+>'
+    Priority: 0
   # Headers in <> with extension.
-  - Regex:           '<([A-Za-z0-9.\Q/-_\E])+>'
-    Priority:        1
+  - Regex: '<([A-Za-z0-9.\Q/-_\E])+>'
+    Priority: 1
   # Headers in "" with extension.
-  - Regex:           '"([A-Za-z0-9.\Q/-_\E])+"'
-    Priority:        2
+  - Regex: '"([A-Za-z0-9.\Q/-_\E])+"'
+    Priority: 2
 
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -30,7 +30,7 @@ BraceWrapping:
 
 AllowShortCaseLabelsOnASingleLine: true
 
-
+IndentAccessModifiers: true
 IndentWidth: 2
 UseTab: Never
 TabWidth: 2

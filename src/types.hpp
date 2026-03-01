@@ -44,21 +44,21 @@ static constexpr Dir opposite_dir(Dir dir) {
 }
 
 struct rgba {
-  u8 r{};
-  u8 g{};
-  u8 b{};
-  u8 a{};
+    u8 r{};
+    u8 g{};
+    u8 b{};
+    u8 a{};
 
-  auto operator<=>(const rgba& rhs) const = default;
+    auto operator<=>(const rgba& rhs) const = default;
 };
 
 struct hsva {
-  double h{};
-  double s{};
-  double v{};
-  double a{};
+    double h{};
+    double s{};
+    double v{};
+    double a{};
 
-  auto operator<=>(const hsva& rhs) const = default;
+    auto operator<=>(const hsva& rhs) const = default;
 };
 
 using vec2i = glm::vec<2, i32>;
@@ -69,65 +69,65 @@ using vec3f = glm::vec<3, float>;
 using vec3d = glm::vec<3, double>;
 
 struct rect2i {
-  vec2i begin{0, 0};
-  vec2i size{0, 0};
+    vec2i begin{0, 0};
+    vec2i size{0, 0};
 
-  [[nodiscard]] rect2i expanded(vec2i to) const {
-    if (size == glm::vec<2, i32>{0, 0}) {
+    [[nodiscard]] rect2i expanded(vec2i to) const {
+      if (size == glm::vec<2, i32>{0, 0}) {
+        return rect2i{
+          .begin = to,
+          .size = vec2i(1),
+        };
+      }
+
+      vec2i current_min = begin;
+      vec2i current_max = begin + size - vec2i(1);
+
+      vec2i new_min = glm::min(current_min, to);
+      vec2i new_max = glm::max(current_max, to);
+
       return rect2i{
-        .begin = to,
-        .size = vec2i(1),
+        .begin = new_min,
+        .size = new_max - new_min + vec2i(1),
       };
     }
 
-    vec2i current_min = begin;
-    vec2i current_max = begin + size - vec2i(1);
+    [[nodiscard]] rect2i expanded(const rect2i& to) const {
+      if (to.size == vec2i{0, 0}) {
+        return rect2i{
+          .begin = begin,
+          .size = size,
+        };
+      }
+      return rect2i{.begin = begin, .size = size}
+        .expanded(to.begin)
+        .expanded(to.begin + to.size - vec2i{1, 1});
+    }
 
-    vec2i new_min = glm::min(current_min, to);
-    vec2i new_max = glm::max(current_max, to);
+    [[nodiscard]] rect2i intersected(const rect2i& b) const {
+      vec2i min_a = begin;
+      vec2i max_a = begin + size;
 
-    return rect2i{
-      .begin = new_min,
-      .size = new_max - new_min + vec2i(1),
-    };
-  }
+      vec2i min_b = b.begin;
+      vec2i max_b = b.begin + b.size;
 
-  [[nodiscard]] rect2i expanded(const rect2i& to) const {
-    if (to.size == vec2i{0, 0}) {
+      vec2i intersect_min = glm::max(min_a, min_b);
+      vec2i intersect_max = glm::min(max_a, max_b);
+
+      vec2i intersect_size = intersect_max - intersect_min;
+
+      if (intersect_size.x <= 0 || intersect_size.y <= 0) {
+        return rect2i{.begin = {0, 0}, .size = {0, 0}};
+      }
+
       return rect2i{
-        .begin = begin,
-        .size = size,
-      };
-    }
-    return rect2i{.begin = begin, .size = size}
-      .expanded(to.begin)
-      .expanded(to.begin + to.size - vec2i{1, 1});
-  }
-
-  [[nodiscard]] rect2i intersected(const rect2i& b) const {
-    vec2i min_a = begin;
-    vec2i max_a = begin + size;
-
-    vec2i min_b = b.begin;
-    vec2i max_b = b.begin + b.size;
-
-    vec2i intersect_min = glm::max(min_a, min_b);
-    vec2i intersect_max = glm::min(max_a, max_b);
-
-    vec2i intersect_size = intersect_max - intersect_min;
-
-    if (intersect_size.x <= 0 || intersect_size.y <= 0) {
-      return rect2i{.begin = {0, 0}, .size = {0, 0}};
+        .begin = intersect_min,
+        .size = intersect_size};
     }
 
-    return rect2i{
-      .begin = intersect_min,
-      .size = intersect_size};
-  }
-
-  bool is_empty() const {
-    return size.x <= 0 || size.y <= 0;
-  }
+    bool is_empty() const {
+      return size.x <= 0 || size.y <= 0;
+    }
 };
 
 enum class BufferMode : i32 {
