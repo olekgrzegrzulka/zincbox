@@ -620,10 +620,11 @@ void musicdb::create_some_debug_playlists() {
 
 void Playlist::add_track(collection_id_t collection_id, track_id_t track_id) {
   auto pt = playlist_track{};
+  pt.playlist_id = id;
   pt.collection_id = collection_id;
   pt.album_id = get_album(collection_id, track_id)->album_id;
   pt.track_id = track_id;
-  pt.playlist_index = tracks.size();
+  pt.cached_playlist_index = tracks.size();
   tracks.emplace_back(pt);
 }
 
@@ -631,13 +632,13 @@ void Playlist::sort_by_track_name_ascending() {
   if (tracks.size() == 0) { return; }
 
   std::sort(tracks.begin(), tracks.end(), [&](playlist_track lhs, playlist_track rhs) {
-    auto* track_lhs = musicdb::get_track(tracks[lhs.playlist_index].collection_id, tracks[lhs.playlist_index].track_id);
-    auto* track_rhs = musicdb::get_track(tracks[rhs.playlist_index].collection_id, tracks[rhs.playlist_index].track_id);
+    auto* track_lhs = musicdb::get_track(tracks[lhs.cached_playlist_index].collection_id, tracks[lhs.cached_playlist_index].track_id);
+    auto* track_rhs = musicdb::get_track(tracks[rhs.cached_playlist_index].collection_id, tracks[rhs.cached_playlist_index].track_id);
     return track_lhs->title < track_rhs->title;
   });
 
   for (size_t i = 0; i < tracks.size(); i++) {
-    tracks[i].playlist_index = i;
+    tracks[i].cached_playlist_index = i;
   }
 }
 
@@ -647,10 +648,10 @@ void Playlist::remove_track_by_index(size_t i) {
 }
 
 std::optional<playlist_track> Playlist::get_next_track(playlist_track pt) {
-  playlist_track pt2 = tracks[pt.playlist_index];
+  playlist_track pt2 = tracks[pt.cached_playlist_index];
   // playlist order hasn't changed (up until this track at least), get the next element
   if (pt == pt2) {
-    size_t i_next = pt.playlist_index + 1 < tracks.size() ? pt.playlist_index + 1 : 0;
+    size_t i_next = pt.cached_playlist_index + 1 < tracks.size() ? pt.cached_playlist_index + 1 : 0;
     return tracks[i_next];
   } else {
     // playlist order changed, look for this exact track in the whole playlist
@@ -660,7 +661,7 @@ std::optional<playlist_track> Playlist::get_next_track(playlist_track pt) {
       // maybe only when current playing song is removed from the playlist
       return std::nullopt;
     } else {
-      size_t i_next = it_curr->playlist_index + 1 < tracks.size() ? it_curr->playlist_index + 1 : 0;
+      size_t i_next = it_curr->cached_playlist_index + 1 < tracks.size() ? it_curr->cached_playlist_index + 1 : 0;
       return tracks[i_next];
     }
   }

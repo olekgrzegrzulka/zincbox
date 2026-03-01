@@ -73,6 +73,7 @@ void player::play(bool clear_history) {
 
 void player::play(now_playing_t n, bool clear_history) {
   now_playing = n;
+
   auto* track = musicdb::get_collection(now_playing->collection_id)->get_track(now_playing->track_id);
   if (clear_history) {
     tracks_history.clear();
@@ -159,10 +160,13 @@ float player::get_volume() {
   return volume;
 }
 
+// FIXME: this is hell, ideally we should have some kind of iterators for collections and playlists
+// with settings like bool shuffle, bool repeat, vector<> shuffle_cache
+// with some opaque identifier to infallibly look for the track even if the structrue changed
+// something like we do in Playlist::get_next, invoking an O(n) lookup when last index changed
 void player::next_track() {
-  static Random rng = Random();
-
   using namespace musicdb;
+  static Random rng = Random();
 
   auto is_in_tracks_history = [&](now_playing_t value, i32 last_n_to_check) {
     for (i32 i = std::max(0, (i32)tracks_history.size() - last_n_to_check); i < (i32)tracks_history.size(); i += 1) {
@@ -183,33 +187,73 @@ void player::next_track() {
   if (shuffle_mode == ShuffleMode::OFF) {
     if (repeat_mode == RepeatMode::OFF) {
       auto* track_curr = musicdb::get_track(now_playing->collection_id, now_playing->track_id);
-      auto next_track_id = track_curr->next_track_id;
-      auto track_next = musicdb::get_track(now_playing->collection_id, next_track_id);
-      now_playing_t next = {
-        .track_id = track_next->track_id,
-        .album_id = track_next->album_id,
-        .collection_id = track_next->collection_id,
-      };
-      play(next, false);
-    } else if (repeat_mode == RepeatMode::ALBUM) {
-      auto* track_curr = musicdb::get_track(now_playing->collection_id, now_playing->track_id);
-      auto* track_next = musicdb::get_track(now_playing->collection_id, track_curr->next_track_id);
-
-      if (track_next->album_id == track_curr->album_id) {
+      if (now_playing->playlist_track.has_value()) {
+        auto playlist_id = now_playing->playlist_track->playlist_id;
+        auto* playlist = musicdb::playlist(playlist_id);
+        auto next_track = playlist->get_next_track(now_playing->playlist_track.value());
+        if (now_playing->playlist_track == playlist->last_track()) {
+          auto next_playlist_id = playlist_id + 1;
+          if (next_playlist_id < musicdb::get_playlists().size()) {
+            auto n = musicdb::playlist(next_playlist_id)->first_track();
+            now_playing_t next = {
+              .track_id = n.track_id,
+              .album_id = n.album_id,
+              .collection_id = n.collection_id,
+              .playlist_track = n,
+            };
+            play(next, false);
+          }
+        } else if (next_track.has_value()) {
+          now_playing_t next = {
+            .track_id = next_track->track_id,
+            .album_id = next_track->album_id,
+            .collection_id = next_track->collection_id,
+            .playlist_track = next_track,
+          };
+          play(next, false);
+        }
+      } else {
+        auto next_track_id = track_curr->next_track_id;
+        auto track_next = musicdb::get_track(now_playing->collection_id, next_track_id);
         now_playing_t next = {
           .track_id = track_next->track_id,
           .album_id = track_next->album_id,
           .collection_id = track_next->collection_id,
         };
         play(next, false);
+      }
+
+    } else if (repeat_mode == RepeatMode::ALBUM) {
+      auto* track_curr = musicdb::get_track(now_playing->collection_id, now_playing->track_id);
+      if (now_playing->playlist_track.has_value()) {
+        auto next_track = musicdb::playlist(now_playing->playlist_track->playlist_id)->get_next_track(now_playing->playlist_track.value());
+        if (next_track.has_value()) {
+          now_playing_t next = {
+            .track_id = next_track->track_id,
+            .album_id = next_track->album_id,
+            .collection_id = next_track->collection_id,
+            .playlist_track = next_track,
+          };
+          play(next, false);
+        }
       } else {
-        auto* album = musicdb::get_album(now_playing->collection_id, track_curr->album_id);
-        now_playing_t next = {
-          .track_id = album->first_track_id,
-          .album_id = now_playing->album_id,
-          .collection_id = now_playing->collection_id,
-        };
-        play(next, false);
+        auto* track_next = musicdb::get_track(now_playing->collection_id, track_curr->next_track_id);
+        if (track_next->album_id == track_curr->album_id) {
+          now_playing_t next = {
+            .track_id = track_next->track_id,
+            .album_id = track_next->album_id,
+            .collection_id = track_next->collection_id,
+          };
+          play(next, false);
+        } else {
+          auto* album = musicdb::get_album(now_playing->collection_id, track_curr->album_id);
+          now_playing_t next = {
+            .track_id = album->first_track_id,
+            .album_id = now_playing->album_id,
+            .collection_id = now_playing->collection_id,
+          };
+          play(next, false);
+        }
       }
     }
   } else if (shuffle_mode == ShuffleMode::ON) {
@@ -218,21 +262,36 @@ void player::next_track() {
       track_id_t random_track_id = 0;
       now_playing_t next{};
       while (tries_left-- > 0) {
-        auto* collection = musicdb::get_collection(now_playing->collection_id);
-        random_track_id = rng.next<track_id_t>(0, collection->get_tracks().size());
-        auto* album = collection->get_album(collection->get_track(random_track_id)->album_id);
+        if (now_playing->playlist_track.has_value()) {
+          auto playlist_id = rng.next<playlist_id_t>(0, musicdb::get_playlists().size() - 1);
+          auto* playlist = musicdb::playlist(playlist_id);
+          random_track_id = rng.next<track_id_t>(0, playlist->get_tracks_count() - 1);
+          auto random_track = playlist->get_tracks()[random_track_id];
+          next = {
+            .track_id = random_track.track_id,
+            .album_id = random_track.album_id,
+            .collection_id = random_track.collection_id,
+            .playlist_track = random_track,
+          };
+        } else {
+          auto* collection = musicdb::get_collection(now_playing->collection_id);
+          random_track_id = rng.next<track_id_t>(0, collection->get_tracks().size() - 1);
+          auto* album = collection->get_album(collection->get_track(random_track_id)->album_id);
 
-        next = {
-          .track_id = random_track_id,
-          .album_id = album->album_id,
-          .collection_id = album->collection_id,
-        };
+          next = {
+            .track_id = random_track_id,
+            .album_id = album->album_id,
+            .collection_id = album->collection_id,
+          };
+        }
 
         bool found = is_in_tracks_history(next, 20);
         if (!found) { break; }
       }
       play(next, false);
+
     } else if (repeat_mode == RepeatMode::ALBUM) {
+
       auto* track_curr = musicdb::get_track(now_playing->collection_id, now_playing->track_id);
       auto* album = musicdb::get_album(now_playing->collection_id, track_curr->album_id);
 
@@ -240,14 +299,33 @@ void player::next_track() {
       track_id_t random_track_id = 0;
       now_playing_t next{};
       while (tries_left-- > 0) {
-        i32 random_album_track_index = rng.next<size_t>(0, album->track_ids.size() - 1);
-        random_track_id = album->track_ids[random_album_track_index];
-        next = {
-          .track_id = random_track_id,
-          .album_id = album->album_id,
-          .collection_id = album->collection_id,
-        };
-        bool found = is_in_tracks_history(next, std::min((i32)album->track_ids.size() / 2, 20));
+        if (now_playing->playlist_track.has_value()) {
+          auto playlist_id = now_playing->playlist_track->playlist_id;
+          auto* playlist = musicdb::playlist(playlist_id);
+          random_track_id = rng.next<track_id_t>(0, playlist->get_tracks_count() - 1);
+          auto random_track = playlist->get_tracks()[random_track_id];
+          next = {
+            .track_id = random_track.track_id,
+            .album_id = random_track.album_id,
+            .collection_id = random_track.collection_id,
+            .playlist_track = random_track,
+          };
+        } else {
+          i32 random_album_track_index = rng.next<size_t>(0, album->track_ids.size() - 1);
+          random_track_id = album->track_ids[random_album_track_index];
+          next = {
+            .track_id = random_track_id,
+            .album_id = album->album_id,
+            .collection_id = album->collection_id,
+          };
+        }
+        i32 last_n_to_check = std::min((i32)album->track_ids.size() / 2, 20);
+        if (now_playing->playlist_track.has_value()) {
+          auto playlist_id = now_playing->playlist_track->playlist_id;
+          auto* playlist = musicdb::playlist(playlist_id);
+          last_n_to_check = std::min((i32)playlist->get_tracks_count() / 2, 20);
+        }
+        bool found = is_in_tracks_history(next, last_n_to_check);
         if (!found) { break; }
       }
       play(next, false);
@@ -268,6 +346,7 @@ void player::prev_track() {
       .track_id = track_id,
       .album_id = musicdb::get_track(collection_id, track_id)->album_id,
       .collection_id = collection_id,
+      .playlist_track = now_playing.has_value() ? now_playing->playlist_track : std::nullopt,
     };
     play(prev, false);
   }
