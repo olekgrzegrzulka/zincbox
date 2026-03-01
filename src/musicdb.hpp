@@ -2,9 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
-#include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,9 +16,11 @@ namespace musicdb {
   struct Track;
   struct Album;
   class Collection;
+  class Playlist;
   using collection_id_t = size_t;
   using track_id_t = size_t;
   using album_id_t = size_t;
+  using playlist_id_t = size_t;
 
   collection_id_t add_collection(std::string_view);
   void mark_collection_as_tombstone(collection_id_t);
@@ -34,6 +34,10 @@ namespace musicdb {
 
   void save_collections_to_file(std::ofstream&);
   void load_collections_from_file(std::ifstream&);
+
+  Playlist* playlist(playlist_id_t);
+  bool delete_playlist(playlist_id_t);
+  playlist_id_t add_playlist(std::string_view);
 
   struct Track {
     track_id_t track_id = std::numeric_limits<size_t>::max();
@@ -142,5 +146,45 @@ namespace musicdb {
   protected:
     void scan_directory(std::filesystem::path);
     void build();
+  };
+  struct playlist_track final {
+    friend class Playlist;
+
+    friend bool operator==(const playlist_track& lhs, const playlist_track& rhs) {
+      return lhs.track_id == rhs.track_id && lhs.album_id == rhs.album_id && lhs.collection_id == rhs.collection_id;
+    }
+
+  public:
+    collection_id_t collection_id{};
+    album_id_t album_id{};
+    track_id_t track_id{};
+
+  private:
+    size_t playlist_index{};
+  };
+
+  class Playlist {
+  public:
+    Playlist(std::string_view name_, playlist_id_t id_) {
+      name = name_;
+      id = id_;
+    }
+
+  protected:
+    playlist_id_t id = std::numeric_limits<size_t>::max();
+    size_t first_track_index = 0;
+    std::string name{};
+    std::vector<playlist_track> tracks{};
+
+  public:
+    void add_track(collection_id_t, track_id_t);
+    void sort_by_track_name_ascending();
+    std::optional<playlist_track> get_next_track(playlist_track);
+
+    playlist_id_t get_id() const { return id; }
+    std::string_view get_name() const { return name; }
+
+  protected:
+    void remove_track_by_index(size_t);
   };
 } // namespace musicdb
