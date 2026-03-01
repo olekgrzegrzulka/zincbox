@@ -23,7 +23,8 @@ static constexpr i32 TRACK_HEIGHT = 24;
 
 class WidgetTrack : public Sprite {
   public:
-    WidgetTrack(UI& ui_, const musicdb::Track* track, bool even_) : Sprite(ui_) {
+    WidgetTrack(UI& ui_, const musicdb::Track* track, bool even_, std::optional<musicdb::playlist_track> playlist_track_ = std::nullopt) : Sprite(ui_) {
+      playlist_track = playlist_track_;
       track_id = track->track_id;
       album_id = track->album_id;
       collection_id = track->collection_id;
@@ -104,6 +105,7 @@ class WidgetTrack : public Sprite {
             .track_id = track_id,
             .album_id = album_id,
             .collection_id = collection_id,
+            .playlist_track = playlist_track,
           };
           player::play(now_playing, track_id);
         }
@@ -123,6 +125,7 @@ class WidgetTrack : public Sprite {
     musicdb::collection_id_t collection_id{};
     musicdb::album_id_t album_id{};
     musicdb::track_id_t track_id{};
+    std::optional<musicdb::playlist_track> playlist_track{};
     bool pressed = false;
 };
 
@@ -141,15 +144,20 @@ class WidgetAlbum : public Widget {
     WidgetAlbum(UI& ui_, const musicdb::Playlist* playlist) : Widget(ui_) {
       std::vector<musicdb::collection_id_t> collection_ids;
       std::vector<musicdb::track_id_t> track_ids;
+      std::vector<musicdb::playlist_track> playlist_tracks;
       for (auto playlist_track : playlist->get_tracks()) {
         collection_ids.emplace_back(playlist_track.collection_id);
         track_ids.emplace_back(playlist_track.track_id);
+        playlist_tracks.emplace_back(playlist_track);
       }
 
-      create(playlist->get_id(), std::u32string{playlist->get_name()}, collection_ids, track_ids);
+      create(playlist->get_id(), std::u32string{playlist->get_name()}, collection_ids, track_ids, playlist_tracks);
     }
 
-    void create(i32 id, std::u32string title, std::vector<musicdb::collection_id_t> collection_ids, std::vector<musicdb::track_id_t> track_ids) {
+    void create(i32 id, std::u32string title, std::vector<musicdb::collection_id_t> collection_ids, std::vector<musicdb::track_id_t> track_ids, std::vector<musicdb::playlist_track> playlist_tracks = {}) {
+      ensure(collection_ids.size() == track_ids.size());
+      ensure(playlist_tracks.size() == track_ids.size() || playlist_tracks.size() == 0);
+
       album_id = id;
 
       set_layout("ttb m:0 s:0 fit expand");
@@ -172,10 +180,10 @@ class WidgetAlbum : public Widget {
       s.set_label_anchor(Anchor::CENTER);
       s.set_height(ALBUM_HEIGHT);
 
-      ensure(collection_ids.size() == track_ids.size());
       for (size_t i = 0; i < track_ids.size(); i += 1) {
         auto* track = musicdb::get_track(collection_ids[i], track_ids[i]);
-        add_child<WidgetTrack>(track, i % 2 == 0);
+        auto playlist_track = ((playlist_tracks.size() > 0) ? std::make_optional(playlist_tracks[i]) : std::nullopt);
+        add_child<WidgetTrack>(track, i % 2 == 0, playlist_track);
       }
     }
 

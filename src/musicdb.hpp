@@ -158,12 +158,13 @@ namespace musicdb {
       }
 
     public:
+      playlist_id_t playlist_id{};
       collection_id_t collection_id{};
       album_id_t album_id{};
       track_id_t track_id{};
 
     private:
-      size_t playlist_index{};
+      size_t cached_playlist_index{};
   };
 
   class Playlist {
@@ -187,6 +188,8 @@ namespace musicdb {
       std::u32string_view get_name() const { return name; }
       size_t get_tracks_count() { return tracks.size(); }
       const std::vector<playlist_track>& get_tracks() const { return tracks; }
+      playlist_track first_track() { return tracks[0]; }
+      playlist_track last_track() { return tracks[tracks.size() - 1]; }
 
     protected:
       void remove_track_by_index(size_t);

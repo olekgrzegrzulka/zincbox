@@ -1,15 +1,6 @@
 #pragma once
+#include "musicdb.hpp"
 #include "types.hpp"
-
-namespace musicdb {
-  struct Track;
-  struct Album;
-  class Collection;
-
-  using collection_id_t = size_t;
-  using track_id_t = size_t;
-  using album_id_t = size_t;
-} // namespace musicdb
 
 namespace player {
   enum class RepeatMode {
@@ -27,6 +18,9 @@ namespace player {
       musicdb::track_id_t track_id = std::numeric_limits<size_t>::max();
       musicdb::album_id_t album_id = std::numeric_limits<size_t>::max();
       musicdb::collection_id_t collection_id = std::numeric_limits<size_t>::max();
+
+      std::optional<musicdb::playlist_track> playlist_track = std::nullopt;
+
       bool operator==(const now_playing_t&) const = default;
   };
 
