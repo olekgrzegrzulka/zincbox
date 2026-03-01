@@ -19,6 +19,12 @@
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
 
+enum class InterfaceView {
+  COLLECTION,
+  PLAYLISTS,
+};
+
+InterfaceView current_view = InterfaceView::COLLECTION;
 std::optional<musicdb::collection_id_t> active_collection_id;
 std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 
@@ -51,11 +57,22 @@ void interface::init() {
   panel_albums = &panel_main->add_child<PanelAlbums>();
 
   panel_top->on_collection_opened = [&](musicdb::collection_id_t collection_id) {
+    current_view = InterfaceView::COLLECTION;
     active_collection_id = collection_id;
-    panel_tracks->recreate(active_collection_id);
+    panel_tracks->view_type = PanelTracks::ViewType::COLLECTION;
+    panel_tracks->collection_id = active_collection_id;
+    panel_tracks->recreate();
     TextureAtlas* atlas = nullptr;
     if (active_collection_id.has_value()) { atlas = album_cover_atlases[*active_collection_id].get(); }
     panel_albums->recreate(active_collection_id, atlas);
+  };
+
+  panel_top->on_playlists_view_opened = [&]() {
+    current_view = InterfaceView::PLAYLISTS;
+    active_collection_id = std::nullopt;
+    panel_tracks->view_type = PanelTracks::ViewType::PLAYLISTS;
+    panel_tracks->recreate();
+    panel_albums->recreate_playlists();
   };
 
   panel_top->on_show_collection_actions_popover = [&](musicdb::collection_id_t collection_id, vec2i at) {
@@ -74,15 +91,23 @@ void interface::init() {
     panel_tracks->scroll_to_album(album_index_sorted);
   };
 
+  panel_albums->on_playlist_clicked = [&](musicdb::playlist_id_t playlist_id) {
+    panel_tracks->scroll_to_playlist(playlist_id);
+  };
+
   if (auto& c = musicdb::get_collections(); c.size() > 0) {
-    panel_tracks->recreate(0);
+    panel_tracks->collection_id = 0;
+    panel_tracks->recreate();
     panel_albums->recreate(0, album_cover_atlases[0].get());
     panel_top->recreate(0);
   } else {
-    panel_tracks->recreate(std::nullopt);
+    panel_tracks->collection_id = std::nullopt;
+    panel_tracks->recreate();
     panel_albums->recreate(std::nullopt, nullptr);
     panel_top->recreate(std::nullopt);
   }
+
+  musicdb::create_some_debug_playlists();
 }
 
 void interface::process_input() {
@@ -269,15 +294,18 @@ void delete_collection(musicdb::collection_id_t collection_id) {
     if (musicdb::get_collection(*active_collection_id)->is_tombstone()) {
       panel_top->recreate(std::nullopt);
       panel_albums->recreate(std::nullopt, nullptr);
-      panel_tracks->recreate(std::nullopt);
+      panel_tracks->collection_id = std::nullopt;
+      panel_tracks->recreate();
     } else {
       panel_top->recreate(*active_collection_id);
       panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
-      panel_tracks->recreate(*active_collection_id);
+      panel_tracks->collection_id = *active_collection_id;
+      panel_tracks->recreate();
     }
   } else {
     panel_top->recreate(std::nullopt);
     panel_albums->recreate(std::nullopt, nullptr);
-    panel_tracks->recreate(std::nullopt);
+    panel_tracks->collection_id = std::nullopt;
+    panel_tracks->recreate();
   }
 }

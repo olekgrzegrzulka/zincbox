@@ -19,13 +19,13 @@ Label::Label(UI& ui_) : Widget::Widget(ui_) {
   set_text_color({1.0, 0.85, 0.95});
 }
 
-Label::Label(UI& ui_, std::string text_) : Widget::Widget(ui_) {
+Label::Label(UI& ui_, std::string_view text_) : Widget::Widget(ui_) {
   set_text_color({1.0, 0.85, 0.95});
   set_text(text_);
   update_mesh();
 }
 
-Label::Label(UI& ui_, std::wstring text_) : Widget::Widget(ui_) {
+Label::Label(UI& ui_, std::u32string_view text_) : Widget::Widget(ui_) {
   set_text_color({1.0, 0.85, 0.95});
   set_text(text_);
   update_mesh();
@@ -83,7 +83,7 @@ void Label::update_mesh() {
   float current_line_width = 0.0f;
   const float line_spacing = 4.0f;
 
-  // static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+  // static std::u32string<std::codecvt_utf8<char32_t>, char32_t> converter;
   // auto text_utf32 = converter.from_bytes(text);
   std::u32string text_utf32;
   try {

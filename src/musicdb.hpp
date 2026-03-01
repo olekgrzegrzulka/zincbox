@@ -35,9 +35,11 @@ namespace musicdb {
   void save_collections_to_file(std::ofstream&);
   void load_collections_from_file(std::ifstream&);
 
+  std::vector<Playlist>& get_playlists();
   Playlist* playlist(playlist_id_t);
   bool delete_playlist(playlist_id_t);
-  playlist_id_t add_playlist(std::string_view);
+  playlist_id_t add_playlist(std::u32string_view);
+  void create_some_debug_playlists();
 
   struct Track {
       track_id_t track_id = std::numeric_limits<size_t>::max();
@@ -48,9 +50,9 @@ namespace musicdb {
       collection_id_t collection_id = std::numeric_limits<size_t>::max();
 
       i32 track_number;
-      std::wstring title;
-      std::wstring artist;
-      std::wstring genre;
+      std::u32string title;
+      std::u32string artist;
+      std::u32string genre;
       i32 year;
       i32 bitrate;
       i32 length_seconds;
@@ -67,7 +69,7 @@ namespace musicdb {
       track_id_t first_track_id = std::numeric_limits<size_t>::max();
       track_id_t last_track_id = std::numeric_limits<size_t>::max();
 
-      std::wstring title;
+      std::u32string title;
       std::vector<uint8_t> cover_art;
       std::vector<track_id_t> track_ids;
 
@@ -86,13 +88,13 @@ namespace musicdb {
       using is_transparent = void;
 
       std::size_t operator()(const Album& album) const {
-        return std::hash<std::wstring>{}(album.title);
+        return std::hash<std::u32string>{}(album.title);
       }
       std::size_t operator()(const std::unique_ptr<musicdb::Album>& album) const {
-        return std::hash<std::wstring>{}(album->title);
+        return std::hash<std::u32string>{}(album->title);
       }
-      std::size_t operator()(const std::wstring& title) const {
-        return std::hash<std::wstring>{}(title);
+      std::size_t operator()(const std::u32string& title) const {
+        return std::hash<std::u32string>{}(title);
       }
   };
 
@@ -103,8 +105,8 @@ namespace musicdb {
       bool operator()(const std::unique_ptr<musicdb::Album>& lhs, const std::unique_ptr<musicdb::Album>& rhs) const { return lhs->title == rhs->title; }
       bool operator()(const Album& lhs, const std::unique_ptr<musicdb::Album>& rhs) const { return lhs.title == rhs->title; }
       bool operator()(const std::unique_ptr<musicdb::Album>& lhs, const Album& rhs) const { return lhs->title == rhs.title; }
-      bool operator()(const Album& lhs, const std::wstring& rhs_title) const { return lhs.title == rhs_title; }
-      bool operator()(const std::wstring& lhs_title, const Album& rhs) const { return lhs_title == rhs.title; }
+      bool operator()(const Album& lhs, const std::u32string& rhs_title) const { return lhs.title == rhs_title; }
+      bool operator()(const std::u32string& lhs_title, const Album& rhs) const { return lhs_title == rhs.title; }
   };
 
   class Collection {
@@ -138,7 +140,7 @@ namespace musicdb {
 
       track_id_t add_track(Track, album_id_t);
       album_id_t add_album(Album);
-      Album* get_album_by_title(const std::wstring& title);
+      Album* get_album_by_title(const std::u32string& title);
 
       void mark_as_tombstone() { tombstone = true; }
       void check_integrity();
@@ -147,6 +149,7 @@ namespace musicdb {
       void scan_directory(std::filesystem::path);
       void build();
   };
+
   struct playlist_track final {
       friend class Playlist;
 
@@ -164,25 +167,26 @@ namespace musicdb {
   };
 
   class Playlist {
+    protected:
+      playlist_id_t id = std::numeric_limits<size_t>::max();
+      size_t first_track_index = 0;
+      std::u32string name{};
+      std::vector<playlist_track> tracks{};
+
     public:
-      Playlist(std::string_view name_, playlist_id_t id_) {
+      Playlist(std::u32string_view name_, playlist_id_t id_) {
         name = name_;
         id = id_;
       }
 
-    protected:
-      playlist_id_t id = std::numeric_limits<size_t>::max();
-      size_t first_track_index = 0;
-      std::string name{};
-      std::vector<playlist_track> tracks{};
-
-    public:
       void add_track(collection_id_t, track_id_t);
       void sort_by_track_name_ascending();
       std::optional<playlist_track> get_next_track(playlist_track);
 
       playlist_id_t get_id() const { return id; }
-      std::string_view get_name() const { return name; }
+      std::u32string_view get_name() const { return name; }
+      size_t get_tracks_count() { return tracks.size(); }
+      const std::vector<playlist_track>& get_tracks() const { return tracks; }
 
     protected:
       void remove_track_by_index(size_t);

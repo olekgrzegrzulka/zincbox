@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <string_view>
 #include <vector>
 #include <glm/vec3.hpp>
 #include "../../lib/utfcpp/source/utf8.h"
@@ -23,8 +24,8 @@ class Label final : public Widget {
 
   public:
     Label(UI&);
-    Label(UI&, std::string);
-    Label(UI&, std::wstring);
+    Label(UI&, std::string_view);
+    Label(UI&, std::u32string_view);
 
     ~Label() override;
 
@@ -35,14 +36,14 @@ class Label final : public Widget {
     WIDGET_DEF_GETTER(text_extents);
     WIDGET_DEF_SETTER_DIRTY(label_anchor);
 
-    void set_text(std::string text_) {
+    void set_text(std::string_view text_) {
       if (text == text_) { return; }
       text = text_;
       // text_dirty = true;
       dirty = true;
     }
 
-    void set_text(std::wstring text_) {
+    void set_text(std::u32string_view text_) {
       std::string result;
 
       if (sizeof(wchar_t) == 2) {

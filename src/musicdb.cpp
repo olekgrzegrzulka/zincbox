@@ -14,6 +14,7 @@
 #include <taglib/toolkit/tstring.h>
 #include "../lib/stb_image.h"
 #include "../lib/stb_image_resize2.h"
+#include "../lib/utfcpp/source/utf8.h"
 #include "debug.hpp"
 #include "flac/flacfile.h"
 #include "mp4/mp4file.h"
@@ -21,6 +22,7 @@
 #include "mpeg/id3v2/id3v2tag.h"
 #include "ogg/vorbis/vorbisfile.h"
 #include "ogg/xiphcomment.h"
+#include "random.hpp"
 #include "tfilestream.h"
 #include "types.hpp"
 
@@ -382,19 +384,27 @@ void Collection::scan_directory(fs::path path) {
 
       TagLib::Tag* tag = f.tag();
       TagLib::AudioProperties* audio_props = f.audioProperties();
+      auto string_to_u32string = [](std::string_view str) {
+        std::u32string ret;
+        try {
+          utf8::utf8to32(str.begin(), str.end(), std::back_inserter(ret));
+        } catch (const utf8::invalid_utf8& e) {
+        }
+        return ret;
+      };
 
       Track track{};
       track.collection_id = id;
       track.track_number = (i32)tag->track();
-      track.title = tag->title().toWString();
-      track.artist = tag->artist().toWString();
-      track.genre = tag->genre().toWString();
+      track.title = string_to_u32string(tag->title().to8Bit(true));
+      track.artist = string_to_u32string(tag->artist().to8Bit(true));
+      track.genre = string_to_u32string(tag->genre().to8Bit(true));
       track.year = (i32)tag->year();
       track.bitrate = audio_props->bitrate();
       track.length_seconds = audio_props->lengthInSeconds();
       track.path = entry.path().string();
 
-      std::wstring album_title = tag->album().toWString();
+      std::u32string album_title = string_to_u32string(tag->album().to8Bit(true));
       Album* album = get_album_by_title(album_title);
 
       if (!album) {
@@ -420,7 +430,7 @@ void Collection::scan_directory(fs::path path) {
   }
 }
 
-Album* Collection::get_album_by_title(const std::wstring& title) {
+Album* Collection::get_album_by_title(const std::u32string& title) {
   for (auto& album : albums) {
     if (album.title == title) {
       return &album;
@@ -557,14 +567,6 @@ void Collection::check_integrity() {
     bool album_contains_track = std::any_of(album.track_ids.begin(),
                                             album.track_ids.end(),
                                             [&](track_id_t track_id) { return tracks[i].track_id == track_id; });
-    if (!album_contains_track) {
-
-      debug_log(tracks[i].track_id);
-      debug_log("-----------");
-      debug_log(album.title);
-      debug_log(album.track_ids);
-      debug_log(album.track_ids.size());
-    }
     ensure(album_contains_track);
 
     size_t track_id_prev = tracks[i].prev_track_id;
@@ -578,6 +580,10 @@ void Collection::check_integrity() {
   }
 }
 
+std::vector<musicdb::Playlist>& musicdb::get_playlists() {
+  return playlists;
+}
+
 musicdb::Playlist* musicdb::playlist(playlist_id_t id) {
   if (id > playlists.size()) { return nullptr; }
   return &playlists[id];
@@ -588,9 +594,28 @@ bool musicdb::delete_playlist(playlist_id_t) {
   return false;
 }
 
-playlist_id_t musicdb::add_playlist(std::string_view name) {
+playlist_id_t musicdb::add_playlist(std::u32string_view name) {
   Playlist p{name, playlists.size()};
   return p.get_id();
+}
+
+void musicdb::create_some_debug_playlists() {
+  playlists.emplace_back(Playlist{U"premier", 0});
+  playlists.emplace_back(Playlist{U"deuxieme", 1});
+  playlists.emplace_back(Playlist{U"troisieme", 2});
+  playlists.emplace_back(Playlist{U"quatrieme", 3});
+  playlists.emplace_back(Playlist{U"cinquieme", 4});
+  playlists.emplace_back(Playlist{U"sixieme", 5});
+  playlists.emplace_back(Playlist{U"septieme", 6});
+
+  static auto rng = Random();
+  i32 n = rng.next<i32>(80, 120);
+  for (i32 i = 0; i < n; i += 1) {
+    i32 playlist_i = rng.next<size_t>(0, 6);
+    i32 collection_i = rng.next<size_t>(0, collections.size() - 1);
+    i32 track_id = rng.next<size_t>(0, collections[collection_i].get_tracks().size() - 1);
+    playlists[playlist_i].add_track(collection_i, track_id);
+  }
 }
 
 void Playlist::add_track(collection_id_t collection_id, track_id_t track_id) {
