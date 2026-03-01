@@ -24,10 +24,10 @@ namespace player {
   };
 
   struct now_playing_t {
-    musicdb::track_id_t track_id = std::numeric_limits<size_t>::max();
-    musicdb::album_id_t album_id = std::numeric_limits<size_t>::max();
-    musicdb::collection_id_t collection_id = std::numeric_limits<size_t>::max();
-    bool operator==(const now_playing_t&) const = default;
+      musicdb::track_id_t track_id = std::numeric_limits<size_t>::max();
+      musicdb::album_id_t album_id = std::numeric_limits<size_t>::max();
+      musicdb::collection_id_t collection_id = std::numeric_limits<size_t>::max();
+      bool operator==(const now_playing_t&) const = default;
   };
 
   void init();

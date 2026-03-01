@@ -161,38 +161,38 @@ namespace Input {
   };
 
   struct InputEventMouseButton {
-    MouseButton button{};
-    MouseAction action{};
-    bool handled = false;
+      MouseButton button{};
+      MouseAction action{};
+      bool handled = false;
   };
 
   struct InputEventMouseMove {
-    vec2f to{};
-    bool handled = false;
+      vec2f to{};
+      bool handled = false;
   };
 
   struct InputEventMouseScroll {
-    vec2f offset{};
-    bool handled = false;
+      vec2f offset{};
+      bool handled = false;
   };
 
   struct InputEventKey {
-    Key key;
-    KeyAction action;
-    i32 scancode;
-    bool handled = false;
+      Key key;
+      KeyAction action;
+      i32 scancode;
+      bool handled = false;
   };
 
   struct InputEventMouseEntered {
-    bool handled = false;
+      bool handled = false;
   };
 
   struct InputEventMouseLeft {
-    bool handled = false;
+      bool handled = false;
   };
 
   struct InputEventCloseWindow {
-    bool handled = false;
+      bool handled = false;
   };
 
   using InputEvent = std::variant<

@@ -69,8 +69,6 @@ static void print(T arg) {
 
 #endif
 
-
-
 template <typename T, typename... R>
 static void print(T&& first_arg, R&&... args) {
   print_(first_arg);
@@ -100,87 +98,87 @@ static void print(T&& first_arg, R&&... args) {
   } while (false);
 
 struct ScopeTimer {
-  std::string message;
-  std::chrono::time_point<std::chrono::system_clock> start_time;
+    std::string message;
+    std::chrono::time_point<std::chrono::system_clock> start_time;
 
-  ScopeTimer(std::string _message = "") : message(_message) {
-    start_time = std::chrono::high_resolution_clock::now();
-  }
-
-  ~ScopeTimer() {
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-    if (message.empty()) {
-      debug_log_no_filename("took ", milliseconds);
-    } else {
-      debug_log_no_filename(message, " took ", milliseconds);
+    ScopeTimer(std::string _message = "") : message(_message) {
+      start_time = std::chrono::high_resolution_clock::now();
     }
-  }
+
+    ~ScopeTimer() {
+      auto end_time = std::chrono::high_resolution_clock::now();
+      auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+      if (message.empty()) {
+        debug_log_no_filename("took ", milliseconds);
+      } else {
+        debug_log_no_filename(message, " took ", milliseconds);
+      }
+    }
 };
 
 class Benchmark {
-  static constexpr size_t max_measure_count = 1000;
-  friend class measure;
-
-private:
-  static inline std::unordered_map<std::string, std::vector<long>> times;
-  static inline std::mutex times_mutex;
-
-public:
-  static void print_all() {
-    std::scoped_lock lock{times_mutex};
-    for (auto& [tag, vec] : times) {
-      debug_log_no_filename(tag);
-
-      long sum = 0;
-
-      for (auto ms : vec) {
-        sum += ms;
-      }
-      if (vec.size() == max_measure_count) {
-        debug_log_no_filename("\t count:   ", max_measure_count, "+");
-      } else {
-        debug_log_no_filename("\t count:   ", vec.size());
-      }
-      debug_log_no_filename("\t average: ", sum / (double)(vec.size()), " ms");
-    }
-  }
-
-  class measure {
-  public:
-    [[nodiscard]] measure(std::string tag_) : tag{tag_} {
-      start = std::chrono::high_resolution_clock::now();
-    }
-
-    ~measure() {
-      auto end = std::chrono::high_resolution_clock::now();
-      auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-      std::scoped_lock lock{Benchmark::times_mutex};
-
-      auto it = Benchmark::times.find(tag);
-      if (it != Benchmark::times.end()) {
-        auto& my_times = it->second;
-
-        if (my_times.size() == Benchmark::max_measure_count) {
-          my_times[i] = ms;
-          i = (i + 1) % Benchmark::max_measure_count;
-        } else {
-          my_times.emplace_back(ms);
-        }
-
-      } else {
-        Benchmark::times[tag] = {ms};
-      }
-    }
+    static constexpr size_t max_measure_count = 1000;
+    friend class measure;
 
   private:
-    size_t i = 0;
-    std::string tag;
-    using chrono_time_point = decltype(std::chrono::high_resolution_clock::now());
-    chrono_time_point start;
-  };
+    static inline std::unordered_map<std::string, std::vector<long>> times;
+    static inline std::mutex times_mutex;
+
+  public:
+    static void print_all() {
+      std::scoped_lock lock{times_mutex};
+      for (auto& [tag, vec] : times) {
+        debug_log_no_filename(tag);
+
+        long sum = 0;
+
+        for (auto ms : vec) {
+          sum += ms;
+        }
+        if (vec.size() == max_measure_count) {
+          debug_log_no_filename("\t count:   ", max_measure_count, "+");
+        } else {
+          debug_log_no_filename("\t count:   ", vec.size());
+        }
+        debug_log_no_filename("\t average: ", sum / (double)(vec.size()), " ms");
+      }
+    }
+
+    class measure {
+      public:
+        [[nodiscard]] measure(std::string tag_) : tag{tag_} {
+          start = std::chrono::high_resolution_clock::now();
+        }
+
+        ~measure() {
+          auto end = std::chrono::high_resolution_clock::now();
+          auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+          std::scoped_lock lock{Benchmark::times_mutex};
+
+          auto it = Benchmark::times.find(tag);
+          if (it != Benchmark::times.end()) {
+            auto& my_times = it->second;
+
+            if (my_times.size() == Benchmark::max_measure_count) {
+              my_times[i] = ms;
+              i = (i + 1) % Benchmark::max_measure_count;
+            } else {
+              my_times.emplace_back(ms);
+            }
+
+          } else {
+            Benchmark::times[tag] = {ms};
+          }
+        }
+
+      private:
+        size_t i = 0;
+        std::string tag;
+        using chrono_time_point = decltype(std::chrono::high_resolution_clock::now());
+        chrono_time_point start;
+    };
 };
 #define CONCAT2__(a, b) a##b
 #define CONCAT1__(a, b) CONCAT2__(a, b)
