@@ -154,7 +154,9 @@ namespace musicdb {
       friend class Playlist;
 
       friend bool operator==(const playlist_track& lhs, const playlist_track& rhs) {
-        return lhs.track_id == rhs.track_id && lhs.album_id == rhs.album_id && lhs.collection_id == rhs.collection_id;
+        // FIXME
+        // return lhs.track_id == rhs.track_id && lhs.album_id == rhs.album_id && lhs.collection_id == rhs.collection_id;
+        return lhs.track_id == rhs.track_id && lhs.collection_id == rhs.collection_id;
       }
 
     public:
@@ -183,6 +185,7 @@ namespace musicdb {
       void add_track(collection_id_t, track_id_t);
       void sort_by_track_name_ascending();
       std::optional<playlist_track> get_next_track(playlist_track);
+      bool remove_track(playlist_track);
 
       playlist_id_t get_id() const { return id; }
       std::u32string_view get_name() const { return name; }
@@ -192,6 +195,7 @@ namespace musicdb {
       playlist_track last_track() { return tracks[tracks.size() - 1]; }
 
     protected:
+      std::optional<size_t> find_track(const playlist_track&);
       void remove_track_by_index(size_t);
   };
 } // namespace musicdb

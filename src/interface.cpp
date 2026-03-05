@@ -1,7 +1,9 @@
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
+#include "3rdparty/utfcpp/source/utf8.h"
 #include "debug.hpp"
 #include "interface.hpp"
 #include "musicdb.hpp"
@@ -40,6 +42,7 @@ void init_atlas();
 void init_album_cover_atlases();
 void handle_dropped_files();
 void delete_collection(musicdb::collection_id_t);
+void delete_playlist_track(const musicdb::playlist_track&);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -82,6 +85,18 @@ void interface::init() {
       .button_labels = {"Delete"},
       .button_actions = {[collection_id]() {
         delete_collection(collection_id);
+      }},
+    };
+    popup_controller->create_popover(d);
+  };
+
+  panel_tracks->on_show_playlist_track_actions_popover = [&](musicdb::playlist_track track, vec2i at) {
+    popover_descriptor d{
+      .id = "playlist_track_actions",
+      .at = at,
+      .button_labels = {"Delete"},
+      .button_actions = {[track]() {
+        delete_playlist_track(track);
       }},
     };
     popup_controller->create_popover(d);
@@ -306,6 +321,25 @@ void delete_collection(musicdb::collection_id_t collection_id) {
     panel_top->recreate(std::nullopt);
     panel_albums->recreate(std::nullopt, nullptr);
     panel_tracks->collection_id = std::nullopt;
+    panel_tracks->recreate();
+  }
+}
+
+#include "../../lib/utfcpp/source/utf8.h"
+
+void delete_playlist_track(const musicdb::playlist_track& track) {
+  auto text_utf32 = musicdb::get_track(track.collection_id, track.track_id)->title;
+  std::string text;
+  try {
+    utf8::utf32to8(text_utf32.begin(), text_utf32.end(), std::back_inserter(text));
+  } catch (const utf8::invalid_utf8& e) {
+  }
+  debug_warn("track: ", text);
+  debug_warn("-----------------------");
+  musicdb::playlist(track.playlist_id)->remove_track(track);
+  if (current_view == InterfaceView::PLAYLISTS) {
+    panel_tracks->view_type = PanelTracks::ViewType::PLAYLISTS;
+    panel_tracks->clear();
     panel_tracks->recreate();
   }
 }

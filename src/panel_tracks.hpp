@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <istream>
 #include <optional>
 #include <sstream>
@@ -21,15 +22,20 @@
 static constexpr i32 ALBUM_HEIGHT = 48;
 static constexpr i32 TRACK_HEIGHT = 24;
 
-class WidgetTrack : public Sprite {
+class WidgetTrack : public Button {
   public:
-    WidgetTrack(UI& ui_, const musicdb::Track* track, bool even_, std::optional<musicdb::playlist_track> playlist_track_ = std::nullopt) : Sprite(ui_) {
+    WidgetTrack(UI& ui_, const musicdb::Track* track, bool even_, std::optional<musicdb::playlist_track> playlist_track_ = std::nullopt) : Button(ui_) {
       playlist_track = playlist_track_;
       track_id = track->track_id;
       album_id = track->album_id;
       collection_id = track->collection_id;
       even = even_;
-      set_texture(even ? "track_bg2" : "track_bg1", false);
+      std::string txt = even ? "track_bg2" : "track_bg1";
+      set_texture_idle(txt);
+      set_texture_hovered(txt);
+      set_texture_disabled(txt);
+      set_texture_pressed(txt);
+      set_texture(txt, false);
       set_nine_slice_margin(4.0);
       set_layout("m:8 s:8 ltr expand");
       set_height(TRACK_HEIGHT);
@@ -40,13 +46,16 @@ class WidgetTrack : public Sprite {
       label_track_number->set_label_anchor(Anchor::LEFT);
       label_track_number->set_size(20, TRACK_HEIGHT);
       label_track_number->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
+      label_track_number->set_x(5);
 
       label_track_artist = &add_child<Label>(track->artist);
       label_track_artist->set_label_anchor(Anchor::LEFT);
       label_track_artist->set_height(TRACK_HEIGHT);
+      label_track_artist->set_x(label_track_number->get_x() + label_track_number->get_width() + 5);
       label_track_artist->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
 
       label_track_title = &add_child<Label>(track->title);
+      label_track_title->set_x(label_track_artist->get_x() + label_track_artist->get_width() + 5);
       label_track_title->set_label_anchor(Anchor::LEFT);
       label_track_title->set_height(TRACK_HEIGHT);
       label_track_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
@@ -77,14 +86,24 @@ class WidgetTrack : public Sprite {
 
       if (playing != playing_old && playing) {
         panel_right_side->set_texture("track_bg_playing", false);
-        set_texture("track_bg_playing", false);
+        std::string txt = "track_bg_playing";
+        set_texture_idle(txt);
+        set_texture_hovered(txt);
+        set_texture_disabled(txt);
+        set_texture_pressed(txt);
+        set_texture(txt, false);
         label_track_number->set_text_color(glm::vec3{0.55, 0.35, 0.45} * 1.2f);
         label_track_artist->set_text_color(glm::vec3{0.55, 0.35, 0.45} * 0.9f);
         label_track_title->set_text_color(glm::vec3{0.55, 0.35, 0.45} * 1.5f);
       }
       if (playing != playing_old && !playing) {
         panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
-        set_texture(even ? "track_bg2" : "track_bg1", false);
+        std::string txt = even ? "track_bg2" : "track_bg1";
+        set_texture_idle(txt);
+        set_texture_hovered(txt);
+        set_texture_disabled(txt);
+        set_texture_pressed(txt);
+        set_texture(txt, false);
         label_track_number->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
         label_track_artist->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
         label_track_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
@@ -95,23 +114,23 @@ class WidgetTrack : public Sprite {
       Sprite::update();
     }
 
-    void handle_event(Input::InputEventMouseButton& ev) override {
-      if (is_mouse_hovering() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
-        if (ev.action == Input::MouseAction::PRESS) {
-          pressed = true;
-        }
-        if (ev.action == Input::MouseAction::RELEASE && pressed) {
-          player::now_playing_t now_playing{
-            .track_id = track_id,
-            .album_id = album_id,
-            .collection_id = collection_id,
-            .playlist_track = playlist_track,
-          };
-          player::play(now_playing, track_id);
-        }
-        ev.handled = true;
-      }
-    }
+    // void handle_event(Input::InputEventMouseButton& ev) override {
+    //   if (is_mouse_hovering() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
+    //     if (ev.action == Input::MouseAction::PRESS) {
+    //       pressed = true;
+    //     }
+    //     if (ev.action == Input::MouseAction::RELEASE && pressed) {
+    //       player::now_playing_t now_playing{
+    //         .track_id = track_id,
+    //         .album_id = album_id,
+    //         .collection_id = collection_id,
+    //         .playlist_track = playlist_track,
+    //       };
+    //       player::play(now_playing, track_id);
+    //     }
+    //     ev.handled = true;
+    //   }
+    // }
 
   protected:
     Label* label_track_number{};
@@ -131,7 +150,8 @@ class WidgetTrack : public Sprite {
 
 class WidgetAlbum : public Widget {
   public:
-    WidgetAlbum(UI& ui_, const musicdb::Album* album) : Widget(ui_) {
+    WidgetAlbum(UI& ui_, const musicdb::Album* album, std::function<void(musicdb::playlist_track track, vec2i at)> on_show_playlist_track_actions_popover_) : Widget(ui_) {
+      on_show_playlist_track_actions_popover = on_show_playlist_track_actions_popover_;
       std::vector<musicdb::collection_id_t> collection_ids;
       std::vector<musicdb::track_id_t> track_ids;
       for (musicdb::track_id_t track_id : album->track_ids) {
@@ -141,7 +161,8 @@ class WidgetAlbum : public Widget {
       create(album->album_id, album->title, collection_ids, track_ids);
     }
 
-    WidgetAlbum(UI& ui_, const musicdb::Playlist* playlist) : Widget(ui_) {
+    WidgetAlbum(UI& ui_, const musicdb::Playlist* playlist, std::function<void(musicdb::playlist_track track, vec2i at)> on_show_playlist_track_actions_popover_) : Widget(ui_) {
+      on_show_playlist_track_actions_popover = on_show_playlist_track_actions_popover_;
       std::vector<musicdb::collection_id_t> collection_ids;
       std::vector<musicdb::track_id_t> track_ids;
       std::vector<musicdb::playlist_track> playlist_tracks;
@@ -183,7 +204,34 @@ class WidgetAlbum : public Widget {
       for (size_t i = 0; i < track_ids.size(); i += 1) {
         auto* track = musicdb::get_track(collection_ids[i], track_ids[i]);
         auto playlist_track = ((playlist_tracks.size() > 0) ? std::make_optional(playlist_tracks[i]) : std::nullopt);
-        add_child<WidgetTrack>(track, i % 2 == 0, playlist_track);
+        auto& w = add_child<WidgetTrack>(track, i % 2 == 0, playlist_track);
+
+        if (playlist_track.has_value()) {
+          w.on_press([playlist_track]() {
+            player::now_playing_t now_playing{
+              .track_id = playlist_track->track_id,
+              .album_id = playlist_track->album_id,
+              .collection_id = playlist_track->collection_id,
+              .playlist_track = playlist_track,
+            };
+            player::play(now_playing, true);
+          });
+          w.on_press_rmb([this, playlist_track, &w]() {
+            if (on_show_playlist_track_actions_popover) {
+              this->on_show_playlist_track_actions_popover(*playlist_track, w.get_position(Anchor::BOTTOM_CENTER));
+            }
+          });
+        } else {
+          w.on_press([track]() {
+            player::now_playing_t now_playing{
+              .track_id = track->track_id,
+              .album_id = track->album_id,
+              .collection_id = track->collection_id,
+              .playlist_track = std::nullopt,
+            };
+            player::play(now_playing, track->track_id);
+          });
+        }
       }
     }
 
@@ -195,6 +243,9 @@ class WidgetAlbum : public Widget {
 
     bool passed_visibility_test = false;
     musicdb::album_id_t album_id;
+
+  protected:
+    std::function<void(musicdb::playlist_track track, vec2i at)> on_show_playlist_track_actions_popover{};
 };
 
 class PanelTracks : public Panel {
@@ -226,11 +277,7 @@ class PanelTracks : public Panel {
 
     void recreate() {
       if (view_type == ViewType::NONE) {
-        for (auto& w : visible_album_widgets) {
-          w->set_marked_for_deletion(true);
-        }
-        visible_album_widgets.clear();
-        return;
+        clear();
       } else if (view_type == ViewType::COLLECTION) {
         recreate(collection_id);
       } else if (view_type == ViewType::PLAYLISTS) {
@@ -302,14 +349,18 @@ class PanelTracks : public Panel {
       }
     }
 
+    void clear() {
+      for (auto& w : visible_album_widgets) {
+        w->set_marked_for_deletion(true);
+      }
+      visible_album_widgets.clear();
+    }
+
   protected:
     void recreate(std::optional<musicdb::collection_id_t> collection_id_) {
       collection_id = collection_id_;
       if (!collection_id.has_value()) {
-        for (auto& w : visible_album_widgets) {
-          w->set_marked_for_deletion(true);
-        }
-        visible_album_widgets.clear();
+        clear();
         return;
       }
       album_scroll_px.clear();
@@ -406,10 +457,11 @@ class PanelTracks : public Panel {
       }
 
       // album widget doesn't exist
-      auto& w = add_child<WidgetAlbum>(album);
+      auto& w = add_child<WidgetAlbum>(album, nullptr);
       w.set_y(actual_y);
       w.passed_visibility_test = true;
       visible_album_widgets.emplace_back(&w);
+      debug_warn("SET");
     }
 
     void create_playlist(const musicdb::Playlist* playlist, i32 album_start_px) {
@@ -425,7 +477,12 @@ class PanelTracks : public Panel {
       }
 
       // album widget doesn't exist
-      auto& w = add_child<WidgetAlbum>(playlist);
+      std::function<void(musicdb::playlist_track track, vec2i at)> fun = [this](musicdb::playlist_track t, vec2i at) {
+        if (this->on_show_playlist_track_actions_popover) {
+          this->on_show_playlist_track_actions_popover(t, at);
+        }
+      };
+      auto& w = add_child<WidgetAlbum>(playlist, fun);
       w.set_y(actual_y);
       w.passed_visibility_test = true;
       visible_album_widgets.emplace_back(&w);
@@ -434,6 +491,7 @@ class PanelTracks : public Panel {
   public:
     ViewType view_type = ViewType::NONE;
     std::optional<musicdb::collection_id_t> collection_id{};
+    std::function<void(musicdb::playlist_track track, vec2i at)> on_show_playlist_track_actions_popover{};
 
   protected:
     double scroll_px{};
