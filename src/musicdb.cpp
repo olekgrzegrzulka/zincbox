@@ -421,6 +421,7 @@ void Collection::scan_directory(fs::path path) {
           .cover_art = cover_art,
         };
         album_id_t album_id_ = add_album(std::move(a));
+        a.album_id = album_id_;
         ensure(album_id == album_id_);
         add_track(track, album_id_);
       } else {
@@ -645,24 +646,41 @@ void Playlist::sort_by_track_name_ascending() {
 void Playlist::remove_track_by_index(size_t i) {
   if (i > tracks.size()) { return; }
   tracks.erase(tracks.begin() + i);
+  for (size_t j = 0; j < tracks.size(); j += 1) {
+    tracks[j].cached_playlist_index = j;
+  }
 }
 
 std::optional<playlist_track> Playlist::get_next_track(playlist_track pt) {
-  playlist_track pt2 = tracks[pt.cached_playlist_index];
-  // playlist order hasn't changed (up until this track at least), get the next element
-  if (pt == pt2) {
-    size_t i_next = pt.cached_playlist_index + 1 < tracks.size() ? pt.cached_playlist_index + 1 : 0;
-    return tracks[i_next];
+  auto i = find_track(pt);
+  if (!i.has_value()) { return std::nullopt; }
+
+  size_t i_next = (*i) + 1 < tracks.size() ? (*i) + 1 : 0;
+  return tracks[i_next];
+}
+
+std::optional<size_t> Playlist::find_track(const playlist_track& pt1) {
+  playlist_track pt2 = tracks[pt1.cached_playlist_index];
+  // playlist order hasn't changed (up until this track at least)
+  // return the track at cached index
+  if (pt1 == pt2) {
+    return pt1.cached_playlist_index;
   } else {
     // playlist order changed, look for this exact track in the whole playlist
-    auto it_curr = std::find(tracks.begin(), tracks.end(), pt);
+    auto it_curr = std::find(tracks.begin(), tracks.end(), pt1);
     if (it_curr == tracks.end()) {
       // this should almost never happen
       // maybe only when current playing song is removed from the playlist
       return std::nullopt;
     } else {
-      size_t i_next = it_curr->cached_playlist_index + 1 < tracks.size() ? it_curr->cached_playlist_index + 1 : 0;
-      return tracks[i_next];
+      return it_curr->cached_playlist_index;
     }
   }
+}
+
+bool Playlist::remove_track(playlist_track pt) {
+  auto i = find_track(pt);
+  if (!i.has_value()) { return false; }
+  remove_track_by_index(*i);
+  return true;
 }

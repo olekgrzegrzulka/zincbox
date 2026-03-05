@@ -46,10 +46,9 @@ class Label final : public Widget {
     void set_text(std::u32string_view text_) {
       std::string result;
 
-      if (sizeof(wchar_t) == 2) {
-        utf8::utf16to8(text_.begin(), text_.end(), std::back_inserter(result));
-      } else {
+      try {
         utf8::utf32to8(text_.begin(), text_.end(), std::back_inserter(result));
+      } catch (const utf8::invalid_utf8& e) {
       }
 
       set_text(result);
