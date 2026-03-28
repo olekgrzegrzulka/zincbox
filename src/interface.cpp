@@ -1,11 +1,11 @@
 #include <cstddef>
 #include <cstdio>
 #include <filesystem>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
 #include "core/musicdb.hpp"
+#include "core/player.hpp"
 #include "debug.hpp"
 #include "interface.hpp"
 #include "panel_albums.hpp"
@@ -67,6 +67,7 @@ void interface::init() {
     active_collection_id = collection_id;
     panel_tracks->view_type = PanelTracks::ViewType::COLLECTION;
     panel_tracks->collection_id = active_collection_id;
+    panel_tracks->clear();
     panel_tracks->recreate();
     TextureAtlas* atlas = nullptr;
     if (active_collection_id.has_value()) { atlas = album_cover_atlases[*active_collection_id].get(); }
@@ -93,16 +94,30 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  panel_tracks->on_show_playlist_track_actions_popover = [&](size_t track, vec2i at) {
-    popover_descriptor d{
-      .id = "playlist_track_actions",
-      .at = at,
-      .button_labels = {"Delete"},
-      .button_actions = {[track]() {
-        delete_playlist_track(track);
-      }},
+  panel_tracks->on_track_lmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget*) {
+    player::playing_t play{
+      .collection_id = collection_id,
+      .playlist_id = playlist_id,
+      .track_id = track_id,
     };
-    popup_controller->create_popover(d);
+    player::play(play, true);
+  };
+
+  panel_tracks->on_track_rmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget) {
+    if (db::playlist_by_id(playlist_id).value().get().type == db::PlaylistType::User) {
+      popover_descriptor d{
+        .id = "playlist_track_actions",
+        .at = widget->get_position(Anchor::BOTTOM),
+        .button_labels = {"Remove from playlist"},
+        .button_actions = {[playlist_id, playlist_track_index]() {
+          auto& playlist = db::playlist_by_id(playlist_id)->get();
+          playlist.track_ids.erase(playlist.track_ids.begin() + playlist_track_index);
+          panel_tracks->clear();
+          panel_tracks->recreate();
+        }},
+      };
+      popup_controller->create_popover(d);
+    }
   };
 
   panel_albums->on_playlist_lmb = [&](size_t playlist_id, Widget*) {
@@ -111,11 +126,13 @@ void interface::init() {
 
   if (db::collection_count() > 0) {
     panel_tracks->collection_id = 0;
+    panel_tracks->clear();
     panel_tracks->recreate();
     panel_albums->recreate(0, album_cover_atlases[0].get());
     panel_top->recreate(0);
   } else {
     panel_tracks->collection_id = std::nullopt;
+    panel_tracks->clear();
     panel_tracks->recreate();
     panel_albums->recreate(std::nullopt, nullptr);
     panel_top->recreate(std::nullopt);
@@ -323,24 +340,6 @@ void delete_collection(size_t collection_id) {
   //   panel_top->recreate(std::nullopt);
   //   panel_albums->recreate(std::nullopt, nullptr);
   //   panel_tracks->collection_id = std::nullopt;
-  //   panel_tracks->recreate();
-  // }
-}
-
-void delete_playlist_track(size_t track) {
-  debug_warn("delete_playlist_track");
-  // auto text_utf32 = musicdb::get_track(track.collection_id, track.track_id)->title;
-  // std::string text;
-  // try {
-  //   utf8::utf32to8(text_utf32.begin(), text_utf32.end(), std::back_inserter(text));
-  // } catch (const utf8::invalid_utf8& e) {
-  // }
-  // debug_warn("track: ", text);
-  // debug_warn("-----------------------");
-  // musicdb::playlist(track.playlist_id)->remove_track(track);
-  // if (current_view == InterfaceView::PLAYLISTS) {
-  //   panel_tracks->view_type = PanelTracks::ViewType::PLAYLISTS;
-  //   panel_tracks->clear();
   //   panel_tracks->recreate();
   // }
 }

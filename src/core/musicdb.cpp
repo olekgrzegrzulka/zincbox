@@ -123,10 +123,15 @@ std::optional<size_t> Playlist::find_track_index(size_t track_id) {
   return std::nullopt;
 }
 
-size_t Collection::add_playlist(std::u32string title, std::u32string artist) {
-  PlaylistAlbum a{};
-  a.author = artist;
-  a.name = title;
+size_t Collection::add_album(std::u32string_view title, std::u32string_view artist) {
+  Playlist a{title, artist, PlaylistType::Album};
+  playlists.emplace_back(a);
+  playlist_ids.emplace_back(playlists.size() - 1);
+  return playlists.size() - 1;
+}
+
+size_t Collection::add_playlist(std::u32string_view title, std::u32string_view artist) {
+  Playlist a{title, artist, PlaylistType::User};
   playlists.emplace_back(a);
   playlist_ids.emplace_back(playlists.size() - 1);
   return playlists.size() - 1;

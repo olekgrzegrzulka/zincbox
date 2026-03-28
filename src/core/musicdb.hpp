@@ -8,6 +8,12 @@
 #include "../types.hpp"
 
 namespace db {
+  enum class PlaylistType {
+    Album,
+    User,
+    Smart,
+  };
+
   struct Track final {
       friend size_t add_track(i32 track_number,
                               std::u32string title,
@@ -59,7 +65,8 @@ namespace db {
       std::u32string name;
       std::vector<size_t> playlist_ids;
 
-      size_t add_playlist(std::u32string title, std::u32string artist);
+      size_t add_playlist(std::u32string_view title, std::u32string_view artist);
+      size_t add_album(std::u32string_view title, std::u32string_view artist);
       std::optional<size_t> next_playlist_id(size_t playlist_id);
       std::optional<size_t> prev_playlist_id(size_t playlist_id);
       bool is_tombstone() const { return false; }
@@ -69,10 +76,14 @@ namespace db {
   };
 
   struct Playlist {
+      friend size_t Collection::add_album(std::u32string_view, std::u32string_view);
+      friend size_t Collection::add_playlist(std::u32string_view, std::u32string_view);
+
       std::vector<size_t> track_ids;
       std::u32string name;
       std::u32string author;
       std::vector<uint8_t> image;
+      PlaylistType type;
 
       bool add_track(size_t);
       void sort();
@@ -83,12 +94,11 @@ namespace db {
 
     protected:
       std::optional<size_t> find_track_index(size_t track_id);
-  };
-
-  struct PlaylistAlbum : public Playlist {
-  };
-
-  struct PlaylistUser : public Playlist {
+      Playlist(std::u32string_view name_, std::u32string_view author_, PlaylistType type_) {
+        name = name_;
+        author = author_;
+        type = type_;
+      }
   };
 
   size_t add_collection(std::u32string_view);
