@@ -3,6 +3,7 @@
 #include <string>
 #include "core/musicdb.hpp"
 #include "core/player.hpp"
+#include "debug.hpp"
 #include "theme.hpp"
 #include "types.hpp"
 #include "ui/button.hpp"
@@ -68,6 +69,7 @@ class WidgetTrack : public Button {
     void update() override {
       playing = (player::get_playing() &&
                  track_id == player::get_playing()->track_id &&
+                 album_id == player::get_playing()->playlist_id &&
                  collection_id == player::get_playing()->collection_id);
 
       if (playing != playing_old && playing) {
