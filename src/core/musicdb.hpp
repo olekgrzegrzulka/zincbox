@@ -86,11 +86,14 @@ namespace db {
       PlaylistType type;
 
       bool add_track(size_t);
+      bool remove_track_by_id(size_t);
+      bool remove_track_by_index(size_t);
       void sort();
       bool is_tombstone() const { return false; }
 
       std::optional<size_t> next_track_id(size_t track_id);
       std::optional<size_t> prev_track_id(size_t track_id);
+      bool has_track_id(size_t track_id);
 
     protected:
       std::optional<size_t> find_track_index(size_t track_id);
