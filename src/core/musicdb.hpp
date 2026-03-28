@@ -1,21 +1,13 @@
 #pragma once
 #include <cstddef>
 #include <functional>
-#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-#include "../debug.hpp"
 #include "../types.hpp"
 
 namespace db {
-
-  using playlist_id_t = size_t;
-  using track_id_t = size_t;
-  using album_id_t = size_t;
-  using collection_id_t = size_t;
-
   struct Track final {
       friend size_t add_track(i32 track_number,
                               std::u32string title,
