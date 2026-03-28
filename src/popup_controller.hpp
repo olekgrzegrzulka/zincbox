@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -16,8 +17,8 @@ struct popup_descriptor {
     std::string id;
     std::string_view title;
     std::string_view content;
-    std::initializer_list<std::string_view> button_labels;
-    std::initializer_list<std::function<void()>> button_actions;
+    std::vector<std::string> button_labels;
+    std::vector<std::function<void()>> button_actions;
 };
 
 struct popover_descriptor {

@@ -90,6 +90,18 @@ bool Playlist::add_track(size_t id) {
   return true;
 }
 
+bool Playlist::remove_track_by_id(size_t track_id) {
+  auto index = find_track_index(track_id);
+  if (!index.has_value()) { return false; }
+  track_ids.erase(track_ids.begin() + index.value());
+  return true;
+}
+
+bool Playlist::remove_track_by_index(size_t index) {
+  track_ids.erase(track_ids.begin() + index);
+  return true;
+}
+
 void Playlist::sort() {
   std::sort(track_ids.begin(), track_ids.end(), [&](size_t lhs, size_t rhs) {
     return tracks[lhs].track_number < tracks[rhs].track_number;
@@ -111,6 +123,15 @@ std::optional<size_t> Playlist::prev_track_id(size_t track_id) {
     return track_ids[index.value() - 1];
   } else {
     return std::nullopt;
+  }
+}
+
+bool Playlist::has_track_id(size_t track_id) {
+  auto index = find_track_index(track_id);
+  if (index.has_value()) {
+    return true;
+  } else {
+    return false;
   }
 }
 
