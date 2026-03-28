@@ -1,11 +1,7 @@
 #include <algorithm>
-#include <codecvt>
-#include <limits>
-#include <locale>
 #include <string>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include "../../lib/utfcpp/source/utf8.h"
 #include "../opengl_includes.hpp"
 #include "../shader.hpp"
 #include "../types.hpp"

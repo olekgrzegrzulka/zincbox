@@ -1,12 +1,13 @@
 #include <cstddef>
+#include <cstdio>
+#include <filesystem>
 #include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
-#include "3rdparty/utfcpp/source/utf8.h"
+#include "core/musicdb.hpp"
 #include "debug.hpp"
 #include "interface.hpp"
-#include "musicdb.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
 #include "panel_top.hpp"
@@ -20,6 +21,7 @@
 #include "ui/sprite.hpp"
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
+#include "utf.hpp"
 
 enum class InterfaceView {
   COLLECTION,
@@ -27,7 +29,7 @@ enum class InterfaceView {
 };
 
 InterfaceView current_view = InterfaceView::COLLECTION;
-std::optional<musicdb::collection_id_t> active_collection_id;
+std::optional<size_t> active_collection_id;
 std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 
 std::unique_ptr<UI> ui;
@@ -41,8 +43,8 @@ PanelControls* panel_controls{};
 void init_atlas();
 void init_album_cover_atlases();
 void handle_dropped_files();
-void delete_collection(musicdb::collection_id_t);
-void delete_playlist_track(const musicdb::playlist_track&);
+void delete_collection(size_t);
+void delete_playlist_track(size_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -59,7 +61,7 @@ void interface::init() {
   panel_tracks = &panel_main->add_child<PanelTracks>();
   panel_albums = &panel_main->add_child<PanelAlbums>();
 
-  panel_top->on_collection_opened = [&](musicdb::collection_id_t collection_id) {
+  panel_top->on_collection_opened = [&](size_t collection_id) {
     current_view = InterfaceView::COLLECTION;
     active_collection_id = collection_id;
     panel_tracks->view_type = PanelTracks::ViewType::COLLECTION;
@@ -78,7 +80,7 @@ void interface::init() {
     panel_albums->recreate_playlists();
   };
 
-  panel_top->on_show_collection_actions_popover = [&](musicdb::collection_id_t collection_id, vec2i at) {
+  panel_top->on_show_collection_actions_popover = [&](size_t collection_id, vec2i at) {
     popover_descriptor d{
       .id = "collection_actions",
       .at = at,
@@ -90,7 +92,7 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  panel_tracks->on_show_playlist_track_actions_popover = [&](musicdb::playlist_track track, vec2i at) {
+  panel_tracks->on_show_playlist_track_actions_popover = [&](size_t track, vec2i at) {
     popover_descriptor d{
       .id = "playlist_track_actions",
       .at = at,
@@ -106,11 +108,11 @@ void interface::init() {
     panel_tracks->scroll_to_album(album_index_sorted);
   };
 
-  panel_albums->on_playlist_clicked = [&](musicdb::playlist_id_t playlist_id) {
+  panel_albums->on_playlist_clicked = [&](size_t playlist_id) {
     panel_tracks->scroll_to_playlist(playlist_id);
   };
 
-  if (auto& c = musicdb::get_collections(); c.size() > 0) {
+  if (db::collection_count() > 0) {
     panel_tracks->collection_id = 0;
     panel_tracks->recreate();
     panel_albums->recreate(0, album_cover_atlases[0].get());
@@ -122,7 +124,7 @@ void interface::init() {
     panel_top->recreate(std::nullopt);
   }
 
-  musicdb::create_some_debug_playlists();
+  // musicdb::create_some_debug_playlists();
 }
 
 void interface::process_input() {
@@ -225,12 +227,11 @@ void init_atlas() {
   atlas.save_to_file("atlas.png");
 }
 
-void init_album_cover_atlas(musicdb::collection_id_t collection_id) {
-  auto& collections = musicdb::get_collections();
-  ensure(collections.size() > collection_id);
+void init_album_cover_atlas(size_t collection_id) {
+  ensure(db::collection_count() > collection_id);
 
-  auto* c = musicdb::get_collection(collection_id);
-  i32 album_count = c->get_albums().size();
+  auto& c = db::collection_by_id(collection_id).value().get();
+  i32 album_count = c.playlist_ids.size();
   i32 atlas_resolution = std::sqrt(album_count) * 64;
   if (atlas_resolution < 512) {
     atlas_resolution = 512;
@@ -246,8 +247,9 @@ void init_album_cover_atlas(musicdb::collection_id_t collection_id) {
 
   i32 count = 0;
   album_cover_atlases[collection_id] = std::make_unique<TextureAtlas>(atlas_resolution, 0, 64);
-  for (auto& album : c->get_albums()) {
-    album_cover_atlases[collection_id]->add_texture(std::to_string(album.album_id), album.cover_art, 64, 64);
+  for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {
+    auto& playlist = db::playlist_by_id(playlist_id)->get();
+    album_cover_atlases[collection_id]->add_texture(std::to_string(playlist_id), playlist.image, 64, 64);
     if (count++ >= 1023) { break; }
   }
   album_cover_atlases[collection_id]->save_to_file("albums" + std::to_string(collection_id) + ".png");
@@ -255,19 +257,21 @@ void init_album_cover_atlas(musicdb::collection_id_t collection_id) {
 
 void init_album_cover_atlases() {
   album_cover_atlases.clear();
-  auto n = musicdb::get_collections().size();
-  for (musicdb::collection_id_t i = 0; i < n; i += 1) {
+  auto n = db::collection_count();
+  for (size_t i = 0; i < n; i += 1) {
     album_cover_atlases.emplace_back(std::make_unique<TextureAtlas>(512, 0, 64));
     init_album_cover_atlas(i);
   }
 }
 
+namespace fs = std::filesystem;
+
 void create_collections(std::vector<std::string> directories) {
   for (auto& str : directories) {
-    std::filesystem::path path = str;
+    fs::path path = str;
     std::string collection_name = path.filename().string();
-    auto collection_id = musicdb::add_collection(collection_name);
-    musicdb::get_collection(collection_id)->add_path(str);
+    auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
+    // db::collection_by_id(collection_id)->add_path(str);
   }
 }
 
@@ -303,43 +307,43 @@ void handle_dropped_files() {
   }
 }
 
-void delete_collection(musicdb::collection_id_t collection_id) {
-  musicdb::mark_collection_as_tombstone(collection_id);
-  if (active_collection_id.has_value()) {
-    if (musicdb::get_collection(*active_collection_id)->is_tombstone()) {
-      panel_top->recreate(std::nullopt);
-      panel_albums->recreate(std::nullopt, nullptr);
-      panel_tracks->collection_id = std::nullopt;
-      panel_tracks->recreate();
-    } else {
-      panel_top->recreate(*active_collection_id);
-      panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
-      panel_tracks->collection_id = *active_collection_id;
-      panel_tracks->recreate();
-    }
-  } else {
-    panel_top->recreate(std::nullopt);
-    panel_albums->recreate(std::nullopt, nullptr);
-    panel_tracks->collection_id = std::nullopt;
-    panel_tracks->recreate();
-  }
+void delete_collection(size_t collection_id) {
+  debug_warn("delete_collection");
+  // musicdb::mark_collection_as_tombstone(collection_id);
+  // if (active_collection_id.has_value()) {
+  //   if (musicdb::get_collection(*active_collection_id)->is_tombstone()) {
+  //     panel_top->recreate(std::nullopt);
+  //     panel_albums->recreate(std::nullopt, nullptr);
+  //     panel_tracks->collection_id = std::nullopt;
+  //     panel_tracks->recreate();
+  //   } else {
+  //     panel_top->recreate(*active_collection_id);
+  //     panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
+  //     panel_tracks->collection_id = *active_collection_id;
+  //     panel_tracks->recreate();
+  //   }
+  // } else {
+  //   panel_top->recreate(std::nullopt);
+  //   panel_albums->recreate(std::nullopt, nullptr);
+  //   panel_tracks->collection_id = std::nullopt;
+  //   panel_tracks->recreate();
+  // }
 }
 
-#include "../../lib/utfcpp/source/utf8.h"
-
-void delete_playlist_track(const musicdb::playlist_track& track) {
-  auto text_utf32 = musicdb::get_track(track.collection_id, track.track_id)->title;
-  std::string text;
-  try {
-    utf8::utf32to8(text_utf32.begin(), text_utf32.end(), std::back_inserter(text));
-  } catch (const utf8::invalid_utf8& e) {
-  }
-  debug_warn("track: ", text);
-  debug_warn("-----------------------");
-  musicdb::playlist(track.playlist_id)->remove_track(track);
-  if (current_view == InterfaceView::PLAYLISTS) {
-    panel_tracks->view_type = PanelTracks::ViewType::PLAYLISTS;
-    panel_tracks->clear();
-    panel_tracks->recreate();
-  }
+void delete_playlist_track(size_t track) {
+  debug_warn("delete_playlist_track");
+  // auto text_utf32 = musicdb::get_track(track.collection_id, track.track_id)->title;
+  // std::string text;
+  // try {
+  //   utf8::utf32to8(text_utf32.begin(), text_utf32.end(), std::back_inserter(text));
+  // } catch (const utf8::invalid_utf8& e) {
+  // }
+  // debug_warn("track: ", text);
+  // debug_warn("-----------------------");
+  // musicdb::playlist(track.playlist_id)->remove_track(track);
+  // if (current_view == InterfaceView::PLAYLISTS) {
+  //   panel_tracks->view_type = PanelTracks::ViewType::PLAYLISTS;
+  //   panel_tracks->clear();
+  //   panel_tracks->recreate();
+  // }
 }

@@ -1,12 +1,13 @@
-#include "interface.hpp"
 #include "opengl_includes.hpp"
 
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <ostream>
 #include <thread>
 #include <GLFW/glfw3.h>
 #include <glm/ext/vector_float2.hpp>
@@ -14,10 +15,12 @@
 #include <nfd.hpp>
 #include <unistd.h>
 #include "config.hpp"
+#include "core/io.hpp"
+#include "core/musicdb.hpp"
+#include "core/player.hpp"
 #include "debug.hpp"
 #include "input.hpp"
-#include "musicdb.hpp"
-#include "player.hpp"
+#include "interface.hpp"
 
 #define STBI_ASSERT(x) ensure(x);
 #define STB_IMAGE_IMPLEMENTATION
@@ -62,11 +65,6 @@ int main() {
   NFD::Init();
   player::init();
   config_load_from_file("music.cfg");
-
-  if (std::filesystem::exists("musicdb")) {
-    std::ifstream is("musicdb", std::ios::binary);
-    musicdb::load_collections_from_file(is);
-  }
 
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
   if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
@@ -124,8 +122,9 @@ int main() {
     config_set_i32("window_width", window_size.x);
     config_set_i32("window_height", window_size.y);
   }
-  std::ofstream os("musicdb", std::ios::binary);
-  musicdb::save_collections_to_file(os);
+
+  // std::ofstream os("musicdb", std::ios::binary);
+  // musicdb::save_collections_to_file(os);
   config_save_to_file("music.cfg");
   interface::deinit();
   player::deinit();

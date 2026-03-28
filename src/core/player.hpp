@@ -1,6 +1,6 @@
 #pragma once
+#include "../types.hpp"
 #include "musicdb.hpp"
-#include "types.hpp"
 
 namespace player {
   enum class RepeatMode {
@@ -14,14 +14,11 @@ namespace player {
     ON,
   };
 
-  struct now_playing_t {
-      musicdb::track_id_t track_id = std::numeric_limits<size_t>::max();
-      musicdb::album_id_t album_id = std::numeric_limits<size_t>::max();
-      musicdb::collection_id_t collection_id = std::numeric_limits<size_t>::max();
-
-      std::optional<musicdb::playlist_track> playlist_track = std::nullopt;
-
-      bool operator==(const now_playing_t&) const = default;
+  struct playing_t {
+      size_t collection_id{};
+      size_t playlist_id{};
+      size_t track_id{};
+      bool operator==(const playing_t&) const = default;
   };
 
   void init();
@@ -29,8 +26,8 @@ namespace player {
 
   void update();
 
-  void play(bool clear_history = true);
-  void play(now_playing_t, bool clear_history = true);
+  void play(playing_t, bool clear_history = true);
+  void resume();
   void pause();
   void stop();
   void seek_ms(i32 ms);
@@ -44,7 +41,7 @@ namespace player {
   i32 get_total_duration_ms();
   bool is_playing();
   bool is_at_end();
-  std::optional<now_playing_t> get_playing();
+  std::optional<playing_t> get_playing();
 
   ShuffleMode get_shuffle_mode();
   void set_shuffle_mode(ShuffleMode);

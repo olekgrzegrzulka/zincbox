@@ -76,8 +76,8 @@ set(SOURCES
     ./src/ui/selectbar.cpp
     ./src/ui/scrollbar.cpp
 
-    ./src/musicdb.cpp
-    ./src/player.cpp
+    ./src/core/musicdb.cpp
+    ./src/core/player.cpp
     ./src/interface.cpp
 
     ./lib/glad/glad.c

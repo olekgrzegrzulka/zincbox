@@ -48,6 +48,12 @@ class Random {
       return values[distribution(rng)];
     }
 
+    template <class T>
+    T pick(std::span<T> values) {
+      if (values.size() == 0) { return T(); }
+      return values[next<size_t>(0, values.size() - 1)];
+    }
+
     bool rand_bool() {
       return next<i32>(0, 1) == 1;
     }
