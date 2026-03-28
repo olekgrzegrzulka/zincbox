@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include "core/musicdb.hpp"
+#include "debug.hpp"
 #include "panel_tracks_playlist.hpp"
 #include "theme.hpp"
 #include "ui/scrollbar.hpp"
@@ -123,7 +124,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
 
     if (album_end_px < view_start_px) { continue; }
     if (album_start_px > view_end_px) { break; }
-    create_album(album_scroll_px[i].second, album_start_px);
+    create_playlist(album_scroll_px[i].second, album_start_px);
   }
 
   for (auto& w : visible_album_widgets) {
@@ -174,27 +175,10 @@ void PanelTracks::recreate_playlist() {
   std::erase_if(visible_album_widgets, [](auto&& w) { return !w->passed_visibility_test; });
 }
 
-void PanelTracks::create_album(size_t album_id, i32 album_start_px) {
-  i32 actual_y = album_start_px - (i32)scroll_px;
-  for (auto& w : visible_album_widgets) {
-    if (w->album_id == album_id) {
-      w->set_y(actual_y);
-      w->passed_visibility_test = true;
-      return;
-    }
-  }
-
-  if (!collection_id.has_value()) { return; }
-  auto& w = add_child<WidgetAlbum>(collection_id.value(), album_id, on_track_lmb, on_track_rmb);
-  w.set_y(actual_y);
-  w.passed_visibility_test = true;
-  visible_album_widgets.emplace_back(&w);
-}
-
 void PanelTracks::create_playlist(size_t playlist_id, i32 album_start_px) {
   i32 actual_y = album_start_px - (i32)scroll_px;
   for (auto& w : visible_album_widgets) {
-    if (w->album_id == playlist_id) {
+    if (w->playlist_id == playlist_id) {
       w->set_y(actual_y);
       w->passed_visibility_test = true;
       return;
