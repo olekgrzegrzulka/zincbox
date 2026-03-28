@@ -3,8 +3,8 @@
 #include <string_view>
 #include <vector>
 #include <glm/vec3.hpp>
-#include "../../lib/utfcpp/source/utf8.h"
 #include "../types.hpp"
+#include "../utf.hpp"
 #include "../vertex.hpp"
 #include "widget.hpp"
 
@@ -44,14 +44,7 @@ class Label final : public Widget {
     }
 
     void set_text(std::u32string_view text_) {
-      std::string result;
-
-      try {
-        utf8::utf32to8(text_.begin(), text_.end(), std::back_inserter(result));
-      } catch (const utf8::invalid_utf8& e) {
-      }
-
-      set_text(result);
+      set_text(utf32_to_utf8(text_));
     }
 
     void set_text_color(glm::vec3 text_color_) {

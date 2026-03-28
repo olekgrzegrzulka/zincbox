@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <functional>
+#include <string>
 #include <vector>
 #include "input.hpp"
 #include "ui/button.hpp"
@@ -138,7 +139,7 @@ class TabBar : public Panel {
     struct tab_info {
         i32 id{};
         bool is_draggable{};
-        std::string label{};
+        std::u32string label{};
         i32 padding = 0;
         std::function<void()> on_open{};
         std::function<void(Tab*)> on_right_click{};

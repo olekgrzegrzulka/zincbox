@@ -4,9 +4,9 @@
 #include <functional>
 #include <sstream>
 #include <vector>
+#include "core/musicdb.hpp"
 #include "debug.hpp"
 #include "input.hpp"
-#include "musicdb.hpp"
 #include "texture_atlas.hpp"
 #include "ui/button.hpp"
 #include "ui/panel.hpp"
@@ -26,7 +26,11 @@ class SpriteAlbumCover : public Sprite {
 
     TextureAtlas& get_texture_atlas() override {
       // FIXME disgusting
-      return *album_covers_atlas;
+      if (album_covers_atlas) {
+        return *album_covers_atlas;
+      } else {
+        return ui.get_texture_atlas();
+      }
     }
 
   protected:
@@ -35,34 +39,16 @@ class SpriteAlbumCover : public Sprite {
 
 class WidgetAlbumCover : public Button {
   public:
-    WidgetAlbumCover(UI& ui_, musicdb::Playlist* playlist) : Button(ui_) {
-      album_covers_atlas = &ui_.get_texture_atlas();
+    WidgetAlbumCover(UI& ui_, size_t playlist_id, TextureAtlas* album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
+      auto& playlist = db::playlist_by_id(playlist_id)->get();
       get_children()[0]->set_ignore_parents_layout(true);
       set_clip_children(true);
       set_size(COVER_WIDTH, COVER_HEIGHT);
       set_layout("m:0 s:8 ttb");
       std::stringstream texture_id;
-      auto& cover = add_child<SpriteAlbumCover>("red", album_covers_atlas);
-      cover.set_size(64, 64);
-      label_title = &add_child<Label>(playlist->get_name());
-      label_title->set_resize_to_text_extents(false);
-      label_title->set_width(COVER_WIDTH);
-      label_title->set_label_anchor(Anchor::LEFT);
-      label_title->set_anchor(Anchor::LEFT);
-      label_title->set_parent_anchor(Anchor::LEFT);
-      label_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.65f);
-    }
-
-    WidgetAlbumCover(UI& ui_, const musicdb::Album* album, TextureAtlas* album_covers_atlas_) : Button(ui_), album_covers_atlas(album_covers_atlas_) {
-      get_children()[0]->set_ignore_parents_layout(true);
-      set_clip_children(true);
-      set_size(COVER_WIDTH, COVER_HEIGHT);
-      set_layout("m:0 s:8 ttb");
-      std::stringstream texture_id;
-      texture_id << album->album_id;
-      std::string sprite_id = album_covers_atlas->has_texture(texture_id.str()) ? texture_id.str() : "cover_unknown";
-      add_child<SpriteAlbumCover>(sprite_id, album_covers_atlas);
-      label_title = &add_child<Label>(album->title);
+      // texture_id << album->album_id;
+      add_child<SpriteAlbumCover>(std::to_string(playlist_id), album_covers_atlas);
+      label_title = &add_child<Label>(playlist.name);
       label_title->set_resize_to_text_extents(false);
       label_title->set_width(COVER_WIDTH);
       label_title->set_label_anchor(Anchor::LEFT);
@@ -116,7 +102,7 @@ class PanelAlbums : public Panel {
       // ui.get_texture_atlas().bind(0);
     }
 
-    void recreate(std::optional<musicdb::collection_id_t> collection_id_, TextureAtlas* album_covers_atlas) {
+    void recreate(std::optional<db::collection_id_t> collection_id_, TextureAtlas* album_covers_atlas) {
       if (!collection_id_.has_value() || album_covers_atlas == nullptr) {
         for (auto& w : album_widgets) {
           w->set_marked_for_deletion(true);
@@ -125,7 +111,7 @@ class PanelAlbums : public Panel {
         return;
       }
 
-      auto* c = musicdb::get_collection(*collection_id_);
+      auto c = db::collection_by_id(*collection_id_);
 
       for (auto& w : album_widgets) {
         w->set_marked_for_deletion(true);
@@ -133,8 +119,9 @@ class PanelAlbums : public Panel {
       album_widgets.clear();
 
       size_t album_index_sorted = 0;
-      for (musicdb::album_id_t album_id : c->get_albums_sorted_by_name()) {
-        auto& album_widget = add_child<WidgetAlbumCover>(c->get_album(album_id), album_covers_atlas);
+      // for (db::album_id_t album_id : c->get_albums_sorted_by_name()) {
+      for (size_t album_id : c->get().playlist_ids) {
+        auto& album_widget = add_child<WidgetAlbumCover>(album_id, album_covers_atlas);
         album_widgets.emplace_back(&album_widget);
         album_widget.on_press([this, album_index_sorted]() {
           if (on_album_clicked) {
@@ -151,9 +138,8 @@ class PanelAlbums : public Panel {
       }
       album_widgets.clear();
 
-      for (auto& playlist : musicdb::get_playlists()) {
-        auto& album_widget = add_child<WidgetAlbumCover>(&playlist);
-        size_t playlist_id = playlist.get_id();
+      for (size_t playlist_id = 0; playlist_id < db::playlist_count(); playlist_id += 1) {
+        auto& album_widget = add_child<WidgetAlbumCover>(playlist_id, nullptr);
         album_widgets.emplace_back(&album_widget);
         album_widget.on_press([this, playlist_id]() {
           if (on_playlist_clicked) {
@@ -207,6 +193,6 @@ class PanelAlbums : public Panel {
     ScrollBar* scrollbar{};
 
   public:
-    std::function<void(musicdb::playlist_id_t)> on_playlist_clicked{};
+    std::function<void(db::playlist_id_t)> on_playlist_clicked{};
     std::function<void(size_t)> on_album_clicked{};
 };

@@ -1,7 +1,7 @@
 #pragma once
 #include <functional>
+#include "core/musicdb.hpp"
 #include "debug.hpp"
-#include "musicdb.hpp"
 #include "tab_bar.hpp"
 #include "types.hpp"
 #include "ui/button.hpp"
@@ -31,12 +31,12 @@ class PanelTop : public Panel {
       set_width(ui.get_window_width());
     }
 
-    void recreate(std::optional<musicdb::collection_id_t> selected_collection_id) {
+    void recreate(std::optional<size_t> selected_collection_id) {
       tab_bar.close_all_tabs();
 
       tab_bar.add_tab(TabBar::tab_info{
                         .is_draggable = false,
-                        .label = "Queue",
+                        .label = U"Queue",
                         .padding = 10,
                         .on_open = [this]() {
                           if (on_queue_view_opened) {
@@ -48,7 +48,7 @@ class PanelTop : public Panel {
 
       tab_bar.add_tab(TabBar::tab_info{
                         .is_draggable = false,
-                        .label = "Playlists",
+                        .label = U"Playlists",
                         .padding = 10,
                         .on_open = [this]() {
                           if (on_playlists_view_opened) {
@@ -58,30 +58,30 @@ class PanelTop : public Panel {
                       },
                       1, false);
 
-      for (auto c : musicdb::get_collections()) {
-        if (c.is_tombstone()) { continue; }
-        auto c_id = c.get_id();
+      for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
+        auto& collection = db::collection_by_id(collection_id)->get();
+        if (collection.is_tombstone()) { continue; }
         tab_bar.add_tab(
           TabBar::tab_info{
-            .id = (i32)c.get_id(),
+            .id = (i32)collection_id,
             .is_draggable = true,
-            .label = c.get_name(),
+            .label = collection.name,
             .padding = 20,
-            .on_open = [this, c_id]() { if (on_collection_opened) { on_collection_opened(c_id); } },
-            .on_right_click = [this, c_id](Tab* t) {
-            if (on_show_collection_actions_popover) {
-            on_show_collection_actions_popover(c_id, t->get_position(Anchor::BOTTOM));
+            .on_open = [this, collection_id]() { if (on_collection_opened) { this->on_collection_opened(collection_id); } },
+            .on_right_click = [this, collection_id](Tab* t) {
+            if (this->on_show_collection_actions_popover) {
+            this->on_show_collection_actions_popover(collection_id, t->get_position(Anchor::BOTTOM));
           } },
           },
-          1000, ((selected_collection_id.has_value()) && c.get_id() == selected_collection_id));
+          1000, ((selected_collection_id.has_value()) && collection_id == selected_collection_id));
       }
     }
 
   public:
-    std::function<void(musicdb::collection_id_t)> on_collection_opened{};
+    std::function<void(size_t collection_id)> on_collection_opened{};
     std::function<void()> on_playlists_view_opened{};
     std::function<void()> on_queue_view_opened{};
-    std::function<void(musicdb::collection_id_t collection_id, vec2i at)> on_show_collection_actions_popover{};
+    std::function<void(size_t collection_id, vec2i at)> on_show_collection_actions_popover{};
 
   protected:
     TabBar& tab_bar;

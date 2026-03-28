@@ -2,8 +2,8 @@
 #include <iomanip>
 #include <ios>
 #include <sstream>
+#include "core/player.hpp"
 #include "input.hpp"
-#include "player.hpp"
 #include "ui/button.hpp"
 #include "ui/label.hpp"
 #include "ui/panel.hpp"
@@ -107,7 +107,7 @@ class PanelControls : public Panel {
         if (is_playing) {
           player::pause();
         } else {
-          player::play(false);
+          player::resume();
         }
       });
 
