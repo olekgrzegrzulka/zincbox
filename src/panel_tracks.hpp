@@ -39,7 +39,8 @@ class PanelTracks : public Panel {
   public:
     ViewType view_type = ViewType::NONE;
     std::optional<size_t> collection_id{};
-    std::function<void(size_t track, vec2i at)> on_show_playlist_track_actions_popover{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb{};
 
   protected:
     double scroll_px{};

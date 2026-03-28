@@ -185,7 +185,7 @@ void PanelTracks::create_album(size_t album_id, i32 album_start_px) {
   }
 
   if (!collection_id.has_value()) { return; }
-  auto& w = add_child<WidgetAlbum>(collection_id.value(), album_id, nullptr);
+  auto& w = add_child<WidgetAlbum>(collection_id.value(), album_id, on_track_lmb, on_track_rmb);
   w.set_y(actual_y);
   w.passed_visibility_test = true;
   visible_album_widgets.emplace_back(&w);
@@ -202,7 +202,7 @@ void PanelTracks::create_playlist(size_t playlist_id, i32 album_start_px) {
   }
 
   if (!collection_id.has_value()) { return; }
-  auto& w = add_child<WidgetAlbum>(collection_id.value(), playlist_id, nullptr);
+  auto& w = add_child<WidgetAlbum>(collection_id.value(), playlist_id, on_track_lmb, on_track_rmb);
   w.set_y(actual_y);
   w.passed_visibility_test = true;
   visible_album_widgets.emplace_back(&w);

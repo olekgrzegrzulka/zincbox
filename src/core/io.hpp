@@ -160,7 +160,7 @@ namespace io {
         std::u32string album_title = utf8_to_utf32(tag->album().to8Bit(true));
         auto album = db::playlist_by_name(album_title);
         if (!album.has_value()) {
-          size_t album_id = c->get().add_playlist(album_title, U"artist?");
+          size_t album_id = c->get().add_album(album_title, U"artist?");
           album = db::playlist_by_id(album_id);
         }
         if (album->get().image.empty()) {

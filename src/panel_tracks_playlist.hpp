@@ -11,23 +11,12 @@
 
 class WidgetAlbum : public Widget {
   public:
-    WidgetAlbum(UI& ui_, size_t collection_id, size_t album_id, std::function<void(size_t track, vec2i at)> on_show_playlist_track_actions_popover_) : Widget(ui_) {
-      on_show_playlist_track_actions_popover = on_show_playlist_track_actions_popover_;
-      std::vector<size_t> collection_ids;
-      std::vector<size_t> track_ids;
-      auto album = db::playlist_by_id(album_id)->get();
-      for (size_t track_id : album.track_ids) {
-        collection_ids.emplace_back(collection_id);
-        track_ids.emplace_back(track_id);
-      }
-      create(album_id, album.name, collection_ids, track_ids);
-    }
-
-    void create(i32 id, std::u32string title, std::vector<size_t> collection_ids, std::vector<size_t> track_ids) {
-      ensure(collection_ids.size() == track_ids.size());
-      // ensure(playlist_tracks.size() == track_ids.size() || playlist_tracks.size() == 0);
-
-      album_id = id;
+    WidgetAlbum(UI& ui_, size_t collection_id, size_t playlist_id,
+                std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb_,
+                std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb_) : Widget(ui_) {
+      on_track_lmb = on_track_lmb_;
+      on_track_rmb = on_track_rmb_;
+      auto playlist = db::playlist_by_id(playlist_id)->get();
 
       set_layout("ttb m:0 s:0 fit expand");
 
@@ -42,31 +31,30 @@ class WidgetAlbum : public Widget {
       album_title_panel.set_y(6);
 
       auto& s = album_title_panel.add_child<Label>();
-      s.set_text(title);
+      s.set_text(playlist.name);
       s.set_text_color({1.0, 0.85, 0.95});
       s.set_anchor(Anchor::CENTER);
       s.set_parent_anchor(Anchor::CENTER);
       s.set_label_anchor(Anchor::CENTER);
       s.set_height(ALBUM_HEIGHT);
 
-      for (size_t i = 0; i < track_ids.size(); i += 1) {
-        size_t collection_id = collection_ids[i];
-        size_t track_id = track_ids[i];
-        auto& w = add_child<WidgetTrack>(collection_ids[i], album_id, track_ids[i], i % 2 == 0);
-
-        w.on_press([track_id, collection_id, this]() {
-          player::playing_t play{
-            .collection_id = collection_id,
-            .playlist_id = album_id,
-            .track_id = track_id,
-          };
-          player::play(play, true);
+      bool even = true;
+      size_t playlist_track_index = 0;
+      for (size_t track_id : playlist.track_ids) {
+        even = !even;
+        auto w = &add_child<WidgetTrack>(collection_id, album_id, track_id, even);
+        w->on_press([this, collection_id, playlist_id, track_id, playlist_track_index, w]() {
+          if (on_track_lmb) {
+            this->on_track_lmb(collection_id, playlist_id, track_id, playlist_track_index, w);
+          }
         });
-        // w.on_press_rmb([this, playlist_track, &w]() {
-        // if (on_show_playlist_track_actions_popover) {
-        // this->on_show_playlist_track_actions_popover(*playlist_track, w.get_position(Anchor::BOTTOM_CENTER));
-        // }
-        // });
+        w->on_press_rmb([this, collection_id, playlist_id, track_id, playlist_track_index, w]() {
+          if (on_track_rmb) {
+            this->on_track_rmb(collection_id, playlist_id, track_id, playlist_track_index, w);
+          }
+        });
+
+        playlist_track_index += 1;
       }
     }
 
@@ -80,5 +68,6 @@ class WidgetAlbum : public Widget {
     size_t album_id;
 
   protected:
-    std::function<void(size_t track, vec2i at)> on_show_playlist_track_actions_popover{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb{};
 };
