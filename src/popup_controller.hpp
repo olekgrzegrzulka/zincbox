@@ -50,21 +50,6 @@ class Dimmer : public Sprite {
     std::function<void()> on_pressed{};
 };
 
-class PopupConfirmAddPathsToCollection : public Panel {
-  public:
-    PopupConfirmAddPathsToCollection(UI& ui_, const std::vector<std::string>& paths) : Panel(ui_) {
-      set_layout("ttb fit expand fill m:8 s:4");
-      add_child<Label>("Do you want to add the following paths to collection '");
-      for (auto& p : paths) {
-        add_child<Label>(p);
-      }
-      auto& buttons = add_child<Widget>();
-      set_layout("ltr fit expand fill m:0 s:4");
-      buttons.add_child<Button>("Yes");
-      buttons.add_child<Button>("No");
-    }
-};
-
 class PopupController : public Widget {
   public:
     PopupController(UI& ui_) : Widget(ui_), ui(ui_), dimmer(add_child<Dimmer>()) {
