@@ -78,7 +78,12 @@ set(SOURCES
 
     ./src/core/musicdb.cpp
     ./src/core/player.cpp
+
     ./src/interface.cpp
+    ./src/panel_albums.cpp
+    ./src/panel_controls.cpp
+    ./src/panel_tracks.cpp
+    ./src/panel_top.cpp
 
     ./lib/glad/glad.c
     ./lib/miniaudio/miniaudio.c

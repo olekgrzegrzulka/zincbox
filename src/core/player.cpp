@@ -3,6 +3,7 @@
 #include <optional>
 #include <vector>
 #include "../../lib/miniaudio/miniaudio.h"
+#include "../debug.hpp"
 #include "../random.hpp"
 #include "../utf.hpp"
 #include "musicdb.hpp"

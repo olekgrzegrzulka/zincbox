@@ -24,6 +24,7 @@
 #include "utf.hpp"
 
 enum class InterfaceView {
+  QUEUE,
   COLLECTION,
   PLAYLISTS,
 };
@@ -72,12 +73,12 @@ void interface::init() {
     panel_albums->recreate(active_collection_id, atlas);
   };
 
-  panel_top->on_playlists_view_opened = [&]() {
-    current_view = InterfaceView::PLAYLISTS;
+  panel_top->on_queue_view_opened = [&]() {
+    current_view = InterfaceView::QUEUE;
     active_collection_id = std::nullopt;
-    panel_tracks->view_type = PanelTracks::ViewType::PLAYLISTS;
+    panel_tracks->view_type = PanelTracks::ViewType::NONE;
     panel_tracks->recreate();
-    panel_albums->recreate_playlists();
+    panel_albums->recreate(std::nullopt, nullptr);
   };
 
   panel_top->on_show_collection_actions_popover = [&](size_t collection_id, vec2i at) {
@@ -104,12 +105,8 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  panel_albums->on_album_clicked = [&](size_t album_index_sorted) {
-    panel_tracks->scroll_to_album(album_index_sorted);
-  };
-
-  panel_albums->on_playlist_clicked = [&](size_t playlist_id) {
-    panel_tracks->scroll_to_playlist(playlist_id);
+  panel_albums->on_playlist_lmb = [&](size_t playlist_id, Widget*) {
+    panel_tracks->scroll_to_album(playlist_id);
   };
 
   if (db::collection_count() > 0) {
