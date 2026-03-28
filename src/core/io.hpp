@@ -103,7 +103,7 @@ namespace io {
 
   inline void populate_collection(std::optional<std::reference_wrapper<db::Collection>> c, fs::path path) {
     // scan for cover art
-    std::vector<u8> cover_art_from_image_in_directory(64 * 64 * 4);
+    std::vector<u8> cover_art_from_image_in_directory{};
     for (const auto& entry : fs::directory_iterator(path)) {
       if (entry.is_regular_file()) {
         auto ext = entry.path().extension();
@@ -112,6 +112,7 @@ namespace io {
           i32 width, height, channels;
           stbi_uc* data = stbi_load(entry.path().c_str(), &width, &height, &channels, STBI_rgb_alpha);
           if (!data) { continue; }
+          cover_art_from_image_in_directory.resize(64 * 64 * 4);
           stbir_resize_uint8_linear(data, width, height, 0,
                                     cover_art_from_image_in_directory.data(), 64, 64, 0,
                                     STBIR_RGBA);
