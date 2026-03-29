@@ -3,7 +3,6 @@
 #include <string>
 #include "core/musicdb.hpp"
 #include "core/player.hpp"
-#include "debug.hpp"
 #include "theme.hpp"
 #include "types.hpp"
 #include "ui/button.hpp"
@@ -53,7 +52,7 @@ class WidgetTrack : public Button {
       panel_right_side = &add_child<Panel>();
       panel_right_side->set_height(TRACK_HEIGHT);
       panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
-      panel_right_side->set_layout("m:8 s:8 rtl expand fit");
+      panel_right_side->set_layout("m:8 s:8 rtl fit");
       panel_right_side->set_anchor(Anchor::RIGHT);
       panel_right_side->set_parent_anchor(Anchor::RIGHT);
       panel_right_side->set_ignore_parents_layout(true);
@@ -67,6 +66,13 @@ class WidgetTrack : public Button {
       label_track_length->set_height(TRACK_HEIGHT);
       label_track_length->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
       label_track_length->set_resize_to_text_extents(false);
+
+      auto& loved_tracks_playlist = db::playlist_by_id(0)->get();
+      if (loved_tracks_playlist.has_track_id(track_id_)) {
+        auto& love = panel_right_side->add_child<Sprite>("love");
+        love.set_size(12, 12);
+        love.set_nine_slice_margin(0);
+      }
     }
 
     void update() override {

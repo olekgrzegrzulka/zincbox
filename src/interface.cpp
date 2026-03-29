@@ -120,10 +120,8 @@ void interface::init() {
       popover_actions.emplace_back([loved_tracks_playlist_id, track_id]() {
         auto& playlist = db::playlist_by_id(loved_tracks_playlist_id)->get();
         playlist.track_ids.emplace_back(track_id);
-        if (active_collection_id == 0) {
-          panel_tracks->clear();
-          panel_tracks->recreate();
-        }
+        panel_tracks->clear();
+        panel_tracks->recreate();
       });
     } else {
       popover_labels.emplace_back("Un-love track");
@@ -134,10 +132,8 @@ void interface::init() {
         } else {
           playlist.remove_track_by_id(track_id);
         }
-        if (active_collection_id == 0) {
-          panel_tracks->clear();
-          panel_tracks->recreate();
-        }
+        panel_tracks->clear();
+        panel_tracks->recreate();
       });
     }
 
@@ -320,6 +316,7 @@ void init_atlas() {
   atlas.add_texture("button_popover_idle", "./assets/button_popover_idle.png");
   atlas.add_texture("button_popover_pressed", "./assets/button_popover_pressed.png");
   // icons
+  atlas.add_texture("love", "./assets/icons/love.png");
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
   atlas.add_texture("stop", "./assets/icons/stop.png");
@@ -461,9 +458,7 @@ void show_add_to_playlist_popup(size_t track_id) {
   playlists_view.on_playlist_lmb = [popup_controller_, track_id](size_t playlist_id, Widget*) {
     db::playlist_by_id(playlist_id)->get().add_track(track_id);
     popup_controller_->close_all_popups();
-    if (active_collection_id == 0) {
-      panel_tracks->clear();
-      panel_tracks->recreate();
-    }
+    panel_tracks->clear();
+    panel_tracks->recreate();
   };
 }
