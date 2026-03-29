@@ -251,8 +251,68 @@ void player::next_track() {
 }
 
 void player::prev_track() {
-  if (playing_index.has_value() && playing_index.value() > 0) {
+  if (!playing_index.has_value()) { return; }
+  std::optional<player::playing_t> play_prev;
+
+  if (playing_index.value() != 0) {
     playing_index = playing_index.value() - 1;
+    play_track();
+    return;
+  }
+
+  if (repeat_mode == RepeatMode::TRACK) {
+    seek_ms(0);
+    return;
+  }
+
+  auto& playing = playing_queue[playing_index.value()];
+  auto& collection = db::collection_by_id(playing.collection_id)->get();
+  auto& playlist = db::playlist_by_id(playing.playlist_id)->get();
+  auto prev_playlist_id = collection.prev_playlist_id(playing.playlist_id);
+  auto prev_track_id = playlist.prev_track_id(playing_queue[playing_index.value()].track_id);
+
+  if (prev_track_id.has_value()) {
+    play_prev = player::playing_t{
+      .collection_id = playing.collection_id,
+      .playlist_id = playing.playlist_id,
+      .track_id = prev_track_id.value(),
+    };
+  } else if (repeat_mode == RepeatMode::OFF) {
+    if (prev_playlist_id.has_value()) {
+
+      auto prev_playlist = db::playlist_by_id(prev_playlist_id.value());
+      if (!prev_playlist.has_value()) { return; }
+
+      if (prev_playlist.value().get().track_ids.size() == 0) {
+        debug_warn("player::prev_track: empty playlist");
+        return;
+      }
+
+      play_prev = player::playing_t{
+        .collection_id = playing.collection_id,
+        .playlist_id = prev_playlist_id.value(),
+        .track_id = prev_playlist.value().get().track_ids[prev_playlist.value().get().track_ids.size() - 1],
+      };
+    } else {
+      play_prev = playing;
+    }
+  } else if (repeat_mode == RepeatMode::ALBUM) {
+    if (playlist.track_ids.size() == 0) {
+      debug_warn("player::prev_track: empty playlist");
+      return;
+    }
+    play_prev = player::playing_t{
+      .collection_id = playing.collection_id,
+      .playlist_id = playing.playlist_id,
+      .track_id = playlist.track_ids[playlist.track_ids.size() - 1],
+    };
+  } else {
+    debug_warn("player::play: unknown RepeatMode enum value");
+    return;
+  }
+
+  if (play_prev.has_value()) {
+    playing_queue.emplace(playing_queue.begin(), play_prev.value());
     play_track();
   }
 }
