@@ -103,7 +103,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   for (size_t album_id : c.playlist_ids) {
     auto& album = db::playlist_by_id(album_id)->get();
     album_scroll_px.emplace_back(max_scroll_px, album_id);
-    max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * album.track_ids.size();
+    max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * album.get_tracks_count();
   }
 
   scrollbar->set_content_size(max_scroll_px);
@@ -142,7 +142,7 @@ void PanelTracks::recreate_playlist() {
   for (size_t playlist_id = 0; playlist_id < db::playlist_count(); playlist_id += 1) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     album_scroll_px.emplace_back(max_scroll_px, playlist_id);
-    max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * playlist.track_ids.size();
+    max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * playlist.get_tracks_count();
   }
 
   scrollbar->set_content_size(max_scroll_px);

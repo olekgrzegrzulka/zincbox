@@ -22,6 +22,9 @@ static float volume = 0.5f;
 static player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
 static player::RepeatMode repeat_mode = player::RepeatMode::OFF;
 
+const Signal<player::playing_t> player::signal_on_track_changed{};
+const Signal<> player::signal_on_queue_changed{};
+
 void player::init() {
   auto device_config = ma_device_config_init(ma_device_type_playback);
 
@@ -198,27 +201,27 @@ void player::next_track() {
            },
            false);
     } else if (repeat_mode == RepeatMode::OFF) {
-      auto next_playlist_id = collection.value().get().next_playlist_id(playing.playlist_id);
+      auto next_playlist_id = collection->get().next_playlist_id(playing.playlist_id);
       if (next_playlist_id.has_value()) {
         auto next_playlist = db::playlist_by_id(next_playlist_id.value());
         if (!next_playlist.has_value()) { return; }
-        if (next_playlist.value().get().track_ids.size() == 0) { return; }
+        if (next_playlist->get().get_tracks_count() == 0) { return; }
         play(player::playing_t{
                .collection_id = playing.collection_id,
                .playlist_id = next_playlist_id.value(),
-               .track_id = next_playlist.value().get().track_ids[0],
+               .track_id = next_playlist->get().get_track_ids()[0],
              },
              false);
       }
     } else if (repeat_mode == RepeatMode::ALBUM) {
-      if (playlist->get().track_ids.size() == 0) {
+      if (playlist->get().get_tracks_count() == 0) {
         debug_warn("player::play: empty playlist");
         return;
       }
       play(player::playing_t{
              .collection_id = playing.collection_id,
              .playlist_id = playing.playlist_id,
-             .track_id = playlist->get().track_ids[0],
+             .track_id = playlist->get().get_track_ids()[0],
            },
            false);
     } else {
@@ -231,7 +234,7 @@ void player::next_track() {
       size_t rand_track_id = 0;
       for (i32 tries = 10; tries > 0; tries -= 1) {
         rand_playlist_id = rng.pick(std::span{db::collection_by_id(playing.collection_id)->get().playlist_ids});
-        rand_track_id = rng.pick(std::span{db::playlist_by_id(rand_playlist_id)->get().track_ids});
+        rand_track_id = rng.pick(std::span{db::playlist_by_id(rand_playlist_id)->get().get_track_ids()});
 
         if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - 20, playing_index.value_or(0))) {
           break;
@@ -247,8 +250,8 @@ void player::next_track() {
     } else if (repeat_mode == RepeatMode::ALBUM) {
       size_t rand_track_id = 0;
       for (i32 tries = 10; tries > 0; tries -= 1) {
-        rand_track_id = rng.pick(std::span{db::playlist_by_id(playing.playlist_id)->get().track_ids});
-        i32 last_tracks_to_check = std::clamp((i32)db::playlist_by_id(playing.playlist_id)->get().track_ids.size() / 2, 0, 30);
+        rand_track_id = rng.pick(std::span{db::playlist_by_id(playing.playlist_id)->get().get_track_ids()});
+        i32 last_tracks_to_check = std::clamp((i32)db::playlist_by_id(playing.playlist_id)->get().get_tracks_count() / 2, 0, 30);
         if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check, playing_index.value_or(0))) {
           break;
         }
@@ -305,7 +308,7 @@ void player::prev_track() {
       auto prev_playlist = db::playlist_by_id(prev_playlist_id.value());
       if (!prev_playlist.has_value()) { return; }
 
-      if (prev_playlist.value().get().track_ids.size() == 0) {
+      if (prev_playlist->get().get_tracks_count() == 0) {
         debug_warn("player::prev_track: empty playlist");
         return;
       }
@@ -313,7 +316,7 @@ void player::prev_track() {
       play_prev = player::playing_t{
         .collection_id = playing.collection_id,
         .playlist_id = prev_playlist_id.value(),
-        .track_id = prev_playlist.value().get().track_ids[prev_playlist.value().get().track_ids.size() - 1],
+        .track_id = prev_playlist->get().get_track_ids()[prev_playlist->get().get_tracks_count() - 1],
       };
     } else {
       seek_ms(get_current_time_ms());
@@ -321,14 +324,14 @@ void player::prev_track() {
       return;
     }
   } else if (repeat_mode == RepeatMode::ALBUM) {
-    if (playlist.track_ids.size() == 0) {
+    if (playlist.get_tracks_count() == 0) {
       debug_warn("player::prev_track: empty playlist");
       return;
     }
     play_prev = player::playing_t{
       .collection_id = playing.collection_id,
       .playlist_id = playing.playlist_id,
-      .track_id = playlist.track_ids[playlist.track_ids.size() - 1],
+      .track_id = playlist.get_track_ids()[playlist.get_tracks_count() - 1],
     };
   } else {
     debug_warn("player::play: unknown RepeatMode enum value");

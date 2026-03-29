@@ -79,7 +79,6 @@ namespace db {
       friend size_t Collection::add_album(std::u32string_view, std::u32string_view);
       friend size_t Collection::add_playlist(std::u32string_view, std::u32string_view);
 
-      std::vector<size_t> track_ids;
       std::u32string name;
       std::u32string author;
       std::vector<uint8_t> image;
@@ -94,9 +93,21 @@ namespace db {
       std::optional<size_t> next_track_id(size_t track_id);
       std::optional<size_t> prev_track_id(size_t track_id);
       bool has_track_id(size_t track_id);
+      std::optional<size_t> find_track_index(size_t track_id);
+
+      const std::vector<size_t>& get_track_ids() const { return track_ids; }
+      size_t get_tracks_count() const { return track_ids.size(); }
+      bool emplace_track_id(size_t track_id) {
+        if (std::find(track_ids.begin(), track_ids.end(), track_id) == track_ids.end()) {
+          track_ids.emplace_back(track_id);
+          return true;
+        }
+        return false;
+      }
 
     protected:
-      std::optional<size_t> find_track_index(size_t track_id);
+      std::vector<size_t> track_ids;
+
       Playlist(std::u32string_view name_, std::u32string_view author_, PlaylistType type_) {
         name = name_;
         author = author_;

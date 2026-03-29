@@ -98,6 +98,7 @@ bool Playlist::remove_track_by_id(size_t track_id) {
 }
 
 bool Playlist::remove_track_by_index(size_t index) {
+  if (index >= track_ids.size()) { return false; }
   track_ids.erase(track_ids.begin() + index);
   return true;
 }
@@ -192,7 +193,7 @@ void db::print_collections() {
     for (auto p_id : c.playlist_ids) {
       auto& p = playlists[p_id];
       debug_log("\tPlaylist ", utf32_to_utf8(p.name), " - ", utf32_to_utf8(p.author));
-      for (size_t t_id : p.track_ids) {
+      for (size_t t_id : p.get_track_ids()) {
         auto& t = tracks[t_id];
         debug_log("\t\t", t.track_number, ". ", utf32_to_utf8(t.artist), " - ", utf32_to_utf8(t.title));
       }
