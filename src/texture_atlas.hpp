@@ -33,6 +33,8 @@ class TextureAtlas {
 
     void bind(u32 slot);
 
+    void set_fallback_texture(std::string id);
+
   protected:
     std::optional<std::pair<i32, i32>> find_space_for_texture(i32 width, i32 height);
 
@@ -49,6 +51,7 @@ class TextureAtlas {
     bool dirty = true;
     std::vector<u8> image;
     std::unordered_map<std::string, TextureAtlasData> textures;
+    std::optional<std::string> fallback_texture;
 
     std::vector<bool> free_16x16_squares;
 

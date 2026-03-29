@@ -79,6 +79,8 @@ std::optional<std::reference_wrapper<TextureAtlasData>> TextureAtlas::get(std::s
   auto it = textures.find(id);
   if (it != textures.end()) {
     return it->second;
+  } else if (fallback_texture.has_value()) {
+    return get(fallback_texture.value());
   } else {
     return std::nullopt;
   }
@@ -89,6 +91,11 @@ void TextureAtlas::bind(u32 slot) {
   glActiveTexture(GL_TEXTURE0 + slot);
   glBindTexture(GL_TEXTURE_2D, texture);
   glBindSampler(slot, sampler);
+}
+
+void TextureAtlas::set_fallback_texture(std::string id) {
+  if (!has_texture(id)) { return; }
+  fallback_texture = id;
 }
 
 void TextureAtlas::regenerate_texture() {
