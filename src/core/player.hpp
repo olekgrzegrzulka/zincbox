@@ -1,6 +1,5 @@
 #pragma once
 #include "../types.hpp"
-#include "musicdb.hpp"
 
 namespace player {
   enum class RepeatMode {

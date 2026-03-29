@@ -4,22 +4,23 @@
 #include <vector>
 #include "../../lib/miniaudio/miniaudio.h"
 #include "../debug.hpp"
+#include "../mpris.hpp"
 #include "../random.hpp"
 #include "../utf.hpp"
 #include "musicdb.hpp"
 
-Random rng{};
+static Random rng{};
 
-ma_engine engine{};
-ma_sound sound{};
-ma_device device{};
+static ma_engine engine{};
+static ma_sound sound{};
+static ma_device device{};
 
-i32 total_duration_ms{};
-std::vector<player::playing_t> playing_queue{};
-std::optional<size_t> playing_index{};
-float volume = 0.5f;
-player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
-player::RepeatMode repeat_mode = player::RepeatMode::OFF;
+static i32 total_duration_ms{};
+static std::vector<player::playing_t> playing_queue{};
+static std::optional<size_t> playing_index{};
+static float volume = 0.5f;
+static player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
+static player::RepeatMode repeat_mode = player::RepeatMode::OFF;
 
 void player::init() {
   auto device_config = ma_device_config_init(ma_device_type_playback);
@@ -47,7 +48,8 @@ void player::deinit() {
 void play_track() {
   auto playing = player::get_playing();
   if (!playing.has_value()) { return; }
-  auto track = db::track_by_id(playing->track_id);
+  auto track = db::track_by_id(playing->track_id)->get();
+  auto playlist = db::playlist_by_id(playing->playlist_id)->get();
 
   ma_engine_stop(&engine);
   ma_sound_uninit(&sound);
@@ -55,7 +57,7 @@ void play_track() {
   ma_result result;
 
   result = ma_sound_init_from_file(&engine,
-                                   utf32_to_utf8(track->get().path).c_str(),
+                                   utf32_to_utf8(track.path).c_str(),
                                    MA_SOUND_FLAG_NO_PITCH,
                                    NULL,
                                    NULL,
@@ -85,6 +87,10 @@ void play_track() {
     debug_warn(result);
     return;
   }
+
+  mpris::notify_playback_status_playing();
+  mpris::notify_volume(volume);
+  mpris::notify_track_change(utf32_to_utf8(track.title), utf32_to_utf8(track.artist), utf32_to_utf8(playlist.name), track.length_seconds * 1000);
 }
 
 void player::update() {
@@ -121,24 +127,29 @@ void player::play(playing_t play, bool clear_history) {
 
 void player::resume() {
   ma_sound_start(&sound);
+  mpris::notify_playback_status_playing();
 }
 
 void player::pause() {
   ma_sound_stop(&sound);
+  mpris::notify_playback_status_paused();
 }
 
 void player::stop() {
   ma_sound_seek_to_second(&sound, 0);
   ma_sound_stop(&sound);
+  mpris::notify_playback_status_stopped();
 }
 
 void player::seek_ms(i32 ms) {
   ma_sound_seek_to_second(&sound, ms * 0.001f);
+  mpris::notify_seeked(ms);
 }
 
 void player::set_volume(float v) {
   volume = std::clamp(v, 0.0f, 1.0f);
   ma_sound_set_volume(&sound, volume);
+  mpris::notify_volume(v);
 }
 
 float player::get_volume() {
@@ -294,7 +305,9 @@ void player::prev_track() {
         .track_id = prev_playlist.value().get().track_ids[prev_playlist.value().get().track_ids.size() - 1],
       };
     } else {
-      play_prev = playing;
+      seek_ms(get_current_time_ms());
+      seek_ms(0);
+      return;
     }
   } else if (repeat_mode == RepeatMode::ALBUM) {
     if (playlist.track_ids.size() == 0) {
