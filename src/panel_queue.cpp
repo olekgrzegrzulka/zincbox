@@ -45,7 +45,7 @@ void PanelQueue::on_queue_changed() {
   for (player::playing_t p : player::get_playing_queue()) {
     queue_i += 1;
 
-    auto* track = &add_child<WidgetTrack>(p.collection_id, p.playlist_id, p.track_id, queue_i % 2 == 0);
+    auto* track = &add_child<WidgetTrack>(p.collection_id, p.playlist_id, p.track_id, queue_i + 1, queue_i % 2 == 0);
     visible_queue_tracks.emplace_back(track);
 
     track->on_press([this, queue_i, track]() {
