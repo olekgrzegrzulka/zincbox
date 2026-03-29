@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include "../types.hpp"
 
 namespace player {
@@ -41,6 +42,9 @@ namespace player {
   bool is_playing();
   bool is_at_end();
   std::optional<playing_t> get_playing();
+  const std::vector<player::playing_t>& get_playing_queue();
+  std::optional<size_t> get_playing_index();
+  void set_playing_index(size_t);
 
   ShuffleMode get_shuffle_mode();
   void set_shuffle_mode(ShuffleMode);

@@ -12,6 +12,7 @@
 #include "mpris.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
+#include "panel_queue.hpp"
 #include "panel_top.hpp"
 #include "panel_tracks.hpp"
 #include "popup_controller.hpp"
@@ -41,6 +42,7 @@ static PopupController* popup_controller{};
 static PanelTop* panel_top{};
 static Panel* panel_main{};
 static PanelTracks* panel_tracks{};
+static PanelQueue* panel_queue{};
 static PanelAlbums* panel_albums{};
 static PanelControls* panel_controls{};
 
@@ -64,6 +66,8 @@ void interface::init() {
   panel_main = &ui->add_widget<Panel>();
   panel_main->set_layout("m:0 s:0 ltr expand fill");
   panel_tracks = &panel_main->add_child<PanelTracks>();
+  panel_queue = &panel_main->add_child<PanelQueue>();
+  panel_queue->set_is_drawn(false);
   panel_albums = &panel_main->add_child<PanelAlbums>();
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
@@ -73,6 +77,10 @@ void interface::init() {
     panel_tracks->collection_id = active_collection_id;
     panel_tracks->clear();
     panel_tracks->recreate();
+    panel_tracks->set_is_drawn(true);
+    panel_tracks->set_is_updated(true);
+    panel_queue->set_is_drawn(false);
+    panel_queue->set_is_updated(false);
     TextureAtlas* atlas = nullptr;
     if (active_collection_id.has_value()) { atlas = album_cover_atlases[*active_collection_id].get(); }
     panel_albums->recreate(active_collection_id, atlas);
@@ -81,8 +89,11 @@ void interface::init() {
   panel_top->on_queue_view_opened = [&]() {
     current_view = InterfaceView::QUEUE;
     active_collection_id = std::nullopt;
-    panel_tracks->view_type = PanelTracks::ViewType::NONE;
-    panel_tracks->recreate();
+    panel_tracks->set_is_drawn(false);
+    panel_tracks->set_is_updated(false);
+    panel_queue->set_is_drawn(true);
+    panel_queue->set_is_updated(true);
+    panel_queue->on_queue_changed();
     panel_albums->recreate(std::nullopt, nullptr);
   };
 
@@ -105,6 +116,13 @@ void interface::init() {
       .track_id = track_id,
     };
     player::play(play, true);
+  };
+
+  panel_queue->on_queue_element_lmb = [&](size_t queue_index, Widget*) {
+    player::set_playing_index(queue_index);
+  };
+
+  panel_queue->on_queue_element_rmb = [&](size_t, Widget*) {
   };
 
   panel_tracks->on_track_rmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget) {
