@@ -11,7 +11,7 @@
 
 class WidgetTrack : public Button {
   public:
-    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, bool even_) : Button(ui_) {
+    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_) {
       track_id = track_id_;
       album_id = album_id_;
       collection_id = collection_id_;
@@ -26,9 +26,7 @@ class WidgetTrack : public Button {
       set_nine_slice_margin(4.0);
       set_height(TRACK_HEIGHT);
 
-      std::stringstream track_number;
-      track_number << track.track_number;
-      label_track_number = &add_child<Label>(track_number.str());
+      label_track_number = &add_child<Label>(std::to_string(track_number));
       label_track_number->set_resize_to_text_extents(false);
       label_track_number->set_label_anchor(Anchor::LEFT);
       label_track_number->set_size(20, TRACK_HEIGHT);

@@ -40,7 +40,7 @@ class WidgetAlbum : public Widget {
       size_t playlist_track_index = 0;
       for (size_t track_id : playlist.get_track_ids()) {
         even = !even;
-        auto w = &add_child<WidgetTrack>(collection_id, playlist_id, track_id, even);
+        auto w = &add_child<WidgetTrack>(collection_id, playlist_id, track_id, playlist_track_index + 1, even);
         w->on_press([this, collection_id, track_id, playlist_track_index, w]() {
           if (on_track_lmb) {
             this->on_track_lmb(collection_id, playlist_id, track_id, playlist_track_index, w);
