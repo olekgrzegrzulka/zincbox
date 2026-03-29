@@ -137,7 +137,7 @@ void interface::init() {
       popover_labels.emplace_back("Love track");
       popover_actions.emplace_back([loved_tracks_playlist_id, track_id]() {
         auto& playlist = db::playlist_by_id(loved_tracks_playlist_id)->get();
-        playlist.track_ids.emplace_back(track_id);
+        playlist.emplace_track_id(track_id);
         panel_tracks->clear();
         panel_tracks->recreate();
       });
@@ -164,7 +164,7 @@ void interface::init() {
       popover_labels.emplace_back("Remove from playlist");
       popover_actions.emplace_back([playlist_id, playlist_track_index]() {
         auto& playlist = db::playlist_by_id(playlist_id)->get();
-        playlist.track_ids.erase(playlist.track_ids.begin() + playlist_track_index);
+        playlist.remove_track_by_index(playlist_track_index);
         panel_tracks->clear();
         panel_tracks->recreate();
       });
