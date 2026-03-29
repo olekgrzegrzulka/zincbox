@@ -39,7 +39,19 @@ class Button : public Sprite {
     vec2f uv_end_disabled{};
 
   public:
-    Button(UI& ui_, std::string label_ = "") : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+    Button(UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>()) {
+      init();
+    }
+
+    Button(UI& ui_, std::u32string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+      init();
+    }
+
+    Button(UI& ui_, std::string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+      init();
+    }
+
+    void init() {
       set_size(64, 24);
       set_texture_idle("button_idle");
       set_texture_hovered("button_hovered");

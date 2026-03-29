@@ -16,6 +16,7 @@
 #include "panel_tracks.hpp"
 #include "popup_controller.hpp"
 #include "texture_atlas.hpp"
+#include "theme.hpp"
 #include "types.hpp"
 #include "ui/button.hpp"
 #include "ui/label.hpp"
@@ -48,6 +49,7 @@ void init_album_cover_atlases();
 void handle_dropped_files();
 void delete_collection(size_t);
 void delete_playlist_track(size_t);
+void show_add_to_playlist_popup(size_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -118,8 +120,10 @@ void interface::init() {
       popover_actions.emplace_back([loved_tracks_playlist_id, track_id]() {
         auto& playlist = db::playlist_by_id(loved_tracks_playlist_id)->get();
         playlist.track_ids.emplace_back(track_id);
-        panel_tracks->clear();
-        panel_tracks->recreate();
+        if (active_collection_id == 0) {
+          panel_tracks->clear();
+          panel_tracks->recreate();
+        }
       });
     } else {
       popover_labels.emplace_back("Un-love track");
@@ -130,10 +134,17 @@ void interface::init() {
         } else {
           playlist.remove_track_by_id(track_id);
         }
-        panel_tracks->clear();
-        panel_tracks->recreate();
+        if (active_collection_id == 0) {
+          panel_tracks->clear();
+          panel_tracks->recreate();
+        }
       });
     }
+
+    popover_labels.emplace_back("Add to playlist...");
+    popover_actions.emplace_back([track_id]() {
+      show_add_to_playlist_popup(track_id);
+    });
 
     if (is_user_playlist) {
       popover_labels.emplace_back("Remove from playlist");
@@ -388,12 +399,13 @@ void handle_dropped_files() {
     index += 1;
   }
 
+  auto content_utf32 = utf8_to_utf32(content);
   if (dropped_directories.size() > 0) {
     popup_descriptor d{
-      .id = "a",
-      .title = "Do you want to create the following collections?",
-      .content = content,
-      .button_labels = {"Cancel", "Add"},
+      .id = "directories_dropped",
+      .title = U"Do you want to create the following collections?",
+      .content = content_utf32,
+      .button_labels = {U"Cancel", U"Add"},
       .button_actions = {nullptr, [dropped_directories]() {
                            create_collections(dropped_directories);
                            init_album_cover_atlases(); // FIXME: do this only for the added collections
@@ -425,4 +437,33 @@ void delete_collection(size_t collection_id) {
   //   panel_tracks->collection_id = std::nullopt;
   //   panel_tracks->recreate();
   // }
+}
+
+void show_add_to_playlist_popup(size_t track_id) {
+  auto& track = db::track_by_id(track_id)->get();
+  std::u32string pretty_track = track.artist + U" - " + track.title;
+  popup_descriptor d{
+    .id = "add_to_playlist",
+    .title = U"Select a playlist to add this track to ",
+    .content = pretty_track,
+    .button_labels = {U"Cancel"},
+    .button_actions{nullptr},
+  };
+  auto* popup = popup_controller->create_popup(d);
+  auto& playlists_view = popup->content.add_child<PanelAlbums>();
+  playlists_view.set_width(COVER_WIDTH * 6);
+  playlists_view.set_height(std::clamp(ui->get_window_height() - 300, 100, 500));
+  popup->set_width(playlists_view.get_width() + 20);
+  popup->set_height(playlists_view.get_height() + 60);
+  playlists_view.recreate(0, album_cover_atlases[0].get());
+
+  auto* popup_controller_ = popup_controller;
+  playlists_view.on_playlist_lmb = [popup_controller_, track_id](size_t playlist_id, Widget*) {
+    db::playlist_by_id(playlist_id)->get().add_track(track_id);
+    popup_controller_->close_all_popups();
+    if (active_collection_id == 0) {
+      panel_tracks->clear();
+      panel_tracks->recreate();
+    }
+  };
 }

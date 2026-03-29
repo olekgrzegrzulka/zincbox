@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -15,17 +16,37 @@
 
 struct popup_descriptor {
     std::string id;
-    std::string_view title;
-    std::string_view content;
-    std::vector<std::string> button_labels;
+    std::u32string_view title;
+    std::optional<std::u32string_view> content;
+    std::vector<std::u32string> button_labels;
     std::vector<std::function<void()>> button_actions;
 };
 
 struct popover_descriptor {
     std::string id;
     vec2i at;
-    std::initializer_list<std::string_view> button_labels;
-    std::initializer_list<std::function<void()>> button_actions;
+    std::vector<std::string> button_labels;
+    std::vector<std::function<void()>> button_actions;
+};
+
+class Popup : public Panel {
+  public:
+    Popup(UI& ui_) : Panel(ui_, Panel::PanelStyle::Rectangular, true),
+                     title(add_child<Label>()), content(add_child<Widget>()) {
+      set_is_drawn_on_top(true);
+      set_nine_slice_margin(8.0f);
+      set_parent_anchor(Anchor::CENTER);
+      set_anchor(Anchor::CENTER);
+      set_layout("ttb expand fit m:15 s:15");
+
+      content.set_parent_anchor(Anchor::TOP);
+      content.set_anchor(Anchor::TOP);
+      content.set_layout("ttb expand fit m:15 s:25");
+    }
+
+  public:
+    Label& title;
+    Widget& content;
 };
 
 class Dimmer : public Sprite {
@@ -112,31 +133,28 @@ class PopupController : public Widget {
       }
     };
 
-    void create_popup(popup_descriptor d) {
+    Popup* create_popup(popup_descriptor d) {
       ensure(d.button_actions.size() >= d.button_actions.size());
-      if (popups.contains(d.id)) { return; }
+      if (popups.contains(d.id)) { return nullptr; }
 
-      auto& popup = add_child<Panel>(Panel::PanelStyle::Rectangular, true);
+      auto& popup = add_child<Popup>();
       auto popup_id = d.id;
       popups[popup_id] = &popup;
 
-      popup.set_is_drawn_on_top(true);
-      popup.set_nine_slice_margin(8.0f);
-      popup.set_parent_anchor(Anchor::CENTER);
-      popup.set_anchor(Anchor::CENTER);
-      popup.set_layout("ttb expand fit m:15 s:15");
-
-      auto& title = popup.add_child<Label>(std::string{d.title});
-      auto& content = popup.add_child<Label>(std::string{d.content});
-
-      popup.set_width(std::max(title.get_width(), content.get_width()) + 20);
+      popup.title.set_text(d.title);
+      if (d.content.has_value()) {
+        auto& content_label = popup.content.add_child<Label>(std::u32string{*d.content});
+        popup.set_width(std::max(popup.title.get_width(), content_label.get_width()) + 20);
+      } else {
+        popup.set_width(popup.title.get_width() + 20);
+      }
 
       auto& button_container = popup.add_child<Widget>();
       button_container.set_height(30);
       button_container.set_layout("ltr fill expand m:0 s:8");
       std::vector<Button*> buttons;
       for (auto& sv : d.button_labels) {
-        auto& btn = button_container.add_child<Button>(std::string(sv));
+        auto& btn = button_container.add_child<Button>(std::u32string(sv));
         buttons.emplace_back(&btn);
       }
 
@@ -150,7 +168,16 @@ class PopupController : public Widget {
         buttons[button_i]->on_press(lambda);
         button_i += 1;
       }
+
+      return &popup;
     };
+
+    void close_all_popups() {
+      for (auto [popup_id, popup] : popups) {
+        popup->set_marked_for_deletion(true);
+      }
+      popups.clear();
+    }
 
     void process_input() override {
       // copy due to iterator invalidation if popup closes
