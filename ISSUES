@@ -5,3 +5,4 @@ Scrolling to clicked playlist/album broken (remnant from decrepit times when pla
 Popover can go beyond the window extents
 Clicking the invisible scrollbar on playlists panel makes the panel disappear
 Playback halts when empty playlist/album is encountered
+Scroll is not preserved when switching playlists
