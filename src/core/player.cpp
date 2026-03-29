@@ -170,6 +170,17 @@ bool is_in_tracks_history(size_t track_id, i32 from_index, i32 to_index) {
 void player::next_track() {
   if (!playing_index.has_value()) { return; }
 
+  if (repeat_mode == RepeatMode::TRACK) {
+    seek_ms(0);
+    return;
+  }
+
+  if (playing_index.value() < playing_queue.size() - 1) {
+    playing_index = playing_index.value() + 1;
+    play_track();
+    return;
+  }
+
   auto playing = playing_queue[*playing_index];
   auto playlist = db::playlist_by_id(playing.playlist_id);
   auto collection = db::collection_by_id(playing.collection_id);
@@ -265,14 +276,14 @@ void player::prev_track() {
   if (!playing_index.has_value()) { return; }
   std::optional<player::playing_t> play_prev;
 
-  if (playing_index.value() != 0) {
-    playing_index = playing_index.value() - 1;
-    play_track();
+  if (repeat_mode == RepeatMode::TRACK) {
+    seek_ms(0);
     return;
   }
 
-  if (repeat_mode == RepeatMode::TRACK) {
-    seek_ms(0);
+  if (playing_index.value() != 0) {
+    playing_index = playing_index.value() - 1;
+    play_track();
     return;
   }
 
@@ -352,6 +363,19 @@ bool player::is_at_end() {
 std::optional<player::playing_t> player::get_playing() {
   if (!playing_index.has_value()) { return std::nullopt; }
   return playing_queue[playing_index.value()];
+}
+
+const std::vector<player::playing_t>& player::get_playing_queue() {
+  return playing_queue;
+}
+std::optional<size_t> player::get_playing_index() {
+  return playing_index;
+}
+
+void player::set_playing_index(size_t i) {
+  if (i >= playing_queue.size()) { return; }
+  playing_index = i;
+  play_track();
 }
 
 player::ShuffleMode player::get_shuffle_mode() {

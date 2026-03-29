@@ -92,6 +92,7 @@ set(SOURCES
     ./src/panel_albums.cpp
     ./src/panel_controls.cpp
     ./src/panel_tracks.cpp
+    ./src/panel_queue.cpp
     ./src/panel_top.cpp
 
     ./lib/glad/glad.c
