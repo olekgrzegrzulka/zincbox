@@ -9,6 +9,7 @@
 #include "core/player.hpp"
 #include "debug.hpp"
 #include "interface.hpp"
+#include "mpris.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
 #include "panel_top.hpp"
@@ -30,17 +31,17 @@ enum class InterfaceView {
   PLAYLISTS,
 };
 
-InterfaceView current_view = InterfaceView::COLLECTION;
-std::optional<size_t> active_collection_id;
-std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
+static InterfaceView current_view = InterfaceView::COLLECTION;
+static std::optional<size_t> active_collection_id;
+static std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 
-std::unique_ptr<UI> ui;
-PopupController* popup_controller{};
-PanelTop* panel_top{};
-Panel* panel_main{};
-PanelTracks* panel_tracks{};
-PanelAlbums* panel_albums{};
-PanelControls* panel_controls{};
+static std::unique_ptr<UI> ui;
+static PopupController* popup_controller{};
+static PanelTop* panel_top{};
+static Panel* panel_main{};
+static PanelTracks* panel_tracks{};
+static PanelAlbums* panel_albums{};
+static PanelControls* panel_controls{};
 
 void init_atlas();
 void init_album_cover_atlases();
@@ -175,6 +176,55 @@ void interface::init() {
 }
 
 void interface::process_input() {
+  while (auto cmd = mpris::command_pop()) {
+    switch (cmd->type) {
+    case mpris::CommandType::PLAY:
+      player::resume();
+      break;
+
+    case mpris::CommandType::PAUSE:
+      player::pause();
+      break;
+
+    case mpris::CommandType::PLAY_PAUSE:
+      if (player::is_playing()) {
+        player::pause();
+      } else {
+        player::resume();
+      }
+      break;
+
+    case mpris::CommandType::NEXT:
+      player::next_track();
+      break;
+
+    case mpris::CommandType::PREVIOUS:
+      player::prev_track();
+      break;
+
+    case mpris::CommandType::STOP:
+      player::stop();
+      break;
+
+    case mpris::CommandType::SEEK: {
+      i32 target = player::get_current_time_ms() + (i32)(cmd->value);
+      player::seek_ms(target);
+      break;
+    }
+
+    case mpris::CommandType::SET:
+      // Absolute seek
+      player::seek_ms(static_cast<i32>(cmd->value));
+      break;
+    }
+  }
+
+  static i32 t = 0;
+  if (t++ >= 120) {
+    t = 0;
+    mpris::notify_seeked(player::get_current_time_ms());
+  }
+
   handle_dropped_files();
   ui->process_input();
 }

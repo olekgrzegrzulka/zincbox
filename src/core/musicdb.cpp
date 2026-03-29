@@ -10,9 +10,9 @@
 
 using namespace db;
 
-std::vector<Collection> collections;
-std::vector<Playlist> playlists;
-std::vector<Track> tracks;
+static std::vector<Collection> collections;
+static std::vector<Playlist> playlists;
+static std::vector<Track> tracks;
 
 size_t db::add_collection(std::u32string_view name) {
   collections.emplace_back(Collection{name});

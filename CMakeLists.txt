@@ -22,12 +22,19 @@ set(SPNG_SHARED OFF)
 set(SPNG_STATIC ON)
 set(BUILD_EXAMPLES OFF)
 
-#TagLib
+# TagLib
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_EXAMPLES OFF)
 set(BUILD_BINDINGS OFF)
 set(NO_ITUNES_HACKS ON)
 set(BUILD_TESTING OFF)
+
+# sdbus-c++
+set(SDBUSCPP_BUILD_DOCS OFF)
+set(BUILD_SHARED_LIBS OFF)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SYSTEMD REQUIRED libsystemd)
 
 # FIXME properly add TagLib :)
 include_directories(
@@ -54,6 +61,7 @@ add_subdirectory(lib/nativefiledialog-extended SYSTEM)
 add_subdirectory(lib/zlib SYSTEM)
 add_subdirectory(lib/libspng SYSTEM)
 add_subdirectory(lib/taglib SYSTEM)
+add_subdirectory(lib/sdbus-cpp SYSTEM)
 # add_subdirectory(lib/miniaudio SYSTEM)
 
 
@@ -79,6 +87,7 @@ set(SOURCES
     ./src/core/musicdb.cpp
     ./src/core/player.cpp
 
+    ./src/mpris.cpp
     ./src/interface.cpp
     ./src/panel_albums.cpp
     ./src/panel_controls.cpp
@@ -113,4 +122,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE nfd)
 target_link_libraries(${PROJECT_NAME} PRIVATE zlibstatic)
 target_link_libraries(${PROJECT_NAME} PRIVATE spng_static)
 target_link_libraries(${PROJECT_NAME} PRIVATE tag)
+target_link_libraries(${PROJECT_NAME} PRIVATE sdbus-c++)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

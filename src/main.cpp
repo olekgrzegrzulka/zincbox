@@ -20,6 +20,7 @@
 #include "core/player.hpp"
 #include "debug.hpp"
 #include "input.hpp"
+#include "mpris.hpp"
 #include "interface.hpp"
 
 #define STBI_ASSERT(x) ensure(x);
@@ -63,7 +64,9 @@ void check_opengl_errors() {
 int main() {
   std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
   NFD::Init();
+  mpris::init();
   player::init();
+  mpris::init();
   config_load_from_file("music.cfg");
 
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
@@ -128,4 +131,5 @@ int main() {
   config_save_to_file("music.cfg");
   interface::deinit();
   player::deinit();
+  mpris::deinit();
 }
