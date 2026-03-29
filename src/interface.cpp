@@ -340,10 +340,10 @@ void init_album_cover_atlas(size_t collection_id) {
     atlas_resolution = 2048;
     debug_warn("album_count = ", album_count, ", not supported!");
   }
-  album_cover_atlases[collection_id]->add_texture("cover_unknown", "./assets/cover_unknown.png");
-
   i32 count = 0;
   album_cover_atlases[collection_id] = std::make_unique<TextureAtlas>(atlas_resolution, 0, 64);
+  album_cover_atlases[collection_id]->add_texture("cover_unknown", "./assets/cover_unknown.png");
+  album_cover_atlases[collection_id]->set_fallback_texture("cover_unknown");
   for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     album_cover_atlases[collection_id]->add_texture(std::to_string(playlist_id), playlist.image, 64, 64);
