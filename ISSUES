@@ -1,0 +1,4 @@
+When multiple tracks with equal track_id are present in a playlist they are treated as the same track, thus breaking highlight and queueing
+Adding new collections unimplemented
+Deleting existing collections unimplemented
+Scrolling to clicked playlist/album broken (remnant from decrepit times when playlist_ids used to be tied to each collection and not global)
