@@ -53,7 +53,7 @@ namespace player {
   RepeatMode get_repeat_mode();
   void set_repeat_mode(RepeatMode);
 
-  extern const Signal<playing_t, size_t> signal_on_track_changed;
+  extern const Signal<> signal_on_track_changed;
   extern const Signal<bool /* track_appended_to_back */> signal_on_queue_changed;
 
 } // namespace player

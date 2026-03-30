@@ -28,8 +28,11 @@ PanelQueue::PanelQueue(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark,
       this->on_queue_changed();
     }
   });
-  slot_on_track_changed = player::signal_on_track_changed.connect([](player::playing_t playing, size_t playing_index) {
-
+  slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
+    for (size_t queue_i = 0; queue_i < queue_tracks.size(); queue_i += 1) {
+      auto playing_index = player::get_playing_index();
+      queue_tracks[queue_i]->set_highlighted(playing_index.has_value() && queue_i == playing_index.value());
+    }
   });
 }
 
@@ -44,7 +47,7 @@ void PanelQueue::draw() {
 
 void PanelQueue::on_view_changed() {
   i32 i = -1;
-  for (auto* track : visible_queue_tracks) {
+  for (auto* track : queue_tracks) {
     i += 1;
 
     track->set_x(scrollbar->get_width());
@@ -60,7 +63,7 @@ void PanelQueue::on_queue_appended_to_back() {
   i32 queue_i = queue_size - 1;
   player::playing_t p = player::get_playing_queue()[queue_i];
   auto* track = &add_child<WidgetTrack>(p.collection_id, p.playlist_id, p.track_id, queue_i + 1, queue_i % 2 == 0);
-  visible_queue_tracks.emplace_back(track);
+  queue_tracks.emplace_back(track);
 
   track->on_press([this, queue_i, track]() {
     if (this->on_queue_element_lmb) {
@@ -87,7 +90,7 @@ void PanelQueue::on_queue_changed() {
     queue_i += 1;
 
     auto* track = &add_child<WidgetTrack>(p.collection_id, p.playlist_id, p.track_id, queue_i + 1, queue_i % 2 == 0);
-    visible_queue_tracks.emplace_back(track);
+    queue_tracks.emplace_back(track);
 
     track->on_press([this, queue_i, track]() {
       if (this->on_queue_element_lmb) {
@@ -99,6 +102,9 @@ void PanelQueue::on_queue_changed() {
         this->on_queue_element_rmb(queue_i, track);
       }
     });
+
+    auto playing_index = player::get_playing_index();
+    queue_tracks[queue_i]->set_highlighted(playing_index.has_value() && (size_t)queue_i == playing_index.value());
 
     max_scroll_px = player::get_playing_queue().size() * TRACK_HEIGHT;
     scrollbar->set_content_size(max_scroll_px);
@@ -134,8 +140,8 @@ void PanelQueue::handle_event(Input::InputEventMouseScroll& e) {
 }
 
 void PanelQueue::clear() {
-  for (auto* w : visible_queue_tracks) {
+  for (auto* w : queue_tracks) {
     w->set_marked_for_deletion(true);
   }
-  visible_queue_tracks.clear();
+  queue_tracks.clear();
 }

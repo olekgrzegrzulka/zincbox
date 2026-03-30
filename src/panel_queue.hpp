@@ -36,7 +36,7 @@ class PanelQueue : public Panel {
     i32 max_scroll_px{};
     ScrollBar* scrollbar{};
     std::vector<std::pair<i32, size_t>> album_scroll_px;
-    std::vector<WidgetTrack*> visible_queue_tracks;
+    std::vector<WidgetTrack*> queue_tracks;
 
     Signal<>::slot_key slot_on_track_changed;
     Signal<>::slot_key slot_on_queue_changed;

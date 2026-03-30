@@ -11,10 +11,8 @@
 
 class WidgetTrack : public Button {
   public:
-    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_) {
-      track_id = track_id_;
-      album_id = album_id_;
-      collection_id = collection_id_;
+    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_),
+                                                                                                                       collection_id(collection_id_), album_id(album_id_), track_id(track_id_) {
       even = even_;
       auto& track = db::track_by_id(track_id)->get();
       std::string txt = even ? "track_bg2" : "track_bg1";
@@ -73,59 +71,40 @@ class WidgetTrack : public Button {
       }
     }
 
-    void update() override {
-      playing = (player::get_playing() &&
-                 track_id == player::get_playing()->track_id &&
-                 album_id == player::get_playing()->playlist_id &&
-                 collection_id == player::get_playing()->collection_id);
+    void set_highlighted(bool state) {
+      if (highlighted_old == state) { return; }
+      highlighted_old = state;
 
-      if (playing != playing_old && playing) {
+      std::string txt;
+      glm::vec3 text_color;
+      if (state) {
         panel_right_side->set_texture("track_bg_playing", false);
-        std::string txt = "track_bg_playing";
-        set_texture_idle(txt);
-        set_texture_hovered(txt);
-        set_texture_disabled(txt);
-        set_texture_pressed(txt);
-        set_texture(txt, false);
-        label_track_number->set_text_color(glm::vec3{0.55, 0.35, 0.45} * 1.2f);
-        label_track_artist->set_text_color(glm::vec3{0.55, 0.35, 0.45} * 0.9f);
-        label_track_title->set_text_color(glm::vec3{0.55, 0.35, 0.45} * 1.5f);
-      }
-      if (playing != playing_old && !playing) {
+        txt = "track_bg_playing";
+        text_color = glm::vec3{0.55, 0.35, 0.45};
+      } else {
         panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
-        std::string txt = even ? "track_bg2" : "track_bg1";
-        set_texture_idle(txt);
-        set_texture_hovered(txt);
-        set_texture_disabled(txt);
-        set_texture_pressed(txt);
-        set_texture(txt, false);
-        label_track_number->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
-        label_track_artist->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
-        label_track_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
+        txt = even ? "track_bg2" : "track_bg1";
+        text_color = glm::vec3{0.50, 0.40, 0.48};
       }
 
-      playing_old = playing;
+      set_texture(txt, false);
+      set_texture_idle(txt);
+      set_texture_hovered(txt);
+      set_texture_disabled(txt);
+      set_texture_pressed(txt);
+      label_track_number->set_text_color(text_color * 1.2f);
+      label_track_artist->set_text_color(text_color * 0.9f);
+      label_track_title->set_text_color(text_color * 1.5f);
+    }
 
+    void update() override {
       Sprite::update();
     }
 
-    // void handle_event(Input::InputEventMouseButton& ev) override {
-    //   if (is_mouse_hovering() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
-    //     if (ev.action == Input::MouseAction::PRESS) {
-    //       pressed = true;
-    //     }
-    //     if (ev.action == Input::MouseAction::RELEASE && pressed) {
-    //       player::now_playing_t now_playing{
-    //         .track_id = track_id,
-    //         .album_id = album_id,
-    //         .collection_id = collection_id,
-    //         .playlist_track = playlist_track,
-    //       };
-    //       player::play(now_playing, track_id);
-    //     }
-    //     ev.handled = true;
-    //   }
-    // }
+  public:
+    const size_t collection_id{};
+    const size_t album_id{};
+    const size_t track_id{};
 
   protected:
     Label* label_track_number{};
@@ -134,11 +113,8 @@ class WidgetTrack : public Button {
     Panel* panel_right_side{};
     Label* label_track_length{};
     bool even = false;
-    bool playing = false;
-    bool playing_old = false;
-    size_t collection_id{};
-    size_t album_id{};
-    size_t track_id{};
+    bool highlighted_old = false;
+
     std::optional<size_t> playlist_track{};
     bool pressed = false;
 };

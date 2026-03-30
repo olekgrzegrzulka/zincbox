@@ -1,6 +1,7 @@
 
 #pragma once
 #include "core/musicdb.hpp"
+#include "core/player.hpp"
 #include "panel_tracks_track.hpp"
 #include "theme.hpp"
 #include "ui/panel.hpp"
@@ -41,6 +42,7 @@ class WidgetAlbum : public Widget {
       for (size_t track_id : playlist.get_track_ids()) {
         even = !even;
         auto w = &add_child<WidgetTrack>(collection_id, playlist_id, track_id, playlist_track_index + 1, even);
+        track_widgets.emplace_back(w);
         w->on_press([this, collection_id, track_id, playlist_track_index, w]() {
           if (on_track_lmb) {
             this->on_track_lmb(collection_id, playlist_id, track_id, playlist_track_index, w);
@@ -52,8 +54,22 @@ class WidgetAlbum : public Widget {
           }
         });
 
+        if (auto playing = player::get_playing()) {
+          w->set_highlighted(w->track_id == playing->track_id);
+        }
+
         playlist_track_index += 1;
       }
+
+      slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
+        for (auto* w : track_widgets) {
+          w->set_highlighted(player::get_playing().has_value() && w->track_id == player::get_playing()->track_id);
+        }
+      });
+    }
+
+    ~WidgetAlbum() override {
+      player::signal_on_track_changed.disconnect(slot_on_track_changed);
     }
 
     void update() override {
@@ -68,4 +84,6 @@ class WidgetAlbum : public Widget {
   protected:
     std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb{};
     std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb{};
+    std::vector<WidgetTrack*> track_widgets;
+    Signal<>::slot_key slot_on_track_changed;
 };
