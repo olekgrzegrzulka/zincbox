@@ -68,6 +68,14 @@ int main() {
   player::init();
   mpris::init();
   config_load_from_file("music.cfg");
+  i32 repeat_mode = config_get_i32("repeat_mode").value_or(0);
+  repeat_mode = std::clamp(repeat_mode, 0, (i32)player::RepeatMode::REPEAT_MODE_SIZE - 1);
+  player::set_repeat_mode((player::RepeatMode)repeat_mode);
+  i32 shuffle_mode = config_get_i32("shuffle_mode").value_or(0);
+  shuffle_mode = std::clamp(shuffle_mode, 0, (i32)player::ShuffleMode::SHUFFLE_MODE_SIZE - 1);
+  player::set_shuffle_mode((player::ShuffleMode)shuffle_mode);
+  float volume = std::clamp(config_get_float("volume").value_or(0.5f), 0.0f, 1.0f);
+  player::set_volume(volume);
 
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
   if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
@@ -126,8 +134,9 @@ int main() {
     config_set_i32("window_height", window_size.y);
   }
 
-  // std::ofstream os("musicdb", std::ios::binary);
-  // musicdb::save_collections_to_file(os);
+  config_set_i32("repeat_mode", (i32)player::get_repeat_mode());
+  config_set_i32("shuffle_mode", (i32)player::get_shuffle_mode());
+  config_set_float("volume", player::get_volume());
   config_save_to_file("music.cfg");
   interface::deinit();
   player::deinit();

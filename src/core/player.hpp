@@ -8,11 +8,13 @@ namespace player {
     OFF,
     TRACK,
     ALBUM,
+    REPEAT_MODE_SIZE,
   };
 
   enum class ShuffleMode {
     OFF,
     ON,
+    SHUFFLE_MODE_SIZE,
   };
 
   struct playing_t {
