@@ -22,7 +22,7 @@ static float volume = 0.5f;
 static player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
 static player::RepeatMode repeat_mode = player::RepeatMode::OFF;
 
-const Signal<player::playing_t, size_t> player::signal_on_track_changed{};
+const Signal<> player::signal_on_track_changed{};
 const Signal<bool /* track_appended_to_back */> player::signal_on_queue_changed{};
 
 void player::init() {
@@ -91,7 +91,7 @@ void play_track() {
     return;
   }
 
-  player::signal_on_track_changed.emit(playing.value(), playing_index.value());
+  player::signal_on_track_changed.emit();
 
   mpris::notify_playback_status_playing();
   mpris::notify_volume(volume);
