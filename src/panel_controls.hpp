@@ -6,10 +6,12 @@
 #include "ui/slider.hpp"
 #include "ui/sprite.hpp"
 #include "ui/tooltip.hpp"
+#include "signal.hpp"
 
 class PanelControls : public Panel {
   public:
     PanelControls(UI& ui_);
+    ~PanelControls() override;
     void handle_event(Input::InputEventMouseButton& ev) override;
     void update() override;
 
@@ -25,7 +27,9 @@ class PanelControls : public Panel {
     ToolTip* button_repeat_tooltip{};
     Slider* seekbar{};
     Slider* volume_bar{};
-    Label* progress_label{};
-
+    Label* label_progress{};
+    Label* label_track{};
+    
+    Signal<>::slot_key slot_on_track_changed;
     bool is_playing = false;
 };
