@@ -82,11 +82,11 @@ size_t db::add_track(i32 track_number,
   return tracks.size() - 1;
 }
 
-bool Playlist::add_track(size_t id) {
-  if (id >= tracks.size()) {
+bool Playlist::add_track(size_t track_id) {
+  if (track_id >= db::track_count() || has_track_id(track_id)) {
     return false;
   }
-  track_ids.emplace_back(id);
+  track_ids.emplace_back(track_id);
   return true;
 }
 
