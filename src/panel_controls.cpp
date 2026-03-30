@@ -2,13 +2,17 @@
 #include <iomanip>
 #include <ios>
 #include <sstream>
+#include "core/musicdb.hpp"
 #include "core/player.hpp"
+#include "ui/label.hpp"
+#include "ui/panel.hpp"
 #include "ui/ui.hpp"
+#include "ui/widget.hpp"
 
 PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, false) {
   set_anchor(Anchor::BOTTOM);
   set_parent_anchor(Anchor::BOTTOM);
-  set_height(46);
+  set_height(54);
   set_layout("m:6 s:6 ltr expand fill");
 
   button_prev = &add_child<Button>("");
@@ -35,10 +39,14 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
   button_next_img.set_anchor(Anchor::CENTER);
   button_next_img.set_parent_anchor(Anchor::CENTER);
 
-  auto& panel_bottom_right = add_child<Widget>();
-  panel_bottom_right.set_layout("m:0 s:6 rtl expand fill");
+  auto& pad = add_child<Widget>();
+  pad.set_min_width(5);
+  pad.set_max_width(5);
 
-  button_repeat = &panel_bottom_right.add_child<Button>("");
+  auto& panel_right = add_child<Widget>();
+  panel_right.set_layout("m:0 s:6 rtl expand fill");
+
+  button_repeat = &panel_right.add_child<Button>("");
   button_repeat->set_max_width(36);
   auto& button_repeat_img = button_repeat->add_child<Sprite>("repeat");
   auto r = player::get_repeat_mode();
@@ -53,7 +61,7 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
   button_repeat_img.set_parent_anchor(Anchor::CENTER);
   button_repeat_tooltip = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  button_shuffle = &panel_bottom_right.add_child<Button>("");
+  button_shuffle = &panel_right.add_child<Button>("");
   button_shuffle->set_max_width(36);
   auto& button_shuffle_img = button_shuffle->add_child<Sprite>("shuffle");
   auto s = player::get_shuffle_mode();
@@ -66,7 +74,7 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
   button_shuffle_img.set_parent_anchor(Anchor::CENTER);
   button_shuffle_tooltip = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  volume_bar = &panel_bottom_right.add_child<Slider>();
+  volume_bar = &panel_right.add_child<Slider>();
   volume_bar->set_max_width(70);
   volume_bar->set_track_thickness(12);
   volume_bar->set_thumb_thickness(12);
@@ -77,14 +85,34 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
     player::set_volume(volume);
   });
 
-  progress_label = &panel_bottom_right.add_child<Label>("0:00 / 0:00");
-  progress_label->set_max_width(80);
+  label_progress = &panel_right.add_child<Label>("0:00 / 0:00");
+  label_progress->set_max_width(80);
 
-  seekbar = &panel_bottom_right.add_child<Slider>();
+  auto& pad2 = panel_right.add_child<Widget>();
+  pad2.set_min_width(5);
+  pad2.set_max_width(5);
+
+  auto& panel_middle = panel_right.add_child<Widget>();
+  panel_middle.set_layout("m:0 s:4 btt expand fill");
+
+  seekbar = &panel_middle.add_child<Slider>();
   seekbar->set_track_thickness(12);
   seekbar->set_thumb_thickness(12);
   seekbar->set_thumb_length(12);
   seekbar->set_thumb_constraint(ThumbConstraint::FULL_RANGE);
+
+  label_track = &panel_middle.add_child<Label>();
+  label_track->set_label_anchor(Anchor::LEFT);
+
+  slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
+    auto playing = player::get_playing();
+    if (!playing.has_value()) {
+      label_track->set_text("");
+    } else {
+      auto& track = db::track_by_id(playing->track_id)->get();
+      label_track->set_text(track.artist + U" - " + track.title);
+    }
+  });
 
   seekbar->on_drag_ended([](float, float ms) {
     if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) {
@@ -138,6 +166,10 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
   });
 }
 
+PanelControls::~PanelControls() {
+  player::signal_on_track_changed.disconnect(slot_on_track_changed);
+}
+
 void PanelControls::handle_event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) {
     ev.handled = true;
@@ -176,7 +208,7 @@ void PanelControls::update() {
 
   seekbar->set_value(player::get_current_time_ms(), false);
 
-  progress_label->set_text(ss.str());
+  label_progress->set_text(ss.str());
 
   if (is_playing != player::is_playing()) {
     is_playing = player::is_playing();
