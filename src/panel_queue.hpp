@@ -3,6 +3,7 @@
 #include <functional>
 #include <vector>
 #include <glm/common.hpp>
+#include "core/player.hpp"
 #include "input.hpp"
 #include "types.hpp"
 #include "ui/panel.hpp"
@@ -13,9 +14,11 @@ class WidgetTrack;
 class PanelQueue : public Panel {
   public:
     PanelQueue(UI& ui_);
+    ~PanelQueue() override;
 
     void draw() override;
     void on_view_changed();
+    void on_queue_appended_to_back();
     void on_queue_changed();
     void update() override;
     void handle_event(Input::InputEventMouseScroll& e) override;
@@ -34,4 +37,7 @@ class PanelQueue : public Panel {
     ScrollBar* scrollbar{};
     std::vector<std::pair<i32, size_t>> album_scroll_px;
     std::vector<WidgetTrack*> visible_queue_tracks;
+
+    Signal<>::slot_key slot_on_track_changed;
+    Signal<>::slot_key slot_on_queue_changed;
 };
