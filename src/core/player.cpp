@@ -22,8 +22,8 @@ static float volume = 0.5f;
 static player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
 static player::RepeatMode repeat_mode = player::RepeatMode::OFF;
 
-const Signal<player::playing_t> player::signal_on_track_changed{};
-const Signal<> player::signal_on_queue_changed{};
+const Signal<player::playing_t, size_t> player::signal_on_track_changed{};
+const Signal<bool /* track_appended_to_back */> player::signal_on_queue_changed{};
 
 void player::init() {
   auto device_config = ma_device_config_init(ma_device_type_playback);
@@ -91,6 +91,8 @@ void play_track() {
     return;
   }
 
+  player::signal_on_track_changed.emit(playing.value(), playing_index.value());
+
   mpris::notify_playback_status_playing();
   mpris::notify_volume(volume);
   mpris::notify_track_change(utf32_to_utf8(track.title), utf32_to_utf8(track.artist), utf32_to_utf8(playlist.name), track.length_seconds * 1000);
@@ -103,26 +105,18 @@ void player::update() {
 }
 
 void player::play(playing_t play, bool clear_history) {
-  playing_queue.emplace_back(player::playing_t{
-    .collection_id = play.collection_id,
-    .playlist_id = play.playlist_id,
-    .track_id = play.track_id,
-  });
-
   if (clear_history || playing_queue.size() == 0) {
     playing_queue = {play};
     playing_index = 0;
+    signal_on_queue_changed.emit(false);
+  } else if (!playing_index.has_value() || playing_index.value() >= playing_queue.size() - 1) {
+    playing_queue.emplace_back(play);
+    playing_index = playing_queue.size() - 1;
+    signal_on_queue_changed.emit(true);
   } else {
-    if (!playing_index.has_value()) {
-      playing_queue.emplace_back(play);
-      playing_index = playing_queue.size() - 1;
-    } else if (playing_index.value() > playing_queue.size()) {
-      playing_queue.emplace_back(play);
-      playing_index = playing_queue.size() - 1;
-    } else {
-      playing_queue[*playing_index + 1] = play;
-      (*playing_index) += 1;
-    }
+    playing_queue[*playing_index + 1] = play;
+    (*playing_index) += 1;
+    signal_on_queue_changed.emit(false);
   }
 
   play_track();
@@ -340,6 +334,7 @@ void player::prev_track() {
 
   if (play_prev.has_value()) {
     playing_queue.emplace(playing_queue.begin(), play_prev.value());
+    signal_on_queue_changed.emit(false);
     play_track();
   }
 }
