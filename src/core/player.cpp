@@ -2,12 +2,12 @@
 #include <algorithm>
 #include <optional>
 #include <vector>
-#include "../../lib/miniaudio/miniaudio.h"
-#include "../debug.hpp"
-#include "../mpris.hpp"
-#include "../random.hpp"
-#include "../utf.hpp"
-#include "musicdb.hpp"
+#include "common/debug.hpp"
+#include "common/random.hpp"
+#include "core/mpris.hpp"
+#include "core/musicdb.hpp"
+#include "core/utf.hpp"
+#include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};
 
