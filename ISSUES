@@ -1,8 +1,6 @@
 Adding new collections unimplemented
 Deleting existing collections unimplemented
-Scrolling to clicked playlist/album broken (remnant from decrepit times when playlist_ids used to be tied to each collection and not global)
 Popover can go beyond the window extents
 Clicking the invisible scrollbar on playlists panel makes the panel disappear
 Playback halts when empty playlist/album is encountered
 Scroll is not preserved when switching playlists
-In queue view: tracks with same track_id are all highlighted at the same time
