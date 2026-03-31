@@ -6,6 +6,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 #include "../types.hpp"
 
@@ -54,13 +55,12 @@ namespace db {
   };
 
   struct Collection {
-      Collection(std::u32string_view name_) {
-        name = name_;
-      }
+      Collection(std::u32string_view name_) { name = name_; }
       Collection(std::ifstream&);
       std::u32string name;
       std::vector<size_t> playlist_ids;
 
+      bool add_path(std::string);
       size_t add_playlist(std::u32string_view title, std::u32string_view artist);
       size_t add_playlist(std::ifstream&);
       size_t add_album(std::u32string_view title, std::u32string_view artist);
@@ -70,6 +70,7 @@ namespace db {
       void serialize(std::ofstream&);
 
     protected:
+      std::unordered_set<std::string> paths;
       std::optional<size_t> find_playlist_index(size_t playlist_id);
   };
 

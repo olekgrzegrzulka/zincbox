@@ -101,7 +101,7 @@ namespace io {
     return {};
   }
 
-  inline void populate_collection(std::optional<std::reference_wrapper<db::Collection>> c, fs::path path) {
+  inline void populate_collection(db::Collection c, fs::path path) {
     // scan for cover art
     std::vector<u8> cover_art_from_image_in_directory{};
     for (const auto& entry : fs::directory_iterator(path)) {
@@ -161,7 +161,7 @@ namespace io {
         std::u32string album_title = utf8_to_utf32(tag->album().to8Bit(true));
         auto album = db::playlist_by_name(album_title);
         if (!album.has_value()) {
-          size_t album_id = c->get().add_album(album_title, U"artist?");
+          size_t album_id = c.add_album(album_title, U"artist?");
           album = db::playlist_by_id(album_id);
         }
         if (album->get().image.empty()) {
@@ -175,12 +175,12 @@ namespace io {
       }
     }
 
-    for (size_t playlist_id : c->get().playlist_ids) {
+    for (size_t playlist_id : c.playlist_ids) {
       db::playlist_by_id(playlist_id)->get().sort();
     }
   }
 
-  inline void populate_collection(std::optional<std::reference_wrapper<db::Collection>> c, std::string_view path) {
+  inline void populate_collection(db::Collection c, std::string_view path) {
     populate_collection(c, fs::path{path});
   }
 } // namespace io
