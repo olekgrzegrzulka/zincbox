@@ -67,39 +67,40 @@ add_subdirectory(lib/sdbus-cpp SYSTEM)
 
 set(SOURCES
     ./src/main.cpp
-    ./src/config.cpp
-    ./src/input.cpp
-    ./src/texture.cpp
-    ./src/texture_atlas.cpp
-    ./src/shader.cpp
-
-    ./src/ui/ui.cpp
-    ./src/ui/font_face.cpp
-    ./src/ui/button.cpp
-    ./src/ui/label.cpp
-    ./src/ui/slider.cpp
-    ./src/ui/sprite.cpp
-    ./src/ui/widget.cpp
-    ./src/ui/text_input.cpp
-    ./src/ui/selectbar.cpp
-    ./src/ui/scrollbar.cpp
-
-    ./src/core/musicdb.cpp
-    ./src/core/player.cpp
-
-    ./src/mpris.cpp
-    ./src/interface.cpp
-    ./src/panel_albums.cpp
-    ./src/panel_controls.cpp
-    ./src/panel_tracks.cpp
-    ./src/panel_queue.cpp
-    ./src/panel_top.cpp
-
     ./lib/glad/glad.c
     ./lib/miniaudio/miniaudio.c
+    ./src/common/config.cpp
+    ./src/common/input.cpp
+    ./src/core/musicdb.cpp
+    ./src/core/player.cpp
+    ./src/core/mpris.cpp
+    ./src/ui_generic/texture.cpp
+    ./src/ui_generic/texture_atlas.cpp
+    ./src/ui_generic/shader.cpp
+    ./src/ui_generic/ui.cpp
+    ./src/ui_generic/font_face.cpp
+    ./src/ui_generic/button.cpp
+    ./src/ui_generic/label.cpp
+    ./src/ui_generic/slider.cpp
+    ./src/ui_generic/sprite.cpp
+    ./src/ui_generic/widget.cpp
+    ./src/ui_generic/text_input.cpp
+    ./src/ui_generic/selectbar.cpp
+    ./src/ui_generic/scrollbar.cpp
+    ./src/ui/interface.cpp
+    ./src/ui/panel_albums.cpp
+    ./src/ui/panel_controls.cpp
+    ./src/ui/panel_tracks.cpp
+    ./src/ui/panel_queue.cpp
+    ./src/ui/panel_top.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -Wall

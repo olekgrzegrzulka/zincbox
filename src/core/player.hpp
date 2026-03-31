@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include "../signal.hpp"
-#include "../types.hpp"
+#include "common/signal.hpp"
+#include "common/types.hpp"
 
 namespace player {
   enum class RepeatMode {

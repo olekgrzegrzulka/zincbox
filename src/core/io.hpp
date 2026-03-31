@@ -12,10 +12,11 @@
 #include <taglib/toolkit/tfilestream.h>
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
-#include "../../lib/stb_image.h"
-#include "../../lib/stb_image_resize2.h"
-#include "../../lib/stb_image_write.h"
-#include "../utf.hpp"
+#include "common/debug.hpp"
+#include "core/utf.hpp"
+#include "lib/stb_image.h"
+#include "lib/stb_image_resize2.h"
+#include "lib/stb_image_write.h"
 #include "mpeg/id3v2/id3v2tag.h"
 #include "musicdb.hpp"
 
@@ -140,10 +141,8 @@ namespace io {
 
           // PropertyMap values are always lists (to support multiple values)
           for (const TagLib::String& artist : artistList) {
-            std::cout << "Album Artist: " << artist.to8Bit(true) << std::endl;
+            debug_log("Album Artist: ", artist.to8Bit(true));
           }
-        } else {
-          std::cout << "Album Artist tag not found." << std::endl;
         }
 
         size_t track_id = db::add_track((i32)tag->track(),

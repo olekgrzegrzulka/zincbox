@@ -6,12 +6,12 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "../debug.hpp"
-#include "../serialize.hpp"
-#include "../types.hpp"
-#include "../utf.hpp"
-#include "io.hpp"
-#include "musicdb.hpp"
+#include "common/debug.hpp"
+#include "common/serialize.hpp"
+#include "common/types.hpp"
+#include "core/io.hpp"
+#include "core/musicdb.hpp"
+#include "core/utf.hpp"
 
 using namespace db;
 

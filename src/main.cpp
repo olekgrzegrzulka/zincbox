@@ -14,28 +14,29 @@
 #include <glm/vec2.hpp>
 #include <nfd.hpp>
 #include <unistd.h>
-#include "config.hpp"
+#include "common/config.hpp"
+#include "common/debug.hpp"
+#include "common/input.hpp"
+#include "common/random.hpp"
 #include "core/io.hpp"
+#include "core/mpris.hpp"
 #include "core/musicdb.hpp"
 #include "core/player.hpp"
-#include "debug.hpp"
-#include "input.hpp"
-#include "mpris.hpp"
-#include "interface.hpp"
+#include "ui/interface.hpp"
 
 #define STBI_ASSERT(x) ensure(x);
 #define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb_image.h"
+#include "lib/stb_image.h"
 #undef STB_IMAGE_IMPLEMENTATION
 
 #define STBIW_ASSERT(x) ensure(x);
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../lib/stb_image_write.h"
+#include "lib/stb_image_write.h"
 #undef STB_IMAGE_WRITE_IMPLEMENTATION
 
 #define STBIR_ASSERT(x) ensure(x);
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "../lib/stb_image_resize2.h"
+#include "lib/stb_image_resize2.h"
 #undef STB_IMAGE_RESIZE_IMPLEMENTATION
 
 const char* get_opengl_error_string(GLenum err) {

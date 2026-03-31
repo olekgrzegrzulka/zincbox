@@ -8,7 +8,7 @@
 #include <string_view>
 #include <unordered_set>
 #include <vector>
-#include "../types.hpp"
+#include "common/types.hpp"
 
 namespace db {
   enum class PlaylistType {
