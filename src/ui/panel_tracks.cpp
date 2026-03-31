@@ -1,7 +1,6 @@
 #include "panel_tracks.hpp"
 #include <algorithm>
 #include <cmath>
-#include "common/debug.hpp"
 #include "core/musicdb.hpp"
 #include "panel_tracks_playlist.hpp"
 #include "theme.hpp"
@@ -37,15 +36,12 @@ void PanelTracks::recreate() {
   }
 }
 
-void PanelTracks::scroll_to_playlist(size_t /* playlist_id */) {
-  debug_log("PanelTracks::scroll_to_playlist");
-}
-
-void PanelTracks::scroll_to_album(size_t album_index_sorted) {
-  if (album_index_sorted < album_scroll_px.size()) {
-    i32 s = album_scroll_px[album_index_sorted].first;
-    target_scroll_px = s;
-    scrollbar->set_scroll_offset(s);
+void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
+  for (auto [scroll, playlist_id] : album_scroll_px) {
+    if (playlist_id == target_playlist_id) {
+      scrollbar->set_scroll_offset(scroll);
+      return;
+    }
   }
 }
 

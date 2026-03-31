@@ -24,7 +24,6 @@ class PanelTracks : public Panel {
     void draw() override;
     void recreate();
     void scroll_to_playlist(size_t playlist_id);
-    void scroll_to_album(size_t album_index_sorted);
     void scroll_to_now_playing_album();
     void update() override;
     using Panel::handle_event;
