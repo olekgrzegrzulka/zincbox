@@ -55,7 +55,9 @@ class WidgetAlbum : public Widget {
         });
 
         if (auto playing = player::get_playing()) {
-          w->set_highlighted(w->track_id == playing->track_id);
+          w->set_highlighted(w->track_id == playing->track_id &&
+                             w->album_id == playing->playlist_id &&
+                             w->collection_id == playing->collection_id);
         }
 
         playlist_track_index += 1;
@@ -63,7 +65,10 @@ class WidgetAlbum : public Widget {
 
       slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
         for (auto* w : track_widgets) {
-          w->set_highlighted(player::get_playing().has_value() && w->track_id == player::get_playing()->track_id);
+          w->set_highlighted(player::get_playing().has_value() &&
+                             w->track_id == player::get_playing()->track_id &&
+                             w->album_id == player::get_playing()->playlist_id &&
+                             w->collection_id == player::get_playing()->collection_id);
         }
       });
     }
