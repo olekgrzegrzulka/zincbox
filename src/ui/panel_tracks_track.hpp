@@ -6,6 +6,7 @@
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/panel.hpp"
+#include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
 class WidgetTrack : public Button {
@@ -68,6 +69,8 @@ class WidgetTrack : public Button {
         love.set_size(12, 12);
         love.set_nine_slice_margin(0);
       }
+
+      hover = &add_child<Sprite>("track_hovered");
     }
 
     void set_highlighted(bool state) {
@@ -97,6 +100,9 @@ class WidgetTrack : public Button {
     }
 
     void update() override {
+      hover->set_width(width);
+      hover->set_height(height);
+      hover->set_is_drawn(is_mouse_hovering());
       Sprite::update();
     }
 
@@ -111,6 +117,7 @@ class WidgetTrack : public Button {
     Label* label_track_title{};
     Panel* panel_right_side{};
     Label* label_track_length{};
+    Sprite* hover{};
     bool even = false;
     bool highlighted_old = false;
 
