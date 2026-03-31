@@ -20,6 +20,7 @@ class PanelQueue : public Panel {
     void on_view_changed();
     void on_queue_appended_to_back();
     void on_queue_changed();
+    void on_queue_changed_at(size_t);
     void update() override;
     using Panel::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;

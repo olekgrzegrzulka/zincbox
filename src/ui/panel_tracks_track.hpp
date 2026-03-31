@@ -11,8 +11,10 @@
 
 class WidgetTrack : public Button {
   public:
-    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_),
-                                                                                                                       collection_id(collection_id_), album_id(album_id_), track_id(track_id_) {
+    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_) {
+      collection_id = collection_id_;
+      album_id = album_id_;
+      track_id = track_id_;
       even = even_;
       auto& track = db::track_by_id(track_id)->get();
       std::string txt = even ? "track_bg2" : "track_bg1";
@@ -63,14 +65,32 @@ class WidgetTrack : public Button {
       label_track_length->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
       label_track_length->set_resize_to_text_extents(false);
 
-      auto& loved_tracks_playlist = db::playlist_by_id(0)->get();
-      if (loved_tracks_playlist.has_track_id(track_id_)) {
-        auto& love = panel_right_side->add_child<Sprite>("love");
-        love.set_size(12, 12);
-        love.set_nine_slice_margin(0);
-      }
+      love_icon = &panel_right_side->add_child<Sprite>("love");
+      love_icon->set_size(12, 12);
+      love_icon->set_nine_slice_margin(0);
+      love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
 
       hover = &add_child<Sprite>("track_hovered");
+    }
+
+    void setup(size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) {
+      collection_id = collection_id_;
+      album_id = album_id_;
+      track_id = track_id_;
+      even = even_;
+
+      auto& track = db::track_by_id(track_id)->get();
+      label_track_number->set_text(std::to_string(track_number));
+      label_track_artist->set_text(track.artist);
+      label_track_title->set_text(track.title);
+      i32 length_s = track.length_seconds;
+      i32 length_m = length_s / 60;
+      length_s %= 60;
+      std::stringstream ss;
+      ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
+      label_track_length->set_text(ss.str());
+
+      love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
     }
 
     void set_highlighted(bool state) {
@@ -107,9 +127,9 @@ class WidgetTrack : public Button {
     }
 
   public:
-    const size_t collection_id{};
-    const size_t album_id{};
-    const size_t track_id{};
+    size_t collection_id{};
+    size_t album_id{};
+    size_t track_id{};
 
   protected:
     Label* label_track_number{};
@@ -118,6 +138,7 @@ class WidgetTrack : public Button {
     Panel* panel_right_side{};
     Label* label_track_length{};
     Sprite* hover{};
+    Sprite* love_icon{};
     bool even = false;
     bool highlighted_old = false;
 

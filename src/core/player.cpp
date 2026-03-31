@@ -50,7 +50,10 @@ void player::deinit() {
 
 void play_track() {
   auto playing = player::get_playing();
-  if (!playing.has_value()) { return; }
+  if (!playing.has_value()) {
+    player::stop();
+    return;
+  }
   auto track = db::track_by_id(playing->track_id)->get();
   auto playlist = db::playlist_by_id(playing->playlist_id)->get();
 
@@ -135,6 +138,23 @@ void player::enqueue(playing_t play, size_t at) {
     playing_index = playing_queue.size() - 1;
     play_track();
   }
+}
+void player::remove_from_queue(size_t at) {
+  bool current_track_removed = at == playing_index;
+  if (at >= playing_queue.size()) { return; }
+  if (playing_index.has_value() && playing_index <= at) {
+    playing_queue.erase(playing_queue.begin() + at);
+  } else if (playing_index.has_value() && playing_index > at) {
+    playing_queue.erase(playing_queue.begin() + at);
+    playing_index = playing_index.value() - 1;
+  }
+
+  if (playing_queue.size() == 0) {
+    playing_index = std::nullopt;
+  } else if (playing_index.has_value()) {
+    playing_index = std::min(playing_index.value(), playing_queue.size() - 1);
+  }
+  if (current_track_removed) { play_track(); }
 }
 
 void player::resume() {

@@ -60,6 +60,14 @@ const std::vector<Playlist>& db::all_playlists() { return playlists; }
 const std::vector<Collection>& db::all_collections() { return collections; }
 const std::vector<Track>& db::all_tracks() { return tracks; }
 size_t db::collection_count() { return collections.size(); }
+size_t db::playlist_loved_tracks_id() { return 0; }
+Playlist& db::playlist_loved_tracks() {
+  if (playlists.size() == 0) {
+    if (collections.size() == 0) { add_collection(U"Playlists"); }
+    collections[0].add_playlist(U"Loved tracks", U"");
+  }
+  return playlists[0];
+}
 size_t db::playlist_count() { return playlists.size(); }
 size_t db::track_count() { return tracks.size(); }
 
