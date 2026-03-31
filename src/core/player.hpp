@@ -31,6 +31,7 @@ namespace player {
 
   void play(playing_t, bool clear_history = true);
   void enqueue(playing_t, size_t at);
+  void remove_from_queue(size_t at);
   void resume();
   void pause();
   void stop();

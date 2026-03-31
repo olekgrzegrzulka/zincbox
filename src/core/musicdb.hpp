@@ -123,6 +123,8 @@ namespace db {
   std::optional<std::reference_wrapper<Collection>> collection_by_id(size_t);
   const std::vector<Collection>& all_collections();
   size_t collection_count();
+  size_t playlist_loved_tracks_id();
+  Playlist& playlist_loved_tracks();
 
   std::optional<std::reference_wrapper<Playlist>> playlist_by_id(size_t);
   std::optional<std::reference_wrapper<Playlist>> playlist_by_name(std::u32string_view);

@@ -82,6 +82,13 @@ void PanelQueue::on_queue_appended_to_back() {
   on_view_changed();
 }
 
+void PanelQueue::on_queue_changed_at(size_t queue_i) {
+  if (player::get_playing_queue().size() <= queue_i) { return; }
+  if (queue_tracks.size() <= queue_i) { return; }
+  auto p = player::get_playing_queue()[queue_i];
+  queue_tracks[queue_i]->setup(p.collection_id, p.playlist_id, p.track_id, queue_i + 1, queue_i % 2 == 0);
+}
+
 void PanelQueue::on_queue_changed() {
   clear();
 
