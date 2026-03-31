@@ -82,6 +82,8 @@ void interface::init() {
     panel_tracks->recreate();
     panel_tracks->set_is_drawn(true);
     panel_tracks->set_is_updated(true);
+    panel_albums->set_is_drawn(true);
+    panel_albums->set_is_updated(true);
     panel_queue->set_is_drawn(false);
     panel_queue->set_is_updated(false);
     TextureAtlas* atlas = nullptr;
@@ -94,6 +96,8 @@ void interface::init() {
     active_collection_id = std::nullopt;
     panel_tracks->set_is_drawn(false);
     panel_tracks->set_is_updated(false);
+    panel_albums->set_is_drawn(false);
+    panel_albums->set_is_updated(false);
     panel_queue->set_is_drawn(true);
     panel_queue->set_is_updated(true);
     panel_queue->on_queue_changed();
@@ -162,7 +166,7 @@ void interface::init() {
       player::remove_from_queue(queue_index);
       panel_queue->on_queue_changed();
     });
-    
+
     if (!is_loved) {
       popover_labels.emplace_back("Love track");
       popover_actions.emplace_back([track_id, queue_index]() {
