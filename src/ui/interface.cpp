@@ -205,7 +205,7 @@ void interface::init() {
   };
 
   panel_albums->on_playlist_lmb = [&](size_t playlist_id, Widget*) {
-    panel_tracks->scroll_to_album(playlist_id);
+    panel_tracks->scroll_to_playlist(playlist_id);
   };
 
   if (db::collection_count() > 0) {
