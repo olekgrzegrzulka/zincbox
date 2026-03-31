@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <optional>
@@ -9,6 +10,7 @@
 #include "../serialize.hpp"
 #include "../types.hpp"
 #include "../utf.hpp"
+#include "io.hpp"
 #include "musicdb.hpp"
 
 using namespace db;
@@ -113,6 +115,14 @@ void Track::serialize(std::ostream& os) {
   write_bin(os, bitrate);
   write_bin(os, length_seconds);
   write_str(os, path);
+}
+
+bool Collection::add_path(std::string path) {
+  if (paths.contains(path)) { return false; }
+  paths.emplace(path);
+  io::populate_collection(*this, std::filesystem::path(path));
+  debug_log(playlist_ids);
+  return true;
 }
 
 bool Playlist::add_track(size_t track_id) {

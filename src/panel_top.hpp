@@ -12,6 +12,8 @@ class PanelTop : public Panel {
     void recreate(std::optional<size_t> selected_collection_id);
 
   public:
+    std::function<void(Widget*)> on_settings_button_pressed{};
+    std::function<void(Widget*)> on_add_collection_button_pressed{};
     std::function<void(size_t collection_id)> on_collection_opened{};
     std::function<void()> on_queue_view_opened{};
     std::function<void(size_t collection_id, vec2i at)> on_show_collection_actions_popover{};

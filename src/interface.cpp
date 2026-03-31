@@ -26,6 +26,7 @@
 #include "ui/ui.hpp"
 #include "ui/widget.hpp"
 #include "utf.hpp"
+#include "../lib/nativefiledialog-extended/src/include/nfd.hpp"
 
 enum class InterfaceView {
   QUEUE,
@@ -107,6 +108,28 @@ void interface::init() {
       }},
     };
     popup_controller->create_popover(d);
+  };
+
+  panel_top->on_add_collection_button_pressed = [&](Widget*) {
+    NFD::UniquePathSet out_paths;
+    auto result = NFD::PickFolderMultiple(out_paths, nullptr);
+    if (result == NFD_OKAY) {
+      nfdpathsetsize_t numPaths;
+      NFD::PathSet::Count(out_paths, numPaths);
+      if (numPaths > 0) {
+        nfdpathsetsize_t i;
+        for (i = 0; i < numPaths; ++i) {
+          NFD::UniquePathSetPath path;
+          NFD::PathSet::GetPath(out_paths, i, path);
+          std::cout << "Path " << i << ": " << path.get() << std::endl;
+
+          std::string collection_name = "Collection #" + std::to_string(db::collection_count() + 1);
+          auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
+          auto& collection = db::collection_by_id(collection_id)->get();
+          collection.add_path(path.get());
+        }
+      }
+    }
   };
 
   panel_tracks->on_track_lmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget*) {

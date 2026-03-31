@@ -13,6 +13,11 @@ PanelTop::PanelTop(UI& ui_) : Panel(ui_), tab_bar(add_child<TabBar>()) {
   btn_settings->set_y(2);
   btn_settings->set_parent_anchor(Anchor::TOP_RIGHT);
   btn_settings->set_anchor(Anchor::TOP_RIGHT);
+  btn_settings->on_press([this, btn_settings]() {
+    if (this->on_settings_button_pressed) {
+      this->on_settings_button_pressed(btn_settings);
+    }
+  });
 
   auto* btn_settings_img = &btn_settings->add_child<Sprite>("settings");
   btn_settings_img->set_anchor(Anchor::CENTER);
@@ -25,6 +30,11 @@ void PanelTop::update() {
 
 void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
   tab_bar.close_all_tabs();
+  tab_bar.on_add_tab_button_pressed = [this]() {
+    if (this->on_add_collection_button_pressed) {
+      this->on_add_collection_button_pressed(&tab_bar);
+    }
+  };
 
   tab_bar.add_tab(TabBar::tab_info{
                     .is_draggable = false,
