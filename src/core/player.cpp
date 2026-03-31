@@ -122,6 +122,21 @@ void player::play(playing_t play, bool clear_history) {
   play_track();
 }
 
+void player::enqueue(playing_t play, size_t at) {
+  if (at >= playing_queue.size()) {
+    playing_queue.emplace_back(play);
+    signal_on_queue_changed.emit(true);
+  } else {
+    playing_queue.emplace(playing_queue.begin() + at + 1, play);
+    signal_on_queue_changed.emit(false);
+  }
+
+  if (!playing_index.has_value()) {
+    playing_index = playing_queue.size() - 1;
+    play_track();
+  }
+}
+
 void player::resume() {
   ma_sound_start(&sound);
   mpris::notify_playback_status_playing();
