@@ -150,13 +150,20 @@ void interface::init() {
   panel_queue->on_queue_element_rmb = [&](size_t, Widget*) {
   };
 
-  panel_tracks->on_track_rmb = [&](size_t /* collection_id */, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget) {
+  panel_tracks->on_track_rmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget) {
     size_t loved_tracks_playlist_id = db::collection_by_id(0)->get().playlist_ids[0];
     bool is_loved = db::playlist_by_id(loved_tracks_playlist_id)->get().has_track_id(track_id);
     bool is_user_playlist = db::playlist_by_id(playlist_id).value().get().type == db::PlaylistType::User;
 
     std::vector<std::string> popover_labels;
     std::vector<std::function<void()>> popover_actions;
+
+    popover_labels.emplace_back("Play next");
+    popover_actions.emplace_back([track_id, playlist_id, collection_id]() {
+      player::enqueue(
+        player::playing_t{.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id},
+        player::get_playing_index().value_or(player::get_playing_queue().size()));
+    });
 
     if (!is_loved) {
       popover_labels.emplace_back("Love track");

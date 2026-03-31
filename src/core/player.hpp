@@ -30,6 +30,7 @@ namespace player {
   void update();
 
   void play(playing_t, bool clear_history = true);
+  void enqueue(playing_t, size_t at);
   void resume();
   void pause();
   void stop();
