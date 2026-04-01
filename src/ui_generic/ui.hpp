@@ -37,6 +37,7 @@ class UI final {
 
     i32 get_window_width() const { return window_width; }
     i32 get_window_height() const { return window_height; }
+    vec2i get_window_size() const { return vec2i{window_width, window_height}; }
     const glm::mat4& get_matrix() const { return matrix; }
     const FontFace& get_font_face() const { return font_face; }
     const Shader& get_sprite_shader() const { return sprite_shader; }

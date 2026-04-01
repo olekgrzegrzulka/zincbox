@@ -4,7 +4,7 @@
 #include "ui.hpp"
 
 vec2i Widget::get_position(Anchor relative_to) const {
-  vec2i value = anchor_to_uv(parent_anchor) * vec2f{ui.get_window_width(), ui.get_window_height()};
+  vec2i value = anchor_to_uv(parent_anchor) * vec2f{ui.get_window_size()};
   if (parent) {
     value = parent->get_position(parent_anchor);
   }

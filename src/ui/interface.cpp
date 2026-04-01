@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include "common/debug.hpp"
+#include "common/input.hpp"
 #include "common/types.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb.hpp"
@@ -104,10 +105,12 @@ void interface::init() {
     panel_albums->recreate(std::nullopt, nullptr);
   };
 
-  panel_top->on_show_collection_actions_popover = [&](size_t collection_id, vec2i at) {
+  panel_top->on_show_collection_actions_popover = [&](size_t collection_id, Widget* widget) {
+    vec2i at = widget->get_position(Anchor::CENTER);
     popover_descriptor d{
       .id = "collection_actions",
       .at = at,
+      .distance = 10,
       .button_labels = {"Delete"},
       .button_actions = {[collection_id]() {
         delete_collection(collection_id);
@@ -186,9 +189,12 @@ void interface::init() {
       show_add_to_playlist_popup(track_id);
     });
 
+    vec2i at = widget->get_position(Anchor::CENTER);
+    at.x = Input::get_mouse_x();
     popover_descriptor d{
       .id = "playlist_track_actions",
-      .at = widget->get_position(Anchor::BOTTOM),
+      .at = at,
+      .distance = 4,
       .button_labels = popover_labels,
       .button_actions = popover_actions,
     };
@@ -246,9 +252,12 @@ void interface::init() {
       });
     }
 
+    vec2i at = widget->get_position(Anchor::CENTER);
+    at.x = Input::get_mouse_x();
     popover_descriptor d{
       .id = "playlist_track_actions",
-      .at = widget->get_position(Anchor::BOTTOM),
+      .at = at,
+      .distance = 4,
       .button_labels = popover_labels,
       .button_actions = popover_actions,
     };
@@ -402,6 +411,7 @@ void init_atlas() {
   atlas.add_texture("tab_inactive_pressed", "./assets/tab_inactive_pressed.png");
   atlas.add_texture("popover_panel", "./assets/popover_panel.png");
   atlas.add_texture("popover_arrow", "./assets/popover_arrow.png");
+  atlas.add_texture("popover_arrow_inverted", "./assets/popover_arrow_inverted.png");
   atlas.add_texture("button_add_tab_disabled", "./assets/button_add_tab_disabled.png");
   atlas.add_texture("button_add_tab_hovered", "./assets/button_add_tab_hovered.png");
   atlas.add_texture("button_add_tab_idle", "./assets/button_add_tab_idle.png");

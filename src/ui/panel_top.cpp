@@ -62,7 +62,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
           if (on_collection_opened) { this->on_collection_opened(collection_id); } },
         .on_right_click = [this, collection_id](Tab* t) {
           if (this->on_show_collection_actions_popover) {
-            this->on_show_collection_actions_popover(collection_id, t->get_position(Anchor::BOTTOM));
+            this->on_show_collection_actions_popover(collection_id, t);
           } },
       },
       1000, ((selected_collection_id.has_value()) && collection_id == selected_collection_id));
