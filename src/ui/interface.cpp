@@ -71,7 +71,7 @@ void interface::init() {
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
     if (collection_id == active_collection_id) { return; }
-    
+
     if (active_collection_id.has_value()) {
       if (tracks_scroll_positions.size() <= active_collection_id.value()) {
         tracks_scroll_positions.resize(collection_id + 1, 0.0f);
@@ -572,8 +572,8 @@ void show_add_to_playlist_popup(size_t track_id) {
   auto& playlists_view = popup->content.add_child<PanelAlbums>();
   playlists_view.set_width(COVER_WIDTH * 6);
   playlists_view.set_height(std::clamp(ui->get_window_height() - 300, 100, 500));
-  popup->set_width(playlists_view.get_width() + 20);
-  popup->set_height(playlists_view.get_height() + 60);
+  popup->set_width(playlists_view.get_width());
+  popup->set_height(playlists_view.get_height() + 40);
   playlists_view.recreate(0, album_cover_atlases[0].get());
 
   auto* popup_controller_ = popup_controller;

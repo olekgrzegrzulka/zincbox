@@ -52,7 +52,9 @@ void WidgetAlbumCover::draw() {
 }
 
 void WidgetAlbumCover::update() {
-  if (is_mouse_hovering() && label_title->get_text_extents().x > COVER_WIDTH + 8) {
+  if (!is_mouse_hovering()) { is_hovered = false; }
+
+  if (is_hovered && label_title->get_text_extents().x > COVER_WIDTH + 8) {
     label_title->set_x(label_title->get_x() - 1);
     if (label_title->get_x() <= -label_title->get_text_extents().x - 8) {
       label_title->set_x(COVER_WIDTH + 8);
@@ -61,6 +63,11 @@ void WidgetAlbumCover::update() {
     label_title->set_x(0);
   }
   Button::update();
+}
+
+void WidgetAlbumCover::handle_event(Input::InputEventMouseMove& ev) {
+  is_hovered = is_mouse_hovering();
+  Button::handle_event(ev);
 }
 
 PanelAlbums::PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark, false) {

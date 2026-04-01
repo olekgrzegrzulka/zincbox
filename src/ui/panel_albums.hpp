@@ -23,8 +23,10 @@ class WidgetAlbumCover : public Button {
     WidgetAlbumCover(UI& ui_, size_t playlist_id, TextureAtlas* album_covers_atlas_);
     void draw() override;
     void update() override;
+    void handle_event(Input::InputEventMouseMove& ev) override;
 
   protected:
+    bool is_hovered = false;
     Label* label_title{};
     TextureAtlas* album_covers_atlas;
 };
