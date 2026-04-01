@@ -46,6 +46,7 @@ static PanelAlbums* panel_albums{};
 static PanelControls* panel_controls{};
 
 void init_atlas();
+void init_album_cover_atlas(size_t collection_id);
 void init_album_cover_atlases();
 void handle_dropped_files();
 void delete_collection(size_t);
@@ -145,16 +146,17 @@ void interface::init() {
       NFD::PathSet::Count(out_paths, numPaths);
       if (numPaths > 0) {
         nfdpathsetsize_t i;
-        for (i = 0; i < numPaths; ++i) {
+        std::string collection_name = "Collection #" + std::to_string(db::collection_count() + 1);
+        auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
+        auto& collection = db::collection_by_id(collection_id)->get();
+
+        for (i = 0; i < numPaths; i += 1) {
           NFD::UniquePathSetPath path;
           NFD::PathSet::GetPath(out_paths, i, path);
-          std::cout << "Path " << i << ": " << path.get() << std::endl;
-
-          std::string collection_name = "Collection #" + std::to_string(db::collection_count() + 1);
-          auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
-          auto& collection = db::collection_by_id(collection_id)->get();
           collection.add_path(path.get());
         }
+        init_album_cover_atlas(collection_id);
+        panel_top->recreate(active_collection_id);
       }
     }
   };
@@ -458,6 +460,10 @@ void init_atlas() {
 void init_album_cover_atlas(size_t collection_id) {
   ensure(db::collection_count() > collection_id);
 
+  if (collection_id > album_cover_atlases.size()) {
+    return;
+  }
+
   auto& c = db::collection_by_id(collection_id).value().get();
   i32 album_count = c.playlist_ids.size();
   i32 atlas_resolution = std::sqrt(album_count) * 64;
@@ -472,7 +478,11 @@ void init_album_cover_atlas(size_t collection_id) {
     debug_warn("album_count = ", album_count, ", not supported!");
   }
   i32 count = 0;
-  album_cover_atlases[collection_id] = std::make_unique<TextureAtlas>(atlas_resolution, 0, 64);
+  if (collection_id == album_cover_atlases.size()) {
+    album_cover_atlases.emplace_back(std::make_unique<TextureAtlas>(atlas_resolution, 0, 64));
+  } else {
+    album_cover_atlases[collection_id] = std::make_unique<TextureAtlas>(atlas_resolution, 0, 64);
+  }
   album_cover_atlases[collection_id]->add_texture("cover_unknown", "./assets/cover_unknown.png");
   album_cover_atlases[collection_id]->set_fallback_texture("cover_unknown");
   for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {

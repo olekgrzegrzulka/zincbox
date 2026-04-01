@@ -152,7 +152,7 @@ class TabBar : public Panel {
     void add_tab(tab_info tab_info, size_t at, bool select = false) {
       at = std::min(at, tabs.size());
       Tab* t = &tab_container->add_child<Tab>();
-      t->set_height(30);
+      t->set_height(32);
       t->label.set_text(tab_info.label);
       t->padding = tab_info.padding;
       t->is_draggable = tab_info.is_draggable;

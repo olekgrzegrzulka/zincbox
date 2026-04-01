@@ -1,7 +1,6 @@
 #pragma once
 #include <functional>
 #include <optional>
-#include "common/types.hpp"
 #include "tab_bar.hpp"
 #include "ui_generic/panel.hpp"
 
