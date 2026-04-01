@@ -17,6 +17,7 @@ class Tab : public Button {
       label.set_anchor(Anchor::CENTER);
       label.set_parent_anchor(Anchor::CENTER);
 
+      set_clip_children(true);
       set_texture_inactive();
       set_nine_slice_margin(8.0f);
 
