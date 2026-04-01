@@ -120,13 +120,20 @@ class WidgetTrack : public Button {
     }
 
     void update() override {
+      if (!is_mouse_hovering()) { is_hovered = false; }
       hover->set_width(width);
       hover->set_height(height);
-      hover->set_is_drawn(is_mouse_hovering());
+      hover->set_is_drawn(is_hovered);
       Sprite::update();
     }
 
+    void handle_event(Input::InputEventMouseMove& ev) override {
+      is_hovered = is_mouse_hovering();
+      Button::handle_event(ev);
+    }
+
   public:
+    bool is_hovered = false;
     size_t collection_id{};
     size_t album_id{};
     size_t track_id{};

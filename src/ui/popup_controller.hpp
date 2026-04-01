@@ -42,7 +42,7 @@ class Popup : public Panel {
 
       content.set_parent_anchor(Anchor::TOP);
       content.set_anchor(Anchor::TOP);
-      content.set_layout("ttb expand fit m:15 s:25");
+      content.set_layout("ttb expand fit m:0 s:15");
     }
 
   public:
@@ -110,6 +110,10 @@ class Dimmer : public Sprite {
     void handle_event(Input::InputEventMouseScroll& ev) override {
       ev.handled = true;
       if (on_pressed) { on_pressed(); }
+    }
+
+    void handle_event(Input::InputEventMouseMove& ev) override {
+      ev.handled = true;
     }
 
   public:
