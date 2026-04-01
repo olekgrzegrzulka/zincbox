@@ -152,3 +152,13 @@ void PanelAlbums::handle_event(Input::InputEventMouseScroll& e) {
     e.handled = true;
   }
 }
+
+float PanelAlbums::get_scroll_px() const {
+  return target_scroll_px;
+}
+
+void PanelAlbums::set_scroll_px(float px) {
+  scroll_px = px;
+  target_scroll_px = px;
+  scrollbar->set_scroll_offset(px);
+}

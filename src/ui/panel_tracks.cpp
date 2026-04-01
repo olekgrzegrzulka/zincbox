@@ -86,6 +86,16 @@ void PanelTracks::clear() {
   visible_album_widgets.clear();
 }
 
+float PanelTracks::get_scroll_px() const {
+  return target_scroll_px;
+}
+
+void PanelTracks::set_scroll_px(float px) {
+  scroll_px = px;
+  target_scroll_px = px;
+  scrollbar->set_scroll_offset(px);
+}
+
 void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   collection_id = collection_id_;
   if (!collection_id.has_value()) {

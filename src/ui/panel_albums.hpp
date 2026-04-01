@@ -37,6 +37,8 @@ class PanelAlbums : public Panel {
     void update() override;
     using Panel::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
+    float get_scroll_px() const;
+    void set_scroll_px(float px);
 
   protected:
     double scroll_px = 0.0;
