@@ -25,6 +25,7 @@ struct popup_descriptor {
 struct popover_descriptor {
     std::string id;
     vec2i at;
+    i32 distance;
     std::vector<std::string> button_labels;
     std::vector<std::function<void()>> button_actions;
 };
@@ -49,14 +50,52 @@ class Popup : public Panel {
     Widget& content;
 };
 
+class Popover : public Sprite {
+  public:
+    Popover(UI& ui_) : Sprite(ui_, "popover_panel") {
+    }
+
+    void update() override {
+      Sprite::update();
+    }
+
+    void draw() override {
+      i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
+      i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
+      i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
+      i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
+
+      set_x(get_x() + off_screen_left - off_screen_right);
+      set_y(get_y() + off_screen_top - off_screen_bottom);
+
+      Sprite::draw();
+    }
+
+  protected:
+    vec2i popover_pos;
+};
+
 class Dimmer : public Sprite {
   public:
     Dimmer(UI& ui_) : Sprite(ui_, "dim") {
     }
 
+    void set_is_active(bool active) {
+      set_is_updated(active);
+      if (!active) {
+        prev_window_size = std::nullopt;
+      }
+    }
+
     void update() override {
-      set_width(ui.get_window_width());
-      set_height(ui.get_window_height());
+      if (!prev_window_size.has_value()) {
+        prev_window_size = ui.get_window_size();
+      }
+      if (prev_window_size != ui.get_window_size()) {
+        prev_window_size = ui.get_window_size();
+        if (on_pressed) { on_pressed(); }
+      }
+      set_size(ui.get_window_size());
       set_is_drawn_on_top(true);
       Sprite::update();
     }
@@ -68,7 +107,13 @@ class Dimmer : public Sprite {
       }
     }
 
+    void handle_event(Input::InputEventMouseScroll& ev) override {
+      ev.handled = true;
+      if (on_pressed) { on_pressed(); }
+    }
+
   public:
+    std::optional<vec2i> prev_window_size{};
     std::function<void()> on_pressed{};
 };
 
@@ -86,25 +131,37 @@ class PopupController : public Widget {
     }
 
     void create_popover(popover_descriptor d) {
-      ensure(d.button_actions.size() >= d.button_actions.size());
+      ensure(d.button_labels.size() >= d.button_actions.size());
       if (popovers.contains(d.id)) { return; }
 
-      auto& popover = add_child<Sprite>("popover_panel");
+      i32 space_needed = 12 + (6 + 30) * d.button_labels.size() + 12;
+      bool bottom = ui.get_window_height() - d.at.y >= space_needed;
+
+      auto& popover = add_child<Popover>();
       popovers[d.id] = &popover;
 
       popover.set_is_drawn_on_top(true);
       popover.set_nine_slice_margin(8.0f);
-      popover.set_anchor(Anchor::TOP);
-      popover.set_pos(d.at);
+      popover.set_anchor(bottom ? Anchor::TOP : Anchor::BOTTOM);
       popover.set_layout("ttb fit expand fill m:6 s:6");
+      if (bottom) {
+        popover.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
+      } else {
+        popover.get_layout().direction = LayoutDirection::BOTTOM_TO_TOP;
+      }
+
       popover.set_width(50);
 
-      auto* arrow = &popover.add_child<Sprite>("popover_arrow");
+      auto* arrow = &popover.add_child<Sprite>(bottom ? "popover_arrow" : "popover_arrow_inverted");
       arrow->set_ignore_parents_layout(true);
-      arrow->set_parent_anchor(Anchor::TOP);
-      arrow->set_anchor(Anchor::BOTTOM);
-      arrow->set_y(4);
-      popover.set_y(popover.get_y() + arrow->get_height());
+      arrow->set_parent_anchor(bottom ? Anchor::TOP : Anchor::BOTTOM);
+      arrow->set_anchor(bottom ? Anchor::BOTTOM : Anchor::TOP);
+      arrow->set_y(bottom ? 1 : -1);
+      if (bottom) {
+        popover.set_pos(d.at.x, d.at.y + (d.distance + arrow->get_height()));
+      } else {
+        popover.set_pos(d.at.x, d.at.y - (d.distance + arrow->get_height()));
+      }
       std::vector<Button*> buttons;
       for (auto& sv : d.button_labels) {
         auto& btn = popover.add_child<Button>(std::string(sv));
@@ -194,11 +251,10 @@ class PopupController : public Widget {
     }
 
     void update() override {
-      set_width(ui.get_window_width());
-      set_height(ui.get_window_height());
+      set_size(ui.get_window_size());
       bool dimmer_block_events = (popovers.size() + popups.size()) > 0;
       bool dimmer_visible = popups.size() > 0;
-      dimmer.set_is_updated(dimmer_block_events);
+      dimmer.set_is_active(dimmer_block_events);
       dimmer.set_is_drawn(dimmer_visible);
       Widget::update();
     }

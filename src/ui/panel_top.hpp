@@ -16,7 +16,7 @@ class PanelTop : public Panel {
     std::function<void(Widget*)> on_add_collection_button_pressed{};
     std::function<void(size_t collection_id)> on_collection_opened{};
     std::function<void()> on_queue_view_opened{};
-    std::function<void(size_t collection_id, vec2i at)> on_show_collection_actions_popover{};
+    std::function<void(size_t collection_id, Widget*)> on_show_collection_actions_popover{};
 
   protected:
     TabBar& tab_bar;
