@@ -502,14 +502,27 @@ void init_album_cover_atlases() {
   }
 }
 
-void create_collections(std::vector<std::string> /* directories */) {
-  debug_log("create_collections");
-  // for (auto& str : directories) {
-  // fs::path path = str;
-  // std::string collection_name = path.filename().string();
-  // auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
-  // db::collection_by_id(collection_id)->add_path(str);
-  // }
+void create_collection(std::vector<std::string> directories) {
+  if (directories.size() == 0) { return; }
+  std::string collection_name = fs::path{directories[0]}.filename().string();
+  auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
+  for (auto& str : directories) {
+    fs::path path = str;
+    db::collection_by_id(collection_id)->get().add_path(path);
+    init_album_cover_atlas(collection_id);
+  }
+  panel_top->recreate(active_collection_id);
+}
+
+void create_multiple_collections(std::vector<std::string> directories) {
+  for (auto& str : directories) {
+    fs::path path = str;
+    std::string collection_name = path.filename().string();
+    auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
+    db::collection_by_id(collection_id)->get().add_path(path);
+    init_album_cover_atlas(collection_id);
+  }
+  panel_top->recreate(active_collection_id);
 }
 
 void handle_dropped_files() {
@@ -529,19 +542,47 @@ void handle_dropped_files() {
   }
 
   auto content_utf32 = utf8_to_utf32(content);
-  if (dropped_directories.size() > 0) {
+  if (dropped_directories.size() > 1) {
+    auto str_size = utf8_to_utf32(std::to_string(dropped_directories.size()));
+    auto title = U"Importing " + str_size + U" folders";
     popup_descriptor d{
       .id = "directories_dropped",
-      .title = U"Do you want to create the following collections?",
+      .title = title,
       .content = content_utf32,
-      .button_labels = {U"Cancel", U"Add"},
-      .button_actions = {nullptr, [dropped_directories]() {
-                           create_collections(dropped_directories);
-                           init_album_cover_atlases(); // FIXME: do this only for the added collections
-                           panel_top->recreate(active_collection_id);
-                         }},
+      .button_labels = {
+        U"Cancel",
+        U"Add as " + str_size + U" collections",
+        U"Merge into 1 collection"},
+      .button_actions = {
+        nullptr,
+        [dropped_directories]() {
+          create_multiple_collections(dropped_directories);
+        },
+        [dropped_directories]() {
+          create_collection(dropped_directories);
+        },
+      },
     };
-    interface::get_popup_controller()->create_popup(d);
+    auto popup = interface::get_popup_controller()->create_popup(d);
+    popup->set_width(550);
+  } else if (dropped_directories.size() == 1) {
+    popup_descriptor d{
+      .id = "directories_dropped",
+      .title = U"Importing 1 folder",
+      .content = content_utf32,
+      .button_labels = {
+        U"Cancel",
+        U"Add collection",
+      },
+      .button_actions = {
+        nullptr,
+        [dropped_directories]() {
+          create_collection(dropped_directories);
+        },
+      },
+    };
+    auto popup = interface::get_popup_controller()->create_popup(d);
+    popup->set_width(300);
   }
 }
 
