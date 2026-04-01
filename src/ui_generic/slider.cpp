@@ -59,9 +59,9 @@ void Slider::update() {
   bool mouse_on_track = track.is_mouse_hovering();
 
   if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
-    if (orientation == HORIZONTAL) {
+    if (orientation == HORIZONTAL && width != 0) {
       value = (Input::get_mouse_x() - get_position().x) / (float)width;
-    } else {
+    } else if (height != 0) {
       value = (Input::get_mouse_y() - get_position().y) / (float)height;
     }
     value *= (max_value - min_value);
@@ -86,8 +86,10 @@ void Slider::update() {
     i32 drag_px = Input::get_mouse_x() - drag_start_mouse_pos;
     if (orientation == VERTICAL) { drag_px = Input::get_mouse_y() - drag_start_mouse_pos; }
 
-    float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
-    value = std::clamp(drag_start_value + drag, min_value, max_value);
+    if ((track_length - thumb_length) != 0) {
+      float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
+      value = std::clamp(drag_start_value + drag, min_value, max_value);
+    }
   }
 
   bool drag_ended = false;
@@ -113,11 +115,13 @@ void Slider::update() {
 
   float thumb_old_pos = (orientation == HORIZONTAL) ? thumb.get_x() : thumb.get_y();
   float thumb_pos_target = 0.0f;
-  if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
-    thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length);
-    thumb_pos_target -= thumb_length * 0.5f;
-  } else {
-    thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length - thumb_length);
+  if ((max_value - min_value) != 0.0f) {
+    if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
+      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length);
+      thumb_pos_target -= thumb_length * 0.5f;
+    } else {
+      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length - thumb_length);
+    }
   }
   double t = std::clamp(std::abs(thumb_old_pos - thumb_pos_target) * 0.004, 0.6, 0.95);
   float thumb_pos_lerped = std::lerp(thumb_old_pos, thumb_pos_target, t);

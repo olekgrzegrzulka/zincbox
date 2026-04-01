@@ -137,7 +137,6 @@ void PanelAlbums::update() {
     scrollbar->set_page_size(height);
     scrollbar->set_height(height);
     scrollbar->set_height(height);
-    scrollbar->set_is_drawn(content_size > height);
     scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
   }
 
