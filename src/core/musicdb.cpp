@@ -55,6 +55,13 @@ std::optional<std::reference_wrapper<Playlist>> db::playlist_by_name(std::u32str
   return std::nullopt;
 }
 
+std::optional<std::reference_wrapper<Playlist>> db::playlist_by_path(fs::path path) {
+  for (auto& p : playlists) {
+    if (p.album_path == utf8_to_utf32(path.string())) { return p; }
+  }
+  return std::nullopt;
+}
+
 const std::vector<Playlist>& db::all_playlists() { return playlists; }
 
 const std::vector<Collection>& db::all_collections() { return collections; }
@@ -125,11 +132,53 @@ void Track::serialize(std::ostream& os) {
   write_str(os, path);
 }
 
-bool Collection::add_path(std::string path) {
-  if (paths.contains(path)) { return false; }
-  paths.emplace(path);
-  io::populate_collection(*this, std::filesystem::path(path));
-  debug_log(playlist_ids);
+bool Collection::add_path(fs::path path, bool internal) {
+  bool has_path = false;
+  if (!internal) {
+    if (paths.contains(path)) {
+      has_path = true;
+    } else {
+      paths.emplace(path);
+    }
+  } else {
+    if (paths_internal.contains(path)) {
+      has_path = true;
+    } else {
+      paths_internal.emplace(path);
+    }
+  }
+
+  db::Playlist* playlist = nullptr;
+  if (has_path) {
+    auto p = playlist_by_path(path);
+    if (p.has_value()) {
+      playlist = &p->get();
+      (*playlist) = Playlist{utf8_to_utf32(path.filename().string()), U"", PlaylistType::Album};
+    }
+  }
+  if (!playlist) {
+    size_t playlist_i = add_album(utf8_to_utf32(path.filename().string()), U"");
+    playlist = &playlist_by_id(playlist_i)->get();
+  }
+  ensure(playlist);
+  playlist->album_path = utf8_to_utf32(path.string());
+
+  for (const auto& entry : fs::directory_iterator(path)) {
+    if (entry.is_directory()) {
+      add_path(entry.path(), true);
+    } else if (entry.is_regular_file()) {
+      if (io::is_cover_file(entry.path())) {
+        io::add_cover_file(*playlist, entry.path());
+        debug_log("added cover file: ", entry.path().string());
+      } else if (io::is_music_file(entry.path())) {
+        io::add_music_file(*playlist, entry.path());
+        debug_log("added music file: ", entry.path().string());
+      } else {
+        debug_warn("unknown file type: ", entry.path().string());
+      }
+    }
+  }
+
   return true;
 }
 

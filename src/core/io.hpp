@@ -102,84 +102,74 @@ namespace io {
     return {};
   }
 
-  inline void populate_collection(db::Collection c, fs::path path) {
-    // scan for cover art
-    std::vector<u8> cover_art_from_image_in_directory{};
-    for (const auto& entry : fs::directory_iterator(path)) {
-      if (entry.is_regular_file()) {
-        auto ext = entry.path().extension();
-        bool is_img = (ext == ".jpg" || ext == ".JPG" || ext == ".png" || ext == ".PNG" || ext == ".jpeg" || ext == ".JPEG" || ext == ".bmp" || ext == ".BMP" || ext == ".webp" || ext == ".WEBP");
-        if (is_img) {
-          i32 width, height, channels;
-          stbi_uc* data = stbi_load(entry.path().c_str(), &width, &height, &channels, STBI_rgb_alpha);
-          if (!data) { continue; }
-          cover_art_from_image_in_directory.resize(64 * 64 * 4);
-          stbir_resize_uint8_linear(data, width, height, 0,
-                                    cover_art_from_image_in_directory.data(), 64, 64, 0,
-                                    STBIR_RGBA);
-          stbi_image_free(data);
-          break;
-        }
-      }
-    }
-
-    // scan for music files and other directories
-    for (const auto& entry : fs::directory_iterator(path)) {
-      if (entry.is_directory()) {
-        populate_collection(c, entry.path());
-      } else if (entry.is_regular_file()) {
-        TagLib::FileStream fstream(entry.path().c_str(), true);
-        TagLib::FileRef f(&fstream);
-
-        if (f.isNull()) { continue; }
-
-        TagLib::Tag* tag = f.tag();
-        TagLib::AudioProperties* audio_props = f.audioProperties();
-        TagLib::PropertyMap properties = f.file()->properties();
-        if (properties.contains("ALBUMARTIST")) {
-          TagLib::StringList artistList = properties["ALBUMARTIST"];
-
-          // PropertyMap values are always lists (to support multiple values)
-          for (const TagLib::String& artist : artistList) {
-            debug_log("Album Artist: ", artist.to8Bit(true));
-          }
-        }
-
-        size_t track_id = db::add_track((i32)tag->track(),
-                                        utf8_to_utf32(tag->title().to8Bit(true)),
-                                        utf8_to_utf32(tag->artist().to8Bit(true)),
-                                        utf8_to_utf32("album artist"),
-                                        utf8_to_utf32(tag->genre().to8Bit(true)),
-                                        (i32)tag->year(),
-                                        audio_props->bitrate(),
-                                        audio_props->lengthInSeconds(),
-                                        utf8_to_utf32(entry.path().string()));
-
-        // track.collection_id = id;
-        // track.track_number = (i32)tag->track();
-        std::u32string album_title = utf8_to_utf32(tag->album().to8Bit(true));
-        auto album = db::playlist_by_name(album_title);
-        if (!album.has_value()) {
-          size_t album_id = c.add_album(album_title, U"artist?");
-          album = db::playlist_by_id(album_id);
-        }
-        if (album->get().image.empty()) {
-          if (cover_art_from_image_in_directory.size() != 0) {
-            album->get().image = cover_art_from_image_in_directory;
-          } else {
-            album->get().image = fetch_album_art(f);
-          }
-        }
-        album->get().add_track(track_id);
-      }
-    }
-
-    for (size_t playlist_id : c.playlist_ids) {
-      db::playlist_by_id(playlist_id)->get().sort();
-    }
+  inline bool is_cover_file(fs::path path) {
+    auto ext = path.extension();
+    return (ext == ".jpg" || ext == ".JPG" || ext == ".png" || ext == ".PNG" || ext == ".jpeg" || ext == ".JPEG" || ext == ".bmp" || ext == ".BMP" || ext == ".webp" || ext == ".WEBP");
   }
 
-  inline void populate_collection(db::Collection c, std::string_view path) {
-    populate_collection(c, fs::path{path});
+  inline bool is_music_file(fs::path path) {
+    auto ext = path.extension();
+    return (ext == ".mp3" || ext == ".MP3" || ext == ".flac" || ext == ".FLAC" || ext == ".ogg" || ext == ".OGG" || ext == ".wav" || ext == ".WAV");
+  }
+
+  inline bool add_music_file(db::Playlist& playlist, fs::path path) {
+    TagLib::FileStream fstream(path.c_str(), true);
+    TagLib::FileRef f(&fstream);
+
+    if (f.isNull()) { return false; }
+
+    TagLib::Tag* tag = f.tag();
+    TagLib::AudioProperties* audio_props = f.audioProperties();
+    TagLib::PropertyMap properties = f.file()->properties();
+
+    std::string album_artist;
+    if (properties.contains("ALBUMARTIST")) {
+      TagLib::StringList artistList = properties["ALBUMARTIST"];
+      for (const TagLib::String& artist : artistList) {
+        album_artist.append(artist.to8Bit(true));
+        album_artist.append(", ");
+      }
+      if (album_artist.size() >= 2) {
+        album_artist.pop_back();
+        album_artist.pop_back();
+      }
+    }
+
+    size_t track_id = db::add_track((i32)tag->track(),
+                                    utf8_to_utf32(tag->title().to8Bit(true)),
+                                    utf8_to_utf32(tag->artist().to8Bit(true)),
+                                    utf8_to_utf32(album_artist),
+                                    utf8_to_utf32(tag->genre().to8Bit(true)),
+                                    (i32)tag->year(),
+                                    audio_props->bitrate(),
+                                    audio_props->lengthInSeconds(),
+                                    utf8_to_utf32(path.string()));
+
+    if (playlist.image.empty()) {
+      playlist.image = fetch_album_art(f);
+    }
+    if (playlist.author == U"") {
+      playlist.author = utf8_to_utf32(album_artist);
+    }
+    playlist.add_track(track_id);
+    return true;
+  }
+
+  inline bool add_cover_file(db::Playlist& playlist, fs::path path) {
+    if (!playlist.image.empty()) {
+      return false;
+    }
+    i32 width, height, channels;
+    stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    if (!data) { return false; }
+    std::vector<u8> data_64x64{};
+    data_64x64.resize(64 * 64 * 4);
+    stbir_resize_uint8_linear(data, width, height, 0,
+                              data_64x64.data(), 64, 64, 0,
+                              STBIR_RGBA);
+    stbi_image_free(data);
+
+    playlist.image = data_64x64;
+    return true;
   }
 } // namespace io

@@ -65,6 +65,6 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
             this->on_show_collection_actions_popover(collection_id, t);
           } },
       },
-      1000, ((selected_collection_id.has_value()) && collection_id == selected_collection_id));
+      1000, collection_id == selected_collection_id);
   }
 }

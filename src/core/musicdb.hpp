@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <optional>
@@ -9,6 +10,8 @@
 #include <unordered_set>
 #include <vector>
 #include "common/types.hpp"
+
+namespace fs = std::filesystem;
 
 namespace db {
   enum class PlaylistType {
@@ -59,8 +62,7 @@ namespace db {
       Collection(std::ifstream&);
       std::u32string name;
       std::vector<size_t> playlist_ids;
-
-      bool add_path(std::string);
+      bool add_path(fs::path, bool internal = false);
       size_t add_playlist(std::u32string_view title, std::u32string_view artist);
       size_t add_playlist(std::ifstream&);
       size_t add_album(std::u32string_view title, std::u32string_view artist);
@@ -71,6 +73,7 @@ namespace db {
 
     protected:
       std::unordered_set<std::string> paths;
+      std::unordered_set<std::string> paths_internal;
       std::optional<size_t> find_playlist_index(size_t playlist_id);
   };
 
@@ -81,6 +84,7 @@ namespace db {
       friend void deserialize(std::ifstream&);
 
       std::u32string name;
+      std::u32string album_path;
       std::u32string author;
       std::vector<uint8_t> image;
       PlaylistType type;
@@ -111,6 +115,7 @@ namespace db {
     protected:
       std::vector<size_t> track_ids;
 
+    public:
       Playlist(std::ifstream&);
       Playlist(std::u32string_view name_, std::u32string_view author_, PlaylistType type_) {
         name = name_;
@@ -127,6 +132,7 @@ namespace db {
   Playlist& playlist_loved_tracks();
 
   std::optional<std::reference_wrapper<Playlist>> playlist_by_id(size_t);
+  std::optional<std::reference_wrapper<Playlist>> playlist_by_path(fs::path);
   std::optional<std::reference_wrapper<Playlist>> playlist_by_name(std::u32string_view);
   const std::vector<Playlist>& all_playlists();
   size_t playlist_count();

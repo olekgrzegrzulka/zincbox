@@ -107,7 +107,6 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* a
     w->set_marked_for_deletion(true);
   }
   album_widgets.clear();
-
   for (size_t playlist_id : c->get().playlist_ids) {
     auto* album_widget = &add_child<WidgetAlbumCover>(playlist_id, album_covers_atlas);
     album_widgets.emplace_back(album_widget);
