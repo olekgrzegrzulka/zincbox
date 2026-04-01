@@ -138,7 +138,7 @@ class PopupController : public Widget {
       ensure(d.button_labels.size() >= d.button_actions.size());
       if (popovers.contains(d.id)) { return; }
 
-      i32 space_needed = 12 + (6 + 30) * d.button_labels.size() + 12;
+      i32 space_needed = 8 + (4 + 24) * d.button_labels.size() + 12;
       bool bottom = ui.get_window_height() - d.at.y >= space_needed;
 
       auto& popover = add_child<Popover>();
@@ -147,7 +147,7 @@ class PopupController : public Widget {
       popover.set_is_drawn_on_top(true);
       popover.set_nine_slice_margin(8.0f);
       popover.set_anchor(bottom ? Anchor::TOP : Anchor::BOTTOM);
-      popover.set_layout("ttb fit expand fill m:6 s:6");
+      popover.set_layout("ttb fit expand fill m:4 s:4");
       if (bottom) {
         popover.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
       } else {
@@ -170,14 +170,15 @@ class PopupController : public Widget {
       for (auto& sv : d.button_labels) {
         auto& btn = popover.add_child<Button>(std::string(sv));
         buttons.emplace_back(&btn);
+        btn.set_nine_slice_margin(6.0f);
         btn.set_texture_idle("button_popover_idle");
         btn.set_texture_hovered("button_popover_hovered");
         btn.set_texture_pressed("button_popover_pressed");
         btn.set_texture_disabled("button_popover_disabled");
         btn.set_texture("button_popover_idle", false);
-        btn.set_min_height(30);
-        btn.set_max_height(30);
-        btn.set_height(30);
+        btn.set_min_height(24);
+        btn.set_max_height(24);
+        btn.set_height(24);
         popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 30));
       }
 
