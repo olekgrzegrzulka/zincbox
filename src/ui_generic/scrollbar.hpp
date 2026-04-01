@@ -18,6 +18,7 @@ class ScrollBar : public Slider {
 
     void update() override;
     void draw() override;
+    void recalculate_values();
 
     void scroll(float force);
 
@@ -25,12 +26,15 @@ class ScrollBar : public Slider {
 
     void set_content_size(i32 v) {
       content_size = v;
+      recalculate_values();
     }
     void set_page_size(i32 v) {
       page_size = v;
+      recalculate_values();
     }
 
     void set_scroll_offset(i32 v) {
       set_value(std::clamp((float)v, min_value, max_value));
+      recalculate_values();
     }
 };

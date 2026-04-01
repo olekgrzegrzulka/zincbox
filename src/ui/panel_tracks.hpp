@@ -29,6 +29,8 @@ class PanelTracks : public Panel {
     using Panel::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
     void clear();
+    float get_scroll_px() const;
+    void set_scroll_px(float px);
 
   protected:
     void recreate(std::optional<size_t> collection_id_);

@@ -31,14 +31,9 @@
 
 // namespace fs = std::filesystem;
 
-enum class InterfaceView {
-  QUEUE,
-  COLLECTION,
-  PLAYLISTS,
-};
-
-static InterfaceView current_view = InterfaceView::COLLECTION;
 static std::optional<size_t> active_collection_id;
+static std::vector<float> tracks_scroll_positions;
+static std::vector<float> playlists_scroll_positions;
 static std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 
 static std::unique_ptr<UI> ui;
@@ -75,25 +70,48 @@ void interface::init() {
   panel_albums = &panel_main->add_child<PanelAlbums>();
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
-    current_view = InterfaceView::COLLECTION;
+    if (collection_id == active_collection_id) { return; }
+    
+    if (active_collection_id.has_value()) {
+      if (tracks_scroll_positions.size() <= active_collection_id.value()) {
+        tracks_scroll_positions.resize(collection_id + 1, 0.0f);
+      }
+      if (playlists_scroll_positions.size() <= active_collection_id.value()) {
+        playlists_scroll_positions.resize(collection_id + 1, 0.0f);
+      }
+      tracks_scroll_positions[active_collection_id.value()] = panel_tracks->get_scroll_px();
+      playlists_scroll_positions[active_collection_id.value()] = panel_albums->get_scroll_px();
+    }
+
     active_collection_id = collection_id;
+
     panel_tracks->view_type = PanelTracks::ViewType::COLLECTION;
     panel_tracks->collection_id = active_collection_id;
     panel_tracks->clear();
     panel_tracks->recreate();
     panel_tracks->set_is_drawn(true);
+    if (tracks_scroll_positions.size() <= collection_id) {
+      tracks_scroll_positions.resize(collection_id + 1, 0.0f);
+    }
+    panel_tracks->set_scroll_px(tracks_scroll_positions[collection_id]);
     panel_tracks->set_is_updated(true);
+
     panel_albums->set_is_drawn(true);
     panel_albums->set_is_updated(true);
-    panel_queue->set_is_drawn(false);
-    panel_queue->set_is_updated(false);
+    if (playlists_scroll_positions.size() <= collection_id) {
+      playlists_scroll_positions.resize(collection_id + 1, 0.0f);
+    }
+    panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
+
     TextureAtlas* atlas = nullptr;
     if (active_collection_id.has_value()) { atlas = album_cover_atlases[*active_collection_id].get(); }
     panel_albums->recreate(active_collection_id, atlas);
+
+    panel_queue->set_is_drawn(false);
+    panel_queue->set_is_updated(false);
   };
 
   panel_top->on_queue_view_opened = [&]() {
-    current_view = InterfaceView::QUEUE;
     active_collection_id = std::nullopt;
     panel_tracks->set_is_drawn(false);
     panel_tracks->set_is_updated(false);
