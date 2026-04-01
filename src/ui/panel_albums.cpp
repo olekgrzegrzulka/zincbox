@@ -31,6 +31,10 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, size_t playlist_id, TextureAtlas* al
     album_covers_atlas = &ui.get_texture_atlas();
   }
   auto& playlist = db::playlist_by_id(playlist_id)->get();
+  if (playlist.is_tombstone()) {
+    set_is_updated(false);
+    set_is_drawn(false);
+  }
   get_children()[0]->set_ignore_parents_layout(true);
   set_clip_children(true);
   set_size(COVER_WIDTH, COVER_HEIGHT);
@@ -130,6 +134,8 @@ void PanelAlbums::update() {
   if (album_covers_in_one_row > 0) {
     i32 i = 0;
     for (auto& cover : album_widgets) {
+      if (!cover->get_is_updated()) { continue; }
+
       i32 x = (i % album_covers_in_one_row) * (albums_area_width) / album_covers_in_one_row;
       i32 y = ((i32)(i / album_covers_in_one_row) * (COVER_HEIGHT)) - scroll_px;
       cover->set_pos(x, y);

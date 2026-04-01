@@ -1,8 +1,10 @@
 #pragma once
 #include <sstream>
 #include <string>
+#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "core/musicdb.hpp"
+#include "core/utf.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/panel.hpp"
@@ -80,6 +82,13 @@ class WidgetTrack : public Button {
       love_icon->set_nine_slice_margin(0);
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
 
+      if (track.is_tombstone()) {
+        label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
+        label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
+        label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
+        label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
+      }
+
       hover = &add_child<Sprite>("track_hovered");
     }
 
@@ -132,6 +141,15 @@ class WidgetTrack : public Button {
       label_track_number->set_text_color(text_color * 1.2f);
       label_track_artist->set_text_color(text_color * 0.9f);
       label_track_title->set_text_color(text_color * 1.5f);
+      label_track_length->set_text_color(text_color * 0.9f);
+
+      auto& track = db::track_by_id(track_id)->get();
+      if (track.is_tombstone()) {
+        label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
+        label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
+        label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
+        label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
+      }
     }
 
     void update() override {

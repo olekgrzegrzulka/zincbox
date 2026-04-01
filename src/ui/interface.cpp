@@ -288,6 +288,31 @@ void interface::init() {
     panel_tracks->scroll_to_playlist(playlist_id);
   };
 
+  panel_albums->on_playlist_rmb = [&](size_t playlist_id, Widget* widget) {
+    std::vector<std::string> popover_labels;
+    std::vector<std::function<void()>> popover_actions;
+
+    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album) {
+      popover_labels.emplace_back("Remove");
+      popover_actions.emplace_back([playlist_id]() {
+        db::mark_playlist_as_tombstone(playlist_id);
+        panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get());
+        panel_tracks->collection_id = active_collection_id;
+        panel_tracks->recreate();
+      });
+
+      vec2i at = widget->get_position(Anchor::CENTER);
+      popover_descriptor d{
+        .id = "playlist_actions",
+        .at = at,
+        .distance = 4,
+        .button_labels = popover_labels,
+        .button_actions = popover_actions,
+      };
+      popup_controller->create_popover(d);
+    }
+  };
+
   if (db::collection_count() > 0) {
     panel_tracks->collection_id = 0;
     panel_tracks->clear();
@@ -586,27 +611,21 @@ void handle_dropped_files() {
   }
 }
 
-void delete_collection(size_t /* collection_id */) {
-  debug_warn("delete_collection");
-  // musicdb::mark_collection_as_tombstone(collection_id);
-  // if (active_collection_id.has_value()) {
-  //   if (musicdb::get_collection(*active_collection_id)->is_tombstone()) {
-  //     panel_top->recreate(std::nullopt);
-  //     panel_albums->recreate(std::nullopt, nullptr);
-  //     panel_tracks->collection_id = std::nullopt;
-  //     panel_tracks->recreate();
-  //   } else {
-  //     panel_top->recreate(*active_collection_id);
-  //     panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
-  //     panel_tracks->collection_id = *active_collection_id;
-  //     panel_tracks->recreate();
-  //   }
-  // } else {
-  //   panel_top->recreate(std::nullopt);
-  //   panel_albums->recreate(std::nullopt, nullptr);
-  //   panel_tracks->collection_id = std::nullopt;
-  //   panel_tracks->recreate();
-  // }
+void delete_collection(size_t collection_id) {
+  db::mark_collection_as_tombstone(collection_id);
+
+  if (db::collection_by_id(*active_collection_id)->get().is_tombstone() || !active_collection_id.has_value()) {
+    active_collection_id = std::nullopt;
+    panel_top->recreate(active_collection_id);
+    panel_albums->recreate(active_collection_id, nullptr);
+    panel_tracks->collection_id = active_collection_id;
+    panel_tracks->recreate();
+  } else {
+    panel_top->recreate(*active_collection_id);
+    panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
+    panel_tracks->collection_id = *active_collection_id;
+    panel_tracks->recreate();
+  }
 }
 
 void show_add_to_playlist_popup(size_t track_id) {
