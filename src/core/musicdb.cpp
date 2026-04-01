@@ -19,6 +19,34 @@ static std::vector<Collection> collections;
 static std::vector<Playlist> playlists;
 static std::vector<Track> tracks;
 
+void db::mark_collection_as_tombstone(size_t collection_id) {
+  auto& collection = collection_by_id(collection_id)->get();
+  collection.set_tombstone(true);
+
+  for (size_t playlist_id : collection.playlist_ids) {
+    mark_playlist_as_tombstone(playlist_id);
+  }
+}
+void db::mark_playlist_as_tombstone(size_t playlist_id) {
+  auto& playlist = db::playlist_by_id(playlist_id)->get();
+  // Only mark tracks as tombstone for PlaylistType::Album,
+  // PlaylistType::User and PlaylistType::Smart don't own the tracks themselves
+  if (playlist.type == db::PlaylistType::Album) {
+    playlist.set_tombstone(true);
+
+    for (size_t track_id : playlist.get_track_ids()) {
+      auto& track = tracks[track_id];
+      track.set_tombstone(true);
+    }
+  } else if (playlist.type == db::PlaylistType::User) {
+    playlist.set_tombstone(true);
+  } else if (playlist.type == db::PlaylistType::Smart) {
+    playlist.set_tombstone(true);
+  } else {
+    debug_warn("db::mark_playlist_as_tombstone(): unknown db::PlaylistType enum value");
+  }
+}
+
 size_t db::add_collection(std::u32string_view name) {
   collections.emplace_back(Collection{name});
   return collections.size() - 1;
@@ -120,6 +148,10 @@ Track::Track(std::ifstream& is) {
   read_str(is, path);
 }
 
+void Track::set_tombstone(bool t) {
+  tombstone = t;
+}
+
 void Track::serialize(std::ostream& os) {
   write_bin(os, track_number);
   write_str(os, title);
@@ -207,6 +239,10 @@ void Playlist::sort() {
   std::sort(track_ids.begin(), track_ids.end(), [&](size_t lhs, size_t rhs) {
     return tracks[lhs].track_number < tracks[rhs].track_number;
   });
+}
+
+void Playlist::set_tombstone(bool t) {
+  tombstone = t;
 }
 
 std::optional<size_t> Playlist::next_track_id(size_t track_id) {
@@ -318,6 +354,10 @@ std::optional<size_t> Collection::prev_playlist_id(size_t playlist_id) {
   } else {
     return std::nullopt;
   }
+}
+
+void Collection::set_tombstone(bool t) {
+  tombstone = t;
 }
 
 Collection::Collection(std::ifstream& is) {

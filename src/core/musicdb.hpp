@@ -36,10 +36,15 @@ namespace db {
       i32 length_seconds;
       std::u32string path;
 
+    protected:
+      bool tombstone = false;
+
     public:
       void serialize(std::ostream&);
+      void set_tombstone(bool);
+      bool is_tombstone() const { return tombstone; }
+
       bool operator==(const Track& rhs) const = default;
-      bool is_tombstone() const { return false; }
 
     protected:
       Track() = default;
@@ -68,10 +73,12 @@ namespace db {
       size_t add_album(std::u32string_view title, std::u32string_view artist);
       std::optional<size_t> next_playlist_id(size_t playlist_id);
       std::optional<size_t> prev_playlist_id(size_t playlist_id);
-      bool is_tombstone() const { return false; }
+      void set_tombstone(bool);
+      bool is_tombstone() const { return tombstone; }
       void serialize(std::ofstream&);
 
     protected:
+      bool tombstone = false;
       std::unordered_set<std::string> paths;
       std::unordered_set<std::string> paths_internal;
       std::optional<size_t> find_playlist_index(size_t playlist_id);
@@ -93,7 +100,8 @@ namespace db {
       bool remove_track_by_id(size_t);
       bool remove_track_by_index(size_t);
       void sort();
-      bool is_tombstone() const { return false; }
+      void set_tombstone(bool);
+      bool is_tombstone() const { return tombstone; }
 
       std::optional<size_t> next_track_id(size_t track_id);
       std::optional<size_t> prev_track_id(size_t track_id);
@@ -113,6 +121,7 @@ namespace db {
       void serialize(std::ostream&);
 
     protected:
+      bool tombstone = false;
       std::vector<size_t> track_ids;
 
     public:
@@ -123,6 +132,9 @@ namespace db {
         type = type_;
       }
   };
+
+  void mark_collection_as_tombstone(size_t);
+  void mark_playlist_as_tombstone(size_t);
 
   size_t add_collection(std::u32string_view);
   std::optional<std::reference_wrapper<Collection>> collection_by_id(size_t);

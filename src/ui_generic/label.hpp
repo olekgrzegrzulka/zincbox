@@ -47,6 +47,10 @@ class Label final : public Widget {
       set_text(utf32_to_utf8(text_));
     }
 
+    glm::vec3 get_text_color() const {
+      return text_color;
+    }
+
     void set_text_color(glm::vec3 text_color_) {
       if (text_color == text_color_) { return; }
       text_color = text_color_;
