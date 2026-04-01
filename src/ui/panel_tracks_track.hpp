@@ -33,14 +33,24 @@ class WidgetTrack : public Button {
       label_track_number->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
       label_track_number->set_x(5);
 
-      label_track_artist = &add_child<Label>(track.artist);
+      if (track.artist.empty() || track.title.empty()) {
+        label_track_artist = &add_child<Label>();
+        label_track_artist->set_resize_to_text_extents(false);
+        label_track_artist->set_width(0);
+      } else {
+        label_track_artist = &add_child<Label>(track.artist);
+      }
       label_track_artist->set_resize_to_text_extents(false);
       label_track_artist->set_label_anchor(Anchor::LEFT);
       label_track_artist->set_height(TRACK_HEIGHT);
       label_track_artist->set_x(label_track_number->get_x() + label_track_number->get_width() + 5);
       label_track_artist->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
 
-      label_track_title = &add_child<Label>(track.title);
+      if (track.artist.empty() || track.title.empty()) {
+        label_track_title = &add_child<Label>(std::filesystem::path{track.path}.filename().string());
+      } else {
+        label_track_title = &add_child<Label>(track.title);
+      }
       label_track_title->set_resize_to_text_extents(false);
       label_track_title->set_x(label_track_artist->get_x() + label_track_artist->get_width() + 5);
       label_track_title->set_label_anchor(Anchor::LEFT);
@@ -80,9 +90,14 @@ class WidgetTrack : public Button {
       even = even_;
 
       auto& track = db::track_by_id(track_id)->get();
+      if (track.artist.empty() || track.title.empty()) {
+        label_track_artist->set_text(U"");
+        label_track_title->set_text(std::filesystem::path{track.path}.filename().string());
+      } else {
+        label_track_artist->set_text(track.artist);
+        label_track_title->set_text(track.title);
+      }
       label_track_number->set_text(std::to_string(track_number));
-      label_track_artist->set_text(track.artist);
-      label_track_title->set_text(track.title);
       i32 length_s = track.length_seconds;
       i32 length_m = length_s / 60;
       length_s %= 60;
