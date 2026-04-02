@@ -26,6 +26,7 @@ class WidgetAlbumCover : public Button {
     void handle_event(Input::InputEventMouseMove& ev) override;
 
   protected:
+    Sprite* hover{};
     bool is_hovered = false;
     Label* label_title{};
     TextureAtlas* album_covers_atlas;
