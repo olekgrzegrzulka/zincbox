@@ -13,6 +13,7 @@ class PanelControls : public Panel {
     PanelControls(UI& ui_);
     ~PanelControls() override;
     void handle_event(Input::InputEventMouseButton&) override;
+    void handle_event(Input::InputEventKey&) override;
     void update() override;
 
   protected:

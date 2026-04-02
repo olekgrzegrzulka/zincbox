@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <ios>
 #include <sstream>
+#include "common/input.hpp"
 #include "core/musicdb.hpp"
 #include "core/player.hpp"
 #include "ui_generic/label.hpp"
@@ -173,6 +174,40 @@ PanelControls::~PanelControls() {
 void PanelControls::handle_event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) {
     ev.handled = true;
+  }
+}
+
+void PanelControls::handle_event(Input::InputEventKey& ev) {
+  bool shift = Input::key_pressed(Input::Key::KEY_LEFT_SHIFT) || Input::key_pressed(Input::Key::KEY_RIGHT_SHIFT);
+  if (ev.action == Input::KeyAction::PRESS) {
+    if (ev.key == Input::Key::KEY_LEFT) {
+      if (shift) {
+        player::prev_track();
+      } else {
+        player::seek_ms(player::get_current_time_ms() - 5000);
+      }
+      ev.handled = true;
+    } else if (ev.key == Input::Key::KEY_RIGHT) {
+      if (shift) {
+        player::next_track();
+      } else {
+        player::seek_ms(player::get_current_time_ms() + 5000);
+      }
+      ev.handled = true;
+    } else if (ev.key == Input::Key::KEY_SPACE) {
+      if (player::is_playing()) {
+        player::pause();
+      } else {
+        player::resume();
+      }
+      ev.handled = true;
+    } else if (ev.key == Input::Key::KEY_UP) {
+      player::set_volume(player::get_volume() + 0.05f);
+      ev.handled = true;
+    } else if (ev.key == Input::Key::KEY_DOWN) {
+      player::set_volume(player::get_volume() - 0.05f);
+      ev.handled = true;
+    }
   }
 }
 
