@@ -79,7 +79,7 @@ namespace db {
       void set_tombstone(bool);
       bool is_tombstone() const { return tombstone; }
       void serialize(std::ofstream&);
-      void serialize(std::ofstream&, const std::unordered_map<size_t, size_t>& old_playlist_id_to_new_playlist_id);
+      void serialize(std::ofstream&, const std::vector<size_t>& old_playlist_id_to_new_playlist_id);
 
     protected:
       bool tombstone = false;
@@ -123,7 +123,7 @@ namespace db {
       }
 
       void serialize(std::ostream&);
-      void serialize(std::ostream&, const std::unordered_map<size_t, size_t>& old_track_id_to_new_track_id);
+      void serialize(std::ostream&, const std::vector<size_t>& old_track_id_to_new_track_id);
 
     protected:
       bool tombstone = false;
@@ -149,8 +149,8 @@ namespace db {
   Playlist& playlist_loved_tracks();
 
   std::optional<std::reference_wrapper<Playlist>> playlist_by_id(size_t);
-  std::optional<std::reference_wrapper<Playlist>> playlist_by_path(fs::path);
-  std::optional<std::reference_wrapper<Playlist>> playlist_by_name(std::u32string_view);
+  std::optional<size_t> playlist_id_by_path(fs::path);
+  std::optional<size_t> playlist_id_by_name(std::u32string_view);
   const std::vector<Playlist>& all_playlists();
   size_t playlist_count();
 

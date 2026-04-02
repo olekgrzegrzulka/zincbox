@@ -84,6 +84,8 @@ int main() {
     db::deserialize(s);
   } else {
     db::add_collection(U"Playlists");
+    auto& collection = db::collection_by_id(0)->get();
+    collection.add_playlist(U"Loved tracks", U"");
   }
 
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
