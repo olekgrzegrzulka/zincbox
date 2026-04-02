@@ -446,6 +446,7 @@ void init_atlas() {
   atlas.add_texture("track_bg2", "./assets/track_bg2.png");
   atlas.add_texture("track_bg_playing", "./assets/track_bg_playing.png");
   atlas.add_texture("track_hovered", "./assets/track_hovered.png");
+  atlas.add_texture("playlist_hovered", "./assets/playlist_hovered.png");
   atlas.add_texture("tab_active_disabled", "./assets/tab_active_disabled.png");
   atlas.add_texture("tab_active_hovered", "./assets/tab_active_hovered.png");
   atlas.add_texture("tab_active_idle", "./assets/tab_active_idle.png");
