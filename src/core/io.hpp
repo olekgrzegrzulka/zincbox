@@ -148,8 +148,11 @@ namespace io {
     if (playlist.image.empty()) {
       playlist.image = fetch_album_art(f);
     }
-    if (playlist.author == U"") {
+    if (playlist.author.empty()) {
       playlist.author = utf8_to_utf32(album_artist);
+    }
+    if (playlist.name.empty()) {
+      playlist.name = utf8_to_utf32(tag->album().to8Bit(true));
     }
     playlist.add_track(track_id);
     return true;
