@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <optional>
@@ -78,6 +79,13 @@ int main() {
   float volume = std::clamp(config_get_float("volume").value_or(0.5f), 0.0f, 1.0f);
   player::set_volume(volume);
 
+  if (std::filesystem::exists("musicdb")) {
+    auto s = std::ifstream{"musicdb", std::ifstream::binary};
+    db::deserialize(s);
+  } else {
+    db::add_collection(U"Playlists");
+  }
+
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
   if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
   vec2i window_size = {
@@ -133,6 +141,11 @@ int main() {
   if (!maximized) {
     config_set_i32("window_width", window_size.x);
     config_set_i32("window_height", window_size.y);
+  }
+
+  {
+    auto s = std::ofstream{"musicdb", std::ifstream::binary};
+    db::serialize(s);
   }
 
   config_set_i32("repeat_mode", (i32)player::get_repeat_mode());

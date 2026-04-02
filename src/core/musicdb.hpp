@@ -38,11 +38,14 @@ namespace db {
 
     protected:
       bool tombstone = false;
+      bool orphan = false;
 
     public:
       void serialize(std::ostream&);
       void set_tombstone(bool);
+      void set_orphan(bool);
       bool is_tombstone() const { return tombstone; }
+      bool is_orphan() const { return orphan; }
 
       bool operator==(const Track& rhs) const = default;
 
@@ -76,6 +79,7 @@ namespace db {
       void set_tombstone(bool);
       bool is_tombstone() const { return tombstone; }
       void serialize(std::ofstream&);
+      void serialize(std::ofstream&, const std::unordered_map<size_t, size_t>& old_playlist_id_to_new_playlist_id);
 
     protected:
       bool tombstone = false;
@@ -119,6 +123,7 @@ namespace db {
       }
 
       void serialize(std::ostream&);
+      void serialize(std::ostream&, const std::unordered_map<size_t, size_t>& old_track_id_to_new_track_id);
 
     protected:
       bool tombstone = false;

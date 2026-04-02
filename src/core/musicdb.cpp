@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -5,6 +6,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include "common/debug.hpp"
 #include "common/serialize.hpp"
@@ -152,6 +154,10 @@ void Track::set_tombstone(bool t) {
   tombstone = t;
 }
 
+void Track::set_orphan(bool o) {
+  orphan = o;
+}
+
 void Track::serialize(std::ostream& os) {
   write_bin(os, track_number);
   write_str(os, title);
@@ -295,6 +301,29 @@ void Playlist::serialize(std::ostream& os) {
   }
 }
 
+void Playlist::serialize(std::ostream& os, const std::unordered_map<size_t, size_t>& old_track_id_to_new_track_id) {
+  write_str(os, name);
+  write_str(os, author);
+  write_bin(os, image.size());
+  for (auto a : image) {
+    write_bin(os, a);
+  }
+  write_bin(os, type);
+
+  size_t new_track_ids_size = 0;
+  for (size_t track_id : track_ids) {
+    if (old_track_id_to_new_track_id.contains(track_id)) {
+      new_track_ids_size += 1;
+    }
+  }
+  write_bin(os, new_track_ids_size);
+  for (size_t track_id : track_ids) {
+    if (old_track_id_to_new_track_id.contains(track_id)) {
+      write_bin(os, old_track_id_to_new_track_id.at(track_id));
+    }
+  }
+}
+
 size_t Collection::add_album(std::u32string_view title, std::u32string_view artist) {
   Playlist a{title, artist, PlaylistType::Album};
   playlists.emplace_back(a);
@@ -380,6 +409,22 @@ void Collection::serialize(std::ofstream& os) {
   }
 }
 
+void Collection::serialize(std::ofstream& os, const std::unordered_map<size_t, size_t>& old_playlist_id_to_new_playlist_id) {
+  write_str(os, name);
+  size_t new_playlist_ids_size = 0;
+  for (size_t playlist_id : playlist_ids) {
+    if (old_playlist_id_to_new_playlist_id.contains(playlist_id)) {
+      new_playlist_ids_size += 1;
+    }
+  }
+  write_bin(os, new_playlist_ids_size);
+  for (size_t playlist_id : playlist_ids) {
+    if (old_playlist_id_to_new_playlist_id.contains(playlist_id)) {
+      write_bin(os, old_playlist_id_to_new_playlist_id.at(playlist_id));
+    }
+  }
+}
+
 std::optional<size_t> Collection::find_playlist_index(size_t playlist_id) {
   for (size_t i = 0; i < playlist_ids.size(); i += 1) {
     if (playlist_ids[i] == playlist_id) {
@@ -390,19 +435,76 @@ std::optional<size_t> Collection::find_playlist_index(size_t playlist_id) {
 }
 
 void db::serialize(std::ofstream& os) {
-  write_bin(os, collections.size());
-  for (auto& c : collections) {
-    c.serialize(os);
+  for (size_t track_id = 0; track_id < tracks.size(); track_id += 1) {
+    tracks[track_id].set_orphan(true);
   }
-  write_bin(os, playlists.size());
-  for (auto& p : playlists) {
-    p.serialize(os);
+
+  // Unorphan tracks present in some non-tombstoned playlist/album
+  for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
+    if (collections[collection_id].is_tombstone()) { continue; }
+
+    for (size_t playlist_id : collections[collection_id].playlist_ids) {
+      auto& playlist = playlist_by_id(playlist_id)->get();
+      if (playlist.is_tombstone()) { continue; }
+
+      for (size_t track_id : playlist.get_track_ids()) {
+        tracks[track_id].set_orphan(false);
+      }
+    }
   }
-  write_bin(os, tracks.size());
+
+  std::unordered_map<size_t, size_t> old_track_id_to_new_track_id;
+
+  size_t old_track_id = 0;
+  size_t nonorphaned_tracks_count = 0;
   for (auto& t : tracks) {
-    t.serialize(os);
+    if (!t.is_orphan()) {
+      old_track_id_to_new_track_id[old_track_id] = nonorphaned_tracks_count;
+      nonorphaned_tracks_count += 1;
+    }
+    old_track_id += 1;
+  }
+
+  std::unordered_map<size_t, size_t> old_playlist_id_to_new_playlist_id;
+  size_t old_playlist_id = 0;
+  size_t nontombstoned_playlists_count = 0;
+  for (auto& p : playlists) {
+    if (!p.is_tombstone()) {
+      old_playlist_id_to_new_playlist_id[old_playlist_id] = nontombstoned_playlists_count;
+      nontombstoned_playlists_count += 1;
+    }
+    old_playlist_id += 1;
+  }
+
+  size_t nontombstoned_collections_count = 0;
+  for (auto& c : collections) {
+    if (!c.is_tombstone()) {
+      nontombstoned_collections_count += 1;
+    }
+  }
+
+  write_bin(os, nontombstoned_collections_count);
+  for (auto& c : collections) {
+    if (!c.is_tombstone()) {
+      c.serialize(os, old_playlist_id_to_new_playlist_id);
+    }
+  }
+
+  write_bin(os, nontombstoned_playlists_count);
+  for (auto& p : playlists) {
+    if (!p.is_tombstone()) {
+      p.serialize(os, old_track_id_to_new_track_id);
+    }
+  }
+
+  write_bin(os, nonorphaned_tracks_count);
+  for (auto& t : tracks) {
+    if (!t.is_orphan()) {
+      t.serialize(os);
+    }
   }
 }
+
 void db::deserialize(std::ifstream& is) {
   collections.clear();
   playlists.clear();
