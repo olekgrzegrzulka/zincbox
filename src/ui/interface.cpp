@@ -298,6 +298,7 @@ void interface::init() {
         db::mark_playlist_as_tombstone(playlist_id);
         panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get());
         panel_tracks->collection_id = active_collection_id;
+        panel_tracks->clear();
         panel_tracks->recreate();
       });
 
