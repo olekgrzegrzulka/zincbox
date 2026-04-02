@@ -16,7 +16,6 @@ class PanelTracks : public Panel {
     enum class ViewType {
       NONE,
       COLLECTION,
-      PLAYLISTS,
     };
 
     PanelTracks(UI& ui_);
@@ -34,7 +33,6 @@ class PanelTracks : public Panel {
 
   protected:
     void recreate(std::optional<size_t> collection_id_);
-    void recreate_playlist();
     void create_playlist(size_t playlist_id, i32 album_start_px);
 
   public:

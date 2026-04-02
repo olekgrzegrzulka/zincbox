@@ -31,8 +31,6 @@ void PanelTracks::recreate() {
     clear();
   } else if (view_type == ViewType::COLLECTION) {
     recreate(collection_id);
-  } else if (view_type == ViewType::PLAYLISTS) {
-    recreate_playlist();
   }
 }
 
@@ -108,47 +106,9 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
 
   for (size_t album_id : c.playlist_ids) {
     auto& album = db::playlist_by_id(album_id)->get();
+    if (album.is_tombstone()) { continue; }
     album_scroll_px.emplace_back(max_scroll_px, album_id);
     max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * album.get_tracks_count();
-  }
-
-  scrollbar->set_content_size(max_scroll_px);
-
-  for (auto& w : visible_album_widgets) {
-    w->passed_visibility_test = false;
-  }
-
-  for (i32 i = 0; i < (i32)album_scroll_px.size(); i += 1) {
-    i32 album_start_px = album_scroll_px[i].first;
-    i32 album_end_px = max_scroll_px;
-    if (i + 1 < (i32)album_scroll_px.size()) {
-      album_end_px = album_scroll_px[i + 1].first;
-    }
-
-    i32 view_start_px = scroll_px;
-    i32 view_end_px = scroll_px + get_height();
-
-    if (album_end_px < view_start_px) { continue; }
-    if (album_start_px > view_end_px) { break; }
-    create_playlist(album_scroll_px[i].second, album_start_px);
-  }
-
-  for (auto& w : visible_album_widgets) {
-    if (!w->passed_visibility_test) {
-      w->set_marked_for_deletion(true);
-    }
-  }
-
-  std::erase_if(visible_album_widgets, [](auto&& w) { return !w->passed_visibility_test; });
-}
-
-void PanelTracks::recreate_playlist() {
-  album_scroll_px.clear();
-  max_scroll_px = 0;
-  for (size_t playlist_id = 0; playlist_id < db::playlist_count(); playlist_id += 1) {
-    auto& playlist = db::playlist_by_id(playlist_id)->get();
-    album_scroll_px.emplace_back(max_scroll_px, playlist_id);
-    max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * playlist.get_tracks_count();
   }
 
   scrollbar->set_content_size(max_scroll_px);
