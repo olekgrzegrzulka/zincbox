@@ -8,6 +8,7 @@ class PanelTop : public Panel {
   public:
     PanelTop(UI& ui_);
     void update() override;
+    void process_input() override;
     void recreate(std::optional<size_t> selected_collection_id);
 
   public:
@@ -18,5 +19,8 @@ class PanelTop : public Panel {
     std::function<void(size_t collection_id, Widget*)> on_show_collection_actions_popover{};
 
   protected:
-    TabBar& tab_bar;
+    TabBar* tab_bar;
+    Button* button_left{};
+    Button* button_right{};
+    Button* button_settings{};
 };

@@ -120,6 +120,7 @@ class TabBar : public Panel {
   public:
     TabBar(UI& ui_) : Panel(ui_) {
       set_height(32);
+      set_layout("fit");
       tab_container = &add_child<Widget>();
       tab_container->set_height(32);
       button_add = &add_child<Button>();
