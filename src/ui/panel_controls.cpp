@@ -95,12 +95,13 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
 
   auto& panel_middle = panel_right.add_child<Widget>();
   panel_middle.set_layout("m:0 s:4 btt expand fill");
+  panel_middle.set_clip_children(true);
 
   seekbar = &panel_middle.add_child<Slider>();
   seekbar->set_track_thickness(12);
   seekbar->set_thumb_thickness(12);
   seekbar->set_thumb_length(12);
-  seekbar->set_thumb_constraint(ThumbConstraint::FULL_RANGE);
+  seekbar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
 
   label_track = &panel_middle.add_child<Label>();
   label_track->set_label_anchor(Anchor::LEFT);
@@ -248,6 +249,7 @@ void PanelControls::update() {
   seekbar->set_value(player::get_current_time_ms(), false);
 
   label_progress->set_text(ss.str());
+  label_progress->set_is_drawn(width > 650);
 
   if (is_playing != player::is_playing()) {
     is_playing = player::is_playing();
