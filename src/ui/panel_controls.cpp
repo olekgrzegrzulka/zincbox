@@ -111,7 +111,11 @@ PanelControls::PanelControls(UI& ui_) : Panel(ui_, PanelStyle::Rectangular, fals
       label_track->set_text("");
     } else {
       auto& track = db::track_by_id(playing->track_id)->get();
-      label_track->set_text(track.artist + U" - " + track.title);
+      if (track.artist.empty() || track.title.empty()) {
+        label_track->set_text(std::filesystem::path{track.path}.filename().string());
+      } else {
+        label_track->set_text(track.artist + U" - " + track.title);
+      }
     }
   });
 
