@@ -468,6 +468,8 @@ void init_atlas() {
   atlas.add_texture("button_popover_idle", "./assets/button_popover_idle.png");
   atlas.add_texture("button_popover_pressed", "./assets/button_popover_pressed.png");
   // icons
+  atlas.add_texture("left", "./assets/icons/left.png");
+  atlas.add_texture("right", "./assets/icons/right.png");
   atlas.add_texture("love", "./assets/icons/love.png");
   atlas.add_texture("play", "./assets/icons/play.png");
   atlas.add_texture("pause", "./assets/icons/pause.png");
