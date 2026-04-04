@@ -241,7 +241,7 @@ namespace Input {
 
   vec2i get_window_size();
 
-  std::string get_typed_characters();
+  std::u32string get_typed_characters();
 
   std::string key_to_string(Input::Key key);
 

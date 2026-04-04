@@ -13,7 +13,7 @@ class Sprite;
 
 class Label final : public Widget {
   private:
-    std::string text;
+    std::u32string text;
     bool resize_to_text_extents = true;
     Anchor label_anchor = Anchor::CENTER;
     u32 vao = 0;
@@ -37,14 +37,14 @@ class Label final : public Widget {
     WIDGET_DEF_SETTER_DIRTY(label_anchor);
 
     void set_text(std::string_view text_) {
+      set_text(utf8_to_utf32(text_));
+    }
+
+    void set_text(std::u32string_view text_) {
       if (text == text_) { return; }
       text = text_;
       // text_dirty = true;
       dirty = true;
-    }
-
-    void set_text(std::u32string_view text_) {
-      set_text(utf32_to_utf8(text_));
     }
 
     glm::vec3 get_text_color() const {
@@ -58,11 +58,15 @@ class Label final : public Widget {
       dirty = true;
     }
 
-    void append_text(std::string append) {
+    void append_text(std::u32string_view append) {
       if (append.empty()) { return; }
       text += append;
       // text_dirty = true;
       dirty = true;
+    }
+
+    void append_text(std::string_view append) {
+      append_text(utf8_to_utf32(append));
     }
 
     void erase_last_character() {

@@ -27,8 +27,8 @@ namespace Input {
 
     std::array<ButtonState, (size_t)MouseButton::MOUSE_BUTTON_SIZE> mouse_states;
     std::array<ButtonState, (size_t)Key::KEY_SIZE> key_states;
-    std::string keyboard_characters_prev;
-    std::string keyboard_characters_curr;
+    std::u32string keyboard_characters_prev;
+    std::u32string keyboard_characters_curr;
     vec2f accumulated_scroll_next{};
     vec2f accumulated_scroll{};
   } // namespace detail
@@ -65,7 +65,7 @@ namespace Input {
   }
 
   void glfw_char_callback(GLFWwindow*, u32 c) {
-    detail::keyboard_characters_curr += (char)c;
+    detail::keyboard_characters_curr += c;
   }
 
   void glfw_key_callback(GLFWwindow*, i32 key, i32 scancode, i32 action, i32 mods) {
@@ -253,7 +253,7 @@ namespace Input {
     return {width, height};
   }
 
-  std::string get_typed_characters() {
+  std::u32string get_typed_characters() {
     return detail::keyboard_characters_prev;
   }
 

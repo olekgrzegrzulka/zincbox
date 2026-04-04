@@ -46,18 +46,18 @@ void TextInput::update() {
 
   if (focused) {
     if (backspace) {
-      if (backspace_clock <= 0) {
+      if (backspace_clock <= 0.0f) {
         label.erase_last_character();
         on_text_changed();
-        backspace_clock = backspace_first_echo ? backspace_echo_length_initial : backspace_echo_length;
+        backspace_clock += backspace_first_echo ? backspace_echo_length_initial : backspace_echo_length;
         backspace_first_echo = false;
-        caret_blink_clock = caret_blink_time;
+        caret_blink_clock = std::min(caret_blink_clock + caret_blink_time, caret_blink_time);
         caret.set_is_updated(true);
       } else {
-        backspace_clock -= 1;
+        backspace_clock -= 10.0f;
       }
     } else {
-      backspace_clock = 0;
+      backspace_clock = 0.0f;
       backspace_first_echo = true;
     }
   }
@@ -71,15 +71,20 @@ void TextInput::update() {
       caret.set_is_drawn(true);
     }
     caret.set_pos(vec2i(label.get_x() + label.get_text_extents().x + 1, 0));
-    caret_blink_clock -= 1;
+    caret_blink_clock -= 10.0f;
 
     if (caret_blink_clock <= 0) {
       caret.set_is_drawn(!caret.get_is_drawn());
-      caret_blink_clock = caret_blink_time;
+      caret_blink_clock = std::min(caret_blink_clock + caret_blink_time, caret_blink_time);
     }
 
   } else {
-    caret_blink_clock = 0;
+    caret_blink_clock = 0.0f;
     caret.set_is_drawn(false);
   }
+}
+
+void TextInput::clear() {
+  label.set_text(U"");
+  on_text_changed();
 }

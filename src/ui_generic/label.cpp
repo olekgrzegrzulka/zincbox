@@ -3,6 +3,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
+#include "core/utf.hpp"
 #include "opengl_includes.hpp"
 #include "ui_generic/font_face.hpp"
 #include "ui_generic/label.hpp"
@@ -81,13 +82,8 @@ void Label::update_mesh() {
 
   // static std::u32string<std::codecvt_utf8<char32_t>, char32_t> converter;
   // auto text_utf32 = converter.from_bytes(text);
-  std::u32string text_utf32;
-  try {
-    utf8::utf8to32(text.begin(), text.end(), std::back_inserter(text_utf32));
-  } catch (const utf8::invalid_utf8& e) {
-  }
 
-  for (auto c : text_utf32) {
+  for (auto c : text) {
     if (c == '\n') {
       text_extents.x = std::max(text_extents.x, current_line_width);
       text_extents.y += line_height + line_spacing;
@@ -111,7 +107,7 @@ void Label::update_mesh() {
   vec2f pen = start_pos;
   pen.y += line_height;
 
-  for (auto c : text_utf32) {
+  for (auto c : text) {
     if (c == '\n') {
       pen.x = start_pos.x;
       pen.y += line_height + line_spacing;

@@ -70,6 +70,12 @@ class Panel : public Sprite {
       }
     }
 
+    void handle_event(Input::InputEventMouseMove& ev) override {
+      if (is_mouse_hovering()) {
+        ev.handled = true;
+      }
+    }
+
   public:
     Sprite* shadow{};
 };
