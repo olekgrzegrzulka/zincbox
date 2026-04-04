@@ -483,6 +483,12 @@ void init_atlas() {
   atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
   atlas.add_texture("shuffle_off", "./assets/icons/shuffle_off.png");
   atlas.add_texture("settings", "./assets/icons/settings.png");
+  atlas.add_texture("search", "./assets/icons/search.png");
+  atlas.add_texture("clear_search_idle", "./assets/icons/clear_search_idle.png");
+  atlas.add_texture("clear_search_hovered", "./assets/icons/clear_search_hovered.png");
+  atlas.add_texture("clear_search_pressed", "./assets/icons/clear_search_pressed.png");
+  atlas.add_texture("sort_by", "./assets/icons/sort_by.png");
+  atlas.add_texture("group_by", "./assets/icons/group_by.png");
   atlas.save_to_file("atlas.png");
 }
 

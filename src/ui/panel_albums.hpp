@@ -5,6 +5,7 @@
 #include "ui_generic/button.hpp"
 #include "ui_generic/panel.hpp"
 #include "ui_generic/scrollbar.hpp"
+#include "ui_generic/text_input.hpp"
 #include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -36,6 +37,7 @@ class PanelAlbums : public Panel {
   public:
     PanelAlbums(UI& ui_);
     void draw() override;
+    void clear();
     void recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas);
     void update() override;
     using Panel::handle_event;
@@ -48,6 +50,13 @@ class PanelAlbums : public Panel {
     double target_scroll_px = 0.0;
     std::vector<WidgetAlbumCover*> album_widgets;
     ScrollBar* scrollbar{};
+
+    Panel* panel_top{};
+    Widget* albums_container{};
+    TextInput* search_bar{};
+    Button* button_clear_search{};
+    Button* button_sort_by{};
+    Button* button_group_by{};
 
   public:
     std::function<void(size_t, Widget*)> on_playlist_lmb{};
