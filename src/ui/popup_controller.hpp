@@ -28,6 +28,7 @@ struct popover_descriptor {
     i32 distance;
     std::vector<std::string> button_labels;
     std::vector<std::function<void()>> button_actions;
+    bool show_arrow = true;
 };
 
 class Popup : public Panel {
@@ -161,6 +162,7 @@ class PopupController : public Widget {
       arrow->set_parent_anchor(bottom ? Anchor::TOP : Anchor::BOTTOM);
       arrow->set_anchor(bottom ? Anchor::BOTTOM : Anchor::TOP);
       arrow->set_y(bottom ? 1 : -1);
+      arrow->set_is_drawn(d.show_arrow);
       if (bottom) {
         popover.set_pos(d.at.x, d.at.y + (d.distance + arrow->get_height()));
       } else {

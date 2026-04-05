@@ -314,6 +314,36 @@ void interface::init() {
     }
   };
 
+  panel_albums->on_button_sort_by_pressed = [](Widget* w) {
+    std::vector<std::function<void()>> popover_actions;
+    std::vector<std::string> popover_labels;
+    if (active_collection_id == 0) {
+      popover_labels = {"Playlist name (A-Z)", "Playlist name (Z-A)"};
+      popover_actions = {
+        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_AZ); },
+        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_ZA); },
+      };
+    } else if (active_collection_id.has_value()) {
+      popover_labels = {"Artist (A-Z)", "Artist (Z-A)", "Album name (A-Z)", "Album name (Z-A)"};
+      popover_actions = {
+        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::AUTHOR_AZ); },
+        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::AUTHOR_ZA); },
+        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_AZ); },
+        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_ZA); },
+      };
+    }
+    vec2i at = w->get_position(Anchor::CENTER);
+    popover_descriptor d{
+      .id = "sort_by",
+      .at = at,
+      .distance = 4,
+      .button_labels = popover_labels,
+      .button_actions = popover_actions,
+      .show_arrow = false,
+    };
+    popup_controller->create_popover(d);
+  };
+
   if (db::collection_count() > 0) {
     panel_tracks->collection_id = 0;
     panel_tracks->clear();

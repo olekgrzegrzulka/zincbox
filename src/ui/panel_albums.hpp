@@ -26,6 +26,9 @@ class WidgetAlbumCover : public Button {
     void update() override;
     void handle_event(Input::InputEventMouseMove& ev) override;
 
+  public:
+    const size_t playlist_id = 0;
+
   protected:
     Sprite* hover{};
     bool is_hovered = false;
@@ -35,10 +38,18 @@ class WidgetAlbumCover : public Button {
 
 class PanelAlbums : public Panel {
   public:
+    enum class SortBy {
+      NAME_AZ,
+      NAME_ZA,
+      AUTHOR_AZ,
+      AUTHOR_ZA,
+    };
+
+  public:
     PanelAlbums(UI& ui_);
     void draw() override;
     void clear();
-    void recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas);
+    void recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas, SortBy sort_by_ = SortBy::AUTHOR_AZ);
     void update() override;
     using Panel::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
@@ -46,8 +57,12 @@ class PanelAlbums : public Panel {
     void set_scroll_px(float px);
 
   protected:
+    void reflow();
+
+  protected:
     double scroll_px = 0.0;
     double target_scroll_px = 0.0;
+    SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
     std::vector<WidgetAlbumCover*> album_widgets;
     ScrollBar* scrollbar{};
 
@@ -56,9 +71,9 @@ class PanelAlbums : public Panel {
     TextInput* search_bar{};
     Button* button_clear_search{};
     Button* button_sort_by{};
-    Button* button_group_by{};
 
   public:
     std::function<void(size_t, Widget*)> on_playlist_lmb{};
     std::function<void(size_t, Widget*)> on_playlist_rmb{};
+    std::function<void(Widget*)> on_button_sort_by_pressed{};
 };
