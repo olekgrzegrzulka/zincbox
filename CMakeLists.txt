@@ -112,11 +112,35 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=return-type
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE -O3)
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 
-# target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-# target_link_options(${PROJECT_NAME} PRIVATE -fno-omit-frame-pointer)
-# target_link_options(${PROJECT_NAME} PRIVATE -g)
+if(ENABLE_ASAN)
+  message(STATUS "AddressSanitizer enabled")
+  target_compile_options(${PROJECT_NAME} PRIVATE
+    -fsanitize=address,undefined
+    -fno-omit-frame-pointer
+    -g
+    -O1
+    -D_GLIBCXX_ASSERTIONS
+  )
+  target_link_options(${PROJECT_NAME} PRIVATE
+  ${SANITIZER_FLAGS}
+    -fsanitize=address,undefined
+    -fno-omit-frame-pointer
+    -g
+  )
+else()
+  message(STATUS "AddressSanitizer disabled")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
+endif()
+
+
+
 
 target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
