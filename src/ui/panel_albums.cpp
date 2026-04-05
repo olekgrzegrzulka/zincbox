@@ -27,7 +27,7 @@ SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id, TextureAtlas* album_
   set_nine_slice_margin(0);
 }
 
-WidgetAlbumCover::WidgetAlbumCover(UI& ui_, size_t playlist_id, TextureAtlas* album_covers_atlas_) : Button(ui_) {
+WidgetAlbumCover::WidgetAlbumCover(UI& ui_, size_t playlist_id_, TextureAtlas* album_covers_atlas_) : Button(ui_), playlist_id(playlist_id_) {
   if (album_covers_atlas_) {
     album_covers_atlas = album_covers_atlas_;
   } else {
@@ -103,19 +103,19 @@ PanelAlbums::PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDar
   panel_top->set_layout("m:6 s:6 rtl fill expand");
   panel_top->set_ignore_parents_layout(true);
   button_sort_by = &panel_top->add_child<Button>();
-  button_group_by = &panel_top->add_child<Button>();
   search_bar = &panel_top->add_child<TextInput>();
   button_clear_search = &search_bar->add_child<Button>();
 
-  auto btn_icons = std::to_array({"sort_by", "group_by"});
-  auto buttons = std::to_array({button_sort_by, button_group_by});
-  for (size_t i = 0; i < 2; i += 1) {
-    buttons[i]->set_max_width(24);
-    buttons[i]->set_max_height(24);
-    auto& img = buttons[i]->add_child<Sprite>(btn_icons[i]);
-    img.set_parent_anchor(Anchor::CENTER);
-    img.set_anchor(Anchor::CENTER);
-  }
+  button_sort_by->set_max_width(24);
+  button_sort_by->set_max_height(24);
+  button_sort_by->on_press([this]() {
+    if (this->on_button_sort_by_pressed) {
+      this->on_button_sort_by_pressed(this->button_sort_by);
+    }
+  });
+  auto& img = button_sort_by->add_child<Sprite>("sort_by");
+  img.set_parent_anchor(Anchor::CENTER);
+  img.set_anchor(Anchor::CENTER);
 
   button_clear_search->set_width(20);
   button_clear_search->set_height(20);
@@ -146,17 +146,45 @@ void PanelAlbums::clear() {
   album_widgets.clear();
 }
 
-void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas) {
+void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas, SortBy sort_by_) {
+  sort_by = sort_by_;
   clear();
   if (!collection_id_.has_value() || album_covers_atlas == nullptr) { return; }
 
   auto c = db::collection_by_id(*collection_id_);
 
-  for (size_t playlist_id : c->get().playlist_ids) {
+  std::vector<size_t> playlist_ids_sorted = c->get().playlist_ids;
+  if (sort_by == SortBy::NAME_AZ) {
+    std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
+      auto& lhs = db::playlist_by_id(lhs_id)->get();
+      auto& rhs = db::playlist_by_id(rhs_id)->get();
+      return std::tie(lhs.name, lhs.author) < std::tie(rhs.name, rhs.author);
+    });
+  } else if (sort_by == SortBy::NAME_ZA) {
+    std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
+      auto& lhs = db::playlist_by_id(lhs_id)->get();
+      auto& rhs = db::playlist_by_id(rhs_id)->get();
+      return std::tie(lhs.name, lhs.author) > std::tie(rhs.name, rhs.author);
+    });
+  } else if (sort_by == SortBy::AUTHOR_AZ) {
+    std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
+      auto& lhs = db::playlist_by_id(lhs_id)->get();
+      auto& rhs = db::playlist_by_id(rhs_id)->get();
+      return std::tie(lhs.author, lhs.name) < std::tie(rhs.author, rhs.name);
+    });
+  } else if (sort_by == SortBy::AUTHOR_ZA) {
+    std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
+      auto& lhs = db::playlist_by_id(lhs_id)->get();
+      auto& rhs = db::playlist_by_id(rhs_id)->get();
+      return std::tie(lhs.author, lhs.name) > std::tie(rhs.author, rhs.name);
+    });
+  }
+
+  for (size_t playlist_id : playlist_ids_sorted) {
     if (db::playlist_by_id(playlist_id)->get().is_tombstone()) { continue; }
-    
     auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id, album_covers_atlas);
     album_widgets.emplace_back(album_widget);
+
     album_widget->on_press([this, playlist_id, album_widget]() {
       if (on_playlist_lmb) {
         on_playlist_lmb(playlist_id, album_widget);
@@ -168,35 +196,49 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* a
       }
     });
   }
+
+  reflow();
+}
+
+void PanelAlbums::reflow() {
+  i32 albums_area_width = albums_container->get_width();
+  i32 album_covers_in_one_row = albums_area_width / COVER_WIDTH;
+
+  if (album_covers_in_one_row <= 0) { return; }
+
+  i32 column = 0;
+  i32 cover_y = 0;
+  for (auto& album_widget : album_widgets) {
+    i32 x = (column) * (albums_area_width) / album_covers_in_one_row;
+    album_widget->set_pos(x, cover_y);
+
+    column += 1;
+    if (column >= album_covers_in_one_row) {
+      column = 0;
+      cover_y += COVER_HEIGHT;
+    }
+  }
+
+  // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) / album_covers_in_one_row;
+  i32 content_size = cover_y + COVER_HEIGHT + (8 + panel_top->get_height());
+  scrollbar->set_content_size(content_size);
+  scrollbar->set_page_size(height);
+  scrollbar->set_height(height);
+  scrollbar->set_height(height);
+  scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
 }
 
 void PanelAlbums::update() {
   panel_top->set_width(width - 4 - 4 - scrollbar->get_width());
-  albums_container->set_width(width - 4 - 4 - scrollbar->get_width());
+  albums_container->set_width(width - scrollbar->get_width());
   albums_container->set_height(height - (4 + scrollbar->get_height() + 4));
 
-  i32 albums_area_width = get_width() - scrollbar->get_width();
-  i32 album_covers_in_one_row = get_width() / COVER_WIDTH;
+  reflow();
 
-  if (album_covers_in_one_row > 0) {
-    i32 i = 0;
-    for (auto& cover : album_widgets) {
-      if (!cover->get_is_updated()) { continue; }
-
-      i32 x = (i % album_covers_in_one_row) * (albums_area_width) / album_covers_in_one_row;
-      i32 y = ((i32)(i / album_covers_in_one_row) * (COVER_HEIGHT)) - scroll_px;
-      cover->set_pos(x, y);
-
-      i += 1;
-    }
-
-    i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) / album_covers_in_one_row;
-    i32 content_size = row_count * COVER_HEIGHT + (8 + panel_top->get_height());
-    scrollbar->set_content_size(content_size);
-    scrollbar->set_page_size(height);
-    scrollbar->set_height(height);
-    scrollbar->set_height(height);
-    scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
+  auto albums_container_prev_y = albums_container->get_y();
+  albums_container->set_y((4 + panel_top->get_height() + 4) - scroll_px);
+  if (albums_container_prev_y != albums_container->get_y()) {
+    ui.mark_dirty_recursive(albums_container);
   }
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);

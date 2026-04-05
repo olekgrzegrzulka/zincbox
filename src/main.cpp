@@ -18,7 +18,6 @@
 #include "common/config.hpp"
 #include "common/debug.hpp"
 #include "common/input.hpp"
-#include "common/random.hpp"
 #include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb.hpp"
