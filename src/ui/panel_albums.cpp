@@ -104,6 +104,9 @@ PanelAlbums::PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDar
   panel_top->set_ignore_parents_layout(true);
   button_sort_by = &panel_top->add_child<Button>();
   search_bar = &panel_top->add_child<TextInput>();
+  search_bar->set_on_text_changed([this]() {
+    this->on_search_bar_text_modified();
+  });
   button_clear_search = &search_bar->add_child<Button>();
 
   button_sort_by->set_max_width(24);
@@ -181,7 +184,11 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* a
   }
 
   for (size_t playlist_id : playlist_ids_sorted) {
-    if (db::playlist_by_id(playlist_id)->get().is_tombstone()) { continue; }
+    auto& playlist = db::playlist_by_id(playlist_id)->get();
+    if (playlist.is_tombstone()) { continue; }
+    if (!playlist.name.contains(search_bar->label.get_text()) && !playlist.author.contains(search_bar->label.get_text())) {
+      continue;
+    }
     auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id, album_covers_atlas);
     album_widgets.emplace_back(album_widget);
 
