@@ -47,8 +47,9 @@ void TextInput::update() {
   if (focused) {
     if (backspace) {
       if (backspace_clock <= 0.0f) {
-        label.erase_last_character();
-        on_text_changed();
+        if (label.erase_last_character() && lambda_on_text_changed) {
+          lambda_on_text_changed();
+        }
         backspace_clock += backspace_first_echo ? backspace_echo_length_initial : backspace_echo_length;
         backspace_first_echo = false;
         caret_blink_clock = std::min(caret_blink_clock + caret_blink_time, caret_blink_time);
@@ -66,7 +67,7 @@ void TextInput::update() {
     auto typed_characters = Input::get_typed_characters();
     if (!typed_characters.empty()) {
       label.append_text(typed_characters);
-      on_text_changed();
+      if (lambda_on_text_changed) { lambda_on_text_changed(); }
       caret_blink_clock = caret_blink_time;
       caret.set_is_drawn(true);
     }
@@ -85,6 +86,7 @@ void TextInput::update() {
 }
 
 void TextInput::clear() {
+  if (label.get_text().empty()) { return; }
   label.set_text(U"");
-  on_text_changed();
+  if (lambda_on_text_changed) { lambda_on_text_changed(); }
 }

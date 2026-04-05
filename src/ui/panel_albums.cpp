@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "common/input.hpp"
+#include "common/search_utils.hpp"
 #include "core/musicdb.hpp"
 #include "panel_albums.hpp"
 #include "theme.hpp"
@@ -186,7 +187,10 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* a
   for (size_t playlist_id : playlist_ids_sorted) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     if (playlist.is_tombstone()) { continue; }
-    if (!playlist.name.contains(search_bar->label.get_text()) && !playlist.author.contains(search_bar->label.get_text())) {
+    auto query_sanitized = sanitize_query(search_bar->label.get_text());
+    auto playlist_name_sanitized = sanitize_query(playlist.name);
+    auto playlist_author_sanitized = sanitize_query(playlist.author);
+    if (!playlist_name_sanitized.contains(query_sanitized) && !playlist_author_sanitized.contains(query_sanitized)) {
       continue;
     }
     auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id, album_covers_atlas);
