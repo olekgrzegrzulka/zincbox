@@ -69,12 +69,14 @@ class Label final : public Widget {
       append_text(utf8_to_utf32(append));
     }
 
-    void erase_last_character() {
+    bool erase_last_character() {
       if (text.length() > 0) {
         text.pop_back();
+        return true;
         // text_dirty = true;
         dirty = true;
       }
+      return false;
     }
 
     void update() override;

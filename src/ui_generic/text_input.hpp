@@ -9,7 +9,7 @@ class TextInput : public Sprite {
     void clear();
 
   protected:
-    virtual void on_text_changed() {}
+    std::function<void()> lambda_on_text_changed;
 
   protected:
     bool focused = false;
@@ -22,6 +22,10 @@ class TextInput : public Sprite {
     float backspace_clock = 0.0f;
     bool backspace_first_echo = true;
 
+  public:
+    void set_on_text_changed(std::function<void()> l) {
+      lambda_on_text_changed = l;
+    }
     Label& label;
     Sprite& caret;
 };
