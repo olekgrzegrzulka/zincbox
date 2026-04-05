@@ -344,6 +344,14 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
+  panel_albums->on_search_bar_text_modified = []() {
+    if (active_collection_id.has_value()) {
+      panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get());
+    } else {
+      panel_albums->recreate(std::nullopt, nullptr);
+    }
+  };
+
   if (db::collection_count() > 0) {
     panel_tracks->collection_id = 0;
     panel_tracks->clear();

@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <string>
 #include <vector>
 #include "common/input.hpp"
 #include "ui_generic/button.hpp"
@@ -76,4 +77,5 @@ class PanelAlbums : public Panel {
     std::function<void(size_t, Widget*)> on_playlist_lmb{};
     std::function<void(size_t, Widget*)> on_playlist_rmb{};
     std::function<void(Widget*)> on_button_sort_by_pressed{};
+    std::function<void()> on_search_bar_text_modified{};
 };
