@@ -35,20 +35,20 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, size_t playlist_id_, TextureAtlas* a
     album_covers_atlas = &ui.get_texture_atlas();
   }
   auto& playlist = db::playlist_by_id(playlist_id)->get();
-  get_children()[0]->set_ignore_parents_layout(true);
   set_clip_children(true);
   set_size(COVER_WIDTH, COVER_HEIGHT);
-  set_layout("m:0 s:8 ttb");
   std::stringstream texture_id;
-  // texture_id << album->album_id;
   auto& sprite_cover = add_child<SpriteAlbumCover>(std::to_string(playlist_id), album_covers_atlas);
+  sprite_cover.set_parent_anchor(Anchor::TOP);
+  sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>(playlist.name);
   label_title->set_resize_to_text_extents(false);
   label_title->set_width(COVER_WIDTH);
-  label_title->set_label_anchor(Anchor::LEFT);
-  label_title->set_anchor(Anchor::LEFT);
-  label_title->set_parent_anchor(Anchor::LEFT);
+  label_title->set_label_anchor(Anchor::TOP_LEFT);
+  label_title->set_anchor(Anchor::TOP_LEFT);
+  label_title->set_parent_anchor(Anchor::TOP_LEFT);
   label_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.65f);
+  label_title->set_y(64 + 8);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
   hover->set_nine_slice_margin(4.0f);
