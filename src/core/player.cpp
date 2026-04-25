@@ -216,6 +216,7 @@ void player::next_track() {
 
   if (repeat_mode == RepeatMode::TRACK) {
     seek_ms(0);
+    play_track();
     return;
   }
 
