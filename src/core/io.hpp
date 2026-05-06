@@ -12,11 +12,10 @@
 #include <taglib/toolkit/tfilestream.h>
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
-#include "common/debug.hpp"
 #include "core/utf.hpp"
-#include "lib/stb_image.h"
-#include "lib/stb_image_resize2.h"
-#include "lib/stb_image_write.h"
+#include "lib/stb_image/stb_image.h"
+#include "lib/stb_image/stb_image_resize2.h"
+#include "lib/stb_image/stb_image_write.h"
 #include "mpeg/id3v2/id3v2tag.h"
 #include "musicdb.hpp"
 
@@ -163,7 +162,7 @@ namespace io {
       return false;
     }
     i32 width, height, channels;
-    stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    stbi_uc* data = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
     if (!data) { return false; }
     std::vector<u8> data_64x64{};
     data_64x64.resize(64 * 64 * 4);

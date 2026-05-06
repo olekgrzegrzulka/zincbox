@@ -6,8 +6,8 @@
 #include <glm/vec3.hpp>
 #include "common/debug.hpp"
 #include "common/types.hpp"
-#include "lib/stb_image.h"
-#include "lib/stb_image_write.h"
+#include "lib/stb_image/stb_image.h"
+#include "lib/stb_image/stb_image_write.h"
 #include "opengl_includes.hpp"
 #include "texture_atlas.hpp"
 

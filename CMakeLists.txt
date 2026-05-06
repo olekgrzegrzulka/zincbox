@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
+project(music VERSION 0.0.0 LANGUAGES CXX C)
 
 # GLFW
 set(GLFW_STANDALONE ON CACHE BOOL "" FORCE)
@@ -29,15 +30,21 @@ set(BUILD_BINDINGS OFF)
 set(NO_ITUNES_HACKS ON)
 set(BUILD_TESTING OFF)
 
+# GLM
+set(GLM_BUILD_TESTS OFF)
+
 # sdbus-c++
 set(SDBUSCPP_BUILD_DOCS OFF)
 set(BUILD_SHARED_LIBS OFF)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SYSTEMD REQUIRED libsystemd)
+if(NOT WIN32)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(SYSTEMD REQUIRED libsystemd)
+  add_subdirectory(lib/sdbus-cpp SYSTEM)
+endif()
 
 # FIXME properly add TagLib :)
-include_directories(
+include_directories(SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/mpeg/id3v2
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/ogg
@@ -47,7 +54,6 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/toolkit
 )
 
-project(music VERSION 0.0.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -59,15 +65,23 @@ add_subdirectory(lib/freetype SYSTEM)
 add_subdirectory(lib/glfw SYSTEM)
 add_subdirectory(lib/nativefiledialog-extended SYSTEM)
 add_subdirectory(lib/zlib SYSTEM)
+set(ZLIB_FOUND TRUE)
+set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/zlib)
+set(ZLIB_LIBRARIES zlibstatic)
+if(NOT TARGET ZLIB::ZLIB)
+  add_library(ZLIB::ZLIB ALIAS zlibstatic)
+endif()
 add_subdirectory(lib/libspng SYSTEM)
 add_subdirectory(lib/taglib SYSTEM)
-add_subdirectory(lib/sdbus-cpp SYSTEM)
+add_subdirectory(lib/glm SYSTEM)
+add_subdirectory(lib/stb_image SYSTEM)
+add_subdirectory(lib/glad SYSTEM)
+
 # add_subdirectory(lib/miniaudio SYSTEM)
 
 
 set(SOURCES
     ./src/main.cpp
-    ./lib/glad/glad.c
     ./lib/miniaudio/miniaudio.c
     ./src/common/config.cpp
     ./src/common/input.cpp
@@ -110,6 +124,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=switch
     -Werror=unused-result
     -Werror=return-type
+    -fPIC
+    -Wno-narrowing
 )
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
@@ -134,9 +150,9 @@ else()
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+  target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
+  target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
 endif()
 
 
@@ -148,5 +164,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE nfd)
 target_link_libraries(${PROJECT_NAME} PRIVATE zlibstatic)
 target_link_libraries(${PROJECT_NAME} PRIVATE spng_static)
 target_link_libraries(${PROJECT_NAME} PRIVATE tag)
-target_link_libraries(${PROJECT_NAME} PRIVATE sdbus-c++)
+if(NOT WIN32)
+  target_link_libraries(${PROJECT_NAME} PRIVATE sdbus-c++)
+endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
+target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

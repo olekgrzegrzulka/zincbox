@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 #include <queue>
+#include <string>
 #include "common/types.hpp"
 
 namespace mpris {

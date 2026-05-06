@@ -1,3 +1,7 @@
+#define STBI_ASSERT(x) ensure(x);
+#define STBIW_ASSERT(x) ensure(x);
+#define STBIR_ASSERT(x) ensure(x);
+
 #include "opengl_includes.hpp"
 
 #include <chrono>
@@ -23,21 +27,6 @@
 #include "core/musicdb.hpp"
 #include "core/player.hpp"
 #include "ui/interface.hpp"
-
-#define STBI_ASSERT(x) ensure(x);
-#define STB_IMAGE_IMPLEMENTATION
-#include "lib/stb_image.h"
-#undef STB_IMAGE_IMPLEMENTATION
-
-#define STBIW_ASSERT(x) ensure(x);
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "lib/stb_image_write.h"
-#undef STB_IMAGE_WRITE_IMPLEMENTATION
-
-#define STBIR_ASSERT(x) ensure(x);
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "lib/stb_image_resize2.h"
-#undef STB_IMAGE_RESIZE_IMPLEMENTATION
 
 const char* get_opengl_error_string(GLenum err) {
   switch (err) {
@@ -133,6 +122,7 @@ int main() {
 
     auto t2 = high_resolution_clock::now();
     long delta_us = duration_cast<microseconds>(t2 - t1).count();
+    // std::cout << "delta = " << duration_cast<milliseconds>(t2 - t1).count() << " ms\n";
     long sleep_us = std::max(1000.0, 16666.0 - delta_us);
     if (!vsync) { std::this_thread::sleep_for(microseconds(sleep_us)); }
   }
@@ -145,6 +135,7 @@ int main() {
   }
 
   {
+    ScopeTimer x{"db::serialize"};
     auto s = std::ofstream{"musicdb", std::ifstream::binary};
     db::serialize(s);
   }

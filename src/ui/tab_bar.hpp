@@ -147,28 +147,28 @@ class TabBar : public Panel {
         std::function<void(Tab*)> on_right_click{};
     };
 
-    void add_tab(tab_info tab_info, bool select = false) {
-      add_tab(tab_info, tabs.size(), select);
+    void add_tab(tab_info info, bool select = false) {
+      add_tab(info, tabs.size(), select);
     }
 
-    void add_tab(tab_info tab_info, size_t at, bool select = false) {
+    void add_tab(tab_info info, size_t at, bool select = false) {
       at = std::min(at, tabs.size());
       Tab* t = &tab_container->add_child<Tab>();
       t->set_height(32);
-      t->label.set_text(tab_info.label);
-      t->padding = tab_info.padding;
-      t->is_draggable = tab_info.is_draggable;
+      t->label.set_text(info.label);
+      t->padding = info.padding;
+      t->is_draggable = info.is_draggable;
       t->on_drag_start = [this](i32 id) { on_tab_drag_start(id); };
-      t->on_active = [this, tab_info](Tab* tab) {
+      t->on_active = [this, info](Tab* tab) {
         i32 mouse_x = Input::get_mouse_x() - x;
         i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - mouse_x - x);
         if ((i32)tab->index == dragged_tab_index && mouse_drag_delta > 10) { return; }
 
         update_tab_textures(tab->index);
-        if (tab_info.on_open) { tab_info.on_open(); }
-        if (on_tab_pressed) { on_tab_pressed(tab_info.id); }
+        if (info.on_open) { info.on_open(); }
+        if (on_tab_pressed) { on_tab_pressed(info.id); }
       };
-      t->on_right_click = tab_info.on_right_click;
+      t->on_right_click = info.on_right_click;
 
       tabs.emplace(tabs.begin() + at, t);
       t->index = at;
@@ -179,8 +179,8 @@ class TabBar : public Panel {
 
       if (select) {
         update_tab_textures(t->index);
-        if (tab_info.on_open) { tab_info.on_open(); }
-        if (on_tab_pressed) { on_tab_pressed(tab_info.id); }
+        if (info.on_open) { info.on_open(); }
+        if (on_tab_pressed) { on_tab_pressed(info.id); }
       }
     }
 
@@ -278,7 +278,7 @@ class TabBar : public Panel {
     }
 
     bool tab_valid(size_t index) const {
-      return index >= 0 && index < tabs.size();
+      return index < tabs.size();
     }
 
     bool swap_tabs(size_t index_a, size_t index_b) {

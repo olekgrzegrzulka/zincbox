@@ -98,7 +98,7 @@ void config_load_from_file(std::string file) {
         i32 value = std::stoi(value_str_, nullptr);
         config_set_i32(key_, value);
       }
-    } catch (std::exception) {
+    } catch (std::exception&) {
       config_set_string(key_, value_str_);
     }
   };

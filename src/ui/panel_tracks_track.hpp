@@ -117,13 +117,13 @@ class WidgetTrack : public Button {
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
     }
 
-    void set_highlighted(bool state) {
-      if (highlighted_old == state) { return; }
-      highlighted_old = state;
+    void set_highlighted(bool new_state) {
+      if (highlighted_old == new_state) { return; }
+      highlighted_old = new_state;
 
       std::string txt;
       glm::vec3 text_color;
-      if (state) {
+      if (new_state) {
         panel_right_side->set_texture("track_bg_playing", false);
         txt = "track_bg_playing";
         text_color = glm::vec3{0.55, 0.35, 0.45};

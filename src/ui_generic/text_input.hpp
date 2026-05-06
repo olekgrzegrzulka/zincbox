@@ -1,4 +1,5 @@
 #pragma once
+#include "common/input.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
 
@@ -7,6 +8,7 @@ class TextInput : public Sprite {
     TextInput(UI& ui_);
     void update();
     void clear();
+    void handle_input(Input::InputEventKey&);
 
   protected:
     std::function<void()> lambda_on_text_changed;
