@@ -6,7 +6,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
-#include "lib/stb_image.h"
+#include "lib/stb_image/stb_image.h"
 
 struct TextureAtlasData {
     vec2f start;

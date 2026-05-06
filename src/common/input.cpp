@@ -68,7 +68,7 @@ namespace Input {
     detail::keyboard_characters_curr += c;
   }
 
-  void glfw_key_callback(GLFWwindow*, i32 key, i32 scancode, i32 action, i32 mods) {
+  void glfw_key_callback(GLFWwindow*, i32 key, i32 scancode, i32 action, i32) {
     KeyAction key_action{};
     if (action == GLFW_PRESS) { key_action = KeyAction::PRESS; }
     if (action == GLFW_REPEAT) { key_action = KeyAction::REPEAT; }

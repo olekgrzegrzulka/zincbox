@@ -2,7 +2,7 @@
 #include <string>
 #include "common/debug.hpp"
 #include "common/types.hpp"
-#include "lib/stb_image.h"
+#include "lib/stb_image/stb_image.h"
 #include "opengl_includes.hpp"
 
 Texture::Texture(std::string file_name) {

@@ -175,16 +175,16 @@ void Track::serialize(std::ostream& os) {
 bool Collection::add_path(fs::path path, bool internal) {
   bool has_path = false;
   if (!internal) {
-    if (paths.contains(path)) {
+    if (paths.contains(path.string())) {
       has_path = true;
     } else {
-      paths.emplace(path);
+      paths.emplace(path.string());
     }
   } else {
-    if (paths_internal.contains(path)) {
+    if (paths_internal.contains(path.string())) {
       has_path = true;
     } else {
-      paths_internal.emplace(path);
+      paths_internal.emplace(path.string());
     }
   }
 

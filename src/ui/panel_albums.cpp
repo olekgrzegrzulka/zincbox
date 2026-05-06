@@ -220,8 +220,8 @@ void PanelAlbums::reflow() {
   i32 column = 0;
   i32 cover_y = 0;
   for (auto& album_widget : album_widgets) {
-    i32 x = (column) * (albums_area_width) / album_covers_in_one_row;
-    album_widget->set_pos(x, cover_y);
+    i32 x_ = (column) * (albums_area_width) / album_covers_in_one_row;
+    album_widget->set_pos(x_, cover_y);
 
     column += 1;
     if (column >= album_covers_in_one_row) {

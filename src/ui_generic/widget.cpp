@@ -50,7 +50,7 @@ void Widget::update() {
     i32 child_direction = (layout.direction == LEFT_TO_RIGHT || layout.direction == TOP_TO_BOTTOM) ? 1 : -1;
     bool x_major = (layout.direction == LEFT_TO_RIGHT || layout.direction == RIGHT_TO_LEFT);
 
-    Anchor child_anchor;
+    Anchor child_anchor{};
     switch (layout.direction) {
     case LEFT_TO_RIGHT: child_anchor = CENTER_LEFT; break;
     case RIGHT_TO_LEFT: child_anchor = CENTER_RIGHT; break;
@@ -58,12 +58,12 @@ void Widget::update() {
     case BOTTOM_TO_TOP: child_anchor = BOTTOM_CENTER; break;
     }
 
-    float total_weight = 0;
+    // float total_weight = 0;
     i32 total_i = 0;
     for (auto& c : children) {
       if (c->ignore_parents_layout) { continue; }
       if (!c->is_drawn) { continue; }
-      total_weight += c->get_weight();
+      // total_weight += c->get_weight();
       total_i += 1;
     }
 
@@ -124,13 +124,13 @@ void Widget::update() {
       }
     };
 
-    float current_weight = 0;
+    // float current_weight = 0;
     i32 i = -1;
     for (auto& c : children) {
       if (c->ignore_parents_layout) { continue; }
       if (!c->is_drawn) { continue; }
       i += 1;
-      current_weight += c->get_weight();
+      // current_weight += c->get_weight();
 
       c->set_anchor(child_anchor);
       c->set_parent_anchor(child_anchor);

@@ -19,6 +19,7 @@
 #include "panel_top.hpp"
 #include "panel_tracks.hpp"
 #include "popup_controller.hpp"
+#include "splitter.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
@@ -39,11 +40,11 @@ static std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 static std::unique_ptr<UI> ui;
 static PopupController* popup_controller{};
 static PanelTop* panel_top{};
-static Panel* panel_main{};
 static PanelTracks* panel_tracks{};
 static PanelQueue* panel_queue{};
 static PanelAlbums* panel_albums{};
 static PanelControls* panel_controls{};
+static Splitter* splitter{};
 
 void init_atlas();
 void init_album_cover_atlas(size_t collection_id);
@@ -63,12 +64,11 @@ void interface::init() {
 
   panel_controls = &ui->add_widget<PanelControls>();
   panel_top = &ui->add_widget<PanelTop>();
-  panel_main = &ui->add_widget<Panel>();
-  panel_main->set_layout("m:0 s:0 ltr expand fill");
-  panel_tracks = &panel_main->add_child<PanelTracks>();
-  panel_queue = &panel_main->add_child<PanelQueue>();
+  panel_tracks = &ui->add_widget<PanelTracks>();
+  panel_queue = &ui->add_widget<PanelQueue>();
   panel_queue->set_is_drawn(false);
-  panel_albums = &panel_main->add_child<PanelAlbums>();
+  splitter = &ui->add_widget<Splitter>();
+  panel_albums = &ui->add_widget<PanelAlbums>();
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
     if (collection_id == active_collection_id) { return; }
@@ -110,6 +110,9 @@ void interface::init() {
 
     panel_queue->set_is_drawn(false);
     panel_queue->set_is_updated(false);
+
+    splitter->set_is_drawn(true);
+    splitter->set_is_updated(true);
   };
 
   panel_top->on_queue_view_opened = [&]() {
@@ -121,6 +124,8 @@ void interface::init() {
     panel_queue->set_is_drawn(true);
     panel_queue->set_is_updated(true);
     panel_queue->on_queue_changed();
+    splitter->set_is_drawn(false);
+    splitter->set_is_updated(false);
     panel_albums->recreate(std::nullopt, nullptr);
   };
 
@@ -140,7 +145,7 @@ void interface::init() {
 
   panel_top->on_add_collection_button_pressed = [&](Widget*) {
     NFD::UniquePathSet out_paths;
-    auto result = NFD::PickFolderMultiple(out_paths, nullptr);
+    auto result = NFD::PickFolderMultiple(out_paths, (const nfdnchar_t*)nullptr);
     if (result == NFD_OKAY) {
       nfdpathsetsize_t numPaths;
       NFD::PathSet::Count(out_paths, numPaths);
@@ -424,10 +429,30 @@ void interface::process_input() {
 }
 
 void interface::update(vec2i window_size) {
+  i32 height = window_size.y - panel_top->get_height() - panel_controls->get_height();
   panel_top->set_width(window_size.x);
-  panel_main->set_y(panel_top->get_height());
-  panel_main->set_width(window_size.x);
-  panel_main->set_height(window_size.y - panel_top->get_height() - panel_controls->get_height());
+
+  if (panel_queue->get_is_drawn()) {
+    panel_queue->set_y(panel_top->get_height());
+    panel_queue->set_width(window_size.x);
+    panel_queue->set_height(height);
+  } else {
+    i32 width_tracks = window_size.x * splitter->get_ratio() - (i32)(splitter->get_width() / 2);
+    width_tracks = std::clamp(width_tracks, 200, window_size.x - 200);
+    i32 width_albums = window_size.x - width_tracks - splitter->get_width();
+    i32 y = panel_top->get_height();
+
+    panel_tracks->set_pos(0, y);
+    panel_tracks->set_width(width_tracks);
+    panel_tracks->set_height(height);
+
+    splitter->set_pos(width_tracks, y);
+    splitter->set_height(height);
+
+    panel_albums->set_pos(width_tracks + splitter->get_width(), y);
+    panel_albums->set_width(width_albums);
+    panel_albums->set_height(height);
+  }
   panel_controls->set_width(window_size.x);
 
   ui->update(window_size.x, window_size.y);
@@ -477,6 +502,7 @@ void init_atlas() {
   atlas.add_texture("text_input_caret", "./assets/text_input_caret.png");
   atlas.add_texture("text_input_focused", "./assets/text_input_focused.png");
   atlas.add_texture("text_input_idle", "./assets/text_input_idle.png");
+  atlas.add_texture("splitter", "./assets/splitter.png");
   // player
   atlas.add_texture("seekbar_bg", "./assets/seekbar_bg.png");
   atlas.add_texture("seekbar_progress", "./assets/seekbar_progress.png");

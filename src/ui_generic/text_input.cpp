@@ -90,3 +90,9 @@ void TextInput::clear() {
   label.set_text(U"");
   if (lambda_on_text_changed) { lambda_on_text_changed(); }
 }
+
+void TextInput::handle_input(Input::InputEventKey& ev) {
+  if (focused) {
+    ev.handled = true;
+  }
+}

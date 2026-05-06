@@ -14,13 +14,13 @@ enum class ToolTipPosition {
 
 class ToolTip : public Panel {
   public:
-    ToolTip(UI& ui_, std::string name, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16) : Panel(ui_, Panel::PanelStyle::Rounded) {
+    ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16) : Panel(ui_, Panel::PanelStyle::Rounded) {
       pos = pos_;
       distance = distance_;
       set_ignore_parents_layout(true);
       set_is_drawn_on_top(true);
 
-      label = &add_child<Label>(name);
+      label = &add_child<Label>(name_);
       label->set_parent_anchor(Anchor::CENTER);
       label->set_anchor(Anchor::CENTER);
 

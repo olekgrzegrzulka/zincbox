@@ -1,7 +1,9 @@
-#include <map>
-#include <string>
-#include "common/debug.hpp"
 #include "core/mpris.hpp"
+#include <string>
+
+#ifndef _WIN32
+#include <map>
+#include "common/debug.hpp"
 #include <sdbus-c++/IConnection.h>
 #include <sdbus-c++/sdbus-c++.h>
 
@@ -137,3 +139,14 @@ void mpris::notify_seeked(i64 position_ms) {
     mpris_object->emitSignal("Seeked").onInterface("org.mpris.MediaPlayer2.Player").withArguments(position_ms * 1000);
   }
 }
+#else
+void mpris::init() {}
+void mpris::deinit() {}
+std::optional<mpris::Command> mpris::command_pop() { return std::nullopt; }
+void mpris::notify_playback_status_playing() {}
+void mpris::notify_playback_status_paused() {}
+void mpris::notify_playback_status_stopped() {}
+void mpris::notify_track_change(std::string, std::string, std::string, i64) {}
+void mpris::notify_volume(double) {}
+void mpris::notify_seeked(i64) {}
+#endif
