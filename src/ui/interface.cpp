@@ -23,7 +23,6 @@
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
@@ -35,7 +34,6 @@
 static std::optional<size_t> active_collection_id;
 static std::vector<float> tracks_scroll_positions;
 static std::vector<float> playlists_scroll_positions;
-static std::vector<std::unique_ptr<TextureAtlas>> album_cover_atlases;
 
 static std::unique_ptr<UI> ui;
 static PopupController* popup_controller{};
@@ -47,17 +45,14 @@ static PanelControls* panel_controls{};
 static Splitter* splitter{};
 
 void init_atlas();
-void init_album_cover_atlas(size_t collection_id);
-void init_album_cover_atlases();
+void add_playlist_art_to_texture_atlas(size_t collection_id);
 void handle_dropped_files();
 void delete_collection(size_t);
-void delete_playlist_track(size_t);
 void show_add_to_playlist_popup(size_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
   init_atlas();
-  init_album_cover_atlases();
 
   popup_controller = &ui->add_widget<PopupController>();
   popup_controller->set_is_drawn_on_top(true);
@@ -104,9 +99,7 @@ void interface::init() {
     }
     panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
 
-    TextureAtlas* atlas = nullptr;
-    if (active_collection_id.has_value()) { atlas = album_cover_atlases[*active_collection_id].get(); }
-    panel_albums->recreate(active_collection_id, atlas);
+    panel_albums->recreate(active_collection_id);
 
     panel_queue->set_is_drawn(false);
     panel_queue->set_is_updated(false);
@@ -126,7 +119,7 @@ void interface::init() {
     panel_queue->on_queue_changed();
     splitter->set_is_drawn(false);
     splitter->set_is_updated(false);
-    panel_albums->recreate(std::nullopt, nullptr);
+    panel_albums->recreate(std::nullopt);
   };
 
   panel_top->on_show_collection_actions_popover = [&](size_t collection_id, Widget* widget) {
@@ -160,7 +153,7 @@ void interface::init() {
           NFD::PathSet::GetPath(out_paths, i, path);
           collection.add_path(path.get());
         }
-        init_album_cover_atlas(collection_id);
+        add_playlist_art_to_texture_atlas(collection_id);
         panel_top->recreate(active_collection_id);
       }
     }
@@ -301,7 +294,7 @@ void interface::init() {
       popover_labels.emplace_back("Remove");
       popover_actions.emplace_back([playlist_id]() {
         db::mark_playlist_as_tombstone(playlist_id);
-        panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get());
+        panel_albums->recreate(active_collection_id);
         panel_tracks->collection_id = active_collection_id;
         panel_tracks->clear();
         panel_tracks->recreate();
@@ -325,16 +318,16 @@ void interface::init() {
     if (active_collection_id == 0) {
       popover_labels = {"Playlist name (A-Z)", "Playlist name (Z-A)"};
       popover_actions = {
-        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_AZ); },
-        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_ZA); },
+        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_AZ); },
+        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_ZA); },
       };
     } else if (active_collection_id.has_value()) {
       popover_labels = {"Artist (A-Z)", "Artist (Z-A)", "Album name (A-Z)", "Album name (Z-A)"};
       popover_actions = {
-        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::AUTHOR_AZ); },
-        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::AUTHOR_ZA); },
-        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_AZ); },
-        []() { panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get(), PanelAlbums::SortBy::NAME_ZA); },
+        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::AUTHOR_AZ); },
+        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::AUTHOR_ZA); },
+        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_AZ); },
+        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_ZA); },
       };
     }
     vec2i at = w->get_position(Anchor::CENTER);
@@ -351,23 +344,26 @@ void interface::init() {
 
   panel_albums->on_search_bar_text_modified = []() {
     if (active_collection_id.has_value()) {
-      panel_albums->recreate(active_collection_id, album_cover_atlases[*active_collection_id].get());
+      panel_albums->recreate(active_collection_id);
     } else {
-      panel_albums->recreate(std::nullopt, nullptr);
+      panel_albums->recreate(std::nullopt);
     }
+  };
+
+  panel_albums->on_add_playlist_button_pressed = [](Widget*) {
   };
 
   if (db::collection_count() > 0) {
     panel_tracks->collection_id = 0;
     panel_tracks->clear();
     panel_tracks->recreate();
-    panel_albums->recreate(0, album_cover_atlases[0].get());
+    panel_albums->recreate(0);
     panel_top->recreate(0);
   } else {
     panel_tracks->collection_id = std::nullopt;
     panel_tracks->clear();
     panel_tracks->recreate();
-    panel_albums->recreate(std::nullopt, nullptr);
+    panel_albums->recreate(std::nullopt);
     panel_top->recreate(std::nullopt);
   }
 
@@ -553,51 +549,27 @@ void init_atlas() {
   atlas.add_texture("clear_search_pressed", "./assets/icons/clear_search_pressed.png");
   atlas.add_texture("sort_by", "./assets/icons/sort_by.png");
   atlas.add_texture("group_by", "./assets/icons/group_by.png");
+  atlas.add_texture("button_add_playlist", "./assets/icons/button_add_playlist.png");
+  atlas.add_texture("cover_unknown", "./assets/cover_unknown.png");
+  atlas.set_fallback_texture("cover_unknown");
+
+  for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
+    add_playlist_art_to_texture_atlas(collection_id);
+  }
+
   atlas.save_to_file("atlas.png");
 }
 
-void init_album_cover_atlas(size_t collection_id) {
-  ensure(db::collection_count() > collection_id);
-
-  if (collection_id > album_cover_atlases.size()) {
+void add_playlist_art_to_texture_atlas(size_t collection_id) {
+  i32 count = 0;
+  if (!db::collection_by_id(collection_id).has_value()) {
+    debug_warn("add_playlist_art_to_texture_atlas(): bad collection_id");
     return;
   }
-
-  auto& c = db::collection_by_id(collection_id).value().get();
-  i32 album_count = c.playlist_ids.size();
-  i32 atlas_resolution = std::sqrt(album_count) * 64;
-  if (atlas_resolution < 512) {
-    atlas_resolution = 512;
-  } else if (atlas_resolution < 1024) {
-    atlas_resolution = 1024;
-  } else if (atlas_resolution < 2048) {
-    atlas_resolution = 2048;
-  } else {
-    atlas_resolution = 2048;
-    debug_warn("album_count = ", album_count, ", not supported!");
-  }
-  i32 count = 0;
-  if (collection_id == album_cover_atlases.size()) {
-    album_cover_atlases.emplace_back(std::make_unique<TextureAtlas>(atlas_resolution, 0, 64));
-  } else {
-    album_cover_atlases[collection_id] = std::make_unique<TextureAtlas>(atlas_resolution, 0, 64);
-  }
-  album_cover_atlases[collection_id]->add_texture("cover_unknown", "./assets/cover_unknown.png");
-  album_cover_atlases[collection_id]->set_fallback_texture("cover_unknown");
   for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
-    album_cover_atlases[collection_id]->add_texture(std::to_string(playlist_id), playlist.image, 64, 64);
+    ui->get_texture_atlas().add_texture(std::to_string(playlist_id), playlist.image, 64, 64);
     if (count++ >= 1023) { break; }
-  }
-  album_cover_atlases[collection_id]->save_to_file("albums" + std::to_string(collection_id) + ".png");
-}
-
-void init_album_cover_atlases() {
-  album_cover_atlases.clear();
-  auto n = db::collection_count();
-  for (size_t i = 0; i < n; i += 1) {
-    album_cover_atlases.emplace_back(std::make_unique<TextureAtlas>(512, 0, 64));
-    init_album_cover_atlas(i);
   }
 }
 
@@ -608,7 +580,7 @@ void create_collection(std::vector<std::string> directories) {
   for (auto& str : directories) {
     fs::path path = str;
     db::collection_by_id(collection_id)->get().add_path(path);
-    init_album_cover_atlas(collection_id);
+    add_playlist_art_to_texture_atlas(collection_id);
   }
   panel_top->recreate(active_collection_id);
 }
@@ -619,7 +591,7 @@ void create_multiple_collections(std::vector<std::string> directories) {
     std::string collection_name = path.filename().string();
     auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
     db::collection_by_id(collection_id)->get().add_path(path);
-    init_album_cover_atlas(collection_id);
+    add_playlist_art_to_texture_atlas(collection_id);
   }
   panel_top->recreate(active_collection_id);
 }
@@ -691,12 +663,12 @@ void delete_collection(size_t collection_id) {
   if (db::collection_by_id(*active_collection_id)->get().is_tombstone() || !active_collection_id.has_value()) {
     active_collection_id = std::nullopt;
     panel_top->recreate(active_collection_id);
-    panel_albums->recreate(active_collection_id, nullptr);
+    panel_albums->recreate(active_collection_id);
     panel_tracks->collection_id = active_collection_id;
     panel_tracks->recreate();
   } else {
     panel_top->recreate(*active_collection_id);
-    panel_albums->recreate(*active_collection_id, album_cover_atlases[*active_collection_id].get());
+    panel_albums->recreate(*active_collection_id);
     panel_tracks->collection_id = *active_collection_id;
     panel_tracks->recreate();
   }
@@ -718,7 +690,7 @@ void show_add_to_playlist_popup(size_t track_id) {
   playlists_view.set_height(std::clamp(ui->get_window_height() - 300, 100, 500));
   popup->set_width(playlists_view.get_width());
   popup->set_height(playlists_view.get_height() + 40);
-  playlists_view.recreate(0, album_cover_atlases[0].get());
+  playlists_view.recreate(0);
 
   auto* popup_controller_ = popup_controller;
   playlists_view.on_playlist_lmb = [popup_controller_, track_id](size_t playlist_id, Widget*) {
