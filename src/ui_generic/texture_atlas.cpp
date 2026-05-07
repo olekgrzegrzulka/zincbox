@@ -3,6 +3,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <thread>
 #include <glm/vec3.hpp>
 #include "common/debug.hpp"
 #include "common/types.hpp"
@@ -11,12 +12,12 @@
 #include "opengl_includes.hpp"
 #include "texture_atlas.hpp"
 
-TextureAtlas::TextureAtlas(i32 atlas_size_, i32 margin_px_, i32 min_texture_size_px_) {
-  atlas_size = atlas_size_;
+TextureAtlas::TextureAtlas(i32 atlas_size_px_, i32 margin_px_, i32 grid_size_px_) {
+  atlas_size_px = atlas_size_px_;
   margin_px = margin_px_;
-  min_texture_size_px = min_texture_size_px_;
-  image.resize(4 * atlas_size * atlas_size);
-  free_16x16_squares.resize((atlas_size / min_texture_size_px) * (atlas_size / min_texture_size_px), true);
+  grid_size_px = grid_size_px_;
+  image.resize(4 * atlas_size_px * atlas_size_px);
+  occupied_grid_space.resize((atlas_size_px / grid_size_px) * (atlas_size_px / grid_size_px), false);
 }
 
 bool TextureAtlas::add_texture(std::string id, std::string path) {
@@ -32,8 +33,8 @@ bool TextureAtlas::add_texture(std::string id, std::string path) {
   auto at = paste_texture(data, width, height);
 
   TextureAtlasData uv;
-  uv.start = {at.x / (float)atlas_size - half_pixel(), at.y / (float)atlas_size - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size + half_pixel(), (at.y + height) / (float)atlas_size + half_pixel()};
+  uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
+  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
   textures[id] = uv;
@@ -54,8 +55,8 @@ bool TextureAtlas::add_texture(std::string id, const std::vector<u8>& data_, i32
   auto at = paste_texture(data, width, height);
 
   TextureAtlasData uv;
-  uv.start = {at.x / (float)atlas_size - half_pixel(), at.y / (float)atlas_size - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size + half_pixel(), (at.y + height) / (float)atlas_size + half_pixel()};
+  uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
+  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
   textures[id] = uv;
@@ -67,12 +68,18 @@ bool TextureAtlas::add_texture(std::string id, const std::vector<u8>& data_, i32
 
 void TextureAtlas::save_to_file(std::string filename) {
   if (!filename.ends_with(".png")) { filename += ".png"; }
-  i32 status = stbi_write_png(filename.c_str(), atlas_size, atlas_size, 4, image.data(), 4 * atlas_size);
-  if (status == 1) {
-    debug_log("Saved texture atlas to ", filename);
-  } else {
-    debug_warn("Couldn't save texture atlas to ", filename);
-  }
+  auto data_copy = image.data();
+  auto size_px_copy = atlas_size_px;
+
+  std::thread th([filename, size_px_copy, data_copy]() {
+    i32 status = stbi_write_png(filename.c_str(), size_px_copy, size_px_copy, 4, data_copy, 4 * size_px_copy);
+    if (status == 1) {
+      debug_log("Saved texture atlas to ", filename);
+    } else {
+      debug_warn("Couldn't save texture atlas to ", filename);
+    }
+  });
+  th.detach();
 }
 
 std::optional<std::reference_wrapper<TextureAtlasData>> TextureAtlas::get(std::string id) {
@@ -102,8 +109,8 @@ void TextureAtlas::regenerate_texture() {
   glGenTextures(1, &texture);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);
-  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, atlas_size, atlas_size);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas_size, atlas_size, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
+  glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, atlas_size_px, atlas_size_px);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas_size_px, atlas_size_px, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -120,21 +127,18 @@ void TextureAtlas::regenerate_texture() {
 }
 
 std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 width, i32 height) {
-  for (i32 square_x = 0; square_x < (atlas_size / min_texture_size_px); square_x += 1) {
-    for (i32 square_y = 0; square_y < (atlas_size / min_texture_size_px); square_y += 1) {
+  for (i32 square_x = 0; square_x < (atlas_size_px / grid_size_px); square_x += 1) {
+    for (i32 square_y = 0; square_y < (atlas_size_px / grid_size_px); square_y += 1) {
       bool fail = false;
-      for (i32 square_width = 0; square_width < std::ceil(width / (double)min_texture_size_px); square_width += 1) {
-        for (i32 square_height = 0; square_height < std::ceil(height / (double)min_texture_size_px); square_height += 1) {
-          size_t square_i = (atlas_size / min_texture_size_px) * (square_y + square_height) + (square_x + square_width);
+      for (i32 square_width = 0; square_width < std::ceil(width / (double)grid_size_px); square_width += 1) {
+        for (i32 square_height = 0; square_height < std::ceil(height / (double)grid_size_px); square_height += 1) {
+          size_t square_i = (atlas_size_px / grid_size_px) * (square_y + square_height) + (square_x + square_width);
           // size_t square_i = square_x + square_y * (atlas_size / square_size_px);
-          if (square_x + square_width >= (atlas_size / min_texture_size_px) || square_y + square_height >= (atlas_size / min_texture_size_px)) {
+          if (square_x + square_width >= (atlas_size_px / grid_size_px) || square_y + square_height >= (atlas_size_px / grid_size_px)) {
             fail = true;
             break;
           }
-          if (square_i >= free_16x16_squares.size()) {
-            debug_log(square_i);
-          }
-          if (!free_16x16_squares[square_i]) {
+          if (occupied_grid_space[square_i]) {
             fail = true;
             break;
           }
@@ -143,7 +147,7 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
       }
 
       if (!fail) {
-        return std::make_pair(square_x * min_texture_size_px, square_y * min_texture_size_px);
+        return std::make_pair(square_x * grid_size_px, square_y * grid_size_px);
       }
     }
   }
@@ -152,20 +156,15 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
 }
 
 void TextureAtlas::mark_space_for_texture(i32 x, i32 y, i32 width, i32 height) {
-  i32 begin_x = x / min_texture_size_px;
-  i32 begin_y = y / min_texture_size_px;
-  i32 end_x = begin_x + std::ceil(width / (double)min_texture_size_px);
-  i32 end_y = begin_y + std::ceil(height / (double)min_texture_size_px);
+  i32 begin_x = x / grid_size_px;
+  i32 begin_y = y / grid_size_px;
+  i32 end_x = begin_x + std::ceil(width / (double)grid_size_px);
+  i32 end_y = begin_y + std::ceil(height / (double)grid_size_px);
 
   for (i32 square_x = begin_x; square_x < end_x; square_x += 1) {
     for (i32 square_y = begin_y; square_y < end_y; square_y += 1) {
-      // size_t square_i = square_x + square_y * (atlas_size / square_size_px);
-      ensure(free_16x16_squares[(atlas_size / min_texture_size_px) * square_y + square_x]);
-      // ensure(free_16x16_squares[square_i]);
-      free_16x16_squares[(atlas_size / min_texture_size_px) * square_y + square_x] = false;
-      // ensure(square_i < free_16x16_squares.size());
-
-      // free_16x16_squares[square_i] = false;
+      ensure(!occupied_grid_space[(atlas_size_px / grid_size_px) * square_y + square_x]);
+      occupied_grid_space[(atlas_size_px / grid_size_px) * square_y + square_x] = true;
     }
   }
 }
@@ -178,9 +177,9 @@ vec2i TextureAtlas::paste_texture(stbi_uc* data, i32 width, i32 height) {
 
   for (i32 oy = 0; oy < height; oy += 1) {
     for (i32 ox = 0; ox < width; ox += 1) {
-      if ((x + ox) < atlas_size && (y + oy) < atlas_size) {
+      if ((x + ox) < atlas_size_px && (y + oy) < atlas_size_px) {
         for (i32 c = 0; c < 4; c += 1) {
-          image[4 * ((y + oy) * atlas_size + (x + ox)) + c] = data[4 * (oy * width + ox) + c];
+          image[4 * ((y + oy) * atlas_size_px + (x + ox)) + c] = data[4 * (oy * width + ox) + c];
         }
       }
     }

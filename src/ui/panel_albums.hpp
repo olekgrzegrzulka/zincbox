@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 #include "common/input.hpp"
@@ -7,34 +8,28 @@
 #include "ui_generic/panel.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/text_input.hpp"
-#include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
 class SpriteAlbumCover : public Sprite {
   public:
-    SpriteAlbumCover(UI& ui_, std::string id, TextureAtlas*);
-    TextureAtlas& get_texture_atlas() override { return *album_covers_atlas; }
-
-  protected:
-    TextureAtlas* album_covers_atlas;
+    SpriteAlbumCover(UI& ui_, std::string id);
 };
 
 class WidgetAlbumCover : public Button {
   public:
-    WidgetAlbumCover(UI& ui_, size_t playlist_id, TextureAtlas* album_covers_atlas_);
+    WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id = std::nullopt);
     void draw() override;
     void update() override;
     void handle_event(Input::InputEventMouseMove& ev) override;
 
   public:
-    const size_t playlist_id = 0;
+    const std::optional<size_t> playlist_id = 0;
 
   protected:
     Sprite* hover{};
     bool is_hovered = false;
     Label* label_title{};
-    TextureAtlas* album_covers_atlas;
 };
 
 class PanelAlbums : public Panel {
@@ -50,7 +45,7 @@ class PanelAlbums : public Panel {
     PanelAlbums(UI& ui_);
     void draw() override;
     void clear();
-    void recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas, SortBy sort_by_ = SortBy::AUTHOR_AZ);
+    void recreate(std::optional<size_t> collection_id_, SortBy sort_by_ = SortBy::AUTHOR_AZ);
     void update() override;
     using Panel::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
@@ -78,4 +73,5 @@ class PanelAlbums : public Panel {
     std::function<void(size_t, Widget*)> on_playlist_rmb{};
     std::function<void(Widget*)> on_button_sort_by_pressed{};
     std::function<void()> on_search_bar_text_modified{};
+    std::function<void(Widget*)> on_add_playlist_button_pressed{};
 };

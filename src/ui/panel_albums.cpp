@@ -10,38 +10,34 @@
 #include "panel_albums.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/label.hpp"
 #include "ui_generic/panel.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/text_input.hpp"
-#include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id, TextureAtlas* album_covers_atlas_) : Sprite(ui_) {
-  if (album_covers_atlas_) {
-    album_covers_atlas = album_covers_atlas_;
-  } else {
-    album_covers_atlas = &ui.get_texture_atlas();
-  }
+SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id) : Sprite(ui_) {
   set_texture(id);
   set_nine_slice_margin(0);
 }
 
-WidgetAlbumCover::WidgetAlbumCover(UI& ui_, size_t playlist_id_, TextureAtlas* album_covers_atlas_) : Button(ui_), playlist_id(playlist_id_) {
-  if (album_covers_atlas_) {
-    album_covers_atlas = album_covers_atlas_;
-  } else {
-    album_covers_atlas = &ui.get_texture_atlas();
-  }
-  auto& playlist = db::playlist_by_id(playlist_id)->get();
+WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) : Button(ui_), playlist_id(playlist_id_) {
+
   set_clip_children(true);
   set_size(COVER_WIDTH, COVER_HEIGHT);
   std::stringstream texture_id;
-  auto& sprite_cover = add_child<SpriteAlbumCover>(std::to_string(playlist_id), album_covers_atlas);
+  auto& sprite_cover = add_child<SpriteAlbumCover>(playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist");
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
-  label_title = &add_child<Label>(playlist.name);
+  label_title = &add_child<Label>();
+  if (playlist_id.has_value()) {
+    auto& playlist = db::playlist_by_id(playlist_id.value())->get();
+    label_title->set_text(playlist.name);
+  } else {
+    label_title->set_text("Add new playlist...");
+  }
   label_title->set_resize_to_text_extents(false);
   label_title->set_width(COVER_WIDTH);
   label_title->set_label_anchor(Anchor::TOP_LEFT);
@@ -150,10 +146,10 @@ void PanelAlbums::clear() {
   album_widgets.clear();
 }
 
-void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* album_covers_atlas, SortBy sort_by_) {
+void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_) {
   sort_by = sort_by_;
   clear();
-  if (!collection_id_.has_value() || album_covers_atlas == nullptr) { return; }
+  if (!collection_id_.has_value()) { return; }
 
   auto c = db::collection_by_id(*collection_id_);
 
@@ -193,7 +189,7 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* a
     if (!playlist_name_sanitized.contains(query_sanitized) && !playlist_author_sanitized.contains(query_sanitized)) {
       continue;
     }
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id, album_covers_atlas);
+    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id);
     album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, playlist_id, album_widget]() {
@@ -204,6 +200,17 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, TextureAtlas* a
     album_widget->on_press_rmb([this, playlist_id, album_widget]() {
       if (on_playlist_rmb) {
         on_playlist_rmb(playlist_id, album_widget);
+      }
+    });
+  }
+
+  if (collection_id_.value() == 0) {
+    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>();
+    album_widgets.emplace_back(album_widget);
+
+    album_widget->on_press([this, album_widget]() {
+      if (on_add_playlist_button_pressed) {
+        on_add_playlist_button_pressed(album_widget);
       }
     });
   }
