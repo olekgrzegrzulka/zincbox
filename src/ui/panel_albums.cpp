@@ -102,7 +102,9 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   button_sort_by = &panel_top->add_child<Button>();
   search_bar = &panel_top->add_child<TextInput>();
   search_bar->set_on_text_changed([this]() {
-    this->on_search_bar_text_modified();
+    if (this->on_search_bar_text_modified) {
+      this->on_search_bar_text_modified();
+    }
   });
   button_clear_search = &search_bar->add_child<Button>();
 
