@@ -231,7 +231,6 @@ bool Playlist::add_track(size_t track_id) {
     return false;
   }
   track_ids.emplace_back(track_id);
-  sort();
   return true;
 }
 
@@ -521,6 +520,12 @@ void db::deserialize(std::ifstream& is) {
   read_bin(is, tracks_size);
   for (size_t i = 0; i < tracks_size; i += 1) {
     tracks.emplace_back(Track{is});
+  }
+
+  for (auto& p : playlists) {
+    if (p.type == PlaylistType::Album) {
+      p.sort();
+    }
   }
 }
 
