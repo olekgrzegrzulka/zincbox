@@ -2,9 +2,9 @@
 #include <functional>
 #include <optional>
 #include "tab_bar.hpp"
-#include "ui_generic/panel.hpp"
+#include "ui_generic/sprite.hpp"
 
-class PanelTop : public Panel {
+class PanelTop : public Sprite {
   public:
     PanelTop(UI& ui_);
     void update() override;

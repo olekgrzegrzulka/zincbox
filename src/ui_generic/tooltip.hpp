@@ -2,7 +2,7 @@
 #include <string>
 #include "common/types.hpp"
 #include "label.hpp"
-#include "panel.hpp"
+#include "sprite.hpp"
 #include "ui.hpp"
 
 enum class ToolTipPosition {
@@ -12,9 +12,9 @@ enum class ToolTipPosition {
   BELOW,
 };
 
-class ToolTip : public Panel {
+class ToolTip : public Sprite {
   public:
-    ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16) : Panel(ui_, Panel::PanelStyle::Rounded) {
+    ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16) : Sprite(ui_, "tooltip") {
       pos = pos_;
       distance = distance_;
       set_ignore_parents_layout(true);
@@ -71,7 +71,7 @@ class ToolTip : public Panel {
       set_x(get_x() + off_screen_left - off_screen_right);
       set_y(get_y() + off_screen_top - off_screen_bottom);
 
-      Panel::draw();
+      Sprite::draw();
     }
 
   protected:

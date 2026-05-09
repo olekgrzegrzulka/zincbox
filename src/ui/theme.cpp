@@ -1,0 +1,291 @@
+#include <filesystem>
+#include <initializer_list>
+#include <map>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
+#include <variant>
+#include <vector>
+#include "common/color.hpp"
+#include "common/debug.hpp"
+#include "common/types.hpp"
+#include "core/io.hpp"
+#include "lib/inifile.h"
+#include "lib/miniz/miniz.h"
+#include "theme.hpp"
+#include "ui_generic/texture_atlas.hpp"
+#include "ui_generic/ui.hpp"
+
+static constexpr u8 resources_zip[] = {
+#embed "resources.zip"
+};
+
+namespace fs = std::filesystem;
+
+std::unordered_map<std::string, theme::theme_prop> properties;
+std::unordered_set<std::string> props_not_found;
+
+theme::theme_prop theme::get_prop(std::string_view prop) {
+  if (auto it = properties.find(std::string(prop)); it != properties.end()) {
+    return it->second;
+  }
+
+  if (props_not_found.emplace(std::string(prop)).second) {
+    debug_warn("theme has no property " + std::string(prop));
+  }
+  return {};
+}
+
+std::unordered_map<std::string, std::vector<uint8_t>> resources;
+std::string resources_ttf_file;
+
+void load_resources() {
+  if (!resources.empty()) { return; }
+
+  mz_zip_archive zip_archive{};
+
+  if (!mz_zip_reader_init_mem(&zip_archive, resources_zip, sizeof(resources_zip), 0)) {
+    return;
+  }
+
+  for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
+    mz_zip_archive_file_stat file_stat;
+    if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) continue;
+
+    if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) continue;
+
+    std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
+    mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
+
+    if (resources_ttf_file.empty() && std::string(file_stat.m_filename).ends_with(".ttf")) {
+      resources_ttf_file = file_stat.m_filename;
+    }
+
+    resources[file_stat.m_filename] = std::move(buffer);
+  }
+
+  mz_zip_reader_end(&zip_archive);
+}
+
+void load_theme_to_atlas(std::string_view location, UI& ui) {
+  namespace fs = std::filesystem;
+
+  if (resources_ttf_file.empty()) {
+    debug_error("no font file found in resources");
+    return;
+  }
+
+  ui.set_font_face_from_data(resources[resources_ttf_file].data(), resources[resources_ttf_file].size(), 14);
+  auto& atlas = ui.get_texture_atlas();
+
+  fs::path path{location};
+  if (!fs::is_directory(path)) {
+    debug_warn("no theme found at ", std::string{location});
+  }
+
+  bool theme_loaded = true;
+
+  auto atlas_add_texture = [&path, &atlas, &theme_loaded](std::string id, std::vector<std::string> filenames = {}) -> bool {
+    if (filenames.size() == 0) { filenames = {id}; }
+    if (theme_loaded) {
+      for (std::string filename : filenames) {
+        if (fs::is_regular_file((path / (filename + ".png")))) {
+          atlas.add_texture(id, (path / (filename + ".png")).c_str());
+          return true;
+        } else if (fs::is_regular_file((path / (filename + ".PNG")))) {
+          atlas.add_texture(id, (path / (filename + ".PNG")).c_str());
+          return true;
+        }
+      }
+    }
+
+    for (std::string filename : filenames) {
+      auto it = resources.find(filename + ".png");
+      if (it == resources.end()) {
+        it = resources.find(filename + ".PNG");
+        if (it == resources.end()) { continue; }
+      }
+      i32 w, h, channels;
+      u8* img = stbi_load_from_memory(it->second.data(), it->second.size(), &w, &h, &channels, STBI_rgb_alpha);
+      if (!img) { continue; }
+      atlas.add_texture(id, img, w, h);
+      stbi_image_free(img);
+
+      return true;
+    }
+    return false;
+  };
+
+  auto add_custom_button = [&atlas_add_texture](std::string name) {
+    atlas_add_texture("button_" + name + "_disabled", {"button_" + name + "_disabled", "button_" + name, "button_disabled"});
+    atlas_add_texture("button_" + name + "_hovered", {"button_" + name + "_hovered", "button_" + name, "button_hovered"});
+    atlas_add_texture("button_" + name + "_idle", {"button_" + name + "_idle", "button_" + name, "button_idle"});
+    atlas_add_texture("button_" + name + "_pressed", {"button_" + name + "_pressed", "button_" + name, "button_pressed"});
+  };
+
+  auto add_custom_slider = [&atlas_add_texture](std::string name) {
+    atlas_add_texture("slider_" + name + "_thumb_idle", {"slider_" + name + "_thumb_idle", "slider_" + name + "_thumb", "slider_thumb_idle"});
+    atlas_add_texture("slider_" + name + "_thumb_hovered", {"slider_" + name + "_thumb_hovered", "slider_" + name + "_thumb", "slider_thumb_hovered"});
+    atlas_add_texture("slider_" + name + "_thumb_pressed", {"slider_" + name + "_thumb_pressed", "slider_" + name + "_thumb", "slider_thumb_pressed"});
+
+    atlas_add_texture("slider_" + name + "_track_inactive", {"slider_" + name + "_track_inactive", "slider_" + name + "_track", "slider_track_inactive"});
+    atlas_add_texture("slider_" + name + "_track_active", {"slider_" + name + "_track_active", "slider_" + name + "_track", "slider_track_active"});
+  };
+
+  auto add_custom_panel = [&atlas_add_texture](std::string name) {
+    atlas_add_texture("panel_" + name, {"panel_" + name, "panel"});
+  };
+
+  // ui
+  atlas_add_texture("button_disabled");
+  atlas_add_texture("button_hovered");
+  atlas_add_texture("button_idle");
+  atlas_add_texture("button_pressed");
+  atlas_add_texture("combo_box_button_contract");
+  atlas_add_texture("combo_box_button_expand");
+  atlas_add_texture("combo_box");
+  atlas_add_texture("dim");
+  atlas_add_texture("red");
+  atlas_add_texture("selectbar_bg");
+  atlas_add_texture("selectbar_selected");
+  atlas_add_texture("slider_thumb_hovered");
+  atlas_add_texture("slider_thumb_idle");
+  atlas_add_texture("slider_thumb_pressed");
+  atlas_add_texture("slider_track_inactive");
+  atlas_add_texture("slider_track_active");
+  add_custom_slider("scrollbar");
+  atlas_add_texture("spinner_buttons");
+  atlas_add_texture("text_input_caret");
+  atlas_add_texture("text_input_focused");
+  atlas_add_texture("text_input_idle");
+  atlas_add_texture("splitter");
+  atlas_add_texture("tooltip");
+  // player
+  add_custom_button("play_pause");
+  add_custom_button("prev");
+  add_custom_button("next");
+  add_custom_button("stop");
+  add_custom_button("repeat");
+  add_custom_button("shuffle");
+  add_custom_panel("albums");
+  add_custom_panel("albums_searchbar");
+  add_custom_panel("controls");
+  add_custom_panel("playlist_header");
+  add_custom_panel("popup");
+  add_custom_panel("queue");
+  add_custom_panel("tabbar");
+  add_custom_panel("top");
+  add_custom_panel("tracks");
+  add_custom_slider("seekbar");
+  atlas_add_texture("track_bg1");
+  atlas_add_texture("track_bg2");
+  atlas_add_texture("track_bg_playing");
+  atlas_add_texture("track_hovered");
+  atlas_add_texture("playlist_hovered");
+  atlas_add_texture("tab_active_disabled");
+  atlas_add_texture("tab_active_hovered");
+  atlas_add_texture("tab_active_idle");
+  atlas_add_texture("tab_active_pressed");
+  atlas_add_texture("tab_inactive_disabled");
+  atlas_add_texture("tab_inactive_hovered");
+  atlas_add_texture("tab_inactive_idle");
+  atlas_add_texture("tab_inactive_pressed");
+  atlas_add_texture("popover_panel");
+  atlas_add_texture("popover_arrow");
+  atlas_add_texture("popover_arrow_inverted");
+  add_custom_button("add_tab");
+  add_custom_button("popover");
+  // icons
+  atlas_add_texture("left", {"icons/left"});
+  atlas_add_texture("right", {"icons/right"});
+  atlas_add_texture("love", {"icons/love"});
+  atlas_add_texture("play", {"icons/play"});
+  atlas_add_texture("pause", {"icons/pause"});
+  atlas_add_texture("stop", {"icons/stop"});
+  atlas_add_texture("next", {"icons/next"});
+  atlas_add_texture("prev", {"icons/prev"});
+  atlas_add_texture("repeat", {"icons/repeat"});
+  atlas_add_texture("repeat_off", {"icons/repeat_off"});
+  atlas_add_texture("repeat_album", {"icons/repeat_album"});
+  atlas_add_texture("repeat_track", {"icons/repeat_track"});
+  atlas_add_texture("shuffle", {"icons/shuffle"});
+  atlas_add_texture("shuffle_off", {"icons/shuffle_off"});
+  atlas_add_texture("settings", {"icons/settings"});
+  atlas_add_texture("search", {"icons/search"});
+  atlas_add_texture("clear_search_idle", {"icons/clear_search_idle"});
+  atlas_add_texture("clear_search_hovered", {"icons/clear_search_hovered"});
+  atlas_add_texture("clear_search_pressed", {"icons/clear_search_pressed"});
+  atlas_add_texture("sort_by", {"icons/sort_by"});
+  atlas_add_texture("group_by", {"icons/group_by"});
+  atlas_add_texture("button_add_playlist", {"icons/button_add_playlist"});
+  atlas_add_texture("cover_unknown");
+  atlas.set_fallback_texture("cover_unknown");
+}
+
+auto theme::get_themes() {
+  std::map<std::string, fs::path> themes;
+
+  for (const auto& entry : fs::directory_iterator(io::get_themes_path())) {
+    if (fs::is_regular_file(entry.path() / "theme.cfg")) {
+      const std::string name = entry.path().filename().string();
+      themes[name] = entry.path();
+    }
+  }
+
+  return themes;
+}
+std::unordered_map<std::string, theme::theme_prop> theme::get_theme_properties(std::string_view name) {
+  auto path = io::get_themes_path() / name / "theme.cfg";
+  ini::inifile ini;
+  bool success = ini.load(path);
+  if (!success || !ini.contains("theme")) {
+    debug_warn("failed to load theme ", name);
+
+    if (!resources.contains("theme.cfg")) { debug_error("theme.cfg not found"); }
+
+    std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()), resources["theme.cfg"].size());
+    ini.from_string(str_theme_cfg);
+    if (!ini.contains("theme")) {
+      debug_error("failed to parse theme.cfg");
+      return {};
+    }
+  }
+
+  std::unordered_map<std::string, theme_prop> result;
+
+  for (const auto& [key, str_value2] : ini["theme"]) {
+    theme_prop prop;
+    std::string str_value = str_value2.as<std::string>();
+    const char* first = str_value.data();
+    const char* last = first + str_value.size();
+
+    if (auto color = color_utils::parse_color(str_value); color.has_value()) {
+      prop.value = color.value();
+    } else {
+      i32 i;
+      auto [ptr_i, ec_i] = std::from_chars(first, last, i);
+      if (ec_i == std::errc{} && ptr_i == last) {
+        prop.value = i;
+      } else {
+        double d;
+        auto [ptr_d, ec_d] = std::from_chars(first, last, d);
+        if (ec_d == std::errc{} && ptr_d == last) {
+          prop.value = d;
+        } else {
+          prop.value = str_value;
+        }
+      }
+    }
+    result[key] = std::move(prop);
+  }
+
+  return result;
+}
+
+void theme::load_theme(std::string_view name, UI& ui) {
+  load_resources();
+
+  properties = get_theme_properties(name);
+  load_theme_to_atlas((io::get_themes_path() / name).string(), ui);
+}

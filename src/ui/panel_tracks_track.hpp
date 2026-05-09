@@ -1,19 +1,17 @@
 #pragma once
 #include <sstream>
 #include <string>
-#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "core/musicdb.hpp"
-#include "core/utf.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
 class WidgetTrack : public Button {
   public:
     WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_) {
+      i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
       collection_id = collection_id_;
       album_id = album_id_;
       track_id = track_id_;
@@ -26,13 +24,13 @@ class WidgetTrack : public Button {
       set_texture_pressed(txt);
       set_texture(txt, false);
       set_nine_slice_margin(4.0);
-      set_height(TRACK_HEIGHT);
+      set_height(track_height);
 
       label_track_number = &add_child<Label>(std::to_string(track_number));
       label_track_number->set_resize_to_text_extents(false);
       label_track_number->set_label_anchor(Anchor::LEFT);
-      label_track_number->set_size(20, TRACK_HEIGHT);
-      label_track_number->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.2f);
+      label_track_number->set_size(20, track_height);
+      label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
       label_track_number->set_x(5);
 
       if (track.artist.empty() || track.title.empty()) {
@@ -44,9 +42,9 @@ class WidgetTrack : public Button {
       }
       label_track_artist->set_resize_to_text_extents(false);
       label_track_artist->set_label_anchor(Anchor::LEFT);
-      label_track_artist->set_height(TRACK_HEIGHT);
+      label_track_artist->set_height(track_height);
       label_track_artist->set_x(label_track_number->get_x() + label_track_number->get_width() + 5);
-      label_track_artist->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
+      label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
 
       if (track.artist.empty() || track.title.empty()) {
         label_track_title = &add_child<Label>(std::filesystem::path{track.path}.filename().string());
@@ -56,11 +54,11 @@ class WidgetTrack : public Button {
       label_track_title->set_resize_to_text_extents(false);
       label_track_title->set_x(label_track_artist->get_x() + label_track_artist->get_width() + 5);
       label_track_title->set_label_anchor(Anchor::LEFT);
-      label_track_title->set_height(TRACK_HEIGHT);
-      label_track_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.5f);
+      label_track_title->set_height(track_height);
+      label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
 
-      panel_right_side = &add_child<Panel>();
-      panel_right_side->set_height(TRACK_HEIGHT);
+      panel_right_side = &add_child<Sprite>("panel_tracks");
+      panel_right_side->set_height(track_height);
       panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
       panel_right_side->set_layout("m:8 s:8 rtl fit");
       panel_right_side->set_anchor(Anchor::RIGHT);
@@ -73,8 +71,8 @@ class WidgetTrack : public Button {
       std::stringstream ss;
       ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
       label_track_length = &panel_right_side->add_child<Label>(ss.str());
-      label_track_length->set_height(TRACK_HEIGHT);
-      label_track_length->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 0.9f);
+      label_track_length->set_height(track_height);
+      label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
       label_track_length->set_resize_to_text_extents(false);
 
       love_icon = &panel_right_side->add_child<Sprite>("love");
@@ -122,15 +120,12 @@ class WidgetTrack : public Button {
       highlighted_old = new_state;
 
       std::string txt;
-      glm::vec3 text_color;
       if (new_state) {
         panel_right_side->set_texture("track_bg_playing", false);
         txt = "track_bg_playing";
-        text_color = glm::vec3{0.55, 0.35, 0.45};
       } else {
         panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
         txt = even ? "track_bg2" : "track_bg1";
-        text_color = glm::vec3{0.50, 0.40, 0.48};
       }
 
       set_texture(txt, false);
@@ -138,10 +133,10 @@ class WidgetTrack : public Button {
       set_texture_hovered(txt);
       set_texture_disabled(txt);
       set_texture_pressed(txt);
-      label_track_number->set_text_color(text_color * 1.2f);
-      label_track_artist->set_text_color(text_color * 0.9f);
-      label_track_title->set_text_color(text_color * 1.5f);
-      label_track_length->set_text_color(text_color * 0.9f);
+      label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
+      label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
+      label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
+      label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
 
       auto& track = db::track_by_id(track_id)->get();
       if (track.is_tombstone()) {
@@ -149,6 +144,11 @@ class WidgetTrack : public Button {
         label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
         label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
+      } else if (new_state) {
+        label_track_number->set_text_color(label_track_number->get_text_color() * 1.5f);
+        label_track_artist->set_text_color(label_track_artist->get_text_color() * 1.5f);
+        label_track_title->set_text_color(label_track_title->get_text_color() * 1.5f);
+        label_track_length->set_text_color(label_track_length->get_text_color() * 1.5f);
       }
     }
 
@@ -175,7 +175,7 @@ class WidgetTrack : public Button {
     Label* label_track_number{};
     Label* label_track_artist{};
     Label* label_track_title{};
-    Panel* panel_right_side{};
+    Sprite* panel_right_side{};
     Label* label_track_length{};
     Sprite* hover{};
     Sprite* love_icon{};

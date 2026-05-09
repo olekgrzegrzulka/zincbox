@@ -1,6 +1,4 @@
 #pragma once
-#include <algorithm>
-#include <cmath>
 #include <glm/common.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -42,24 +40,6 @@ static constexpr Dir opposite_dir(Dir dir) {
   }
   return Dir::NONE;
 }
-
-struct rgba {
-    u8 r{};
-    u8 g{};
-    u8 b{};
-    u8 a{};
-
-    auto operator<=>(const rgba& rhs) const = default;
-};
-
-struct hsva {
-    double h{};
-    double s{};
-    double v{};
-    double a{};
-
-    auto operator<=>(const hsva& rhs) const = default;
-};
 
 using vec2i = glm::vec<2, i32>;
 using vec2f = glm::vec<2, float>;
@@ -134,95 +114,3 @@ enum class BufferMode : i32 {
   BLEND,
   ERASE,
 };
-
-[[maybe_unused]] inline rgba hsva_to_rgba(double h, double s, double v, double a) {
-  double r = 0, g = 0, b = 0;
-
-  if (h >= 360.0) h = 0.0;
-  if (h < 0.0) h = 0.0;
-
-  int i = static_cast<int>(h / 60.0);
-  double f = (h / 60.0) - i;
-  double p = v * (1.0 - s);
-  double q = v * (1.0 - s * f);
-  double t = v * (1.0 - s * (1.0 - f));
-
-  switch (i) {
-  case 0:
-    r = v;
-    g = t;
-    b = p;
-    break;
-  case 1:
-    r = q;
-    g = v;
-    b = p;
-    break;
-  case 2:
-    r = p;
-    g = v;
-    b = t;
-    break;
-  case 3:
-    r = p;
-    g = q;
-    b = v;
-    break;
-  case 4:
-    r = t;
-    g = p;
-    b = v;
-    break;
-  case 5:
-  default:
-    r = v;
-    g = p;
-    b = q;
-    break;
-  }
-
-  return {
-    static_cast<unsigned char>(r * 255.0 + 0.5),
-    static_cast<unsigned char>(g * 255.0 + 0.5),
-    static_cast<unsigned char>(b * 255.0 + 0.5),
-    static_cast<unsigned char>(a * 255.0 + 0.5)};
-}
-
-[[maybe_unused]] inline hsva rgba_to_hsva(rgba color) {
-  double r = color.r / 255.0;
-  double g = color.g / 255.0;
-  double b = color.b / 255.0;
-  double a = color.a / 255.0;
-
-  double max_val = std::max({r, g, b});
-  double min_val = std::min({r, g, b});
-  double delta = max_val - min_val;
-
-  double h = 0.0;
-  double s = 0.0;
-  double v = max_val;
-
-  if (delta > 0.0) {
-    if (max_val == r) {
-      h = 60.0 * (std::fmod(((g - b) / delta), 6.0));
-    } else if (max_val == g) {
-      h = 60.0 * (((b - r) / delta) + 2.0);
-    } else if (max_val == b) {
-      h = 60.0 * (((r - g) / delta) + 4.0);
-    }
-
-    if (h < 0.0) {
-      h += 360.0;
-    }
-  } else {
-    h = 0.0;
-  }
-
-  if (max_val > 0.0) {
-    s = delta / max_val;
-  } else {
-    s = 0.0;
-  }
-
-  return {h, s, v, a};
-}

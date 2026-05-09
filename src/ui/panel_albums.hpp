@@ -5,7 +5,7 @@
 #include <vector>
 #include "common/input.hpp"
 #include "ui_generic/button.hpp"
-#include "ui_generic/panel.hpp"
+#include "ui_generic/sprite.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/text_input.hpp"
 #include "ui_generic/ui.hpp"
@@ -32,7 +32,7 @@ class WidgetAlbumCover : public Button {
     Label* label_title{};
 };
 
-class PanelAlbums : public Panel {
+class PanelAlbums : public Sprite {
   public:
     enum class SortBy {
       NAME_AZ,
@@ -47,7 +47,7 @@ class PanelAlbums : public Panel {
     void clear();
     void recreate(std::optional<size_t> collection_id_, SortBy sort_by_ = SortBy::AUTHOR_AZ);
     void update() override;
-    using Panel::handle_event;
+    using Sprite::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);
@@ -62,7 +62,7 @@ class PanelAlbums : public Panel {
     std::vector<WidgetAlbumCover*> album_widgets;
     ScrollBar* scrollbar{};
 
-    Panel* panel_top{};
+    Sprite* panel_top{};
     Widget* albums_container{};
     TextInput* search_bar{};
     Button* button_clear_search{};

@@ -30,6 +30,6 @@ compile_commands.json
 music.cfg
 musicdb
 atlas.png
-albums.png
 /build
 *.png~
+zincbox

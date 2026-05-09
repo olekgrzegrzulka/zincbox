@@ -52,6 +52,7 @@ void show_add_to_playlist_popup(size_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
+  theme::load_theme("default", *ui.get());
   init_atlas();
 
   popup_controller = &ui->add_widget<PopupController>();
@@ -466,92 +467,6 @@ PopupController* interface::get_popup_controller() { return popup_controller; }
 
 void init_atlas() {
   auto& atlas = ui->get_texture_atlas();
-  // ui
-  atlas.add_texture("button_disabled", "./assets/button_disabled.png");
-  atlas.add_texture("button_hovered", "./assets/button_hovered.png");
-  atlas.add_texture("button_idle", "./assets/button_idle.png");
-  atlas.add_texture("button_pressed", "./assets/button_pressed.png");
-  atlas.add_texture("combo_box_button_contract", "./assets/combo_box_button_contract.png");
-  atlas.add_texture("combo_box_button_expand", "./assets/combo_box_button_expand.png");
-  atlas.add_texture("combo_box", "./assets/combo_box.png");
-  atlas.add_texture("dim", "./assets/dim.png");
-  atlas.add_texture("panel_rectangular_highlighted", "./assets/panel_rectangular_highlighted.png");
-  atlas.add_texture("panel_rectangular", "./assets/panel_rectangular.png");
-  atlas.add_texture("panel_rectangular_dark", "./assets/panel_rectangular_dark.png");
-  atlas.add_texture("panel_rounded_dark", "./assets/panel_rounded_dark.png");
-  atlas.add_texture("panel_rounded_light", "./assets/panel_rounded_light.png");
-  atlas.add_texture("panel_rectangular_light", "./assets/panel_rectangular_light.png");
-  atlas.add_texture("panel_rounded", "./assets/panel_rounded.png");
-  atlas.add_texture("panel_shadow", "./assets/panel_shadow.png");
-  atlas.add_texture("red", "./assets/red.png");
-  atlas.add_texture("selectbar_bg", "./assets/selectbar_bg.png");
-  atlas.add_texture("selectbar_selected", "./assets/selectbar_selected.png");
-  atlas.add_texture("slider_thumb_hovered", "./assets/slider_thumb_hovered.png");
-  atlas.add_texture("slider_thumb_idle", "./assets/slider_thumb_idle.png");
-  atlas.add_texture("slider_thumb_pressed", "./assets/slider_thumb_pressed.png");
-  atlas.add_texture("slider_track", "./assets/slider_track.png");
-  atlas.add_texture("scrollbar_thumb_hovered", "./assets/scrollbar_thumb_hovered.png");
-  atlas.add_texture("scrollbar_thumb_idle", "./assets/scrollbar_thumb_idle.png");
-  atlas.add_texture("scrollbar_thumb_pressed", "./assets/scrollbar_thumb_pressed.png");
-  atlas.add_texture("scrollbar_track", "./assets/scrollbar_track.png");
-  atlas.add_texture("spinner_buttons", "./assets/spinner_buttons.png");
-  atlas.add_texture("text_input_caret", "./assets/text_input_caret.png");
-  atlas.add_texture("text_input_focused", "./assets/text_input_focused.png");
-  atlas.add_texture("text_input_idle", "./assets/text_input_idle.png");
-  atlas.add_texture("splitter", "./assets/splitter.png");
-  // player
-  atlas.add_texture("seekbar_bg", "./assets/seekbar_bg.png");
-  atlas.add_texture("seekbar_progress", "./assets/seekbar_progress.png");
-  atlas.add_texture("seekbar_thumb", "./assets/seekbar_thumb.png");
-  atlas.add_texture("track_bg1", "./assets/track_bg1.png");
-  atlas.add_texture("track_bg2", "./assets/track_bg2.png");
-  atlas.add_texture("track_bg_playing", "./assets/track_bg_playing.png");
-  atlas.add_texture("track_hovered", "./assets/track_hovered.png");
-  atlas.add_texture("playlist_hovered", "./assets/playlist_hovered.png");
-  atlas.add_texture("tab_active_disabled", "./assets/tab_active_disabled.png");
-  atlas.add_texture("tab_active_hovered", "./assets/tab_active_hovered.png");
-  atlas.add_texture("tab_active_idle", "./assets/tab_active_idle.png");
-  atlas.add_texture("tab_active_pressed", "./assets/tab_active_pressed.png");
-  atlas.add_texture("tab_inactive_disabled", "./assets/tab_inactive_disabled.png");
-  atlas.add_texture("tab_inactive_hovered", "./assets/tab_inactive_hovered.png");
-  atlas.add_texture("tab_inactive_idle", "./assets/tab_inactive_idle.png");
-  atlas.add_texture("tab_inactive_pressed", "./assets/tab_inactive_pressed.png");
-  atlas.add_texture("popover_panel", "./assets/popover_panel.png");
-  atlas.add_texture("popover_arrow", "./assets/popover_arrow.png");
-  atlas.add_texture("popover_arrow_inverted", "./assets/popover_arrow_inverted.png");
-  atlas.add_texture("button_add_tab_disabled", "./assets/button_add_tab_disabled.png");
-  atlas.add_texture("button_add_tab_hovered", "./assets/button_add_tab_hovered.png");
-  atlas.add_texture("button_add_tab_idle", "./assets/button_add_tab_idle.png");
-  atlas.add_texture("button_add_tab_pressed", "./assets/button_add_tab_pressed.png");
-  atlas.add_texture("button_popover_disabled", "./assets/button_popover_disabled.png");
-  atlas.add_texture("button_popover_hovered", "./assets/button_popover_hovered.png");
-  atlas.add_texture("button_popover_idle", "./assets/button_popover_idle.png");
-  atlas.add_texture("button_popover_pressed", "./assets/button_popover_pressed.png");
-  // icons
-  atlas.add_texture("left", "./assets/icons/left.png");
-  atlas.add_texture("right", "./assets/icons/right.png");
-  atlas.add_texture("love", "./assets/icons/love.png");
-  atlas.add_texture("play", "./assets/icons/play.png");
-  atlas.add_texture("pause", "./assets/icons/pause.png");
-  atlas.add_texture("stop", "./assets/icons/stop.png");
-  atlas.add_texture("next", "./assets/icons/next.png");
-  atlas.add_texture("prev", "./assets/icons/prev.png");
-  atlas.add_texture("repeat", "./assets/icons/repeat.png");
-  atlas.add_texture("repeat_off", "./assets/icons/repeat_off.png");
-  atlas.add_texture("repeat_album", "./assets/icons/repeat_album.png");
-  atlas.add_texture("repeat_track", "./assets/icons/repeat_track.png");
-  atlas.add_texture("shuffle", "./assets/icons/shuffle.png");
-  atlas.add_texture("shuffle_off", "./assets/icons/shuffle_off.png");
-  atlas.add_texture("settings", "./assets/icons/settings.png");
-  atlas.add_texture("search", "./assets/icons/search.png");
-  atlas.add_texture("clear_search_idle", "./assets/icons/clear_search_idle.png");
-  atlas.add_texture("clear_search_hovered", "./assets/icons/clear_search_hovered.png");
-  atlas.add_texture("clear_search_pressed", "./assets/icons/clear_search_pressed.png");
-  atlas.add_texture("sort_by", "./assets/icons/sort_by.png");
-  atlas.add_texture("group_by", "./assets/icons/group_by.png");
-  atlas.add_texture("button_add_playlist", "./assets/icons/button_add_playlist.png");
-  atlas.add_texture("cover_unknown", "./assets/cover_unknown.png");
-  atlas.set_fallback_texture("cover_unknown");
 
   for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
     add_playlist_art_to_texture_atlas(collection_id);
@@ -686,7 +601,7 @@ void show_add_to_playlist_popup(size_t track_id) {
   };
   auto* popup = popup_controller->create_popup(d);
   auto& playlists_view = popup->content.add_child<PanelAlbums>();
-  playlists_view.set_width(COVER_WIDTH * 6);
+  playlists_view.set_width(theme::playlist_cover_width * 6);
   playlists_view.set_height(std::clamp(ui->get_window_height() - 300, 100, 500));
   popup->set_width(playlists_view.get_width());
   popup->set_height(playlists_view.get_height() + 40);

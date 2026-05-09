@@ -30,10 +30,12 @@ class UI final {
     }
 
     virtual void process_input();
-
     virtual void update(i32 window_width_, i32 window_height_);
-
     virtual void draw();
+
+    void set_font_face_from_data(void* data, size_t data_size, i32 pixel_height) {
+      font_face = FontFace(freetype_lib, data, data_size, pixel_height);
+    }
 
     i32 get_window_width() const { return window_width; }
     i32 get_window_height() const { return window_height; }

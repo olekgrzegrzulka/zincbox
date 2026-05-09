@@ -3,17 +3,16 @@
 #include "common/signal.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/slider.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
 #include "ui_generic/widget.hpp"
 
-class PanelControls : public Panel {
+class PanelControls : public Sprite {
   public:
     PanelControls(UI& ui_);
     ~PanelControls() override;
-    using Panel::handle_event;
+    using Sprite::handle_event;
     void handle_event(Input::InputEventMouseButton&) override;
     void handle_event(Input::InputEventKey&) override;
     void update() override;

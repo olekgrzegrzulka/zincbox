@@ -11,7 +11,6 @@
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/text_input.hpp"
@@ -26,7 +25,7 @@ SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id) : Sprite(ui_) {
 WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) : Button(ui_), playlist_id(playlist_id_) {
 
   set_clip_children(true);
-  set_size(COVER_WIDTH, COVER_HEIGHT);
+  set_size(theme::playlist_cover_width, theme::playlist_cover_height);
   std::stringstream texture_id;
   auto& sprite_cover = add_child<SpriteAlbumCover>(playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist");
   sprite_cover.set_parent_anchor(Anchor::TOP);
@@ -39,11 +38,11 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) 
     label_title->set_text("Add new playlist...");
   }
   label_title->set_resize_to_text_extents(false);
-  label_title->set_width(COVER_WIDTH);
+  label_title->set_width(theme::playlist_cover_width);
   label_title->set_label_anchor(Anchor::TOP_LEFT);
   label_title->set_anchor(Anchor::TOP_LEFT);
   label_title->set_parent_anchor(Anchor::TOP_LEFT);
-  label_title->set_text_color(glm::vec3{0.50, 0.40, 0.48} * 1.65f);
+  label_title->set_text_color(theme::get_prop("playlist_title_text_color").as_rgba());
   label_title->set_y(64 + 8);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
@@ -61,10 +60,10 @@ void WidgetAlbumCover::update() {
 
   hover->set_is_drawn(is_hovered);
 
-  if (is_hovered && label_title->get_text_extents().x > COVER_WIDTH + 8) {
+  if (is_hovered && label_title->get_text_extents().x > theme::playlist_cover_width + 8) {
     label_title->set_x(label_title->get_x() - 1);
     if (label_title->get_x() <= -label_title->get_text_extents().x - 8) {
-      label_title->set_x(COVER_WIDTH + 8);
+      label_title->set_x(theme::playlist_cover_width + 8);
     }
   } else {
     label_title->set_x(0);
@@ -77,7 +76,7 @@ void WidgetAlbumCover::handle_event(Input::InputEventMouseMove& ev) {
   Button::handle_event(ev);
 }
 
-PanelAlbums::PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark, false) {
+PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   set_clip_children(true);
 
   scrollbar = &add_child<ScrollBar>();
@@ -94,10 +93,11 @@ PanelAlbums::PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDar
   albums_container = &add_child<Widget>();
   albums_container->set_pos(0, 4 + 36 + 4);
 
-  panel_top = &add_child<Panel>(PanelStyle::Rounded);
+  panel_top = &add_child<Sprite>("panel_albums_searchbar");
   panel_top->set_pos(4, 4);
   panel_top->set_height(36);
   panel_top->set_layout("m:6 s:6 rtl fill expand");
+  panel_top->set_nine_slice_margin(4);
   panel_top->set_ignore_parents_layout(true);
   button_sort_by = &panel_top->add_child<Button>();
   search_bar = &panel_top->add_child<TextInput>();
@@ -134,9 +134,7 @@ PanelAlbums::PanelAlbums(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDar
 }
 
 void PanelAlbums::draw() {
-  // album_covers_atlas.bind(0);
-  Panel::draw();
-  // ui.get_texture_atlas().bind(0);
+  Sprite::draw();
 }
 
 void PanelAlbums::clear() {
@@ -220,7 +218,7 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_
 
 void PanelAlbums::reflow() {
   i32 albums_area_width = albums_container->get_width();
-  i32 album_covers_in_one_row = albums_area_width / COVER_WIDTH;
+  i32 album_covers_in_one_row = albums_area_width / theme::playlist_cover_width;
 
   if (album_covers_in_one_row <= 0) { return; }
 
@@ -233,12 +231,12 @@ void PanelAlbums::reflow() {
     column += 1;
     if (column >= album_covers_in_one_row) {
       column = 0;
-      cover_y += COVER_HEIGHT;
+      cover_y += theme::playlist_cover_height;
     }
   }
 
   // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) / album_covers_in_one_row;
-  i32 content_size = cover_y + COVER_HEIGHT + (8 + panel_top->get_height());
+  i32 content_size = cover_y + theme::playlist_cover_height + (8 + panel_top->get_height());
   scrollbar->set_content_size(content_size);
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
@@ -262,7 +260,7 @@ void PanelAlbums::update() {
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
-  Panel::update();
+  Sprite::update();
 }
 
 void PanelAlbums::handle_event(Input::InputEventMouseScroll& e) {

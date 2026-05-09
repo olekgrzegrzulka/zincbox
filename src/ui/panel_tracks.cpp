@@ -7,7 +7,7 @@
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/ui.hpp"
 
-PanelTracks::PanelTracks(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark, false) {
+PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   set_clip_children(true);
 
   scrollbar = &add_child<ScrollBar>();
@@ -23,7 +23,7 @@ PanelTracks::PanelTracks(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDar
 }
 
 void PanelTracks::draw() {
-  Panel::draw();
+  Sprite::draw();
 }
 
 void PanelTracks::recreate() {
@@ -67,7 +67,7 @@ void PanelTracks::update() {
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
 
-  Panel::update();
+  Sprite::update();
 }
 
 void PanelTracks::handle_event(Input::InputEventMouseScroll& e) {
@@ -108,7 +108,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
     auto& album = db::playlist_by_id(album_id)->get();
     if (album.is_tombstone()) { continue; }
     album_scroll_px.emplace_back(max_scroll_px, album_id);
-    max_scroll_px += ALBUM_HEIGHT + TRACK_HEIGHT * album.get_tracks_count();
+    max_scroll_px += theme::get_prop("tracklist_playlist_header_height").as_i32() + theme::get_prop("tracklist_track_height").as_i32() * album.get_tracks_count();
   }
 
   scrollbar->set_content_size(max_scroll_px);

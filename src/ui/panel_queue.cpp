@@ -7,7 +7,7 @@
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/ui.hpp"
 
-PanelQueue::PanelQueue(UI& ui_) : Panel(ui_, Panel::PanelStyle::RectangularDark, false) {
+PanelQueue::PanelQueue(UI& ui_) : Sprite(ui_, "panel_queue") {
   set_clip_children(true);
 
   scrollbar = &add_child<ScrollBar>();
@@ -42,7 +42,7 @@ PanelQueue::~PanelQueue() {
 }
 
 void PanelQueue::draw() {
-  Panel::draw();
+  Sprite::draw();
 }
 
 void PanelQueue::on_view_changed() {
@@ -51,9 +51,9 @@ void PanelQueue::on_view_changed() {
     i += 1;
 
     track->set_x(scrollbar->get_width());
-    track->set_y(i * TRACK_HEIGHT - scroll_px);
+    track->set_y(i * theme::get_prop("tracklist_track_height").as_i32() - scroll_px);
     track->set_width(width - scrollbar->get_width());
-    track->set_height(TRACK_HEIGHT);
+    track->set_height(theme::get_prop("tracklist_track_height").as_i32());
   }
 }
 
@@ -76,7 +76,7 @@ void PanelQueue::on_queue_appended_to_back() {
     }
   });
 
-  max_scroll_px = queue_size * TRACK_HEIGHT;
+  max_scroll_px = queue_size * theme::get_prop("tracklist_track_height").as_i32();
   scrollbar->set_content_size(max_scroll_px);
 
   on_view_changed();
@@ -113,7 +113,7 @@ void PanelQueue::on_queue_changed() {
     auto playing_index = player::get_playing_index();
     queue_tracks[queue_i]->set_highlighted(playing_index.has_value() && (size_t)queue_i == playing_index.value());
 
-    max_scroll_px = player::get_playing_queue().size() * TRACK_HEIGHT;
+    max_scroll_px = player::get_playing_queue().size() * theme::get_prop("tracklist_track_height").as_i32();
     scrollbar->set_content_size(max_scroll_px);
   }
 
@@ -136,7 +136,7 @@ void PanelQueue::update() {
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
 
-  Panel::update();
+  Sprite::update();
 }
 
 void PanelQueue::handle_event(Input::InputEventMouseScroll& e) {
