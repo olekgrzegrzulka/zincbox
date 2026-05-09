@@ -1,7 +1,7 @@
 #pragma once
+#include <set>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <variant>
 #include "common/color.hpp"
 #include "common/types.hpp"
@@ -9,7 +9,7 @@
 class UI;
 
 namespace theme {
-  struct theme_prop {
+  struct theme_prop final {
       std::variant<i32, rgba, std::string, double> value;
 
       i32 as_i32(i32 default_value = 0) const {
@@ -37,9 +37,7 @@ namespace theme {
   static constexpr i32 playlist_cover_height = 64 + 32;
 
   theme_prop get_prop(std::string_view prop);
-
-  auto get_themes();
-
-  std::unordered_map<std::string, theme_prop> get_theme_properties(std::string_view name);
+  std::set<std::string> get_themes();
+  void load_default_theme(UI&);
   void load_theme(std::string_view name, UI&);
 } // namespace theme

@@ -1,6 +1,6 @@
 #include <filesystem>
 #include <initializer_list>
-#include <map>
+#include <set>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -17,14 +17,16 @@
 #include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
 
+namespace fs = std::filesystem;
+
 static constexpr u8 resources_zip[] = {
 #embed "resources.zip"
 };
 
-namespace fs = std::filesystem;
-
-std::unordered_map<std::string, theme::theme_prop> properties;
-std::unordered_set<std::string> props_not_found;
+static std::unordered_map<std::string, theme::theme_prop> properties;
+static std::unordered_set<std::string> props_not_found;
+static std::unordered_map<std::string, std::vector<uint8_t>> resources;
+static std::string resources_ttf_path;
 
 theme::theme_prop theme::get_prop(std::string_view prop) {
   if (auto it = properties.find(std::string(prop)); it != properties.end()) {
@@ -37,69 +39,155 @@ theme::theme_prop theme::get_prop(std::string_view prop) {
   return {};
 }
 
-std::unordered_map<std::string, std::vector<uint8_t>> resources;
-std::string resources_ttf_file;
-
 void load_resources() {
   if (!resources.empty()) { return; }
 
   mz_zip_archive zip_archive{};
+  resources.clear();
+  resources_ttf_path.clear();
 
   if (!mz_zip_reader_init_mem(&zip_archive, resources_zip, sizeof(resources_zip), 0)) {
+    debug_error("failed to load resources from memory");
     return;
   }
 
   for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
     mz_zip_archive_file_stat file_stat;
     if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) continue;
-
     if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) continue;
 
     std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
     mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
 
-    if (resources_ttf_file.empty() && std::string(file_stat.m_filename).ends_with(".ttf")) {
-      resources_ttf_file = file_stat.m_filename;
+    if (resources_ttf_path.empty() && std::string(file_stat.m_filename).ends_with(".ttf")) {
+      resources_ttf_path = file_stat.m_filename;
     }
 
     resources[file_stat.m_filename] = std::move(buffer);
   }
-
   mz_zip_reader_end(&zip_archive);
 }
 
-void load_theme_to_atlas(std::string_view location, UI& ui) {
-  namespace fs = std::filesystem;
+std::set<std::string> theme::get_themes() {
+  std::set<std::string> ret;
 
-  if (resources_ttf_file.empty()) {
-    debug_error("no font file found in resources");
-    return;
+  for (const auto& entry : fs::directory_iterator(io::get_themes_path())) {
+    if (fs::is_regular_file(entry.path() / "theme.cfg")) {
+      const std::string name = entry.path().filename().string();
+      ret.insert(name);
+    }
   }
 
-  ui.set_font_face_from_data(resources[resources_ttf_file].data(), resources[resources_ttf_file].size(), 14);
+  return ret;
+}
+
+void theme::load_default_theme(UI& ui) {
+  load_theme("", ui);
+}
+
+void theme::load_theme(std::string_view theme_name, UI& ui) {
+  bool load_theme_from_resources = theme_name == "";
+  if (load_theme_from_resources) { load_resources(); }
+
+  // Check if the theme exists in the themes directory
+  fs::path theme_path(io::get_themes_path() / theme_name);
+  if (!fs::is_directory(theme_path)) {
+    debug_warn("no theme found at ", std::string{theme_path});
+    load_theme_from_resources = true;
+  }
+
+  // Try to load theme.cfg, else fallback to default theme
+  ini::inifile ini;
+  bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
+  if (!success || !ini.contains("theme")) {
+    debug_warn("failed to load theme ", theme_name, ", invalid or missing theme.cfg");
+    load_theme_from_resources = true;
+
+    load_resources();
+    if (!resources.contains("theme.cfg")) {
+      debug_error("theme.cfg not found");
+      return;
+    }
+
+    std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()), resources["theme.cfg"].size());
+    ini.from_string(str_theme_cfg);
+    if (!ini.contains("theme")) {
+      debug_error("failed to parse theme.cfg");
+      return;
+    }
+  }
+
+  // Parse theme.cfg
+  properties.clear();
+  for (const auto& [key, str_value2] : ini["theme"]) {
+    theme::theme_prop prop;
+    std::string str_value = str_value2.as<std::string>();
+    const char* first = str_value.data();
+    const char* last = first + str_value.size();
+
+    if (auto color = color_utils::parse_color(str_value); color.has_value()) {
+      prop.value = color.value();
+    } else {
+      i32 i;
+      auto [ptr_i, ec_i] = std::from_chars(first, last, i);
+      if (ec_i == std::errc{} && ptr_i == last) {
+        prop.value = i;
+      } else {
+        double d;
+        auto [ptr_d, ec_d] = std::from_chars(first, last, d);
+        if (ec_d == std::errc{} && ptr_d == last) {
+          prop.value = d;
+        } else {
+          prop.value = str_value;
+        }
+      }
+    }
+    properties[key] = std::move(prop);
+  }
+
+  // Try to load a font file, else fallback to default theme
+  if (!load_theme_from_resources) {
+    std::string font_path = "";
+    for (auto const& dir_entry : fs::recursive_directory_iterator(theme_path)) {
+      if (dir_entry.is_regular_file() && dir_entry.path().extension() == ".ttf") {
+        font_path = dir_entry.path();
+        break;
+      }
+    }
+    if (font_path != "") {
+      ui.set_font_face(font_path, 14);
+    } else {
+      debug_warn("no ttf file found in ", std::string{theme_name});
+      load_theme_from_resources = true;
+    }
+  }
+  if (load_theme_from_resources) {
+    if (resources_ttf_path.empty()) {
+      debug_error("no ttf file found in default theme");
+      return;
+    }
+    load_resources();
+    ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
+  }
+
   auto& atlas = ui.get_texture_atlas();
 
-  fs::path path{location};
-  if (!fs::is_directory(path)) {
-    debug_warn("no theme found at ", std::string{location});
-  }
-
-  bool theme_loaded = true;
-
-  auto atlas_add_texture = [&path, &atlas, &theme_loaded](std::string id, std::vector<std::string> filenames = {}) -> bool {
+  auto atlas_add_texture = [&load_theme_from_resources, &theme_path, &atlas](std::string id, std::vector<std::string> filenames = {}) -> bool {
     if (filenames.size() == 0) { filenames = {id}; }
-    if (theme_loaded) {
+    if (!load_theme_from_resources) {
       for (std::string filename : filenames) {
-        if (fs::is_regular_file((path / (filename + ".png")))) {
-          atlas.add_texture(id, (path / (filename + ".png")).c_str());
+        if (fs::is_regular_file((theme_path / (filename + ".png")))) {
+          atlas.add_texture(id, (theme_path / (filename + ".png")).c_str());
           return true;
-        } else if (fs::is_regular_file((path / (filename + ".PNG")))) {
-          atlas.add_texture(id, (path / (filename + ".PNG")).c_str());
+        } else if (fs::is_regular_file((theme_path / (filename + ".PNG")))) {
+          atlas.add_texture(id, (theme_path / (filename + ".PNG")).c_str());
           return true;
         }
       }
     }
 
+    debug_warn("theme has no ", filenames[0], ".png, loading from default theme");
+    load_resources();
     for (std::string filename : filenames) {
       auto it = resources.find(filename + ".png");
       if (it == resources.end()) {
@@ -217,75 +305,7 @@ void load_theme_to_atlas(std::string_view location, UI& ui) {
   atlas_add_texture("clear_search_hovered", {"icons/clear_search_hovered"});
   atlas_add_texture("clear_search_pressed", {"icons/clear_search_pressed"});
   atlas_add_texture("sort_by", {"icons/sort_by"});
-  atlas_add_texture("group_by", {"icons/group_by"});
   atlas_add_texture("button_add_playlist", {"icons/button_add_playlist"});
   atlas_add_texture("cover_unknown");
   atlas.set_fallback_texture("cover_unknown");
-}
-
-auto theme::get_themes() {
-  std::map<std::string, fs::path> themes;
-
-  for (const auto& entry : fs::directory_iterator(io::get_themes_path())) {
-    if (fs::is_regular_file(entry.path() / "theme.cfg")) {
-      const std::string name = entry.path().filename().string();
-      themes[name] = entry.path();
-    }
-  }
-
-  return themes;
-}
-std::unordered_map<std::string, theme::theme_prop> theme::get_theme_properties(std::string_view name) {
-  auto path = io::get_themes_path() / name / "theme.cfg";
-  ini::inifile ini;
-  bool success = ini.load(path);
-  if (!success || !ini.contains("theme")) {
-    debug_warn("failed to load theme ", name);
-
-    if (!resources.contains("theme.cfg")) { debug_error("theme.cfg not found"); }
-
-    std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()), resources["theme.cfg"].size());
-    ini.from_string(str_theme_cfg);
-    if (!ini.contains("theme")) {
-      debug_error("failed to parse theme.cfg");
-      return {};
-    }
-  }
-
-  std::unordered_map<std::string, theme_prop> result;
-
-  for (const auto& [key, str_value2] : ini["theme"]) {
-    theme_prop prop;
-    std::string str_value = str_value2.as<std::string>();
-    const char* first = str_value.data();
-    const char* last = first + str_value.size();
-
-    if (auto color = color_utils::parse_color(str_value); color.has_value()) {
-      prop.value = color.value();
-    } else {
-      i32 i;
-      auto [ptr_i, ec_i] = std::from_chars(first, last, i);
-      if (ec_i == std::errc{} && ptr_i == last) {
-        prop.value = i;
-      } else {
-        double d;
-        auto [ptr_d, ec_d] = std::from_chars(first, last, d);
-        if (ec_d == std::errc{} && ptr_d == last) {
-          prop.value = d;
-        } else {
-          prop.value = str_value;
-        }
-      }
-    }
-    result[key] = std::move(prop);
-  }
-
-  return result;
-}
-
-void theme::load_theme(std::string_view name, UI& ui) {
-  load_resources();
-
-  properties = get_theme_properties(name);
-  load_theme_to_atlas((io::get_themes_path() / name).string(), ui);
 }
