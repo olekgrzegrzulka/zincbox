@@ -36,7 +36,11 @@ theme::theme_prop theme::get_prop(std::string_view prop) {
   if (props_not_found.emplace(std::string(prop)).second) {
     debug_warn("theme has no property " + std::string(prop));
   }
-  return {};
+  return theme_prop{std::monostate()};
+}
+
+i32 theme::get_button_nine_slice_margin(std::string_view name) {
+  return get_prop(std::string(name) + "_button_nine_slice_margin").as_i32(get_prop("button_nine_slice_margin").as_i32());
 }
 
 void load_resources() {
@@ -216,7 +220,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     atlas_add_texture("slider_" + name + "_thumb_idle", {"slider_" + name + "_thumb_idle", "slider_" + name + "_thumb", "slider_thumb_idle"});
     atlas_add_texture("slider_" + name + "_thumb_hovered", {"slider_" + name + "_thumb_hovered", "slider_" + name + "_thumb", "slider_thumb_hovered"});
     atlas_add_texture("slider_" + name + "_thumb_pressed", {"slider_" + name + "_thumb_pressed", "slider_" + name + "_thumb", "slider_thumb_pressed"});
-
     atlas_add_texture("slider_" + name + "_track_inactive", {"slider_" + name + "_track_inactive", "slider_" + name + "_track", "slider_track_inactive"});
     atlas_add_texture("slider_" + name + "_track_active", {"slider_" + name + "_track_active", "slider_" + name + "_track", "slider_track_active"});
   };
@@ -243,6 +246,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   atlas_add_texture("slider_track_inactive");
   atlas_add_texture("slider_track_active");
   add_custom_slider("scrollbar");
+  add_custom_slider("volume_bar");
   atlas_add_texture("spinner_buttons");
   atlas_add_texture("text_input_caret");
   atlas_add_texture("text_input_focused");

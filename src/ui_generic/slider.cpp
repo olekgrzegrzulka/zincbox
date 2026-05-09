@@ -13,10 +13,6 @@ Slider::Slider(UI& ui_, SliderOrientation orientation_) : Widget::Widget(ui_),
   orientation = orientation_;
 
   set_size(100, 10);
-  track.set_nine_slice_margin(6.0f);
-  track_active.set_nine_slice_margin(6.0f);
-  thumb.set_nine_slice_margin(6.0f);
-
   set_texture_thumb_pressed("slider_thumb_pressed");
   set_texture_thumb_hovered("slider_thumb_hovered");
   set_texture_thumb_idle("slider_thumb_idle");
@@ -28,6 +24,10 @@ void Slider::update() {
   using enum Anchor;
   using enum Input::MouseButton;
   using enum SliderOrientation;
+
+  track.set_nine_slice_margin(track_nine_slice_margin);
+  track_active.set_nine_slice_margin(track_nine_slice_margin);
+  thumb.set_nine_slice_margin(thumb_nine_slice_margin);
 
   track.set_uv_start(uv_start_track_inactive);
   track.set_uv_end(uv_end_track_inactive);
@@ -69,8 +69,29 @@ void Slider::update() {
   bool lmb_pressed = Input::mouse_pressed(MOUSE_BUTTON_LEFT);
   bool lmb_just_pressed = Input::mouse_just_pressed(MOUSE_BUTTON_LEFT);
   bool lmb_just_released = Input::mouse_just_released(MOUSE_BUTTON_LEFT);
-  bool mouse_on_thumb = thumb.is_mouse_hovering();
-  bool mouse_on_track = track.is_mouse_hovering();
+  i32 mouse_x = Input::get_mouse_x();
+  i32 mouse_y = Input::get_mouse_y();
+  bool mouse_on_thumb = false;
+  bool mouse_on_track = false;
+  if (orientation == HORIZONTAL) {
+    mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x &&
+                      mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
+                      mouse_y >= thumb.get_position(TOP_LEFT).y - drag_area_inflation &&
+                      mouse_y <= thumb.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
+    mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x &&
+                      mouse_x <= track.get_position(BOTTOM_RIGHT).x &&
+                      mouse_y >= track.get_position(TOP_LEFT).y - drag_area_inflation &&
+                      mouse_y <= track.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
+  } else {
+    mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x - drag_area_inflation &&
+                      mouse_x <= thumb.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
+                      mouse_y >= thumb.get_position(TOP_LEFT).y &&
+                      mouse_y <= thumb.get_position(BOTTOM_RIGHT).y);
+    mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x - drag_area_inflation &&
+                      mouse_x <= track.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
+                      mouse_y >= track.get_position(TOP_LEFT).y &&
+                      mouse_y <= track.get_position(BOTTOM_RIGHT).y);
+  }
 
   if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
     if (orientation == HORIZONTAL && width != 0) {

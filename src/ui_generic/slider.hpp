@@ -28,6 +28,7 @@ class Slider : public Widget {
     i32 track_thickness = 10;
     i32 thumb_length = 10;
     i32 thumb_thickness = 10;
+    i32 drag_area_inflation = 0;
 
     float value = 0.0f;
     float old_value = 0.0f;
@@ -85,6 +86,8 @@ class Slider : public Widget {
     WIDGET_DEF_GETTER(value)
     WIDGET_DEF_GETTER(min_value)
     WIDGET_DEF_GETTER(max_value)
+    WIDGET_DEF_SETTER(drag_area_inflation)
+    WIDGET_DEF_GETTER(drag_area_inflation)
 
     void set_value(float new_value, bool signal = true) {
       value = new_value;
@@ -106,4 +109,9 @@ class Slider : public Widget {
     void set_texture_thumb_idle(const std::string& id);
     void set_texture_track_inactive(const std::string& id);
     void set_texture_track_active(const std::string& id);
+
+    float track_nine_slice_margin = 6.0f;
+    float thumb_nine_slice_margin = 6.0f;
+    WIDGET_DEF_SETTER_DIRTY(track_nine_slice_margin)
+    WIDGET_DEF_SETTER_DIRTY(thumb_nine_slice_margin)
 };
