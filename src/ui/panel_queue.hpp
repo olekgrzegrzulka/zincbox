@@ -6,12 +6,12 @@
 #include "common/input.hpp"
 #include "common/signal.hpp"
 #include "common/types.hpp"
-#include "ui_generic/panel.hpp"
+#include "ui_generic/sprite.hpp"
 
 class ScrollBar;
 class WidgetTrack;
 
-class PanelQueue : public Panel {
+class PanelQueue : public Sprite {
   public:
     PanelQueue(UI& ui_);
     ~PanelQueue() override;
@@ -22,7 +22,7 @@ class PanelQueue : public Panel {
     void on_queue_changed();
     void on_queue_changed_at(size_t);
     void update() override;
-    using Panel::handle_event;
+    using Sprite::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
     void clear();
 

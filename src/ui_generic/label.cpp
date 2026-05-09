@@ -3,8 +3,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
-#include "core/utf.hpp"
 #include "opengl_includes.hpp"
+#include "ui/theme.hpp" // FIXME ui_generic should not depend on ui/theme.hpp
 #include "ui_generic/font_face.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/shader.hpp"
@@ -13,17 +13,17 @@
 #include "ui_generic/widget.hpp"
 
 Label::Label(UI& ui_) : Widget::Widget(ui_) {
-  set_text_color({1.0, 0.85, 0.95});
+  set_text_color(theme::get_prop("text_color").as_rgba());
 }
 
 Label::Label(UI& ui_, std::string_view text_) : Widget::Widget(ui_) {
-  set_text_color({1.0, 0.85, 0.95});
+  set_text_color(theme::get_prop("text_color").as_rgba());
   set_text(text_);
   update_mesh();
 }
 
 Label::Label(UI& ui_, std::u32string_view text_) : Widget::Widget(ui_) {
-  set_text_color({1.0, 0.85, 0.95});
+  set_text_color(theme::get_prop("text_color").as_rgba());
   set_text(text_);
   update_mesh();
 }

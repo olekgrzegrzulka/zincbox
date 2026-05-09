@@ -3,6 +3,7 @@
 #include <string>
 #include "label.hpp"
 #include "sprite.hpp"
+#include "ui/theme.hpp" // FIXME ui_generic should not depend on ui/theme.hpp
 #include "widget.hpp"
 
 class UI;
@@ -60,7 +61,7 @@ class Button : public Sprite {
       set_nine_slice_margin(3.0f);
       set_nine_slice_scale(1.0f);
 
-      get_label().set_text_color({1.0, 0.85, 0.95});
+      get_label().set_text_color(theme::get_prop("text_color").as_rgba());
 
       set_sprite_idle();
     }
@@ -192,16 +193,16 @@ class Button : public Sprite {
     void on_state_changed(ButtonState /* prev_state */) {
       if (state == ButtonState::HOVERED) {
         set_sprite_hovered();
-        get_label().set_text_color({1.0, 0.85, 0.95});
+        get_label().set_text_color(theme::get_prop("text_color").as_rgba());
       } else if (state == ButtonState::IDLE) {
         set_sprite_idle();
-        get_label().set_text_color({1.0, 0.85, 0.95});
+        get_label().set_text_color(theme::get_prop("text_color").as_rgba());
       } else if (state == ButtonState::PRESSED) {
         set_sprite_pressed();
-        get_label().set_text_color({1.0, 0.85, 0.95});
+        get_label().set_text_color(theme::get_prop("text_color").as_rgba());
       } else if (state == ButtonState::DISABLED) {
         set_sprite_disabled();
-        get_label().set_text_color({0.60, 0.51, 0.57});
+        get_label().set_text_color(theme::get_prop("text_color_disabled").as_rgba());
       }
     }
 

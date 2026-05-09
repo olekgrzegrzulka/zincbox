@@ -6,7 +6,6 @@
 #include "common/input.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -116,9 +115,9 @@ class Tab : public Button {
     bool just_added = true;
 };
 
-class TabBar : public Panel {
+class TabBar : public Sprite {
   public:
-    TabBar(UI& ui_) : Panel(ui_) {
+    TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
       set_height(32);
       set_layout("fit");
       tab_container = &add_child<Widget>();
@@ -256,7 +255,7 @@ class TabBar : public Panel {
 
       tab_container->set_width(tab_x);
       button_add->set_x(tab_x + 4);
-      Panel::update();
+      Sprite::update();
     }
 
     void update_tab_textures(i32 id) {

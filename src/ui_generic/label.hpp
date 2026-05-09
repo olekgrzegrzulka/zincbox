@@ -51,6 +51,10 @@ class Label final : public Widget {
       return text_color;
     }
 
+    void set_text_color(rgba text_color_) {
+      set_text_color(glm::vec3{text_color_.r / 255.0, text_color_.g / 255.0, text_color_.b / 255.0});
+    }
+
     void set_text_color(glm::vec3 text_color_) {
       if (text_color == text_color_) { return; }
       text_color = text_color_;

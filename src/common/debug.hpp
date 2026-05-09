@@ -7,7 +7,8 @@
 #include <vector>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include "common/types.hpp"
+#include "color.hpp"
+#include "types.hpp"
 
 #ifdef NDEBUG
 
@@ -43,6 +44,10 @@ static void print_(glm::vec<4, T> vec4) {
 
 [[maybe_unused]] static void print_(rgba c) {
   std::cout << "rgba(" << (i32)c.r << ", " << (i32)c.g << ", " << (i32)c.b << ", " << (i32)c.a << ")";
+}
+
+[[maybe_unused]] static void print_(hsva c) {
+  std::cout << "hsva(" << (i32)c.h << "°, " << (i32)c.s << ", " << (i32)c.v << ", " << (i32)c.a << ")";
 }
 
 [[maybe_unused]] static void print_(rect2i r) {

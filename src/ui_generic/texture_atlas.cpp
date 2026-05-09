@@ -26,9 +26,7 @@ bool TextureAtlas::add_texture(std::string id, std::string path) {
   i32 width, height, channels;
   stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-  if (!data) {
-    debug_error("failed to load texture" + path);
-  }
+  if (!data) { debug_error("failed to load texture " + path); }
 
   auto at = paste_texture(data, width, height);
 
@@ -66,6 +64,30 @@ bool TextureAtlas::add_texture(std::string id, const std::vector<u8>& data_, i32
   return true;
 }
 
+bool TextureAtlas::add_texture(std::string id, const u8* data_, i32 width, i32 height) {
+  if (textures.contains(id)) { return false; }
+  stbi_uc* data = (stbi_uc*)data_;
+  if (!data) {
+    debug_warn("failed to load texture from data");
+    return false;
+  }
+
+  auto at = paste_texture(data, width, height);
+
+  TextureAtlasData uv;
+  uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
+  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.width = width;
+  uv.height = height;
+  textures[id] = uv;
+
+  return true;
+}
+
+void TextureAtlas::add_texture_alias(std::string id, std::string to) {
+  aliases[id] = to;
+}
+
 void TextureAtlas::save_to_file(std::string filename) {
   if (!filename.ends_with(".png")) { filename += ".png"; }
   auto data_copy = image.data();
@@ -82,10 +104,19 @@ void TextureAtlas::save_to_file(std::string filename) {
   th.detach();
 }
 
-std::optional<std::reference_wrapper<TextureAtlasData>> TextureAtlas::get(std::string id) {
-  auto it = textures.find(id);
-  if (it != textures.end()) {
+std::optional<std::reference_wrapper<TextureAtlasData>> TextureAtlas::get_internal(std::string id, i32 max_depth) {
+  if (max_depth <= 0) {
+    if (fallback_texture.has_value()) {
+      return get(fallback_texture.value());
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  if (auto it = textures.find(id); it != textures.end()) {
     return it->second;
+  } else if (auto aliases_it = aliases.find(id); aliases_it != aliases.end()) {
+    return get_internal(aliases_it->second, max_depth - 1);
   } else if (fallback_texture.has_value()) {
     return get(fallback_texture.value());
   } else {

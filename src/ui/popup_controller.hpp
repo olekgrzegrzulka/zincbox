@@ -9,7 +9,6 @@
 #include "common/input.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -31,9 +30,9 @@ struct popover_descriptor {
     bool show_arrow = true;
 };
 
-class Popup : public Panel {
+class Popup : public Sprite {
   public:
-    Popup(UI& ui_) : Panel(ui_, Panel::PanelStyle::Rectangular, true),
+    Popup(UI& ui_) : Sprite(ui_, "panel_popup"),
                      title(add_child<Label>()), content(add_child<Widget>()) {
       set_is_drawn_on_top(true);
       set_nine_slice_margin(8.0f);

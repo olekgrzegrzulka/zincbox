@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(music VERSION 0.0.0 LANGUAGES CXX C)
+project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
 
 # GLFW
 set(GLFW_STANDALONE ON CACHE BOOL "" FORCE)
@@ -55,10 +55,22 @@ include_directories(SYSTEM
 )
 
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(OUTPUT_NAME "${PROJECT_NAME}")
+
+message(STATUS "------------------------------------------------")
+message(STATUS " Project Name:    ${PROJECT_NAME}")
+message(STATUS " C++ Standard:    ${CMAKE_CXX_STANDARD}")
+message(STATUS " Compiler ID:     ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS " Compiler Path:   ${CMAKE_CXX_COMPILER}")
+message(STATUS " Build Type:      ${CMAKE_BUILD_TYPE}")
+message(STATUS " ASAN Enabled:    ${ENABLE_ASAN}")
+if(MY_FLAGS)
+  message(STATUS " Extra Flags:     ${MY_FLAGS}")
+endif()
+message(STATUS "------------------------------------------------")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 add_subdirectory(lib/freetype SYSTEM)
@@ -76,6 +88,7 @@ add_subdirectory(lib/taglib SYSTEM)
 add_subdirectory(lib/glm SYSTEM)
 add_subdirectory(lib/stb_image SYSTEM)
 add_subdirectory(lib/glad SYSTEM)
+add_subdirectory(lib/miniz SYSTEM)
 
 # add_subdirectory(lib/miniaudio SYSTEM)
 
@@ -88,6 +101,7 @@ set(SOURCES
     ./src/core/musicdb.cpp
     ./src/core/player.cpp
     ./src/core/mpris.cpp
+    ./src/core/io.cpp
     ./src/ui_generic/texture.cpp
     ./src/ui_generic/texture_atlas.cpp
     ./src/ui_generic/shader.cpp
@@ -107,6 +121,7 @@ set(SOURCES
     ./src/ui/panel_tracks.cpp
     ./src/ui/panel_queue.cpp
     ./src/ui/panel_top.cpp
+    ./src/ui/theme.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
@@ -170,4 +185,5 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
 target_link_libraries(${PROJECT_NAME} PRIVATE glad)
+target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

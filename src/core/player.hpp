@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <vector>
 #include "common/signal.hpp"
 #include "common/types.hpp"

@@ -7,11 +7,11 @@
 #include "widget.hpp"
 
 ScrollBar::ScrollBar(UI& ui_, SliderOrientation o) : Slider(ui_, o) {
-  set_texture_track("scrollbar_track");
-  set_texture_thumb_pressed("scrollbar_thumb_pressed");
-  set_texture_thumb_hovered("scrollbar_thumb_hovered");
-  set_texture_thumb_idle("scrollbar_thumb_idle");
-  set_texture_track("scrollbar_track");
+  set_texture_track_inactive("slider_scrollbar_track_inactive");
+  set_texture_track_active("slider_scrollbar_track_active");
+  set_texture_thumb_pressed("slider_scrollbar_thumb_pressed");
+  set_texture_thumb_hovered("slider_scrollbar_thumb_hovered");
+  set_texture_thumb_idle("slider_scrollbar_thumb_idle");
 }
 
 void ScrollBar::update() {

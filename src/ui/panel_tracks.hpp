@@ -6,12 +6,12 @@
 #include <glm/common.hpp>
 #include "common/input.hpp"
 #include "common/types.hpp"
-#include "ui_generic/panel.hpp"
+#include "ui_generic/sprite.hpp"
 
 class ScrollBar;
 class WidgetAlbum;
 
-class PanelTracks : public Panel {
+class PanelTracks : public Sprite {
   public:
     enum class ViewType {
       NONE,
@@ -25,7 +25,7 @@ class PanelTracks : public Panel {
     void scroll_to_playlist(size_t playlist_id);
     void scroll_to_now_playing_album();
     void update() override;
-    using Panel::handle_event;
+    using Sprite::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
     void clear();
     float get_scroll_px() const;

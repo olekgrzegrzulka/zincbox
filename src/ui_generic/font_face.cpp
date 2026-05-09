@@ -39,6 +39,31 @@ FontFace::FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height)
 
   // save_glyph_texture_to_file("./assets/glyphs.png");
 }
+
+FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height) {
+  if (FT_New_Memory_Face(freetype_lib, static_cast<const FT_Byte*>(data), data_size, 0, &freetype_face)) {
+    debug_error("failed to load font");
+    return;
+  }
+
+  bool success = (try_creating_glyph_data(256, pixel_height) ||
+                  try_creating_glyph_data(512, pixel_height) ||
+                  try_creating_glyph_data(1024, pixel_height));
+
+  if (FT_Done_Face(freetype_face) || !success) {
+    debug_error("failed to create font texture atlas of font");
+    return;
+  }
+  glCreateSamplers(1, &sampler);
+  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  // save_glyph_texture_to_file("./assets/glyphs.png");
+}
+
+
 /*
   [[maybe_unused]] void save_glyph_texture_to_file(const char* filename) const {
     if (texture == 0) { return; }

@@ -3,11 +3,10 @@
 #include "core/musicdb.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui_generic/button.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
-PanelTop::PanelTop(UI& ui_) : Panel(ui_) {
+PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   set_height(32);
 
   tab_bar = &add_child<TabBar>();
@@ -80,7 +79,7 @@ void PanelTop::update() {
     ui.mark_dirty_recursive(this);
   }
 
-  Panel::update();
+  Sprite::update();
 }
 
 void PanelTop::recreate(std::optional<size_t> selected_collection_id) {

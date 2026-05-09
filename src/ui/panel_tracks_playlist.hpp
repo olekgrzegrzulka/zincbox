@@ -3,7 +3,6 @@
 #include "core/player.hpp"
 #include "panel_tracks_track.hpp"
 #include "theme.hpp"
-#include "ui_generic/panel.hpp"
 #include "ui_generic/ui.hpp"
 
 class WidgetAlbum : public Widget {
@@ -18,23 +17,24 @@ class WidgetAlbum : public Widget {
 
       set_layout("ttb m:0 s:0 fit expand");
 
-      auto& album_title_holder = add_child<Widget>();
-      album_title_holder.set_height(ALBUM_HEIGHT);
-      album_title_holder.set_layout("m:0 s:0 fit fill");
+      auto& header_container = add_child<Widget>();
+      header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
+      header_container.set_layout("m:0 s:0 fit fill");
 
-      auto& album_title_panel = album_title_holder.add_child<Panel>(Panel::PanelStyle::Rounded, false);
-      album_title_panel.set_anchor(Anchor::CENTER);
-      album_title_panel.set_parent_anchor(Anchor::CENTER);
-      album_title_panel.set_height(ALBUM_HEIGHT - 20);
-      album_title_panel.set_y(6);
+      auto& header = header_container.add_child<Sprite>("panel_playlist_header");
+      header.set_anchor(Anchor::CENTER);
+      header.set_parent_anchor(Anchor::CENTER);
+      header.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() - 20);
+      header.set_nine_slice_margin(4);
+      header.set_y(6);
 
-      auto& s = album_title_panel.add_child<Label>();
+      auto& s = header.add_child<Label>();
       s.set_text(playlist.name);
-      s.set_text_color({1.0, 0.85, 0.95});
+      s.set_text_color(theme::get_prop("tracklist_header_text_color").as_rgba());
       s.set_anchor(Anchor::CENTER);
       s.set_parent_anchor(Anchor::CENTER);
       s.set_label_anchor(Anchor::CENTER);
-      s.set_height(ALBUM_HEIGHT);
+      s.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
 
       bool even = true;
       size_t playlist_track_index = 0;

@@ -5,7 +5,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
-#include "font_face.hpp"
 #include "freetype/freetype.h"
 #include "label.hpp"
 #include "opengl_includes.hpp"
@@ -25,7 +24,8 @@ UI::UI(i32 window_width_, i32 window_height_)
   matrix = glm::mat4{1.0};
   matrix = glm::scale(matrix, glm::vec3(1.0f, -1.0f, 1.0f));
 
-  font_face = FontFace(freetype_lib, "./assets/Arimo/Arimo-VariableFont_wght.ttf", 15);
+  // font_face = FontFace(freetype_lib, "./assets/Arimo/Arimo-VariableFont_wght.ttf", 14);
+  // font_face = FontFace(freetype_lib, "./assets/arial/ARIAL.TTF", 15);
 }
 
 void UI::process_input() {

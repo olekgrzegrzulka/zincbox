@@ -20,6 +20,7 @@ enum class ThumbConstraint {
 class Slider : public Widget {
   protected:
     Sprite& track;
+    Sprite& track_active;
     Sprite& thumb;
 
     ThumbConstraint thumb_constraint = ThumbConstraint::INSIDE_TRACK;
@@ -41,14 +42,16 @@ class Slider : public Widget {
     i32 drag_start_thumb_pos = 0;
     float drag_start_value = 0.0;
 
-    vec2f uv_start_thumb_pressed{};
-    vec2f uv_start_thumb_hovered{};
     vec2f uv_start_thumb_idle{};
-    vec2f uv_start_track{};
-    vec2f uv_end_thumb_pressed{};
-    vec2f uv_end_thumb_hovered{};
     vec2f uv_end_thumb_idle{};
-    vec2f uv_end_track{};
+    vec2f uv_start_thumb_hovered{};
+    vec2f uv_end_thumb_hovered{};
+    vec2f uv_start_thumb_pressed{};
+    vec2f uv_end_thumb_pressed{};
+    vec2f uv_start_track_inactive{};
+    vec2f uv_end_track_inactive{};
+    vec2f uv_start_track_active{};
+    vec2f uv_end_track_active{};
 
   public:
     Slider(UI& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
@@ -101,5 +104,6 @@ class Slider : public Widget {
     void set_texture_thumb_pressed(const std::string& id);
     void set_texture_thumb_hovered(const std::string& id);
     void set_texture_thumb_idle(const std::string& id);
-    void set_texture_track(const std::string& id);
+    void set_texture_track_inactive(const std::string& id);
+    void set_texture_track_active(const std::string& id);
 };

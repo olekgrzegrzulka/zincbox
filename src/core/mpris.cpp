@@ -18,8 +18,8 @@ static std::string title;
 static std::string artist;
 static std::string album;
 
-static const char* const player_name = "Player name goes here";
-static const char* const player_id = "org.mpris.MediaPlayer2.player_name_goes_here";
+static const char* const player_name = "zincbox";
+static const char* const player_id = "org.mpris.MediaPlayer2.zincbox";
 
 void mpris::init() {
   auto thread = std::thread([]() {
