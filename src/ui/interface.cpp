@@ -29,8 +29,6 @@
 #include "ui_generic/widget.hpp"
 #include "lib/nativefiledialog-extended/src/include/nfd.hpp"
 
-// namespace fs = std::filesystem;
-
 static std::optional<size_t> active_collection_id;
 static std::vector<float> tracks_scroll_positions;
 static std::vector<float> playlists_scroll_positions;
@@ -44,11 +42,11 @@ static PanelAlbums* panel_albums{};
 static PanelControls* panel_controls{};
 static Splitter* splitter{};
 
-void init_atlas();
-void add_playlist_art_to_texture_atlas(size_t collection_id);
-void handle_dropped_files();
-void delete_collection(size_t);
-void show_add_to_playlist_popup(size_t);
+static void init_atlas();
+static void add_playlist_art_to_texture_atlas(size_t collection_id);
+static void handle_dropped_files();
+static void delete_collection(size_t);
+static void show_add_to_playlist_popup(size_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -465,7 +463,7 @@ void interface::deinit() {
 
 PopupController* interface::get_popup_controller() { return popup_controller; }
 
-void init_atlas() {
+static void init_atlas() {
   auto& atlas = ui->get_texture_atlas();
 
   for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
@@ -475,7 +473,7 @@ void init_atlas() {
   atlas.save_to_file("atlas.png");
 }
 
-void add_playlist_art_to_texture_atlas(size_t collection_id) {
+static void add_playlist_art_to_texture_atlas(size_t collection_id) {
   i32 count = 0;
   if (!db::collection_by_id(collection_id).has_value()) {
     debug_warn("add_playlist_art_to_texture_atlas(): bad collection_id");
@@ -488,7 +486,7 @@ void add_playlist_art_to_texture_atlas(size_t collection_id) {
   }
 }
 
-void create_collection(std::vector<std::string> directories) {
+static void create_collection(std::vector<std::string> directories) {
   if (directories.size() == 0) { return; }
   std::string collection_name = fs::path{directories[0]}.filename().string();
   auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
@@ -500,7 +498,7 @@ void create_collection(std::vector<std::string> directories) {
   panel_top->recreate(active_collection_id);
 }
 
-void create_multiple_collections(std::vector<std::string> directories) {
+static void create_multiple_collections(std::vector<std::string> directories) {
   for (auto& str : directories) {
     fs::path path = str;
     std::string collection_name = path.filename().string();
@@ -511,7 +509,7 @@ void create_multiple_collections(std::vector<std::string> directories) {
   panel_top->recreate(active_collection_id);
 }
 
-void handle_dropped_files() {
+static void handle_dropped_files() {
   std::vector<std::string> dropped_directories{};
   for (auto& path : Input::get_dropped_paths()) {
     if (std::filesystem::is_directory(path)) {
@@ -572,7 +570,7 @@ void handle_dropped_files() {
   }
 }
 
-void delete_collection(size_t collection_id) {
+static void delete_collection(size_t collection_id) {
   db::mark_collection_as_tombstone(collection_id);
 
   if (db::collection_by_id(*active_collection_id)->get().is_tombstone() || !active_collection_id.has_value()) {
@@ -589,7 +587,7 @@ void delete_collection(size_t collection_id) {
   }
 }
 
-void show_add_to_playlist_popup(size_t track_id) {
+static void show_add_to_playlist_popup(size_t track_id) {
   auto& track = db::track_by_id(track_id)->get();
   std::u32string pretty_track = track.artist + U" - " + track.title;
   popup_descriptor d{
