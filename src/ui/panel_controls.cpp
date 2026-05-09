@@ -25,7 +25,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_prev->set_texture_idle("button_prev_idle");
   button_prev->set_texture_pressed("button_prev_pressed");
   button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32());
-  button_prev->set_nine_slice_margin(theme::get_prop("prev_button_nine_slice_margin").as_i32(0));
+  button_prev->set_nine_slice_margin(theme::get_button_nine_slice_margin("prev"));
   auto& button_prev_img = button_prev->add_child<Sprite>("prev");
   button_prev_img.set_anchor(Anchor::CENTER);
   button_prev_img.set_parent_anchor(Anchor::CENTER);
@@ -36,7 +36,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_play_pause->set_texture_idle("button_play_pause_idle");
   button_play_pause->set_texture_pressed("button_play_pause_pressed");
   button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32());
-  button_play_pause->set_nine_slice_margin(theme::get_prop("play_pause_button_nine_slice_margin").as_i32(0));
+  button_play_pause->set_nine_slice_margin(theme::get_button_nine_slice_margin("play_pause"));
   button_play_pause_img = &button_play_pause->add_child<Sprite>("play");
   button_play_pause_img->set_anchor(Anchor::CENTER);
   button_play_pause_img->set_parent_anchor(Anchor::CENTER);
@@ -47,7 +47,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_stop->set_texture_idle("button_stop_idle");
   button_stop->set_texture_pressed("button_stop_pressed");
   button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32());
-  button_stop->set_nine_slice_margin(theme::get_prop("stop_button_nine_slice_margin").as_i32(0));
+  button_stop->set_nine_slice_margin(theme::get_button_nine_slice_margin("stop"));
   auto& button_stop_img = button_stop->add_child<Sprite>("stop");
   button_stop_img.set_anchor(Anchor::CENTER);
   button_stop_img.set_parent_anchor(Anchor::CENTER);
@@ -58,7 +58,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_next->set_texture_idle("button_next_idle");
   button_next->set_texture_pressed("button_next_pressed");
   button_next->set_max_width(theme::get_prop("next_button_width").as_i32());
-  button_next->set_nine_slice_margin(theme::get_prop("next_button_nine_slice_margin").as_i32(0));
+  button_next->set_nine_slice_margin(theme::get_button_nine_slice_margin("next"));
   auto& button_next_img = button_next->add_child<Sprite>("next");
   button_next_img.set_anchor(Anchor::CENTER);
   button_next_img.set_parent_anchor(Anchor::CENTER);
@@ -77,7 +77,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_repeat->set_texture_idle("button_repeat_idle");
   button_repeat->set_texture_pressed("button_repeat_pressed");
   button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32());
-  button_repeat->set_nine_slice_margin(theme::get_prop("repeat_button_nine_slice_margin").as_i32(0));
+  button_repeat->set_nine_slice_margin(theme::get_button_nine_slice_margin("repeat"));
   auto& button_repeat_img = button_repeat->add_child<Sprite>("repeat");
   auto r = player::get_repeat_mode();
   if (r == player::RepeatMode::OFF) {
@@ -97,7 +97,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_shuffle->set_texture_idle("button_shuffle_idle");
   button_shuffle->set_texture_pressed("button_shuffle_pressed");
   button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32());
-  button_shuffle->set_nine_slice_margin(theme::get_prop("shuffle_button_nine_slice_margin").as_i32(0));
+  button_shuffle->set_nine_slice_margin(theme::get_button_nine_slice_margin("shuffle"));
   auto& button_shuffle_img = button_shuffle->add_child<Sprite>("shuffle");
   auto s = player::get_shuffle_mode();
   if (s == player::ShuffleMode::OFF) {
@@ -110,10 +110,22 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_shuffle_tooltip = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
   volume_bar = &panel_right.add_child<Slider>();
-  volume_bar->set_max_width(70);
-  volume_bar->set_track_thickness(12);
-  volume_bar->set_thumb_thickness(12);
-  volume_bar->set_thumb_length(12);
+  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200));
+  volume_bar->set_texture_thumb_pressed("slider_volume_bar_thumb_pressed");
+  volume_bar->set_texture_thumb_hovered("slider_volume_bar_thumb_hovered");
+  volume_bar->set_texture_thumb_idle("slider_volume_bar_thumb_idle");
+  volume_bar->set_texture_track_inactive("slider_volume_bar_track_inactive");
+  volume_bar->set_texture_track_active("slider_volume_bar_track_active");
+  volume_bar->set_track_nine_slice_margin(theme::get_prop("volume_bar_track_nine_slice_margin").as_i32(6.0));
+  volume_bar->set_thumb_nine_slice_margin(theme::get_prop("volume_bar_thumb_nine_slice_margin").as_i32(6.0));
+  i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50);
+  i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50);
+  i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50);
+  volume_bar->set_track_thickness(vol_track_height);
+  volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
+  volume_bar->set_thumb_thickness(vol_thumb_height);
+  volume_bar->set_thumb_length(vol_thumb_width);
+  volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
   volume_bar->set_min_value(0.0f);
   volume_bar->set_max_value(1.0f);
   volume_bar->on_value_changed([](float, float volume) {
@@ -137,13 +149,16 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   seekbar->set_texture_thumb_idle("slider_seekbar_thumb_idle");
   seekbar->set_texture_track_inactive("slider_seekbar_track_inactive");
   seekbar->set_texture_track_active("slider_seekbar_track_active");
+  seekbar->set_track_nine_slice_margin(theme::get_prop("seekbar_track_nine_slice_margin").as_i32(6.0));
+  seekbar->set_thumb_nine_slice_margin(theme::get_prop("seekbar_thumb_nine_slice_margin").as_i32(6.0));
 
-  i32 track_thickness = std::clamp(theme::get_prop("seekbar_track_thickness").as_i32(12), 1, 50);
-  i32 thumb_length = std::clamp(theme::get_prop("seekbar_thumb_length").as_i32(12), 1, 50);
-  i32 thumb_thickness = std::clamp(theme::get_prop("seekbar_thumb_thickness").as_i32(12), 1, 50);
-  seekbar->set_track_thickness(track_thickness);
-  seekbar->set_thumb_thickness(thumb_thickness);
-  seekbar->set_thumb_length(thumb_length);
+  i32 track_height = std::clamp(theme::get_prop("seekbar_track_height").as_i32(12), 1, 50);
+  i32 thumb_width = std::clamp(theme::get_prop("seekbar_thumb_width").as_i32(12), 1, 50);
+  i32 thumb_height = std::clamp(theme::get_prop("seekbar_thumb_height").as_i32(12), 1, 50);
+  seekbar->set_track_thickness(track_height);
+  seekbar->set_drag_area_inflation(std::max(16 - track_height, 0));
+  seekbar->set_thumb_thickness(thumb_height);
+  seekbar->set_thumb_length(thumb_width);
   seekbar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
 
   label_track = &panel_middle.add_child<Label>();
