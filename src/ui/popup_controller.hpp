@@ -13,12 +13,14 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
+class Popup;
+
 struct popup_descriptor {
     std::string id;
     std::u32string_view title;
     std::optional<std::u32string_view> content;
     std::vector<std::u32string> button_labels;
-    std::vector<std::function<void()>> button_actions;
+    std::vector<std::function<void(Popup*)>> button_actions;
 };
 
 struct popover_descriptor {
@@ -38,16 +40,18 @@ class Popup : public Sprite {
       set_nine_slice_margin(8.0f);
       set_parent_anchor(Anchor::CENTER);
       set_anchor(Anchor::CENTER);
-      set_layout("ttb expand fit m:15 s:15");
+      set_layout("ttb expand fit m:12 s:12");
 
       content.set_parent_anchor(Anchor::TOP);
       content.set_anchor(Anchor::TOP);
-      content.set_layout("ttb expand fit m:0 s:15");
+      content.set_layout("ttb expand fit m:0 s:4");
     }
 
   public:
     Label& title;
     Widget& content;
+    std::function<void(Popup*)> on_confirm;
+    std::function<void(Popup*)> on_cancel;
 };
 
 class Popover : public Sprite {
@@ -116,15 +120,29 @@ class Dimmer : public Sprite {
       ev.handled = true;
     }
 
+    void handle_event(Input::InputEventKey& ev) override {
+      if (ev.action == Input::KeyAction::RELEASE && ev.key == Input::Key::KEY_ENTER) {
+        if (on_enter_pressed) { on_enter_pressed(); }
+        ev.handled = true;
+      } else if (ev.action == Input::KeyAction::RELEASE && ev.key == Input::Key::KEY_ESCAPE) {
+        if (on_escape_pressed) { on_escape_pressed(); }
+        ev.handled = true;
+      }
+    }
+
   public:
     std::optional<vec2i> prev_window_size{};
     std::function<void()> on_pressed{};
+    std::function<void()> on_enter_pressed{};
+    std::function<void()> on_escape_pressed{};
 };
 
 class PopupController : public Widget {
   public:
     PopupController(UI& ui_) : Widget(ui_), ui(ui_), dimmer(add_child<Dimmer>()) {
       dimmer.on_pressed = [this]() { on_dimmer_pressed(); };
+      dimmer.on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };
+      dimmer.on_escape_pressed = [this]() { on_dimmer_escape_pressed(); };
     }
 
     void on_dimmer_pressed() {
@@ -132,6 +150,27 @@ class PopupController : public Widget {
         p->set_marked_for_deletion(true);
       }
       popovers.clear();
+    }
+
+    void on_dimmer_enter_pressed() {
+      for (auto [_, p] : popups) {
+        if (p->on_confirm) { p->on_confirm(p); }
+        p->set_marked_for_deletion(true);
+      }
+      popups.clear();
+    }
+
+    void on_dimmer_escape_pressed() {
+      for (auto [_, p] : popovers) {
+        p->set_marked_for_deletion(true);
+      }
+      popovers.clear();
+
+      for (auto [_, p] : popups) {
+        if (p->on_cancel) { p->on_cancel(p); }
+        p->set_marked_for_deletion(true);
+      }
+      popups.clear();
     }
 
     void create_popover(popover_descriptor d) {
@@ -214,7 +253,7 @@ class PopupController : public Widget {
 
       auto& button_container = popup.add_child<Widget>();
       button_container.set_height(30);
-      button_container.set_layout("ltr fill expand m:0 s:8");
+      button_container.set_layout("ltr fill expand m:0 s:4");
       std::vector<Button*> buttons;
       for (auto& sv : d.button_labels) {
         auto& btn = button_container.add_child<Button>(std::u32string(sv));
@@ -224,7 +263,7 @@ class PopupController : public Widget {
       size_t button_i = 0;
       for (auto& l : d.button_actions) {
         auto lambda = [this, l, &popup, popup_id]() {
-          if (l) { l(); }
+          if (l) { l(&popup); }
           popups.erase(popup_id);
           popup.set_marked_for_deletion(true);
         };
@@ -268,6 +307,6 @@ class PopupController : public Widget {
   protected:
     UI& ui;
     Dimmer& dimmer;
-    std::unordered_map<std::string, Widget*> popups;
+    std::unordered_map<std::string, Popup*> popups;
     std::unordered_map<std::string, Widget*> popovers;
 };

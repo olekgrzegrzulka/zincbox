@@ -24,6 +24,7 @@
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
+#include "ui_generic/text_input.hpp"
 #include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -349,7 +350,30 @@ void interface::init() {
     }
   };
 
-  panel_albums->on_add_playlist_button_pressed = [](Widget*) {
+  auto confirm_action = [](Popup* p) {
+    auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
+    db::collection_by_id(0).value().get().add_playlist(text_input->label.get_text(), U"");
+    if (active_collection_id == 0) {
+      panel_albums->recreate(0);
+      panel_tracks->recreate();
+    }
+  };
+
+  auto cancel_action = [](Popup*) {};
+
+  panel_albums->on_add_playlist_button_pressed = [&](Widget*) {
+    popup_descriptor pd{
+      .id = "add_playlist",
+      .title = U"Add playlist",
+      .content = std::nullopt,
+      .button_labels = {U"Cancel", U"Add"},
+      .button_actions = {cancel_action, confirm_action}};
+    auto* popup = popup_controller->create_popup(pd);
+    popup->set_size(300, 200);
+    popup->on_confirm = confirm_action;
+    popup->on_cancel = cancel_action;
+    auto& text_input = popup->content.add_child<TextInput>();
+    text_input.set_focused(true);
   };
 
   if (db::collection_count() > 0) {
@@ -539,10 +563,10 @@ static void handle_dropped_files() {
         U"Merge into 1 collection"},
       .button_actions = {
         nullptr,
-        [dropped_directories]() {
+        [dropped_directories](Popup*) {
           create_multiple_collections(dropped_directories);
         },
-        [dropped_directories]() {
+        [dropped_directories](Popup*) {
           create_collection(dropped_directories);
         },
       },
@@ -560,7 +584,7 @@ static void handle_dropped_files() {
       },
       .button_actions = {
         nullptr,
-        [dropped_directories]() {
+        [dropped_directories](Popup*) {
           create_collection(dropped_directories);
         },
       },
