@@ -2,7 +2,7 @@
 #include <sstream>
 #include <string>
 #include "common/types.hpp"
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/sprite.hpp"
