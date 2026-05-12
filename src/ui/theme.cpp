@@ -212,18 +212,18 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   };
 
   auto add_custom_button = [&atlas_add_texture](std::string name) {
-    atlas_add_texture("button_" + name + "_disabled", {"button_" + name + "_disabled", "button_" + name, "button_disabled"});
-    atlas_add_texture("button_" + name + "_hovered", {"button_" + name + "_hovered", "button_" + name, "button_hovered"});
-    atlas_add_texture("button_" + name + "_idle", {"button_" + name + "_idle", "button_" + name, "button_idle"});
-    atlas_add_texture("button_" + name + "_pressed", {"button_" + name + "_pressed", "button_" + name, "button_pressed"});
+    atlas_add_texture(name + "_disabled", {name + "_disabled", name, "button_disabled"});
+    atlas_add_texture(name + "_hovered", {name + "_hovered", name, "button_hovered"});
+    atlas_add_texture(name + "_idle", {name + "_idle", name, "button_idle"});
+    atlas_add_texture(name + "_pressed", {name + "_pressed", name, "button_pressed"});
   };
 
   auto add_custom_slider = [&atlas_add_texture](std::string name) {
-    atlas_add_texture("slider_" + name + "_thumb_idle", {"slider_" + name + "_thumb_idle", "slider_" + name + "_thumb", "slider_thumb_idle"});
-    atlas_add_texture("slider_" + name + "_thumb_hovered", {"slider_" + name + "_thumb_hovered", "slider_" + name + "_thumb", "slider_thumb_hovered"});
-    atlas_add_texture("slider_" + name + "_thumb_pressed", {"slider_" + name + "_thumb_pressed", "slider_" + name + "_thumb", "slider_thumb_pressed"});
-    atlas_add_texture("slider_" + name + "_track_inactive", {"slider_" + name + "_track_inactive", "slider_" + name + "_track", "slider_track_inactive"});
-    atlas_add_texture("slider_" + name + "_track_active", {"slider_" + name + "_track_active", "slider_" + name + "_track", "slider_track_active"});
+    atlas_add_texture(name + "_thumb_idle", {name + "_thumb_idle", name + "_thumb", "slider_thumb_idle"});
+    atlas_add_texture(name + "_thumb_hovered", {name + "_thumb_hovered", name + "_thumb", "slider_thumb_hovered"});
+    atlas_add_texture(name + "_thumb_pressed", {name + "_thumb_pressed", name + "_thumb", "slider_thumb_pressed"});
+    atlas_add_texture(name + "_track_inactive", {name + "_track_inactive", name + "_track", "slider_track_inactive"});
+    atlas_add_texture(name + "_track_active", {name + "_track_active", name + "_track", "slider_track_active"});
   };
 
   auto add_custom_panel = [&atlas_add_texture](std::string name) {
@@ -289,7 +289,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   atlas_add_texture("popover_arrow");
   atlas_add_texture("popover_arrow_inverted");
   add_custom_button("add_tab");
-  add_custom_button("popover");
+  add_custom_button("button_popover");
   // icons
   atlas_add_texture("left", {"icons/left"});
   atlas_add_texture("right", {"icons/right"});

@@ -29,6 +29,7 @@ class TextureAtlas {
     bool add_texture(std::string id, const u8* data, i32 width, i32 height);
     void add_texture_alias(std::string id, std::string to);
     bool remove_texture(std::string id);
+    vec2i get_texture_size(std::string id);
 
     void save_to_file(std::string filename);
 
