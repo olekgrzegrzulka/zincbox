@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "common/input.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
@@ -123,16 +124,11 @@ class TabBar : public Sprite {
       set_layout("fit");
       tab_container = &add_child<Widget>();
       tab_container->set_height(height);
-      button_add = &add_child<Button>();
-      button_add->set_size(height - 4, height - 4);
+      button_add = &add_child<ZincboxButton>("add_tab");
+      button_add->set_ignore_parents_layout(true);
+      button_add->set_nine_slice_margin(0.0f);
       button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
       button_add->set_anchor(Anchor::BOTTOM_LEFT);
-      button_add->set_texture_idle("button_add_tab_idle");
-      button_add->set_texture_hovered("button_add_tab_hovered");
-      button_add->set_texture_pressed("button_add_tab_pressed");
-      button_add->set_texture_disabled("button_add_tab_disabled");
-      button_add->set_nine_slice_margin(0.0f);
-      button_add->set_texture("button_add_tab_idle", true);
       button_add->on_press([this]() {
         if (on_add_tab_button_pressed) { on_add_tab_button_pressed(); };
       });

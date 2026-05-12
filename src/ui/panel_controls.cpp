@@ -6,6 +6,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
 #include "ui/theme.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
@@ -19,46 +20,26 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32();
   get_layout().margin = theme::get_prop("controls_panel_padding").as_i32();
 
-  button_prev = &add_child<Button>("");
-  button_prev->set_texture_disabled("button_prev_disabled");
-  button_prev->set_texture_hovered("button_prev_hovered");
-  button_prev->set_texture_idle("button_prev_idle");
-  button_prev->set_texture_pressed("button_prev_pressed");
+  button_prev = &add_child<ZincboxButton>("prev");
   button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32());
-  button_prev->set_nine_slice_margin(theme::get_button_nine_slice_margin("prev"));
   auto& button_prev_img = button_prev->add_child<Sprite>("prev");
   button_prev_img.set_anchor(Anchor::CENTER);
   button_prev_img.set_parent_anchor(Anchor::CENTER);
 
-  button_play_pause = &add_child<Button>("");
-  button_play_pause->set_texture_disabled("button_play_pause_disabled");
-  button_play_pause->set_texture_hovered("button_play_pause_hovered");
-  button_play_pause->set_texture_idle("button_play_pause_idle");
-  button_play_pause->set_texture_pressed("button_play_pause_pressed");
+  button_play_pause = &add_child<ZincboxButton>("play_pause");
   button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32());
-  button_play_pause->set_nine_slice_margin(theme::get_button_nine_slice_margin("play_pause"));
   button_play_pause_img = &button_play_pause->add_child<Sprite>("play");
   button_play_pause_img->set_anchor(Anchor::CENTER);
   button_play_pause_img->set_parent_anchor(Anchor::CENTER);
 
-  button_stop = &add_child<Button>("");
-  button_stop->set_texture_disabled("button_stop_disabled");
-  button_stop->set_texture_hovered("button_stop_hovered");
-  button_stop->set_texture_idle("button_stop_idle");
-  button_stop->set_texture_pressed("button_stop_pressed");
+  button_stop = &add_child<ZincboxButton>("stop");
   button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32());
-  button_stop->set_nine_slice_margin(theme::get_button_nine_slice_margin("stop"));
   auto& button_stop_img = button_stop->add_child<Sprite>("stop");
   button_stop_img.set_anchor(Anchor::CENTER);
   button_stop_img.set_parent_anchor(Anchor::CENTER);
 
-  button_next = &add_child<Button>("");
-  button_next->set_texture_disabled("button_next_disabled");
-  button_next->set_texture_hovered("button_next_hovered");
-  button_next->set_texture_idle("button_next_idle");
-  button_next->set_texture_pressed("button_next_pressed");
+  button_next = &add_child<ZincboxButton>("next");
   button_next->set_max_width(theme::get_prop("next_button_width").as_i32());
-  button_next->set_nine_slice_margin(theme::get_button_nine_slice_margin("next"));
   auto& button_next_img = button_next->add_child<Sprite>("next");
   button_next_img.set_anchor(Anchor::CENTER);
   button_next_img.set_parent_anchor(Anchor::CENTER);
@@ -71,13 +52,8 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   panel_right.set_layout("m:0 rtl expand fill");
   panel_right.get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32();
 
-  button_repeat = &panel_right.add_child<Button>("");
-  button_repeat->set_texture_disabled("button_repeat_disabled");
-  button_repeat->set_texture_hovered("button_repeat_hovered");
-  button_repeat->set_texture_idle("button_repeat_idle");
-  button_repeat->set_texture_pressed("button_repeat_pressed");
+  button_repeat = &panel_right.add_child<ZincboxButton>("repeat");
   button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32());
-  button_repeat->set_nine_slice_margin(theme::get_button_nine_slice_margin("repeat"));
   auto& button_repeat_img = button_repeat->add_child<Sprite>("repeat");
   auto r = player::get_repeat_mode();
   if (r == player::RepeatMode::OFF) {
@@ -91,13 +67,8 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_repeat_img.set_parent_anchor(Anchor::CENTER);
   button_repeat_tooltip = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  button_shuffle = &panel_right.add_child<Button>("");
-  button_shuffle->set_texture_disabled("button_shuffle_disabled");
-  button_shuffle->set_texture_hovered("button_shuffle_hovered");
-  button_shuffle->set_texture_idle("button_shuffle_idle");
-  button_shuffle->set_texture_pressed("button_shuffle_pressed");
+  button_shuffle = &panel_right.add_child<ZincboxButton>("shuffle");
   button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32());
-  button_shuffle->set_nine_slice_margin(theme::get_button_nine_slice_margin("shuffle"));
   auto& button_shuffle_img = button_shuffle->add_child<Sprite>("shuffle");
   auto s = player::get_shuffle_mode();
   if (s == player::ShuffleMode::OFF) {
@@ -109,15 +80,10 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   button_shuffle_img.set_parent_anchor(Anchor::CENTER);
   button_shuffle_tooltip = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  volume_bar = &panel_right.add_child<Slider>();
-  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200));
-  volume_bar->set_texture_thumb_pressed("slider_volume_bar_thumb_pressed");
-  volume_bar->set_texture_thumb_hovered("slider_volume_bar_thumb_hovered");
-  volume_bar->set_texture_thumb_idle("slider_volume_bar_thumb_idle");
-  volume_bar->set_texture_track_inactive("slider_volume_bar_track_inactive");
-  volume_bar->set_texture_track_active("slider_volume_bar_track_active");
+  volume_bar = &panel_right.add_child<ZincboxSlider>("volume_bar");
   volume_bar->set_track_nine_slice_margin(theme::get_prop("volume_bar_track_nine_slice_margin").as_i32(6.0));
   volume_bar->set_thumb_nine_slice_margin(theme::get_prop("volume_bar_thumb_nine_slice_margin").as_i32(6.0));
+  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200));
   i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50);
   i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50);
   i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50);
@@ -143,15 +109,9 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   panel_middle.set_layout("m:0 s:4 btt expand fill");
   panel_middle.set_clip_children(true);
 
-  seekbar = &panel_middle.add_child<Slider>();
-  seekbar->set_texture_thumb_pressed("slider_seekbar_thumb_pressed");
-  seekbar->set_texture_thumb_hovered("slider_seekbar_thumb_hovered");
-  seekbar->set_texture_thumb_idle("slider_seekbar_thumb_idle");
-  seekbar->set_texture_track_inactive("slider_seekbar_track_inactive");
-  seekbar->set_texture_track_active("slider_seekbar_track_active");
+  seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
   seekbar->set_track_nine_slice_margin(theme::get_prop("seekbar_track_nine_slice_margin").as_i32(6.0));
   seekbar->set_thumb_nine_slice_margin(theme::get_prop("seekbar_thumb_nine_slice_margin").as_i32(6.0));
-
   i32 track_height = std::clamp(theme::get_prop("seekbar_track_height").as_i32(12), 1, 50);
   i32 thumb_width = std::clamp(theme::get_prop("seekbar_thumb_width").as_i32(12), 1, 50);
   i32 thumb_height = std::clamp(theme::get_prop("seekbar_thumb_height").as_i32(12), 1, 50);

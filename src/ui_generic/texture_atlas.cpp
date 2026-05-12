@@ -115,6 +115,18 @@ bool TextureAtlas::remove_texture(std::string id) {
   return textures_contains_id || aliases_contains_id;
 }
 
+vec2i TextureAtlas::get_texture_size(std::string id) {
+  if (auto it = textures.find(id); it != textures.end()) {
+    return {it->second.width, it->second.height};
+  } else if (auto aliases_it = aliases.find(id); aliases_it != aliases.end()) {
+    return get_texture_size(aliases_it->second);
+  } else if (fallback_texture.has_value()) {
+    return get_texture_size(fallback_texture.value());
+  } else {
+    return {0, 0};
+  }
+}
+
 void TextureAtlas::save_to_file(std::string filename) {
   if (!filename.ends_with(".png")) { filename += ".png"; }
   auto data_copy = image.data();
