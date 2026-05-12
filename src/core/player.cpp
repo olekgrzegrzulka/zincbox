@@ -137,6 +137,39 @@ void player::play(playing_t play, bool clear_history) {
   play_track();
 }
 
+void player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_history) {
+  auto playlist = db::playlist_by_id(playlist_id);
+  if (!playlist.has_value()) { return; }
+  auto track_ids = playlist->get().get_track_ids();
+  if (track_ids.size() == 0) { return; }
+
+  if (clear_history) {
+    playing_queue.clear();
+    for (size_t track_id : track_ids) {
+      playing_queue.emplace_back(player::playing_t{
+        .collection_id = collection_id,
+        .playlist_id = playlist_id,
+        .track_id = track_id,
+      });
+    }
+    playing_index = 0;
+    signal_on_queue_changed.emit(false);
+  } else {
+    size_t insert_at = playing_index.has_value() ? playing_index.value() + 1 : playing_queue.size();
+    for (size_t i = 0; i < track_ids.size(); i += 1) {
+      auto track_id = track_ids[i];
+      player::playing_t play{
+        .collection_id = collection_id,
+        .playlist_id = playlist_id,
+        .track_id = track_id,
+      };
+      enqueue(play, insert_at + i - 1);
+    }
+  }
+
+  play_track();
+}
+
 void player::enqueue(playing_t play, size_t at) {
   if (at >= playing_queue.size()) {
     playing_queue.emplace_back(play);

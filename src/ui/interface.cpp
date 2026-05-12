@@ -8,6 +8,7 @@
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "common/types.hpp"
+#include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
@@ -300,7 +301,63 @@ void interface::init() {
     std::vector<std::string> popover_labels;
     std::vector<std::function<void()>> popover_actions;
 
-    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album) {
+    popover_labels.emplace_back("Play");
+    popover_actions.emplace_back([playlist_id]() {
+      if (panel_albums->get_collection_id().has_value()) {
+        player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, true);
+      }
+    });
+
+    popover_labels.emplace_back("Pick image file");
+    popover_actions.emplace_back([playlist_id]() {
+      NFD::UniquePathN out_path_n;
+
+      nfdfilteritem_t filter_item[1] = {{"Image files", "png,jpg,jpeg"}};
+      auto result = NFD::OpenDialog(out_path_n, filter_item, 1);
+
+      if (result == NFD_OKAY) {
+        nfdnchar_t* path = out_path_n.get();
+        std::string path_str(path);
+        db::set_playlist_image(playlist_id, path_str);
+        std::string playlist_id_str = std::to_string(playlist_id);
+        ui->get_texture_atlas().remove_texture(playlist_id_str);
+        ui->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().image, 64, 64);
+        panel_albums->recreate(panel_albums->get_collection_id());
+      }
+    });
+
+    if (!db::playlist_by_id(playlist_id)->get().image.empty()) {
+      popover_labels.emplace_back("Reset image");
+      popover_actions.emplace_back([playlist_id]() {
+        db::reset_playlist_image(playlist_id);
+        std::string playlist_id_str = std::to_string(playlist_id);
+        ui->get_texture_atlas().remove_texture(playlist_id_str);
+        ui->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
+        panel_albums->recreate(panel_albums->get_collection_id());
+      });
+    }
+
+    if (db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album) {
+      popover_labels.emplace_back("Show directory");
+      popover_actions.emplace_back([playlist_id]() {
+        auto& playlist = db::playlist_by_id(playlist_id)->get();
+        if (playlist.get_tracks_count() > 0) {
+          auto& track = db::track_by_id(playlist.get_track_ids()[0])->get();
+          fs::path path(track.path);
+          std::string dir_str = path.parent_path().string();
+#ifdef _WIN32
+          std::string command = "explorer \"" + dir_str + "\"";
+#elif __APPLE__
+          std::string command = "open \"" + dir_str + "\"";
+#else
+          std::string command = "xdg-open \"" + dir_str + "\"";
+#endif
+          std::system(command.c_str());
+        }
+      });
+    }
+
+    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
       popover_labels.emplace_back("Remove");
       popover_actions.emplace_back([playlist_id]() {
         db::mark_playlist_as_tombstone(playlist_id);
@@ -309,17 +366,17 @@ void interface::init() {
         panel_tracks->clear();
         panel_tracks->recreate();
       });
-
-      vec2i at = widget->get_position(Anchor::CENTER);
-      popover_descriptor d{
-        .id = "playlist_actions",
-        .at = at,
-        .distance = 4,
-        .button_labels = popover_labels,
-        .button_actions = popover_actions,
-      };
-      popup_controller->create_popover(d);
     }
+
+    vec2i at = widget->get_position(Anchor::CENTER);
+    popover_descriptor d{
+      .id = "playlist_actions",
+      .at = at,
+      .distance = 16,
+      .button_labels = popover_labels,
+      .button_actions = popover_actions,
+    };
+    popup_controller->create_popover(d);
   };
 
   panel_albums->on_button_sort_by_pressed = [](Widget* w) {

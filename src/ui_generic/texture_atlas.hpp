@@ -42,7 +42,7 @@ class TextureAtlas {
     std::optional<std::reference_wrapper<TextureAtlasData>> get_internal(std::string id, i32 max_depth = 16);
     std::optional<std::pair<i32, i32>> find_space_for_texture(i32 width, i32 height);
 
-    void mark_space_for_texture(i32 x, i32 y, i32 width, i32 height);
+    void mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, bool unmark = false);
 
     vec2i paste_texture(stbi_uc* data, i32 width, i32 height);
 
