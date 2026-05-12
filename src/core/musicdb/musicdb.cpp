@@ -66,7 +66,7 @@ void db::serialize(std::ofstream& os) {
     }
   }
 
-  std::vector<size_t> old_track_id_to_new_track_id(tracks.size());
+  std::vector<size_t> old_track_id_to_new_track_id(tracks.size(), tracks.size());
   size_t nontombstoned_tracks_count = 0;
   for (size_t old_track_id = 0; old_track_id < tracks.size(); old_track_id += 1) {
     if (!tracks[old_track_id].is_tombstone()) {
@@ -94,7 +94,7 @@ void db::serialize(std::ofstream& os) {
   write_bin(os, nontombstoned_collections_count);
   for (auto& c : collections) {
     if (c.is_tombstone()) { continue; }
-    c.serialize(os);
+    c.serialize(os, old_playlist_id_to_new_playlist_id);
   }
 
   write_bin(os, nontombstoned_playlists_count);
@@ -150,14 +150,26 @@ void db::deserialize(std::ifstream& is) {
 }
 
 void db::print_collections() {
+  debug_log("Collection count: ", collections.size());
+  debug_log("Playlist count: ", playlists.size());
+  debug_log("Track count: ", tracks.size());
+  debug_log("Database tree:");
   for (auto& c : collections) {
-    debug_log("COLLECTION ", utf32_to_utf8(c.name));
+    debug_log("Collection ", utf32_to_utf8(c.name));
     for (auto p_id : c.playlist_ids) {
       auto& p = playlists[p_id];
-      debug_log("\tPlaylist ", utf32_to_utf8(p.name), " - ", utf32_to_utf8(p.author));
+      if (!p.tombstone) {
+        debug_log("\tPlaylist ", utf32_to_utf8(p.name), " - ", utf32_to_utf8(p.author));
+      } else {
+        debug_log("\tPlaylist ", utf32_to_utf8(p.name), " - ", utf32_to_utf8(p.author), " (tombstone)");
+      }
       for (size_t t_id : p.get_track_ids()) {
         auto& t = tracks[t_id];
-        debug_log("\t\t", t.track_number, ". ", utf32_to_utf8(t.artist), " - ", utf32_to_utf8(t.title));
+        if (!t.is_tombstone()) {
+          debug_log("\t\t", t.track_number, ". ", utf32_to_utf8(t.artist), " - ", utf32_to_utf8(t.title));
+        } else {
+          debug_log("\t\t", t.track_number, ". ", utf32_to_utf8(t.artist), " - ", utf32_to_utf8(t.title), " (tombstone)");
+        }
       }
     }
   }

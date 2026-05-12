@@ -111,7 +111,6 @@ void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_tr
   write_str(os, author);
   write_blob(os, image);
   write_bin(os, type);
-
   write_bin(os, track_ids.size());
   for (size_t track_id : track_ids) {
     write_bin(os, old_track_id_to_new_track_id[track_id]);
