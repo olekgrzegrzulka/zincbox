@@ -88,6 +88,33 @@ void TextureAtlas::add_texture_alias(std::string id, std::string to) {
   aliases[id] = to;
 }
 
+bool TextureAtlas::remove_texture(std::string id) {
+  bool textures_contains_id = textures.contains(id);
+  bool aliases_contains_id = aliases.contains(id);
+  if (textures_contains_id) {
+    auto& uv = textures.at(id);
+    mark_space_for_texture(uv.start.x * atlas_size_px, uv.start.y * atlas_size_px, uv.width, uv.height, true);
+    for (i32 y = 0; y < uv.height; y++) {
+      for (i32 x = 0; x < uv.width; x++) {
+        i32 atlas_x = uv.start.x * atlas_size_px + x;
+        i32 atlas_y = uv.start.y * atlas_size_px + y;
+        i32 atlas_i = (atlas_y * atlas_size_px + atlas_x) * 4;
+        image[atlas_i + 0] = 0;
+        image[atlas_i + 1] = 0;
+        image[atlas_i + 2] = 0;
+        image[atlas_i + 3] = 0;
+      }
+    }
+    dirty = true;
+    textures.erase(id);
+  }
+  if (aliases_contains_id) {
+    aliases.erase(id);
+  }
+
+  return textures_contains_id || aliases_contains_id;
+}
+
 void TextureAtlas::save_to_file(std::string filename) {
   if (!filename.ends_with(".png")) { filename += ".png"; }
   auto data_copy = image.data();
@@ -182,11 +209,11 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
       }
     }
   }
-  debug_warn("fail");
+  debug_warn("find_space_for_texture, no space found for texture of size ", width, "x", height);
   return std::nullopt;
 }
 
-void TextureAtlas::mark_space_for_texture(i32 x, i32 y, i32 width, i32 height) {
+void TextureAtlas::mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, bool unmark) {
   i32 begin_x = x / grid_size_px;
   i32 begin_y = y / grid_size_px;
   i32 end_x = begin_x + std::ceil(width / (double)grid_size_px);
@@ -194,8 +221,8 @@ void TextureAtlas::mark_space_for_texture(i32 x, i32 y, i32 width, i32 height) {
 
   for (i32 square_x = begin_x; square_x < end_x; square_x += 1) {
     for (i32 square_y = begin_y; square_y < end_y; square_y += 1) {
-      ensure(!occupied_grid_space[(atlas_size_px / grid_size_px) * square_y + square_x]);
-      occupied_grid_space[(atlas_size_px / grid_size_px) * square_y + square_x] = true;
+      if (!unmark) { ensure(!occupied_grid_space[(atlas_size_px / grid_size_px) * square_y + square_x]); }
+      occupied_grid_space[(atlas_size_px / grid_size_px) * square_y + square_x] = !unmark;
     }
   }
 }
@@ -215,6 +242,6 @@ vec2i TextureAtlas::paste_texture(stbi_uc* data, i32 width, i32 height) {
       }
     }
   }
-
+  dirty = true;
   return {x, y};
 }

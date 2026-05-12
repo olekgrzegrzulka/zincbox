@@ -40,7 +40,7 @@ namespace db {
   std::vector<size_t> playlist_ids_by_name(std::u32string_view);
   const std::vector<Playlist>& all_playlists();
   size_t playlist_count();
-  size_t get_album_id(size_t collection_id, std::u32string_view album_name, std::u32string_view album_artist);
+  size_t get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist, std::u32string_view file_path);
 
   // playlist setters
   void mark_playlist_as_tombstone(size_t);
@@ -48,6 +48,8 @@ namespace db {
   bool remove_track_id_from_playlist(size_t playlist_id, size_t track_id);
   bool remove_track_index_from_playlist(size_t playlist_id, size_t track_index);
   size_t add_track_to_playlist(size_t playlist_id, Track);
+  void set_playlist_image(size_t playlist_id, std::string image_path);
+  void reset_playlist_image(size_t playlist_id);
 
   // track getters
   std::optional<std::reference_wrapper<const Track>> track_by_id(size_t);

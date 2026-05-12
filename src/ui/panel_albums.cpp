@@ -148,6 +148,7 @@ void PanelAlbums::clear() {
 
 void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_) {
   sort_by = sort_by_;
+  collection_id = collection_id_;
   clear();
   if (!collection_id_.has_value()) { return; }
 

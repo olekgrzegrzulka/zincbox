@@ -5,8 +5,8 @@
 #include <vector>
 #include "common/input.hpp"
 #include "ui_generic/button.hpp"
-#include "ui_generic/sprite.hpp"
 #include "ui_generic/scrollbar.hpp"
+#include "ui_generic/sprite.hpp"
 #include "ui_generic/text_input.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -51,11 +51,13 @@ class PanelAlbums : public Sprite {
     void handle_event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);
+    std::optional<size_t> get_collection_id() const { return collection_id; }
 
   protected:
     void reflow();
 
   protected:
+    std::optional<size_t> collection_id{};
     double scroll_px = 0.0;
     double target_scroll_px = 0.0;
     SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;

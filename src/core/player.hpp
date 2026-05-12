@@ -31,6 +31,7 @@ namespace player {
   void update();
 
   void play(playing_t, bool clear_history = true);
+  void play_playlist(size_t collection_id, size_t playlist_id, bool clear_history = true);
   void enqueue(playing_t, size_t at);
   void remove_from_queue(size_t at);
   void resume();

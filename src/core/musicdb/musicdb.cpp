@@ -221,13 +221,14 @@ void visit_directory(size_t collection_id, std::string_view path) {
       visit_directory(collection_id, entry.path().string());
     } else if (entry.is_regular_file()) {
       if (io::is_music_file(entry)) {
-        io::TrackFile track(entry.path());
-        if (track.is_valid()) {
-          size_t playlist_id = get_album_id(collection_id, track.get_album_name(), track.get_album_artist());
+        io::TrackFile track_file(entry.path());
+        if (track_file.is_valid()) {
+          Track track = track_file.get_track().value();
+          size_t playlist_id = get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
           album_ids_visited.insert(playlist_id);
-          add_track_to_playlist(playlist_id, track.get_track().value());
+          add_track_to_playlist(playlist_id, track);
           if (playlists[playlist_id].image.empty()) {
-            playlists[playlist_id].image = track.get_album_art();
+            playlists[playlist_id].image = track_file.get_album_art();
           }
         } else {
         }
@@ -309,7 +310,15 @@ const std::vector<Playlist>& db::all_playlists() { return playlists; }
 
 size_t db::playlist_count() { return playlists.size(); }
 
-size_t db::get_album_id(size_t collection_id, std::u32string_view album_name, std::u32string_view album_artist) {
+size_t db::get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist, std::u32string_view file_path) {
+  // if album_name is empty, album name becomes the name of the parent directory of the track file
+  if (album_name.empty()) {
+    fs::path path(file_path);
+    auto album_name_utf32 = (path.parent_path().filename().u32string());
+    album_name = album_name_utf32;
+    album_artist = U"";
+  }
+
   // find a playlist with matching name and author
   auto& collection = collections[collection_id];
   std::vector<size_t> potential_playlist_ids = playlist_ids_by_name(album_name);
@@ -404,6 +413,19 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
 
   tracks.emplace_back(track);
   return tracks.size() - 1;
+}
+
+void db::set_playlist_image(size_t playlist_id, std::string image_path) {
+  if (playlist_id >= playlists.size()) { return; }
+  auto& playlist = playlists[playlist_id];
+  playlist.image.clear();
+  io::add_cover_file(playlist, image_path);
+}
+
+void db::reset_playlist_image(size_t playlist_id) {
+  if (playlist_id >= playlists.size()) { return; }
+  auto& playlist = playlists[playlist_id];
+  playlist.image.clear();
 }
 
 std::optional<std::reference_wrapper<const Track>> db::track_by_id(size_t id) {
