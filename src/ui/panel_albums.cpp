@@ -221,13 +221,14 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_
 void PanelAlbums::reflow() {
   i32 albums_area_width = albums_container->get_width();
   i32 album_covers_in_one_row = albums_area_width / theme::playlist_cover_width;
+  i32 space_left = albums_area_width - album_covers_in_one_row * theme::playlist_cover_width;
 
   if (album_covers_in_one_row <= 0) { return; }
 
   i32 column = 0;
   i32 cover_y = 0;
   for (auto& album_widget : album_widgets) {
-    i32 x_ = (column) * (albums_area_width) / album_covers_in_one_row;
+    i32 x_ = space_left * (column + 1) / (album_covers_in_one_row + 1) + theme::playlist_cover_width * column;
     album_widget->set_pos(x_, cover_y);
 
     column += 1;
