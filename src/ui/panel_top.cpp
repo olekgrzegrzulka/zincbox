@@ -1,18 +1,19 @@
 #include "panel_top.hpp"
 #include "common/input.hpp"
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "ui/tab_bar.hpp"
+#include "ui/theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
 PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
-  set_height(32);
+  set_height(theme::get_prop("top_bar_height").as_i32(32));
 
   tab_bar = &add_child<TabBar>();
 
   button_settings = &add_child<Button>("");
-  button_settings->set_size(26, 26);
+  button_settings->set_size(height - 4, height - 4);
   button_settings->set_x(-2);
   button_settings->set_parent_anchor(Anchor::CENTER_RIGHT);
   button_settings->set_anchor(Anchor::CENTER_RIGHT);
@@ -23,13 +24,13 @@ PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   });
 
   button_right = &add_child<Button>("");
-  button_right->set_size(26, 26);
-  button_right->set_x(-2 - 26 - 2);
+  button_right->set_size(height - 4, height - 4);
+  button_right->set_x(-2 - (height - 4) - 2);
   button_right->set_parent_anchor(Anchor::CENTER_RIGHT);
   button_right->set_anchor(Anchor::CENTER_RIGHT);
 
   button_left = &add_child<Button>("");
-  button_left->set_size(26, 26);
+  button_left->set_size(height - 4, height - 4);
   button_left->set_x(2);
   button_left->set_parent_anchor(Anchor::CENTER_LEFT);
   button_left->set_anchor(Anchor::CENTER_LEFT);
