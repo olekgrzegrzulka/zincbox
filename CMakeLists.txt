@@ -98,7 +98,10 @@ set(SOURCES
     ./lib/miniaudio/miniaudio.c
     ./src/common/config.cpp
     ./src/common/input.cpp
-    ./src/core/musicdb.cpp
+    ./src/core/musicdb/musicdb.cpp
+    ./src/core/musicdb/collection.cpp
+    ./src/core/musicdb/playlist.cpp
+    ./src/core/musicdb/track.cpp
     ./src/core/player.cpp
     ./src/core/mpris.cpp
     ./src/core/io.cpp

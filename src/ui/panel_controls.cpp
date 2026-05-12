@@ -3,7 +3,7 @@
 #include <ios>
 #include <sstream>
 #include "common/input.hpp"
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/label.hpp"

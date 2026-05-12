@@ -1,5 +1,5 @@
 #pragma once
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
 #include "panel_tracks_track.hpp"
 #include "theme.hpp"

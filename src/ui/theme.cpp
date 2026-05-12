@@ -174,6 +174,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
   }
 
+  ScopeTimer timer("load_theme_atlas");
+
   auto& atlas = ui.get_texture_atlas();
 
   auto atlas_add_texture = [&load_theme_from_resources, &theme_path, &atlas](std::string id, std::vector<std::string> filenames = {}) -> bool {

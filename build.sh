@@ -9,7 +9,7 @@ EXE_NAME="zincbox"
 CLEAN=false
 
 usage() {
-    echo "Usage: ./run.sh [flags]"
+    echo "Usage: ./build.sh [flags]"
     echo "Flags:"
     echo "  asan     - Enable AddressSanitizer"
     echo "  release  - Build in release mode"

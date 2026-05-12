@@ -13,12 +13,15 @@
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
 #include "common/debug.hpp"
+#include "core/musicdb/playlist.hpp"
+#include "core/musicdb/track.hpp"
 #include "core/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_resize2.h"
 #include "lib/stb_image/stb_image_write.h"
 #include "mpeg/id3v2/id3v2tag.h"
-#include "musicdb.hpp"
+
+namespace fs = std::filesystem;
 
 std::optional<fs::path> user_data_path;
 
@@ -111,22 +114,39 @@ bool io::is_music_file(fs::path path) {
   return (ext == ".mp3" || ext == ".MP3" || ext == ".flac" || ext == ".FLAC" || ext == ".ogg" || ext == ".OGG" || ext == ".wav" || ext == ".WAV");
 }
 
-bool io::add_music_file(db::Playlist& playlist, fs::path path) {
+io::TrackFile::TrackFile(TrackFile&& other)
+  : track(std::move(other.track)),
+    album_art(std::move(other.album_art)),
+    album_name(std::move(other.album_name)),
+    album_artist(std::move(other.album_artist)) {}
+
+io::TrackFile& io::TrackFile::operator=(TrackFile&& other) {
+  if (this != &other) {
+    track = std::move(other.track);
+    album_art = std::move(other.album_art);
+    album_name = std::move(other.album_name);
+    album_artist = std::move(other.album_artist);
+  }
+  return *this;
+}
+
+io::TrackFile::TrackFile(fs::path path) {
+  ScopeTimer timer("TrackFile " + std::string(path));
+
   TagLib::FileStream fstream(path.c_str(), true);
   TagLib::FileRef f(&fstream);
 
-  if (f.isNull()) { return false; }
+  if (f.isNull()) { return; }
 
   TagLib::Tag* tag = f.tag();
   TagLib::AudioProperties* audio_props = f.audioProperties();
   TagLib::PropertyMap properties = f.file()->properties();
 
-  std::string album_artist;
   if (properties.contains("ALBUMARTIST")) {
     TagLib::StringList artistList = properties["ALBUMARTIST"];
     for (const TagLib::String& artist : artistList) {
-      album_artist.append(artist.to8Bit(true));
-      album_artist.append(", ");
+      album_artist.append(utf8_to_utf32(artist.to8Bit(true)));
+      album_artist.append(U", ");
     }
     if (album_artist.size() >= 2) {
       album_artist.pop_back();
@@ -134,27 +154,28 @@ bool io::add_music_file(db::Playlist& playlist, fs::path path) {
     }
   }
 
-  size_t track_id = db::add_track((i32)tag->track(),
-                                  utf8_to_utf32(tag->title().to8Bit(true)),
-                                  utf8_to_utf32(tag->artist().to8Bit(true)),
-                                  utf8_to_utf32(album_artist),
-                                  utf8_to_utf32(tag->genre().to8Bit(true)),
-                                  (i32)tag->year(),
-                                  audio_props->bitrate(),
-                                  audio_props->lengthInSeconds(),
-                                  utf8_to_utf32(path.string()));
+  album_name = utf8_to_utf32(tag->album().to8Bit(true));
 
-  if (playlist.image.empty()) {
-    playlist.image = fetch_album_art(f);
+  track = db::Track{
+    (i32)tag->track(),
+    utf8_to_utf32(tag->title().to8Bit(true)),
+    utf8_to_utf32(tag->artist().to8Bit(true)),
+    album_artist,
+    utf8_to_utf32(tag->genre().to8Bit(true)),
+    (i32)tag->year(),
+    audio_props->bitrate(),
+    audio_props->lengthInSeconds(),
+    utf8_to_utf32(path.string()),
+  };
+}
+
+std::vector<u8> io::TrackFile::get_album_art() {
+  TagLib::FileStream fstream(utf32_to_utf8(track->path).c_str(), true);
+  TagLib::FileRef f(&fstream);
+  if (album_art.empty()) {
+    album_art = fetch_album_art(f);
   }
-  if (playlist.author.empty()) {
-    playlist.author = utf8_to_utf32(album_artist);
-  }
-  if (playlist.name.empty()) {
-    playlist.name = utf8_to_utf32(tag->album().to8Bit(true));
-  }
-  playlist.add_track(track_id);
-  return true;
+  return album_art;
 }
 
 bool io::add_cover_file(db::Playlist& playlist, fs::path path) {

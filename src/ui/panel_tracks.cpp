@@ -1,7 +1,7 @@
 #include "panel_tracks.hpp"
 #include <algorithm>
 #include <cmath>
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "panel_tracks_playlist.hpp"
 #include "theme.hpp"
 #include "ui_generic/scrollbar.hpp"

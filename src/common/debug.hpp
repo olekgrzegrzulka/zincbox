@@ -8,6 +8,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include "color.hpp"
+#include "core/utf.hpp"
 #include "types.hpp"
 
 #ifdef NDEBUG
@@ -52,6 +53,11 @@ static void print_(glm::vec<4, T> vec4) {
 
 [[maybe_unused]] static void print_(rect2i r) {
   std::cout << "rect2i{" << r.begin.x << ", " << r.begin.y << "; " << r.size.x << ", " << r.size.y << "}";
+}
+
+// print utf32 string
+[[maybe_unused]] static void print_(std::u32string str) {
+  std::cout << utf32_to_utf8(str);
 }
 
 template <typename T>
@@ -105,8 +111,9 @@ static void print(T&& first_arg, R&&... args) {
 struct ScopeTimer {
     std::string message;
     std::chrono::time_point<std::chrono::system_clock> start_time;
+    double ms_threshold;
 
-    ScopeTimer(std::string _message = "") : message(_message) {
+    ScopeTimer(std::string _message = "", double ms_threshold_ = 0.5) : message(_message), ms_threshold(ms_threshold_) {
       start_time = std::chrono::high_resolution_clock::now();
     }
 
@@ -114,10 +121,12 @@ struct ScopeTimer {
       auto end_time = std::chrono::high_resolution_clock::now();
       auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-      if (message.empty()) {
-        debug_log_no_filename("took ", milliseconds);
-      } else {
-        debug_log_no_filename(message, " took ", milliseconds);
+      if (milliseconds.count() >= ms_threshold) {
+        if (message.empty()) {
+          debug_log_no_filename("took ", milliseconds);
+        } else {
+          debug_log_no_filename(message, " took ", milliseconds);
+        }
       }
     }
 };

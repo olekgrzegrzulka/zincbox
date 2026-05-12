@@ -23,7 +23,7 @@
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "core/mpris.hpp"
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
 #include "ui/interface.hpp"
 
@@ -66,14 +66,14 @@ int main() {
   float volume = std::clamp(config_get_float("volume").value_or(0.5f), 0.0f, 1.0f);
   player::set_volume(volume);
 
+  debug_log("deserialize start");
   if (std::filesystem::exists("musicdb")) {
     auto s = std::ifstream{"musicdb", std::ifstream::binary};
     db::deserialize(s);
   } else {
-    db::add_collection(U"Playlists");
-    auto& collection = db::collection_by_id(0)->get();
-    collection.add_playlist(U"Loved tracks", U"");
+    db::create_empty_db();
   }
+  debug_log("deserialize end");
 
   glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
   if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }

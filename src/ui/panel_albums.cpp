@@ -6,7 +6,7 @@
 #include <vector>
 #include "common/input.hpp"
 #include "common/search_utils.hpp"
-#include "core/musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "panel_albums.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"

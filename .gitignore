@@ -23,13 +23,13 @@ Makefile
 compile_commands.json
 .cache
 
-.idea
-.vscode
+/.idea
+/.vscode
 .ignore
-.directory
-music.cfg
-musicdb
-atlas.png
+/.directory
+/music.cfg
+/musicdb
+/atlas.png
 /build
 *.png~
-zincbox
+/zincbox
