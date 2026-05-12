@@ -40,30 +40,37 @@ std::optional<size_t> db::Collection::prev_playlist_id(size_t playlist_id) const
 
 void db::Collection::serialize(std::ofstream& os) const {
   write_str(os, name);
-  write_bin(os, playlist_ids.size());
+  std::vector<size_t> nontombstoned_playlist_ids;
   for (size_t playlist_id : playlist_ids) {
+    auto& playlist = db::playlist_by_id(playlist_id)->get();
+    if (playlist.is_tombstone()) { continue; }
+    nontombstoned_playlist_ids.emplace_back(playlist_id);
+  }
+  write_bin(os, nontombstoned_playlist_ids.size());
+  for (size_t playlist_id : nontombstoned_playlist_ids) {
     write_bin(os, playlist_id);
   }
 }
 
 void db::Collection::serialize(std::ofstream& os, const std::vector<size_t>& old_playlist_id_to_new_playlist_id) const {
   write_str(os, name);
-  size_t playlist_count = std::count_if(playlist_ids.begin(), playlist_ids.end(), [&](size_t playlist_id) {
-    return old_playlist_id_to_new_playlist_id[playlist_id] != db::playlist_count();
-  });
-  write_bin(os, playlist_count);
-  for (size_t playlist_id : playlist_ids) {
-    if (old_playlist_id_to_new_playlist_id[playlist_id] != db::playlist_count()) {
-      write_bin(os, old_playlist_id_to_new_playlist_id[playlist_id]);
-    }
+  std::vector<size_t> nontombstoned_playlist_ids;
+  for (size_t old_playlist_id : playlist_ids) {
+    size_t new_playlist_id = old_playlist_id_to_new_playlist_id[old_playlist_id];
+    if (new_playlist_id == db::playlist_count()) { continue; }
+    auto& playlist = db::playlist_by_id(old_playlist_id)->get();
+    if (playlist.is_tombstone()) { continue; }
+    nontombstoned_playlist_ids.emplace_back(new_playlist_id);
+  }
+  write_bin(os, nontombstoned_playlist_ids.size());
+  for (size_t playlist_id : nontombstoned_playlist_ids) {
+    write_bin(os, playlist_id);
   }
 }
 
 std::optional<size_t> db::Collection::find_playlist_index(size_t playlist_id) const {
   for (size_t i = 0; i < playlist_ids.size(); i += 1) {
-    if (playlist_ids[i] == playlist_id) {
-      return i;
-    }
+    if (playlist_ids[i] == playlist_id) { return i; }
   }
   return std::nullopt;
 }
