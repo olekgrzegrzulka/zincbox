@@ -90,35 +90,63 @@ void theme::load_default_theme(UI& ui) {
 }
 
 void theme::load_theme(std::string_view theme_name, UI& ui) {
-  bool load_theme_from_resources = theme_name == "";
+  const bool load_theme_from_resources = theme_name == "";
   if (load_theme_from_resources) { load_resources(); }
 
-  // Check if the theme exists in the themes directory
   fs::path theme_path(io::get_themes_path() / theme_name);
-  if (!fs::is_directory(theme_path)) {
-    debug_warn("no theme found at ", std::string{theme_path});
-    load_theme_from_resources = true;
-  }
-
-  // Try to load theme.cfg, else fallback to default theme
   ini::inifile ini;
-  bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
-  if (!success || !ini.contains("theme")) {
-    debug_warn("failed to load theme ", theme_name, ", invalid or missing theme.cfg");
-    load_theme_from_resources = true;
 
+  if (!load_theme_from_resources) {
+    // Check if the theme exists in the themes directory
+    if (!fs::is_directory(theme_path)) {
+      debug_warn("no theme found at ", std::string{theme_path});
+      load_theme("", ui);
+      return;
+    }
+
+    // Try to load theme.cfg, else fallback to default theme
+
+    bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
+    bool invalid_theme = !success || !ini.contains("theme");
+    if (invalid_theme) {
+      debug_warn("failed to load theme ", theme_name, ", invalid or missing theme.cfg");
+      load_theme("", ui);
+      return;
+    }
+
+    // Try to load a font file, else fallback to default theme
+    std::string font_path = "";
+    for (auto const& dir_entry : fs::recursive_directory_iterator(theme_path)) {
+      if (dir_entry.is_regular_file() && dir_entry.path().extension() == ".ttf") {
+        font_path = dir_entry.path();
+        break;
+      }
+    }
+    if (font_path != "") {
+      ui.set_font_face(font_path, 14);
+    } else {
+      debug_warn("no ttf file found in ", std::string{theme_name});
+      load_theme("", ui);
+      return;
+    }
+  } else {
     load_resources();
     if (!resources.contains("theme.cfg")) {
       debug_error("theme.cfg not found");
       return;
     }
-
     std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()), resources["theme.cfg"].size());
     ini.from_string(str_theme_cfg);
     if (!ini.contains("theme")) {
       debug_error("failed to parse theme.cfg");
       return;
     }
+
+    if (resources_ttf_path.empty()) {
+      debug_error("no ttf file found in default theme");
+      return;
+    }
+    ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
   }
 
   // Parse theme.cfg
@@ -147,31 +175,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
       }
     }
     properties[key] = std::move(prop);
-  }
-
-  // Try to load a font file, else fallback to default theme
-  if (!load_theme_from_resources) {
-    std::string font_path = "";
-    for (auto const& dir_entry : fs::recursive_directory_iterator(theme_path)) {
-      if (dir_entry.is_regular_file() && dir_entry.path().extension() == ".ttf") {
-        font_path = dir_entry.path();
-        break;
-      }
-    }
-    if (font_path != "") {
-      ui.set_font_face(font_path, 14);
-    } else {
-      debug_warn("no ttf file found in ", std::string{theme_name});
-      load_theme_from_resources = true;
-    }
-  }
-  if (load_theme_from_resources) {
-    if (resources_ttf_path.empty()) {
-      debug_error("no ttf file found in default theme");
-      return;
-    }
-    load_resources();
-    ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
   }
 
   ScopeTimer timer("load_theme_atlas");
