@@ -48,6 +48,9 @@ static void add_playlist_art_to_texture_atlas(size_t collection_id);
 static void handle_dropped_files();
 static void delete_collection(size_t);
 static void show_add_to_playlist_popup(size_t);
+static void show_popup_delete_collection(size_t collection_id);
+static void show_popup_rename_collection(size_t collection_id);
+static void show_popup_add_directory_to_collection(size_t collection_id);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -128,10 +131,19 @@ void interface::init() {
       .id = "collection_actions",
       .at = at,
       .distance = 10,
-      .button_labels = {"Delete"},
-      .button_actions = {[collection_id]() {
-        delete_collection(collection_id);
-      }},
+      .button_labels = {"Rename", "Add directory", "Re-scan", "Delete"},
+      .button_actions = {
+        [collection_id]() { show_popup_rename_collection(collection_id); },
+        [collection_id]() { show_popup_add_directory_to_collection(collection_id); },
+        [collection_id]() {
+          db::rescan_collection(collection_id);
+          if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+            panel_tracks->recreate();
+            panel_albums->recreate(collection_id);
+          }
+        },
+        [collection_id]() { show_popup_delete_collection(collection_id); },
+      },
     };
     popup_controller->create_popover(d);
   };
@@ -638,4 +650,54 @@ static void show_add_to_playlist_popup(size_t track_id) {
     panel_tracks->clear();
     panel_tracks->recreate();
   };
+}
+
+static void show_popup_delete_collection(size_t collection_id) {
+  auto collection_name = db::collection_by_id(collection_id)->get().name;
+  std::string collection_name_utf8 = utf32_to_utf8(collection_name);
+  std::u32string content = U"Are you sure you want to delete\nthe collection \"" + collection_name + U"\"?";
+  popup_descriptor d{
+    .id = "delete_collection",
+    .title = U"Delete collection",
+    .content = content,
+    .button_labels = {U"Cancel", U"Delete"},
+    .button_actions = {nullptr, [collection_id](Popup*) { delete_collection(collection_id); }},
+  };
+  auto* popup = popup_controller->create_popup(d);
+  popup->set_width(300);
+}
+
+static void show_popup_rename_collection(size_t collection_id) {
+  auto collection_name = db::collection_by_id(collection_id)->get().name;
+  popup_descriptor d{
+    .id = "rename_collection",
+    .title = U"Rename collection",
+    .content = std::nullopt,
+    .button_labels = {U"Cancel", U"Rename"},
+    .button_actions = {nullptr, [collection_id](Popup* p) {
+                         auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
+                         std::u32string new_name = text_input->label.get_text();
+                         if (new_name.empty()) { return; }
+                         db::rename_collection(collection_id, new_name);
+                         panel_top->recreate(active_collection_id);
+                       }},
+  };
+  auto* popup = popup_controller->create_popup(d);
+  auto& text_input = popup->content.add_child<TextInput>();
+  text_input.set_focused(true);
+  text_input.label.set_text(collection_name);
+  popup->set_width(300);
+}
+
+static void show_popup_add_directory_to_collection(size_t collection_id) {
+  NFD::UniquePath out_path;
+  auto result = NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr);
+  if (result == NFD_OKAY) {
+    db::add_path_to_collection(collection_id, out_path.get());
+    db::rescan_collection(collection_id);
+    if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+      panel_tracks->recreate();
+      panel_albums->recreate(collection_id);
+    }
+  }
 }

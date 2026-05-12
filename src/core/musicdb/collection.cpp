@@ -4,6 +4,15 @@
 
 db::Collection::Collection(std::ifstream& is) {
   read_str(is, name);
+
+  size_t paths_size = 0;
+  read_bin(is, paths_size);
+  for (size_t i = 0; i < paths_size; i += 1) {
+    std::string path;
+    read_str(is, path);
+    paths.emplace(path);
+  }
+
   size_t playlist_ids_size = 0;
   read_bin(is, playlist_ids_size);
   playlist_ids.resize(playlist_ids_size);
@@ -40,6 +49,12 @@ std::optional<size_t> db::Collection::prev_playlist_id(size_t playlist_id) const
 
 void db::Collection::serialize(std::ofstream& os) const {
   write_str(os, name);
+
+  write_bin(os, paths.size());
+  for (const auto& path : paths) {
+    write_str(os, path);
+  }
+
   std::vector<size_t> nontombstoned_playlist_ids;
   for (size_t playlist_id : playlist_ids) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
@@ -54,6 +69,12 @@ void db::Collection::serialize(std::ofstream& os) const {
 
 void db::Collection::serialize(std::ofstream& os, const std::vector<size_t>& old_playlist_id_to_new_playlist_id) const {
   write_str(os, name);
+
+  write_bin(os, paths.size());
+  for (const auto& path : paths) {
+    write_str(os, path);
+  }
+
   std::vector<size_t> nontombstoned_playlist_ids;
   for (size_t old_playlist_id : playlist_ids) {
     size_t new_playlist_id = old_playlist_id_to_new_playlist_id[old_playlist_id];
