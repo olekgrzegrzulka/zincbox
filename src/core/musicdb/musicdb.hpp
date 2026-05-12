@@ -32,6 +32,7 @@ namespace db {
   void mark_collection_as_tombstone(size_t);
   bool add_path_to_collection(size_t collection_id, std::string_view path);
   void rescan_collection(size_t collection_id);
+  void rename_collection(size_t collection_id, std::u32string_view new_name);
 
   // playlist getters
   std::optional<std::reference_wrapper<const Playlist>> playlist_by_id(size_t);
