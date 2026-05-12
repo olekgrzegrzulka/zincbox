@@ -15,6 +15,7 @@ class Tab : public Button {
     Tab(UI& ui_) : Button(ui_), label(add_child<Label>()) {
       label.set_anchor(Anchor::CENTER);
       label.set_parent_anchor(Anchor::CENTER);
+      label.set_label_anchor(Anchor::CENTER);
 
       set_clip_children(true);
       set_texture_inactive();
@@ -118,12 +119,12 @@ class Tab : public Button {
 class TabBar : public Sprite {
   public:
     TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
-      set_height(32);
+      set_height(theme::get_prop("top_bar_height").as_i32(32));
       set_layout("fit");
       tab_container = &add_child<Widget>();
-      tab_container->set_height(32);
+      tab_container->set_height(height);
       button_add = &add_child<Button>();
-      button_add->set_size(32, 32);
+      button_add->set_size(height - 4, height - 4);
       button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
       button_add->set_anchor(Anchor::BOTTOM_LEFT);
       button_add->set_texture_idle("button_add_tab_idle");
@@ -153,7 +154,7 @@ class TabBar : public Sprite {
     void add_tab(tab_info info, size_t at, bool select = false) {
       at = std::min(at, tabs.size());
       Tab* t = &tab_container->add_child<Tab>();
-      t->set_height(32);
+      t->set_height(height);
       t->label.set_text(info.label);
       t->padding = info.padding;
       t->is_draggable = info.is_draggable;
