@@ -26,6 +26,7 @@ namespace db {
       i32 bitrate;
       i32 length_seconds;
       std::u32string path;
+      bool flag_not_found_during_rescan = false;
 
     protected:
       bool tombstone = false;
@@ -34,6 +35,7 @@ namespace db {
       void serialize(std::ostream&) const;
       void set_tombstone(bool t) { tombstone = t; }
       bool is_tombstone() const { return tombstone; }
+      std::string to_string() const;
 
       bool operator==(const Track&) const = default;
   };

@@ -15,7 +15,7 @@
 #include "common/debug.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/track.hpp"
-#include "core/utf.hpp"
+#include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_resize2.h"
 #include "lib/stb_image/stb_image_write.h"

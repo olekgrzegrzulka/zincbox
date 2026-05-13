@@ -13,8 +13,8 @@
 #include "common/search_utils.hpp"
 #include "common/serialize.hpp"
 #include "common/types.hpp"
+#include "common/utf.hpp"
 #include "core/io.hpp"
-#include "core/utf.hpp"
 #include "musicdb.hpp"
 #include "playlist.hpp"
 #include "track.hpp"
@@ -226,7 +226,8 @@ void visit_directory(size_t collection_id, std::string_view path) {
           Track track = track_file.get_track().value();
           size_t playlist_id = get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
           album_ids_visited.insert(playlist_id);
-          add_track_to_playlist(playlist_id, track);
+          auto track_id = db::add_track_to_playlist(playlist_id, track);
+          tracks[track_id].flag_not_found_during_rescan = false;
           if (playlists[playlist_id].image.empty()) {
             playlists[playlist_id].image = track_file.get_album_art();
           }
@@ -274,9 +275,29 @@ void db::rescan_collection(size_t collection_id) {
 
   auto& collection = collections[collection_id];
   auto collection_paths = std::move(collection.paths);
+
+  // set flag_not_found_during_rescan for all tracks in the collection
+  // this flag is set to false for tracks found during rescan (scan_directory())
+  for (size_t playlist_id : collection.playlist_ids) {
+    auto& playlist = playlists[playlist_id];
+    for (size_t track_id : playlist.get_track_ids()) {
+      auto& track = tracks[track_id];
+      track.flag_not_found_during_rescan = true;
+    }
+  }
+
   collection.playlist_ids.clear();
   for (const auto& path : collection_paths) {
     add_path_to_collection(collection_id, path);
+  }
+
+  // mark tracks not found during rescan as tombstone
+  for (size_t playlist_id : collection.playlist_ids) {
+    auto& playlist = playlists[playlist_id];
+    for (size_t track_id : playlist.get_track_ids()) {
+      auto& track = tracks[track_id];
+      track.set_tombstone(track.flag_not_found_during_rescan);
+    }
   }
 }
 
@@ -364,9 +385,11 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
   ScopeTimer timer("add_track_to_playlist");
 
   // check if track with the same file path is already present in the db
-  if (auto found_track = db::track_by_path(track.path); found_track != std::nullopt) {
-    playlists[playlist_id].add_track(*found_track);
-    return *found_track;
+  if (auto found_track_id = db::track_by_path(track.path); found_track_id != std::nullopt) {
+    auto& existing_track = tracks[*found_track_id];
+    existing_track = track; // copy metadata from the new track to the existing track
+    playlists[playlist_id].add_track(*found_track_id);
+    return *found_track_id;
   }
 
   auto compare_metadata = [](auto a, auto b) {
@@ -397,6 +420,8 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
     // if we have at least 2 matching metadata fields (and title + artist), consider it the same track
     if (track_similiarity.rbegin()->first >= 2) {
       size_t found_track_id = track_similiarity.rbegin()->second;
+      auto& existing_track = tracks[found_track_id];
+      existing_track = track; // copy metadata from the new track to the existing track
       playlists[playlist_id].add_track(found_track_id);
       return found_track_id;
     }

@@ -4,6 +4,7 @@
 #include <string>
 #include "common/serialize.hpp"
 #include "common/types.hpp"
+#include "common/utf.hpp"
 
 db::Track::Track(i32 track_number,
                  std::u32string title,
@@ -47,4 +48,8 @@ void db::Track::serialize(std::ostream& os) const {
   write_bin(os, bitrate);
   write_bin(os, length_seconds);
   write_str(os, path);
+}
+
+std::string db::Track::to_string() const {
+  return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) + (tombstone ? " (tombstone)" : "");
 }

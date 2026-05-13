@@ -12,7 +12,7 @@
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
-#include "core/utf.hpp"
+#include "common/utf.hpp"
 #include "interface.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
