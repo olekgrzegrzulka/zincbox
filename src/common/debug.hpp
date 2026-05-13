@@ -8,7 +8,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include "color.hpp"
-#include "core/utf.hpp"
+#include "common/utf.hpp"
 #include "types.hpp"
 
 #ifdef NDEBUG

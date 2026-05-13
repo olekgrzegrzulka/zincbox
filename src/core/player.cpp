@@ -6,7 +6,7 @@
 #include "common/random.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
-#include "core/utf.hpp"
+#include "common/utf.hpp"
 #include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};

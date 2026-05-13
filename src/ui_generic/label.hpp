@@ -4,7 +4,7 @@
 #include <vector>
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
-#include "core/utf.hpp"
+#include "common/utf.hpp"
 #include "vertex.hpp"
 #include "widget.hpp"
 
