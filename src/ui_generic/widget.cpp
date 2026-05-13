@@ -1,4 +1,5 @@
 #include "widget.hpp"
+#include <spanstream>
 #include <glm/vec2.hpp>
 #include "common/input.hpp"
 #include "ui.hpp"
@@ -181,11 +182,11 @@ bool Widget::is_mouse_hovering(vec2i at) const {
   return mouse_on_widget_x && mouse_on_widget_y;
 }
 
-void Widget::set_layout(const std::string& def) {
+void Widget::set_layout(std::string_view def) {
   Layout l;
   l.enabled = true;
 
-  std::stringstream ss(def);
+  std::ispanstream ss(def);
   std::string token;
 
   while (ss >> token) {

@@ -246,7 +246,7 @@ class Widget {
       return layout;
     }
 
-    void set_layout(const std::string& def);
+    void set_layout(std::string_view def);
 
     void set_pos(i32 x, i32 y);
     void set_pos(vec2i);

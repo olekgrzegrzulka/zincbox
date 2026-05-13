@@ -23,18 +23,26 @@ static constexpr u8 resources_zip[] = {
 #embed "resources.zip"
 };
 
-static std::unordered_map<std::string, theme::theme_prop> properties;
-static std::unordered_set<std::string> props_not_found;
-static std::unordered_map<std::string, std::vector<uint8_t>> resources;
+struct StringHash {
+    using is_transparent = void;
+    size_t operator()(std::string_view sv) const {
+      return std::hash<std::string_view>{}(sv);
+    }
+};
+
+static std::unordered_map<std::string, theme::theme_prop, StringHash, std::equal_to<>> properties;
+static std::unordered_set<std::string, StringHash, std::equal_to<>> props_not_found;
+static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> resources;
 static std::string resources_ttf_path;
 
 theme::theme_prop theme::get_prop(std::string_view prop) {
-  if (auto it = properties.find(std::string(prop)); it != properties.end()) {
+  if (auto it = properties.find(prop); it != properties.end()) {
     return it->second;
   }
-
-  if (props_not_found.emplace(std::string(prop)).second) {
-    debug_warn("theme has no property " + std::string(prop));
+  if (!props_not_found.contains(prop)) {
+    std::string prop_str(prop);
+    props_not_found.emplace(prop_str);
+    debug_warn("theme has no property " + prop_str);
   }
   return theme_prop{std::monostate()};
 }

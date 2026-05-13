@@ -20,7 +20,7 @@ TextureAtlas::TextureAtlas(i32 atlas_size_px_, i32 margin_px_, i32 grid_size_px_
   occupied_grid_space.resize((atlas_size_px / grid_size_px) * (atlas_size_px / grid_size_px), false);
 }
 
-bool TextureAtlas::add_texture(std::string id, std::string path) {
+bool TextureAtlas::add_texture(std::string_view id, std::string path) {
   if (textures.contains(id)) { return false; }
 
   i32 width, height, channels;
@@ -35,14 +35,14 @@ bool TextureAtlas::add_texture(std::string id, std::string path) {
   uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
-  textures[id] = uv;
+  textures[std::string(id)] = uv;
 
   stbi_image_free(data);
 
   return true;
 }
 
-bool TextureAtlas::add_texture(std::string id, const std::vector<u8>& data_, i32 width, i32 height) {
+bool TextureAtlas::add_texture(std::string_view id, const std::vector<u8>& data_, i32 width, i32 height) {
   if (textures.contains(id)) { return false; }
   stbi_uc* data = (stbi_uc*)data_.data();
   if (!data) {
@@ -57,14 +57,14 @@ bool TextureAtlas::add_texture(std::string id, const std::vector<u8>& data_, i32
   uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
-  textures[id] = uv;
+  textures[std::string(id)] = uv;
 
   // stbi_image_free(data);
 
   return true;
 }
 
-bool TextureAtlas::add_texture(std::string id, const u8* data_, i32 width, i32 height) {
+bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, i32 height) {
   if (textures.contains(id)) { return false; }
   stbi_uc* data = (stbi_uc*)data_;
   if (!data) {
@@ -79,7 +79,7 @@ bool TextureAtlas::add_texture(std::string id, const u8* data_, i32 width, i32 h
   uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
-  textures[id] = uv;
+  textures[std::string(id)] = uv;
 
   return true;
 }
@@ -88,11 +88,12 @@ void TextureAtlas::add_texture_alias(std::string id, std::string to) {
   aliases[id] = to;
 }
 
-bool TextureAtlas::remove_texture(std::string id) {
+bool TextureAtlas::remove_texture(std::string_view id) {
   bool textures_contains_id = textures.contains(id);
   bool aliases_contains_id = aliases.contains(id);
   if (textures_contains_id) {
-    auto& uv = textures.at(id);
+    std::string id_str(id);
+    auto& uv = textures.at(id_str);
     mark_space_for_texture(uv.start.x * atlas_size_px, uv.start.y * atlas_size_px, uv.width, uv.height, true);
     for (i32 y = 0; y < uv.height; y++) {
       for (i32 x = 0; x < uv.width; x++) {
@@ -106,25 +107,19 @@ bool TextureAtlas::remove_texture(std::string id) {
       }
     }
     dirty = true;
-    textures.erase(id);
+    textures.erase(id_str);
   }
   if (aliases_contains_id) {
-    aliases.erase(id);
+    aliases.erase(std::string(id));
   }
 
   return textures_contains_id || aliases_contains_id;
 }
 
-vec2i TextureAtlas::get_texture_size(std::string id) {
-  if (auto it = textures.find(id); it != textures.end()) {
-    return {it->second.width, it->second.height};
-  } else if (auto aliases_it = aliases.find(id); aliases_it != aliases.end()) {
-    return get_texture_size(aliases_it->second);
-  } else if (fallback_texture.has_value()) {
-    return get_texture_size(fallback_texture.value());
-  } else {
-    return {0, 0};
-  }
+vec2i TextureAtlas::get_texture_size(std::string_view id) {
+  auto texture_atlas_data = get(id);
+  if (!texture_atlas_data.has_value()) { return {0, 0}; }
+  return {texture_atlas_data->get().width, texture_atlas_data->get().height};
 }
 
 void TextureAtlas::save_to_file(std::string filename) {
@@ -143,7 +138,7 @@ void TextureAtlas::save_to_file(std::string filename) {
   th.detach();
 }
 
-std::optional<std::reference_wrapper<TextureAtlasData>> TextureAtlas::get_internal(std::string id, i32 max_depth) {
+std::optional<std::reference_wrapper<TextureAtlasData>> TextureAtlas::get_internal(std::string_view id, i32 max_depth) {
   if (max_depth <= 0) {
     if (fallback_texture.has_value()) {
       return get(fallback_texture.value());
@@ -170,7 +165,7 @@ void TextureAtlas::bind(u32 slot) {
   glBindSampler(slot, sampler);
 }
 
-void TextureAtlas::set_fallback_texture(std::string id) {
+void TextureAtlas::set_fallback_texture(std::string_view id) {
   if (!has_texture(id)) { return; }
   fallback_texture = id;
 }
