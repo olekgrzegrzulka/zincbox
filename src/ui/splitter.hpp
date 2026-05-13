@@ -20,9 +20,9 @@ class Splitter final : public Sprite {
 
     void process_input() override {
       bool lmb = Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
-      if (!is_mouse_hovering() && !lmb) { mouse_hovering = false; }
+      if (!is_mouse_hovering() && !lmb) { is_dragged = false; }
 
-      if (mouse_hovering && lmb) {
+      if (is_dragged && lmb) {
         ratio = std::clamp(Input::get_mouse_x() / (double)ui.get_window_width(), 0.01, 0.99);
       }
 
@@ -31,12 +31,14 @@ class Splitter final : public Sprite {
 
     void handle_event(Input::InputEventMouseButton& ev) override {
       if (is_mouse_hovering() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT && ev.action == Input::MouseAction::PRESS) {
-        mouse_hovering = true;
+        is_dragged = true;
         ev.handled = true;
       }
     }
 
+    bool get_is_dragged() const { return is_dragged; }
+
   private:
     double ratio = 0.5;
-    bool mouse_hovering = false;
+    bool is_dragged = false;
 };

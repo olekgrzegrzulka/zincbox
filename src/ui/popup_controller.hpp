@@ -274,6 +274,10 @@ class PopupController : public Widget {
       return &popup;
     };
 
+    bool is_popup_open() const {
+      return popups.size() > 0;
+    }
+
     void close_all_popups() {
       for (auto [popup_id, popup] : popups) {
         popup->set_marked_for_deletion(true);

@@ -3,6 +3,7 @@
 #include <array>
 #include <variant>
 #include <vector>
+#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "opengl_includes.hpp"
 
@@ -18,6 +19,7 @@ namespace Input {
     static i32 window_y{};
     static std::vector<InputEvent> event_queue{};
     static std::vector<std::string> dropped_paths{};
+    static std::array<GLFWcursor*, (size_t)Cursor::CURSOR_SIZE> cursors{};
 
     enum class ButtonState {
       RELEASED,
@@ -104,6 +106,15 @@ namespace Input {
     glfwSetCursorEnterCallback(window, glfw_cursor_enter_callback);
     glfwSetWindowCloseCallback(window, glfw_close_window_callback);
     glfwSetDropCallback(window, glfw_drop_callback);
+
+    detail::cursors[(size_t)Cursor::ARROW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+    detail::cursors[(size_t)Cursor::IBEAM] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+    detail::cursors[(size_t)Cursor::CROSSHAIR] = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+    detail::cursors[(size_t)Cursor::HAND] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+    detail::cursors[(size_t)Cursor::RESIZE_HORIZONTAL] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+    detail::cursors[(size_t)Cursor::RESIZE_VERTICAL] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+    detail::cursors[(size_t)Cursor::RESIZE] = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
+    detail::cursors[(size_t)Cursor::NOT_ALLOWED] = glfwCreateStandardCursor(GLFW_NOT_ALLOWED_CURSOR);
   }
 
   void update() {
@@ -380,5 +391,9 @@ namespace Input {
 
   const std::vector<std::string>& get_dropped_paths() {
     return detail::dropped_paths;
+  }
+
+  void set_cursor(Input::Cursor cursor) {
+    glfwSetCursor(detail::glfw_window, detail::cursors[(size_t)cursor]);
   }
 }; // namespace Input

@@ -160,6 +160,19 @@ namespace Input {
     RELEASE,
   };
 
+  enum class Cursor {
+    ARROW,
+    IBEAM,
+    CROSSHAIR,
+    POINTING_HAND,
+    RESIZE_HORIZONTAL,
+    RESIZE_VERTICAL,
+    RESIZE,
+    NOT_ALLOWED,
+    HAND,
+    CURSOR_SIZE,
+  };
+
   struct InputEventMouseButton {
       MouseButton button{};
       MouseAction action{};
@@ -246,4 +259,6 @@ namespace Input {
   std::string key_to_string(Input::Key key);
 
   const std::vector<std::string>& get_dropped_paths();
+
+  void set_cursor(Input::Cursor cursor);
 }; // namespace Input
