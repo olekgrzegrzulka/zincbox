@@ -25,22 +25,37 @@ class WidgetAlbum : public Widget {
 
       auto& header_container = add_child<Widget>();
       header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
-      header_container.set_layout("m:0 s:0 fit fill");
+      header_container.set_layout("m:4 s:0 fit fill");
 
       auto& header = header_container.add_child<Sprite>("panel_playlist_header");
       header.set_anchor(Anchor::CENTER);
       header.set_parent_anchor(Anchor::CENTER);
+      // header.set_layout("ltr m:8 s:8");
       header.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() - 20);
       header.set_nine_slice_margin(4);
       header.set_y(6);
 
-      auto& s = header.add_child<Label>();
-      s.set_text(playlist.name);
-      s.set_text_color(theme::get_prop("tracklist_header_text_color").as_rgba());
-      s.set_anchor(Anchor::CENTER);
-      s.set_parent_anchor(Anchor::CENTER);
-      s.set_label_anchor(Anchor::CENTER);
-      s.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
+      auto& label_author = header.add_child<Label>();
+      label_author.set_text(playlist.author);
+      label_author.draw();
+      label_author.set_text_color(theme::get_prop("tracklist_header_author_color").as_rgba());
+      label_author.set_anchor(Anchor::LEFT);
+      label_author.set_parent_anchor(Anchor::LEFT);
+      label_author.set_label_anchor(Anchor::LEFT);
+      label_author.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
+      label_author.set_x(8);
+      if (playlist.author.empty()) {
+        label_author.set_is_drawn(false);
+      }
+
+      auto& label_name = header.add_child<Label>();
+      label_name.set_text(playlist.name);
+      label_name.set_text_color(theme::get_prop("tracklist_header_name_color").as_rgba());
+      label_name.set_anchor(Anchor::LEFT);
+      label_name.set_parent_anchor(Anchor::LEFT);
+      label_name.set_label_anchor(Anchor::LEFT);
+      label_name.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
+      label_name.set_x(label_author.get_is_drawn() ? label_author.get_width() + 14 : 8);
 
       bool even = true;
       size_t playlist_track_index = 0;
