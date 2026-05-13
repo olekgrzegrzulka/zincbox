@@ -51,5 +51,5 @@ void db::Track::serialize(std::ostream& os) const {
 }
 
 std::string db::Track::to_string() const {
-  return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) + (tombstone ? " (tombstone)" : "");
+  return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) + (is_tombstone() ? " (tombstone)" : "");
 }
