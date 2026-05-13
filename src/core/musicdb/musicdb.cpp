@@ -475,3 +475,9 @@ std::optional<size_t> db::track_by_path(std::u32string_view path) {
 const std::vector<Track>& db::all_tracks() { return tracks; }
 
 size_t db::track_count() { return tracks.size(); }
+
+void db::set_track_playback_error(size_t track_id, bool error) {
+  if (track_id >= tracks.size()) { return; }
+  auto& track = tracks[track_id];
+  track.set_playback_error(error);
+}

@@ -88,6 +88,9 @@ class WidgetTrack : public Button {
       }
 
       hover = &add_child<Sprite>("track_hovered");
+
+      set_playback_error(track.is_playback_error());
+      update_text_colors();
     }
 
     void setup(size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) {
@@ -113,14 +116,27 @@ class WidgetTrack : public Button {
       label_track_length->set_text(ss.str());
 
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
+      set_playback_error(track.is_playback_error());
+      update_text_colors();
     }
 
-    void set_highlighted(bool new_state) {
-      if (highlighted_old == new_state) { return; }
-      highlighted_old = new_state;
+    void set_highlighted(bool highlighted_new) {
+      if (highlighted == highlighted_new) { return; }
+      highlighted = highlighted_new;
 
+      update_text_colors();
+    }
+
+    void set_playback_error(bool playback_error_new) {
+      if (playback_error == playback_error_new) { return; }
+      playback_error = playback_error_new;
+
+      update_text_colors();
+    }
+
+    void update_text_colors() {
       std::string txt;
-      if (new_state) {
+      if (highlighted) {
         panel_right_side->set_texture("track_bg_playing", false);
         txt = "track_bg_playing";
       } else {
@@ -139,12 +155,12 @@ class WidgetTrack : public Button {
       label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
 
       auto& track = db::track_by_id(track_id)->get();
-      if (track.is_tombstone()) {
+      if (track.is_tombstone() || playback_error) {
         label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
         label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
         label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
-      } else if (new_state) {
+      } else if (highlighted) {
         label_track_number->set_text_color(label_track_number->get_text_color() * 1.5f);
         label_track_artist->set_text_color(label_track_artist->get_text_color() * 1.5f);
         label_track_title->set_text_color(label_track_title->get_text_color() * 1.5f);
@@ -180,7 +196,8 @@ class WidgetTrack : public Button {
     Sprite* hover{};
     Sprite* love_icon{};
     bool even = false;
-    bool highlighted_old = false;
+    bool highlighted = false;
+    bool playback_error = false;
 
     std::optional<size_t> playlist_track{};
     bool pressed = false;

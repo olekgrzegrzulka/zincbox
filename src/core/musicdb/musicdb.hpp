@@ -59,5 +59,5 @@ namespace db {
   size_t track_count();
 
   // track setters
-  size_t add_track();
+  void set_track_playback_error(size_t track_id, bool playback_error);
 } // namespace db

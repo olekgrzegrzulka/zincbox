@@ -6,10 +6,16 @@
 #include "ui_generic/ui.hpp"
 
 class WidgetAlbum : public Widget {
+  protected:
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_rmb{};
+    std::vector<WidgetTrack*> track_widgets;
+    Signal<>::slot_key slot_on_track_changed;
+
   public:
     WidgetAlbum(UI& ui_, size_t collection_id, size_t playlist_id_,
-                std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb_,
-                std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb_) : Widget(ui_) {
+                decltype(on_track_lmb) on_track_lmb_,
+                decltype(on_track_rmb) on_track_rmb_) : Widget(ui_) {
       playlist_id = playlist_id_;
       on_track_lmb = on_track_lmb_;
       on_track_rmb = on_track_rmb_;
@@ -84,10 +90,4 @@ class WidgetAlbum : public Widget {
 
     bool passed_visibility_test = false;
     size_t playlist_id;
-
-  protected:
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb{};
-    std::vector<WidgetTrack*> track_widgets;
-    Signal<>::slot_key slot_on_track_changed;
 };

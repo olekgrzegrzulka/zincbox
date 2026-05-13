@@ -30,8 +30,8 @@ namespace player {
 
   void update();
 
-  void play(playing_t, bool clear_history = true);
-  void play_playlist(size_t collection_id, size_t playlist_id, bool clear_history = true);
+  bool play(playing_t, bool clear_history = true);
+  bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_history = true);
   void enqueue(playing_t, size_t at);
   void remove_from_queue(size_t at);
   void resume();
@@ -41,8 +41,8 @@ namespace player {
   void set_volume(float);
   float get_volume();
 
-  void next_track();
-  void prev_track();
+  void next_track(i32 tries = 10);
+  void prev_track(i32 tries = 10);
 
   i32 get_current_time_ms();
   i32 get_total_duration_ms();

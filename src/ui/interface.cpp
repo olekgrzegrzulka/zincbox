@@ -8,11 +8,11 @@
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "common/types.hpp"
+#include "common/utf.hpp"
 #include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
-#include "common/utf.hpp"
 #include "interface.hpp"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
@@ -22,6 +22,7 @@
 #include "popup_controller.hpp"
 #include "splitter.hpp"
 #include "theme.hpp"
+#include "ui/panel_tracks_track.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
@@ -172,13 +173,15 @@ void interface::init() {
     }
   };
 
-  panel_tracks->on_track_lmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t /* playlist_track_index */, Widget*) {
+  panel_tracks->on_track_lmb = [&](size_t collection_id, size_t playlist_id, size_t track_id, size_t /* playlist_track_index */, WidgetTrack* widget) {
+    if (track_id >= db::track_count()) { return; }
     player::playing_t play{
       .collection_id = collection_id,
       .playlist_id = playlist_id,
       .track_id = track_id,
     };
-    player::play(play, true);
+    bool playback_error = !player::play(play, true);
+    widget->set_playback_error(playback_error);
   };
 
   panel_queue->on_queue_element_lmb = [&](size_t queue_index, Widget*) {

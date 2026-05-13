@@ -4,9 +4,9 @@
 #include <vector>
 #include "common/debug.hpp"
 #include "common/random.hpp"
+#include "common/utf.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
-#include "common/utf.hpp"
 #include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};
@@ -48,14 +48,14 @@ void player::deinit() {
   ma_device_uninit(&device);
 }
 
-void play_track() {
+bool play_track() {
   auto playing = player::get_playing();
   if (!playing.has_value()) {
     player::stop();
-    return;
+    return true;
   }
-  auto track = db::track_by_id(playing->track_id)->get();
-  auto playlist = db::playlist_by_id(playing->playlist_id)->get();
+  auto& track = db::track_by_id(playing->track_id)->get();
+  auto& playlist = db::playlist_by_id(playing->playlist_id)->get();
 
   ma_engine_stop(&engine);
   ma_sound_uninit(&sound);
@@ -69,29 +69,33 @@ void play_track() {
                                    NULL,
                                    &sound);
   if (result != MA_SUCCESS) {
-    debug_warn(result);
-    return;
+    debug_warn("player::play: ma_sound_init_from_file failed for path: ", utf32_to_utf8(track.path), " with error code: ", result);
+    db::set_track_playback_error(playing->track_id, true);
+    return false;
   }
 
   float ret;
   result = ma_sound_get_length_in_seconds(&sound, &ret);
   if (result != MA_SUCCESS) {
-    debug_warn(result);
-    return;
+    debug_warn("player::play: ma_sound_get_length_in_seconds failed for path: ", utf32_to_utf8(track.path), " with error code: ", result);
+    db::set_track_playback_error(playing->track_id, true);
+    return false;
   }
   total_duration_ms = ret * 1000.0f;
 
   result = ma_sound_start(&sound);
   if (result != MA_SUCCESS) {
-    debug_warn(result);
-    return;
+    debug_warn("player::play: ma_sound_start failed for path: ", utf32_to_utf8(track.path), " with error code: ", result);
+    db::set_track_playback_error(playing->track_id, true);
+    return false;
   }
   ma_sound_set_volume(&sound, volume);
   result = ma_engine_start(&engine);
   if (result != MA_SUCCESS) {
     ma_sound_stop(&sound);
-    debug_warn(result);
-    return;
+    debug_warn("player::play: ma_engine_start failed for path: ", utf32_to_utf8(track.path), " with error code: ", result);
+    db::set_track_playback_error(playing->track_id, true);
+    return false;
   }
 
   player::signal_on_track_changed.emit();
@@ -111,6 +115,9 @@ void play_track() {
       utf32_to_utf8(playlist.name),
       track.length_seconds * 1000);
   }
+
+  db::set_track_playback_error(playing->track_id, false);
+  return true;
 }
 
 void player::update() {
@@ -119,7 +126,7 @@ void player::update() {
   }
 }
 
-void player::play(playing_t play, bool clear_history) {
+bool player::play(playing_t play, bool clear_history) {
   if (clear_history || playing_queue.size() == 0) {
     playing_queue = {play};
     playing_index = 0;
@@ -134,14 +141,14 @@ void player::play(playing_t play, bool clear_history) {
     signal_on_queue_changed.emit(false);
   }
 
-  play_track();
+  return play_track();
 }
 
-void player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_history) {
+bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_history) {
   auto playlist = db::playlist_by_id(playlist_id);
-  if (!playlist.has_value()) { return; }
+  if (!playlist.has_value()) { return true; }
   auto track_ids = playlist->get().get_track_ids();
-  if (track_ids.size() == 0) { return; }
+  if (track_ids.size() == 0) { return true; }
 
   if (clear_history) {
     playing_queue.clear();
@@ -167,7 +174,7 @@ void player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_
     }
   }
 
-  play_track();
+  return play_track();
 }
 
 void player::enqueue(playing_t play, size_t at) {
@@ -244,7 +251,8 @@ bool is_in_tracks_history(size_t track_id, i32 from_index, i32 to_index) {
   return false;
 };
 
-void player::next_track() {
+void player::next_track(i32 tries) {
+  if (tries <= 0) { return; }
   if (!playing_index.has_value()) { return; }
 
   if (repeat_mode == RepeatMode::TRACK) {
@@ -255,7 +263,9 @@ void player::next_track() {
 
   if (playing_index.value() < playing_queue.size() - 1) {
     playing_index = playing_index.value() + 1;
-    play_track();
+    if (!play_track()) {
+      next_track(tries - 1);
+    }
     return;
   }
 
@@ -269,36 +279,48 @@ void player::next_track() {
   } else if (shuffle_mode == ShuffleMode::OFF) {
     auto next_track_id = playlist->get().next_track_id(playing.track_id);
     if (next_track_id.has_value()) {
-      play(player::playing_t{
-             .collection_id = playing.collection_id,
-             .playlist_id = playing.playlist_id,
-             .track_id = next_track_id.value(),
-           },
-           false);
+      bool result = play(player::playing_t{
+                           .collection_id = playing.collection_id,
+                           .playlist_id = playing.playlist_id,
+                           .track_id = next_track_id.value(),
+                         },
+                         false);
+      if (!result) {
+        next_track(tries - 1);
+        return;
+      }
     } else if (repeat_mode == RepeatMode::OFF) {
       auto next_playlist_id = collection->get().next_playlist_id(playing.playlist_id);
       if (next_playlist_id.has_value()) {
         auto next_playlist = db::playlist_by_id(next_playlist_id.value());
         if (!next_playlist.has_value()) { return; }
         if (next_playlist->get().get_tracks_count() == 0) { return; }
-        play(player::playing_t{
-               .collection_id = playing.collection_id,
-               .playlist_id = next_playlist_id.value(),
-               .track_id = next_playlist->get().get_track_ids()[0],
-             },
-             false);
+        bool result = play(player::playing_t{
+                             .collection_id = playing.collection_id,
+                             .playlist_id = next_playlist_id.value(),
+                             .track_id = next_playlist->get().get_track_ids()[0],
+                           },
+                           false);
+        if (!result) {
+          next_track(tries - 1);
+          return;
+        }
       }
     } else if (repeat_mode == RepeatMode::ALBUM) {
       if (playlist->get().get_tracks_count() == 0) {
         debug_warn("player::play: empty playlist");
         return;
       }
-      play(player::playing_t{
-             .collection_id = playing.collection_id,
-             .playlist_id = playing.playlist_id,
-             .track_id = playlist->get().get_track_ids()[0],
-           },
-           false);
+      bool result = play(player::playing_t{
+                           .collection_id = playing.collection_id,
+                           .playlist_id = playing.playlist_id,
+                           .track_id = playlist->get().get_track_ids()[0],
+                         },
+                         false);
+      if (!result) {
+        next_track(tries - 1);
+        return;
+      }
     } else {
       debug_warn("player::play: unknown RepeatMode enum value");
       return;
@@ -307,36 +329,48 @@ void player::next_track() {
     if (repeat_mode == RepeatMode::OFF) {
       size_t rand_playlist_id = 0;
       size_t rand_track_id = 0;
-      for (i32 tries = 10; tries > 0; tries -= 1) {
+      for (i32 shuffle_tries = 10; shuffle_tries > 0; shuffle_tries -= 1) {
         rand_playlist_id = rng.pick(std::span{db::collection_by_id(playing.collection_id)->get().playlist_ids});
+        i32 collection_track_count = 0;
+        for (size_t playlist_id : db::collection_by_id(playing.collection_id)->get().playlist_ids) {
+          collection_track_count += db::playlist_by_id(playlist_id)->get().get_tracks_count();
+        }
         rand_track_id = rng.pick(std::span{db::playlist_by_id(rand_playlist_id)->get().get_track_ids()});
-
-        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - 20, playing_index.value_or(0))) {
+        i32 last_tracks_to_check = std::clamp(collection_track_count / 2, 0, 30);
+        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check, playing_index.value_or(0))) {
           break;
         }
       }
 
-      play(player::playing_t{
-             .collection_id = playing.collection_id,
-             .playlist_id = rand_playlist_id,
-             .track_id = rand_track_id,
-           },
-           false);
+      bool result = play(player::playing_t{
+                           .collection_id = playing.collection_id,
+                           .playlist_id = rand_playlist_id,
+                           .track_id = rand_track_id,
+                         },
+                         false);
+      if (!result) {
+        next_track(tries - 1);
+        return;
+      }
     } else if (repeat_mode == RepeatMode::ALBUM) {
       size_t rand_track_id = 0;
-      for (i32 tries = 10; tries > 0; tries -= 1) {
+      for (i32 shuffle_tries = 10; shuffle_tries > 0; shuffle_tries -= 1) {
         rand_track_id = rng.pick(std::span{db::playlist_by_id(playing.playlist_id)->get().get_track_ids()});
         i32 last_tracks_to_check = std::clamp((i32)db::playlist_by_id(playing.playlist_id)->get().get_tracks_count() / 2, 0, 30);
         if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check, playing_index.value_or(0))) {
           break;
         }
       }
-      play(player::playing_t{
-             .collection_id = playing.collection_id,
-             .playlist_id = playing.playlist_id,
-             .track_id = rand_track_id,
-           },
-           false);
+      bool result = play(player::playing_t{
+                           .collection_id = playing.collection_id,
+                           .playlist_id = playing.playlist_id,
+                           .track_id = rand_track_id,
+                         },
+                         false);
+      if (!result) {
+        next_track(tries - 1);
+        return;
+      }
     } else {
       debug_warn("player::play: unknown RepeatMode enum value");
     }
@@ -350,7 +384,8 @@ void player::next_track() {
   // debug_warn("player::next_track: couldn't find track on playlist: track_id = ",play.track_id, ", playlist_id: ", play.playlist_id, ", collection_id: ", play.collection_id);
 }
 
-void player::prev_track() {
+void player::prev_track(i32 tries) {
+  if (tries <= 0) { return; }
   if (!playing_index.has_value()) { return; }
   std::optional<player::playing_t> play_prev;
 
@@ -361,7 +396,10 @@ void player::prev_track() {
 
   if (playing_index.value() != 0) {
     playing_index = playing_index.value() - 1;
-    play_track();
+    if (!play_track()) {
+      prev_track(tries - 1);
+      return;
+    }
     return;
   }
 
@@ -416,7 +454,10 @@ void player::prev_track() {
   if (play_prev.has_value()) {
     playing_queue.emplace(playing_queue.begin(), play_prev.value());
     signal_on_queue_changed.emit(false);
-    play_track();
+    if (!play_track()) {
+      prev_track(tries - 1);
+      return;
+    }
   }
 }
 

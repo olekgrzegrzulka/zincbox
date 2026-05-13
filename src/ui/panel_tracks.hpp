@@ -6,6 +6,7 @@
 #include <glm/common.hpp>
 #include "common/input.hpp"
 #include "common/types.hpp"
+#include "ui/panel_tracks_track.hpp"
 #include "ui_generic/sprite.hpp"
 
 class ScrollBar;
@@ -38,8 +39,8 @@ class PanelTracks : public Sprite {
   public:
     ViewType view_type = ViewType::NONE;
     std::optional<size_t> collection_id{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_lmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, Widget* widget)> on_track_rmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_rmb{};
 
   protected:
     double scroll_px{};
