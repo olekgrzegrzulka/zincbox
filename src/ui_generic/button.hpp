@@ -44,11 +44,11 @@ class Button : public Sprite {
       init();
     }
 
-    Button(UI& ui_, std::u32string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+    Button(UI& ui_, std::u32string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
       init();
     }
 
-    Button(UI& ui_, std::string label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
+    Button(UI& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
       init();
     }
 

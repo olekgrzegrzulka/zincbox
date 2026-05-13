@@ -43,10 +43,6 @@ void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
   }
 }
 
-void PanelTracks::scroll_to_now_playing_album() {
-  // Implementation logic here
-}
-
 void PanelTracks::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 

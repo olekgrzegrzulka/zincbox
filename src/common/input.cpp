@@ -1,4 +1,5 @@
 #include "input.hpp"
+#include <algorithm>
 #include <array>
 #include <variant>
 #include <vector>
@@ -195,16 +196,10 @@ namespace Input {
   }
 
   std::vector<InputEvent>& get_event_queue() {
-    std::vector<InputEvent> ret;
-    for (auto ev : detail::event_queue) {
-      bool handled = std::visit([](auto&& e) { return e.handled; }, ev);
-      if (!handled) {
-        ret.emplace_back(ev);
-      }
-    }
-
-    detail::event_queue = ret;
-
+    auto new_end = std::remove_if(detail::event_queue.begin(), detail::event_queue.end(), [](const InputEvent& ev) {
+      return std::visit([](auto&& e) { return e.handled; }, ev);
+    });
+    detail::event_queue.erase(new_end, detail::event_queue.end());
     return detail::event_queue;
   }
 

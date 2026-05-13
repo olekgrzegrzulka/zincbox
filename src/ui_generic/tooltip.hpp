@@ -19,6 +19,7 @@ class ToolTip : public Sprite {
       distance = distance_;
       set_ignore_parents_layout(true);
       set_is_drawn_on_top(true);
+      set_nine_slice_margin(4.0f);
 
       label = &add_child<Label>(name_);
       label->set_parent_anchor(Anchor::CENTER);
