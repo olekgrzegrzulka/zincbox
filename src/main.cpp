@@ -22,6 +22,7 @@
 #include "common/config.hpp"
 #include "common/debug.hpp"
 #include "common/input.hpp"
+#include "common/utf.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
@@ -48,6 +49,31 @@ void check_opengl_errors() {
     error_hex << std::hex << error << ": " << get_opengl_error_string(error);
     debug_warn("GL error 0x", error_hex.str());
   }
+}
+
+void set_window_title(GLFWwindow* window) {
+  static std::optional<player::playing_t> prev_playing;
+  auto playing = player::get_playing();
+  if (playing == prev_playing) { return; }
+  prev_playing = playing;
+
+  std::string window_title;
+  if (playing.has_value()) {
+    auto& track = db::track_by_id(playing->track_id)->get();
+    if (!track.title.empty()) {
+      if (!track.artist.empty()) {
+        window_title = "zincbox (" + utf32_to_utf8(track.artist + U" - " + track.title) + ")";
+      } else {
+        window_title = "zincbox (" + utf32_to_utf8(track.title) + ")";
+      }
+    } else {
+      window_title = "zincbox (" + std::filesystem::path(track.path).filename().string() + ")";
+    }
+  } else {
+    window_title = "zincbox";
+  }
+
+  glfwSetWindowTitle(window, window_title.c_str());
 }
 
 int main() {
@@ -82,7 +108,7 @@ int main() {
     std::clamp(config_get_i32("window_height").value_or(600), 320, 1080 * 4),
   };
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
-  GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "music", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "zincbox", NULL, NULL);
   if (!window) { debug_error("Failed to create window"); }
   glfwMakeContextCurrent(window);
   glfwSetWindowUserPointer(window, &window_size);
@@ -117,6 +143,7 @@ int main() {
     interface::draw();
     Input::clear();
     check_opengl_errors();
+    set_window_title(window);
     glfwSwapBuffers(window);
 
     auto t2 = high_resolution_clock::now();
