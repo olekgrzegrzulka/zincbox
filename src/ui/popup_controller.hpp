@@ -210,7 +210,7 @@ class PopupController : public Widget {
       for (auto& sv : d.button_labels) {
         auto& btn = popover.add_child<Button>(std::string(sv));
         buttons.emplace_back(&btn);
-        btn.set_nine_slice_margin(6.0f);
+        btn.set_nine_slice_margin(8.0f);
         btn.set_texture_idle("button_popover_idle");
         btn.set_texture_hovered("button_popover_hovered");
         btn.set_texture_pressed("button_popover_pressed");

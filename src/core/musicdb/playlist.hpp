@@ -13,7 +13,7 @@ namespace db {
     Smart,
   };
 
-  struct Playlist {
+  struct Playlist final {
     public:
       std::u32string name;
       std::u32string album_path;

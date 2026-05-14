@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "common/types.hpp"
@@ -52,7 +53,7 @@ static void delete_collection(size_t);
 static void show_add_to_playlist_popup(size_t);
 static void show_popup_delete_collection(size_t collection_id);
 static void show_popup_rename_collection(size_t collection_id);
-static void show_popup_add_directory_to_collection(size_t collection_id);
+static void show_popup_set_sources(size_t collection_id);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -133,10 +134,10 @@ void interface::init() {
       .id = "collection_actions",
       .at = at,
       .distance = 10,
-      .button_labels = {"Rename", "Add directory", "Re-scan", "Delete"},
+      .button_labels = {"Rename", "Set sources", "Re-scan", "Delete"},
       .button_actions = {
         [collection_id]() { show_popup_rename_collection(collection_id); },
-        [collection_id]() { show_popup_add_directory_to_collection(collection_id); },
+        [collection_id]() { show_popup_set_sources(collection_id); },
         [collection_id]() {
           db::rescan_collection(collection_id);
           if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
@@ -755,15 +756,68 @@ static void show_popup_rename_collection(size_t collection_id) {
   popup->set_width(300);
 }
 
-static void show_popup_add_directory_to_collection(size_t collection_id) {
-  NFD::UniquePath out_path;
-  auto result = NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr);
-  if (result == NFD_OKAY) {
-    db::add_path_to_collection(collection_id, out_path.get());
-    db::rescan_collection(collection_id);
-    if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-      panel_tracks->recreate();
-      panel_albums->recreate(collection_id);
+static void show_popup_set_sources(size_t collection_id) {
+  auto& collection = db::collection_by_id(collection_id)->get();
+  std::u32string content;
+  std::u32string title = U"Sources for collection \'" + collection.name + U"\'";
+  i32 num = 1;
+  popup_descriptor d{
+    .id = "set_collection_sources",
+    .title = title,
+    .content = content,
+    .button_labels = {U"Cancel", U"Add directory"},
+    .button_actions = {nullptr, [collection_id](Popup* p) {
+                         NFD::UniquePath out_path;
+                         auto result = NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr);
+                         if (result == NFD_OKAY) {
+                           db::add_path_to_collection(collection_id, out_path.get());
+                           // db::rescan_collection(collection_id);
+                           if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+                             panel_tracks->recreate();
+                             panel_albums->recreate(collection_id);
+                           }
+                         }
+                       }},
+  };
+  auto* popup = popup_controller->create_popup(d);
+
+  if (collection.paths.size() != 0) {
+    popup->set_width(400);
+    popup->content.set_layout("ltr s:0 m:0");
+    auto& left_panel = popup->content.add_child<Widget>();
+    left_panel.set_layout("ttb s:4 m:0 fit");
+    auto& right_panel = popup->content.add_child<Widget>();
+    right_panel.set_layout("ttb s:4 m:0 fit");
+    left_panel.set_width(310);
+    left_panel.set_clip_children(true);
+    right_panel.set_width(65);
+    popup->content.set_height(std::max(50, (i32)collection.paths.size() * 34));
+    for (const auto& path : collection.paths) {
+      // size_t i = &path - &collection.paths[0];
+      std::u32string str = utf8_to_utf32(std::to_string(num)) + U". " + utf8_to_utf32(path) + U"\n";
+      auto& label = left_panel.add_child<Label>(str);
+      label.set_resize_to_text_extents(false);
+      label.set_size(310, 30);
+      label.set_label_anchor(Anchor::LEFT);
+      auto& button = right_panel.add_child<Button>(U"Remove");
+      button.set_size(65, 30);
+      button.on_press(
+        [collection_id, path]() {
+          db::remove_path_from_collection(collection_id, path);
+          if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+            panel_tracks->recreate();
+            panel_albums->recreate(collection_id);
+          }
+          popup_controller->close_all_popups();
+        });
+      num += 1;
     }
+  } else {
+    popup->content.set_height(50);
+    popup->set_width(300);
+    popup->content.set_layout("ltr s:0 m:0 expand fit");
+    auto& label = popup->content.add_child<Label>("This collection has no sources set");
+    label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+    label.set_label_anchor(Anchor::CENTER);
   }
 }

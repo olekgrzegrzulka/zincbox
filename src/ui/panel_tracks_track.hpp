@@ -23,7 +23,7 @@ class WidgetTrack : public Button {
       set_texture_disabled(txt);
       set_texture_pressed(txt);
       set_texture(txt, false);
-      set_nine_slice_margin(4.0);
+      set_nine_slice_margin(8.0f);
       set_height(track_height);
 
       label_track_number = &add_child<Label>(std::to_string(track_number));
@@ -77,7 +77,7 @@ class WidgetTrack : public Button {
 
       love_icon = &panel_right_side->add_child<Sprite>("love");
       love_icon->set_size(12, 12);
-      love_icon->set_nine_slice_margin(0);
+      love_icon->set_nine_slice_margin(0.0f);
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
 
       if (track.is_tombstone()) {

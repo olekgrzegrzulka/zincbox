@@ -19,7 +19,7 @@
 
 SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id) : Sprite(ui_) {
   set_texture(id);
-  set_nine_slice_margin(0);
+  set_nine_slice_margin(0.0f);
 }
 
 WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) : Button(ui_), playlist_id(playlist_id_) {
@@ -46,7 +46,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) 
   label_title->set_y(64 + 8);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
-  hover->set_nine_slice_margin(4.0f);
+  hover->set_nine_slice_margin(8.0f);
   hover->set_ignore_parents_layout(true);
   hover->set_size(64, 64);
 }
@@ -97,7 +97,7 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   panel_top->set_pos(4, 4);
   panel_top->set_height(36);
   panel_top->set_layout("m:6 s:6 rtl fill expand");
-  panel_top->set_nine_slice_margin(4);
+  panel_top->set_nine_slice_margin(8.0f);
   panel_top->set_ignore_parents_layout(true);
   button_sort_by = &panel_top->add_child<Button>();
   search_bar = &panel_top->add_child<TextInput>();

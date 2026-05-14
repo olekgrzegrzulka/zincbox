@@ -29,6 +29,11 @@ bool db::Collection::add_path(fs::path path) {
   return true;
 }
 
+bool db::Collection::remove_path(fs::path path) {
+  if (playlist_ids.size() > 0 && playlist_ids[0] == 0) { return false; }
+  return paths.erase(path.string()) > 0;
+}
+
 std::optional<size_t> db::Collection::next_playlist_id(size_t playlist_id) const {
   auto index = find_playlist_index(playlist_id);
   if (index.has_value() && index.value() + 1 < playlist_ids.size()) {
