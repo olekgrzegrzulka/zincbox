@@ -126,8 +126,8 @@ void player::update() {
   }
 }
 
-bool player::play(playing_t play, bool clear_history) {
-  if (clear_history || playing_queue.size() == 0) {
+bool player::play(playing_t play, bool clear_queue) {
+  if (clear_queue || playing_queue.size() == 0) {
     playing_queue = {play};
     playing_index = 0;
     signal_on_queue_changed.emit(false);
@@ -144,13 +144,15 @@ bool player::play(playing_t play, bool clear_history) {
   return play_track();
 }
 
-bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_history) {
+bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue) {
   auto playlist = db::playlist_by_id(playlist_id);
   if (!playlist.has_value()) { return true; }
   auto track_ids = playlist->get().get_track_ids();
   if (track_ids.size() == 0) { return true; }
 
-  if (clear_history) {
+  bool do_play_track = clear_queue || playing_queue.size() == 0;
+
+  if (clear_queue) {
     playing_queue.clear();
     for (size_t track_id : track_ids) {
       playing_queue.emplace_back(player::playing_t{
@@ -173,8 +175,11 @@ bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_
       enqueue(play, insert_at + i - 1);
     }
   }
-
-  return play_track();
+  if (do_play_track) {
+    return play_track();
+  } else {
+    return true;
+  }
 }
 
 void player::enqueue(playing_t play, size_t at) {
@@ -191,6 +196,7 @@ void player::enqueue(playing_t play, size_t at) {
     play_track();
   }
 }
+
 void player::remove_from_queue(size_t at) {
   bool current_track_removed = at == playing_index;
   if (at >= playing_queue.size()) { return; }

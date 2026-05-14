@@ -312,6 +312,13 @@ void interface::init() {
       }
     });
 
+    popover_labels.emplace_back("Play next");
+    popover_actions.emplace_back([playlist_id]() {
+      if (panel_albums->get_collection_id().has_value()) {
+        player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false);
+      }
+    });
+
     popover_labels.emplace_back("Pick image file");
     popover_actions.emplace_back([playlist_id]() {
       NFD::UniquePathN out_path_n;

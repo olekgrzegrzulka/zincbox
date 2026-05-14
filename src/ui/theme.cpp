@@ -273,6 +273,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   add_custom_button("stop");
   add_custom_button("repeat");
   add_custom_button("shuffle");
+  add_custom_button("inline_play");
+  add_custom_button("inline_play_next");
   add_custom_panel("albums");
   add_custom_panel("albums_searchbar");
   add_custom_panel("controls");
