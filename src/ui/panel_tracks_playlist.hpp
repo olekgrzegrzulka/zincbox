@@ -32,7 +32,7 @@ class WidgetAlbum : public Widget {
       header.set_parent_anchor(Anchor::CENTER);
       // header.set_layout("ltr m:8 s:8");
       header.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() - 20);
-      header.set_nine_slice_margin(4);
+      header.set_nine_slice_margin(8.0f);
       header.set_y(6);
 
       auto& label_author = header.add_child<Label>();

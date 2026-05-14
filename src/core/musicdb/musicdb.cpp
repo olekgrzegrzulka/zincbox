@@ -19,7 +19,9 @@
 #include "playlist.hpp"
 #include "track.hpp"
 
-using namespace db;
+using db::Collection;
+using db::Playlist;
+using db::Track;
 
 static std::vector<db::Collection> collections;
 static std::vector<db::Playlist> playlists;
@@ -224,7 +226,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
         io::TrackFile track_file(entry.path());
         if (track_file.is_valid()) {
           Track track = track_file.get_track().value();
-          size_t playlist_id = get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
+          size_t playlist_id = db::get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
           album_ids_visited.insert(playlist_id);
           auto track_id = db::add_track_to_playlist(playlist_id, track);
           tracks[track_id].flag_not_found_during_rescan = false;
@@ -254,7 +256,7 @@ bool db::add_path_to_collection(size_t collection_id, std::string_view path) {
 
   if (collection_id >= collections.size()) { return false; }
   auto& collection = collections[collection_id];
-  if (!collection.add_path(path)) { return false; }
+  if (!fs::is_directory(path) || !collection.add_path(path)) { return false; }
 
   visit_directory(collection_id, path);
 
@@ -265,6 +267,15 @@ bool db::add_path_to_collection(size_t collection_id, std::string_view path) {
     }
   }
 
+  return true;
+}
+
+bool db::remove_path_from_collection(size_t collection_id, std::string_view path) {
+  if (collection_id >= collections.size()) { return false; }
+  auto& collection = collections[collection_id];
+  if (!fs::is_directory(path) || !collection.remove_path(path)) { return false; }
+
+  rescan_collection(collection_id);
   return true;
 }
 
@@ -401,29 +412,31 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
   };
 
   // check if track with similar metadata is already present in the db
-  std::map<i32, size_t> track_similiarity;
-  if (auto found_tracks = db::track_by_title(track.title); found_tracks.size() > 0) {
-    for (size_t found_track_id : found_tracks) {
-      bool same_artist = compare_metadata(db::track_by_id(found_track_id)->get().artist, track.artist);
-      if (same_artist) {
-        i32 similiarity_index = 0;
-        similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().track_number, track.track_number);
-        similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().album_artist, track.album_artist);
-        similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().genre, track.genre);
-        similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().year, track.year);
-        track_similiarity[similiarity_index] = found_track_id;
+  if (!track.title.empty()) {
+    std::map<i32, size_t> track_similiarity;
+    if (auto found_tracks = db::track_by_title(track.title); found_tracks.size() > 0) {
+      for (size_t found_track_id : found_tracks) {
+        bool same_artist = compare_metadata(db::track_by_id(found_track_id)->get().artist, track.artist);
+        if (same_artist) {
+          i32 similiarity_index = 0;
+          similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().track_number, track.track_number);
+          similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().album_artist, track.album_artist);
+          similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().genre, track.genre);
+          similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().year, track.year);
+          track_similiarity[similiarity_index] = found_track_id;
+        }
       }
     }
-  }
 
-  if (track_similiarity.size() > 0) {
-    // if we have at least 2 matching metadata fields (and title + artist), consider it the same track
-    if (track_similiarity.rbegin()->first >= 2) {
-      size_t found_track_id = track_similiarity.rbegin()->second;
-      auto& existing_track = tracks[found_track_id];
-      existing_track = track; // copy metadata from the new track to the existing track
-      playlists[playlist_id].add_track(found_track_id);
-      return found_track_id;
+    if (track_similiarity.size() > 0) {
+      // if we have at least 2 matching metadata fields (and title + artist), consider it the same track
+      if (track_similiarity.rbegin()->first >= 2) {
+        size_t found_track_id = track_similiarity.rbegin()->second;
+        auto& existing_track = tracks[found_track_id];
+        existing_track = track; // copy metadata from the new track to the existing track
+        playlists[playlist_id].add_track(found_track_id);
+        return found_track_id;
+      }
     }
   }
 

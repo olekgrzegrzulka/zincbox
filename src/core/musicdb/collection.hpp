@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 
 namespace db {
 
-  struct Collection {
+  struct Collection final {
     public:
       std::u32string name;
       std::vector<size_t> playlist_ids;
@@ -22,6 +22,7 @@ namespace db {
       Collection(std::u32string_view name_) { name = name_; }
       Collection(std::ifstream&);
       bool add_path(fs::path);
+      bool remove_path(fs::path);
       size_t add_playlist(size_t playlist_id) {
         playlist_ids.emplace_back(playlist_id);
         return playlist_ids.size() - 1;
