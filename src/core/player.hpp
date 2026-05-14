@@ -30,8 +30,8 @@ namespace player {
 
   void update();
 
-  bool play(playing_t, bool clear_history = true);
-  bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_history = true);
+  bool play(playing_t, bool clear_queue = true);
+  bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
   void enqueue(playing_t, size_t at);
   void remove_from_queue(size_t at);
   void resume();

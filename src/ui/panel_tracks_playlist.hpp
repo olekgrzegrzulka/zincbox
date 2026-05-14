@@ -3,7 +3,10 @@
 #include "core/player.hpp"
 #include "panel_tracks_track.hpp"
 #include "theme.hpp"
+#include "ui/zb_widgets.hpp"
+#include "ui_generic/tooltip.hpp"
 #include "ui_generic/ui.hpp"
+#include "ui_generic/widget.hpp"
 
 class WidgetAlbum : public Widget {
   protected:
@@ -35,7 +38,11 @@ class WidgetAlbum : public Widget {
       header.set_nine_slice_margin(8.0f);
       header.set_y(6);
 
-      auto& label_author = header.add_child<Label>();
+      auto& labels = header.add_child<Widget>();
+      labels.set_anchor(Anchor::LEFT);
+      labels.set_parent_anchor(Anchor::LEFT);
+
+      auto& label_author = labels.add_child<Label>();
       label_author.set_text(playlist.author);
       label_author.draw();
       label_author.set_text_color(theme::get_prop("tracklist_header_author_color").as_rgba());
@@ -48,7 +55,7 @@ class WidgetAlbum : public Widget {
         label_author.set_is_drawn(false);
       }
 
-      auto& label_name = header.add_child<Label>();
+      auto& label_name = labels.add_child<Label>();
       label_name.set_text(playlist.name);
       label_name.set_text_color(theme::get_prop("tracklist_header_name_color").as_rgba());
       label_name.set_anchor(Anchor::LEFT);
@@ -56,6 +63,22 @@ class WidgetAlbum : public Widget {
       label_name.set_label_anchor(Anchor::LEFT);
       label_name.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
       label_name.set_x(label_author.get_is_drawn() ? label_author.get_width() + 14 : 8);
+
+      auto& buttons = header.add_child<Widget>();
+      buttons.set_anchor(Anchor::RIGHT);
+      buttons.set_parent_anchor(Anchor::RIGHT);
+      buttons.set_layout("rtl m:8 s:6");
+      button_play_next = &buttons.add_child<ZincboxButton>("inline_play_next");
+      button_play = &buttons.add_child<ZincboxButton>("inline_play");
+      button_play_next->on_press([this, collection_id]() {
+        player::play_playlist(collection_id, playlist_id, false);
+      });
+      button_play->on_press([this, collection_id]() {
+        player::play_playlist(collection_id, playlist_id, true);
+      });
+
+      button_play_tooltip = &button_play->add_child<ToolTip>("Play", ToolTipPosition::BELOW, 8);
+      button_play_next_tooltip = &button_play_next->add_child<ToolTip>("Play next", ToolTipPosition::BELOW, 8);
 
       bool even = true;
       size_t playlist_track_index = 0;
@@ -100,9 +123,15 @@ class WidgetAlbum : public Widget {
     void update() override {
       set_x(12);
       set_width(parent->get_width() - 12);
+      button_play_tooltip->set_is_drawn(button_play->is_mouse_hovering());
+      button_play_next_tooltip->set_is_drawn(button_play_next->is_mouse_hovering());
       Widget::update();
     }
 
     bool passed_visibility_test = false;
     size_t playlist_id;
+    Button* button_play{};
+    Button* button_play_next{};
+    ToolTip* button_play_tooltip{};
+    ToolTip* button_play_next_tooltip{};
 };
