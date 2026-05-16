@@ -313,7 +313,7 @@ void db::rescan_collection(size_t collection_id) {
 }
 
 void db::rename_collection(size_t collection_id, std::u32string_view new_name) {
-  if (collection_id >= collections.size()) { return; }
+  if (collection_id >= collections.size() || collection_id == 0) { return; }
   auto& collection = collections[collection_id];
   collection.name = new_name;
 }
@@ -464,6 +464,12 @@ void db::reset_playlist_image(size_t playlist_id) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
   playlist.image.clear();
+}
+
+void db::rename_playlist(size_t playlist_id, std::u32string_view new_name) {
+  if (playlist_id >= playlists.size() || playlist_id == 0) { return; }
+  auto& playlist = playlists[playlist_id];
+  playlist.name = new_name;
 }
 
 std::optional<std::reference_wrapper<const Track>> db::track_by_id(size_t id) {

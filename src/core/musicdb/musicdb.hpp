@@ -51,6 +51,7 @@ namespace db {
   size_t add_track_to_playlist(size_t playlist_id, Track);
   void set_playlist_image(size_t playlist_id, std::string image_path);
   void reset_playlist_image(size_t playlist_id);
+  void rename_playlist(size_t playlist_id, std::u32string_view new_name);
 
   // track getters
   std::optional<std::reference_wrapper<const Track>> track_by_id(size_t);

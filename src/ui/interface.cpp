@@ -50,10 +50,13 @@ static void init_atlas();
 static void add_playlist_art_to_texture_atlas(size_t collection_id);
 static void handle_dropped_files();
 static void delete_collection(size_t);
+static void delete_playlist(size_t);
 static void show_add_to_playlist_popup(size_t);
-static void show_popup_delete_collection(size_t collection_id);
-static void show_popup_rename_collection(size_t collection_id);
-static void show_popup_set_sources(size_t collection_id);
+static void show_popup_delete_collection(size_t);
+static void show_popup_rename_collection(size_t);
+static void show_popup_set_sources(size_t);
+static void show_popup_delete_playlist(size_t);
+static void show_popup_rename_playlist(size_t);
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
@@ -319,6 +322,13 @@ void interface::init() {
       }
     });
 
+    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
+      popover_labels.emplace_back("Rename");
+      popover_actions.emplace_back([playlist_id]() {
+        show_popup_rename_playlist(playlist_id);
+      });
+    }
+
     popover_labels.emplace_back("Pick image file");
     popover_actions.emplace_back([playlist_id]() {
       NFD::UniquePathN out_path_n;
@@ -371,11 +381,7 @@ void interface::init() {
     if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
       popover_labels.emplace_back("Remove");
       popover_actions.emplace_back([playlist_id]() {
-        db::mark_playlist_as_tombstone(playlist_id);
-        panel_albums->recreate(active_collection_id);
-        panel_tracks->collection_id = active_collection_id;
-        panel_tracks->clear();
-        panel_tracks->recreate();
+        show_popup_delete_playlist(playlist_id);
       });
     }
 
@@ -699,6 +705,14 @@ static void delete_collection(size_t collection_id) {
   }
 }
 
+static void delete_playlist(size_t playlist_id) {
+  db::mark_playlist_as_tombstone(playlist_id);
+  panel_albums->recreate(active_collection_id);
+  panel_tracks->collection_id = active_collection_id;
+  panel_tracks->clear();
+  panel_tracks->recreate();
+}
+
 static void show_add_to_playlist_popup(size_t track_id) {
   auto& track = db::track_by_id(track_id)->get();
   std::u32string pretty_track = track.artist + U" - " + track.title;
@@ -827,4 +841,41 @@ static void show_popup_set_sources(size_t collection_id) {
     label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
     label.set_label_anchor(Anchor::CENTER);
   }
+}
+
+static void show_popup_delete_playlist(size_t playlist_id) {
+  auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
+  std::string playlist_name_utf8 = utf32_to_utf8(playlist_name);
+  std::u32string content = U"Are you sure you want to delete\nthe playlist \"" + playlist_name + U"\"?";
+  popup_descriptor d{
+    .id = "delete_playlist",
+    .title = U"Delete playlist",
+    .content = content,
+    .button_labels = {U"Cancel", U"Delete"},
+    .button_actions = {nullptr, [playlist_id](Popup*) { delete_playlist(playlist_id); }},
+  };
+  auto* popup = popup_controller->create_popup(d);
+  popup->set_width(300);
+}
+
+static void show_popup_rename_playlist(size_t playlist_id) {
+  auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
+  popup_descriptor d{
+    .id = "rename_playlist",
+    .title = U"Rename playlist",
+    .content = std::nullopt,
+    .button_labels = {U"Cancel", U"Rename"},
+    .button_actions = {nullptr, [playlist_id](Popup* p) {
+                         auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
+                         std::u32string new_name = text_input->label.get_text();
+                         if (new_name.empty()) { return; }
+                         db::rename_playlist(playlist_id, new_name);
+                         panel_albums->recreate(active_collection_id);
+                       }},
+  };
+  auto* popup = popup_controller->create_popup(d);
+  auto& text_input = popup->content.add_child<TextInput>();
+  text_input.set_focused(true);
+  text_input.label.set_text(playlist_name);
+  popup->set_width(300);
 }
