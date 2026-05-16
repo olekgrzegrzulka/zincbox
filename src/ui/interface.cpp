@@ -132,6 +132,7 @@ void interface::init() {
   };
 
   panel_top->on_show_collection_actions_popover = [&](size_t collection_id, Widget* widget) {
+    if (collection_id == 0) { return; }
     vec2i at = widget->get_position(Anchor::CENTER);
     popover_descriptor d{
       .id = "collection_actions",
