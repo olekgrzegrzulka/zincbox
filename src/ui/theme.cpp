@@ -266,6 +266,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   atlas_add_texture("text_input_idle");
   atlas_add_texture("splitter");
   atlas_add_texture("tooltip");
+  add_custom_button("checkbox");
+  atlas_add_texture("checkbox_check");
   // player
   add_custom_button("play_pause");
   add_custom_button("prev");
