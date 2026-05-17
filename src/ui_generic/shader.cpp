@@ -29,6 +29,29 @@ Shader::Shader(std::string file_name) {
   }
 }
 
+Shader::Shader(const char* vert, const char* frag) {
+  vertex_shader = compile_shader(vert, GL_VERTEX_SHADER);
+  fragment_shader = compile_shader(frag, GL_FRAGMENT_SHADER);
+  shader_program = create_shader_program();
+
+  i32 uniform_count = 0;
+  glGetProgramiv(shader_program, GL_ACTIVE_UNIFORMS, &uniform_count);
+
+  for (i32 i = 0; i < uniform_count; i++) {
+    char name[256];
+    GLsizei length;
+
+    // I don't know why but the program crashes without quering for those...
+    i32 size;
+    GLenum type;
+
+    glGetActiveUniform(shader_program, i, sizeof(name), &length, &size, &type, name);
+    std::string uniform_name{name};
+    ensure(!uniforms.contains(uniform_name));
+    uniforms[uniform_name] = glGetUniformLocation(shader_program, uniform_name.c_str());
+  }
+}
+
 Shader::~Shader() {
   if (vertex_shader != 0) {
     glDeleteShader(vertex_shader);
@@ -124,6 +147,30 @@ u32 Shader::compile_shader(std::string source_, i32 type) const {
   shader = glCreateShader(type);
   const char* source = source_.c_str();
   glShaderSource(shader, 1, &source, nullptr);
+  glCompileShader(shader);
+
+  i32 compile_status = GL_FALSE;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
+
+  if (compile_status == GL_FALSE) {
+    i32 max_log_length = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_log_length);
+
+    char* info_log = new char[max_log_length];
+    glGetShaderInfoLog(shader, max_log_length, &max_log_length, info_log);
+
+    debug_error("Shader compilation error:\n", info_log);
+    delete[] info_log;
+  }
+
+  return shader;
+}
+
+u32 Shader::compile_shader(const char* source, i32 type) const {
+  u32 shader;
+  shader = glCreateShader(type);
+  i32 length = static_cast<i32>(strlen(source));
+  glShaderSource(shader, 1, &source, &length);
   glCompileShader(shader);
 
   i32 compile_status = GL_FALSE;

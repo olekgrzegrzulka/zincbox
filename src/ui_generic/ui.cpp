@@ -13,8 +13,20 @@
 #include "ui.hpp"
 #include "widget.hpp"
 
+static constexpr char sprite_frag[] = {
+#embed "../shaders/sprite.frag"
+  , 0};
+static constexpr char sprite_vert[] = {
+#embed "../shaders/sprite.vert"
+  , 0};
+static constexpr char text_frag[] = {
+#embed "../shaders/text.frag"
+  , 0};
+static constexpr char text_vert[] = {
+#embed "../shaders/text.vert"
+  , 0};
 UI::UI(i32 window_width_, i32 window_height_)
-  : sprite_shader{"sprite"}, text_shader{"text"} {
+  : sprite_shader{sprite_vert, sprite_frag}, text_shader{text_vert, text_frag} {
   window_width = window_width_;
   window_height = window_height_;
   if (FT_Init_FreeType(&freetype_lib)) {
