@@ -44,7 +44,9 @@ class WidgetAlbum : public Widget {
 
       auto& label_author = labels.add_child<Label>();
       label_author.set_text(playlist.author);
-      label_author.draw();
+      // hack to get text extents to update :(
+      label_author.mark_dirty();
+      label_author.update();
       label_author.set_text_color(theme::get_prop("tracklist_header_author_color").as_rgba());
       label_author.set_anchor(Anchor::LEFT);
       label_author.set_parent_anchor(Anchor::LEFT);
@@ -84,7 +86,7 @@ class WidgetAlbum : public Widget {
       size_t playlist_track_index = 0;
       for (size_t track_id : playlist.get_track_ids()) {
         even = !even;
-        auto w = &add_child<WidgetTrack>(collection_id, playlist_id, track_id, playlist_track_index + 1, even);
+        auto w = &add_child<WidgetTrack>(track_id, playlist_track_index + 1, even);
         track_widgets.emplace_back(w);
         w->on_press([this, collection_id, track_id, playlist_track_index, w]() {
           if (on_track_lmb) {
@@ -99,19 +101,19 @@ class WidgetAlbum : public Widget {
 
         if (auto playing = player::get_playing()) {
           w->set_highlighted(w->track_id == playing->track_id &&
-                             w->album_id == playing->playlist_id &&
-                             w->collection_id == playing->collection_id);
+                             playlist_id == playing->playlist_id &&
+                             collection_id == playing->collection_id);
         }
 
         playlist_track_index += 1;
       }
 
-      slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
+      slot_on_track_changed = player::signal_on_track_changed.connect([this, collection_id]() {
         for (auto* w : track_widgets) {
           w->set_highlighted(player::get_playing().has_value() &&
                              w->track_id == player::get_playing()->track_id &&
-                             w->album_id == player::get_playing()->playlist_id &&
-                             w->collection_id == player::get_playing()->collection_id);
+                             playlist_id == player::get_playing()->playlist_id &&
+                             collection_id == player::get_playing()->collection_id);
         }
       });
     }

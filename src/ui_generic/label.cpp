@@ -46,16 +46,15 @@ void Label::set_resize_to_text_extents(bool to) {
 }
 
 void Label::update() {
-  Widget::update();
-}
-
-void Label::draw() {
-  if (dirty) {
+  if (dirty && is_drawn) {
     update_mesh();
     setup_buffers();
     dirty = false;
   }
+  Widget::update();
+}
 
+void Label::draw() {
   auto& text_shader = ui.get_text_shader();
   auto& font_face = ui.get_font_face();
 

@@ -10,8 +10,8 @@ class UI;
 
 class ScrollBar : public Slider {
   protected:
-    i32 page_size = 1;
-    i32 content_size = 1;
+    i32 page_size = 25;
+    i32 content_size = 100;
 
   public:
     ScrollBar(UI& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);

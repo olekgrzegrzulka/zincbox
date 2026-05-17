@@ -1,6 +1,7 @@
 #pragma once
 #include <sstream>
 #include <string>
+#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "theme.hpp"
@@ -10,14 +11,17 @@
 
 class WidgetTrack : public Button {
   public:
-    WidgetTrack(UI& ui_, size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) : Button(ui_) {
-      i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
-      collection_id = collection_id_;
-      album_id = album_id_;
+    WidgetTrack(UI& ui_, size_t track_id_, size_t track_number, bool even_) : Button(ui_) {
+      setup(track_id_, track_number, even_);
+    }
+
+    void setup(size_t track_id_, size_t track_number, bool even_) {
       track_id = track_id_;
       even = even_;
-      auto& track = db::track_by_id(track_id)->get();
-      std::string txt = even ? "track_bg2" : "track_bg1";
+      const i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
+      const auto& track = db::track_by_id(track_id)->get();
+      const std::string txt = even ? "track_bg2" : "track_bg1";
+
       set_texture_idle(txt);
       set_texture_hovered(txt);
       set_texture_disabled(txt);
@@ -26,58 +30,82 @@ class WidgetTrack : public Button {
       set_nine_slice_margin(8.0f);
       set_height(track_height);
 
-      label_track_number = &add_child<Label>(std::to_string(track_number));
-      label_track_number->set_resize_to_text_extents(false);
-      label_track_number->set_label_anchor(Anchor::LEFT);
-      label_track_number->set_size(20, track_height);
-      label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
-      label_track_number->set_x(5);
+      if (!label_track_number) {
+        label_track_number = &add_child<Label>();
+        label_track_number->set_resize_to_text_extents(false);
+        label_track_number->set_label_anchor(Anchor::LEFT);
+        label_track_number->set_size(20, track_height);
+        label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
+        label_track_number->set_x(5);
+      }
+      label_track_number->set_text(std::to_string(track_number));
 
-      if (track.artist.empty() || track.title.empty()) {
+      if (!label_track_artist) {
         label_track_artist = &add_child<Label>();
+        label_track_artist->set_label_anchor(Anchor::LEFT);
+        label_track_artist->set_height(track_height);
+        label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
         label_track_artist->set_resize_to_text_extents(false);
+      }
+      label_track_artist->set_x(label_track_number->get_x() + label_track_number->get_width() + 5);
+      if (track.artist.empty() || track.title.empty()) {
+        label_track_artist->set_text("");
         label_track_artist->set_width(0);
       } else {
-        label_track_artist = &add_child<Label>(track.artist);
-      }
-      label_track_artist->set_resize_to_text_extents(false);
-      label_track_artist->set_label_anchor(Anchor::LEFT);
-      label_track_artist->set_height(track_height);
-      label_track_artist->set_x(label_track_number->get_x() + label_track_number->get_width() + 5);
-      label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
+        label_track_artist->set_text(track.artist);
+        label_track_artist->set_width(label_track_artist->get_text_extents().x);
 
+        // hack to get text extents to update :(
+        label_track_artist->mark_dirty();
+        label_track_artist->update();
+      }
+
+      if (!label_track_title) {
+        label_track_title = &add_child<Label>();
+        label_track_title->set_resize_to_text_extents(false);
+        label_track_title->set_label_anchor(Anchor::LEFT);
+        label_track_title->set_height(track_height);
+        label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
+      }
+      label_track_title->set_x(label_track_artist->get_x() + label_track_artist->get_text_extents().x + 5);
       if (track.artist.empty() || track.title.empty()) {
-        label_track_title = &add_child<Label>(std::filesystem::path{track.path}.filename().string());
+        label_track_title->set_text(std::filesystem::path{track.path}.filename().string());
       } else {
-        label_track_title = &add_child<Label>(track.title);
+        label_track_title->set_text(track.title);
       }
-      label_track_title->set_resize_to_text_extents(false);
-      label_track_title->set_x(label_track_artist->get_x() + label_track_artist->get_width() + 5);
-      label_track_title->set_label_anchor(Anchor::LEFT);
-      label_track_title->set_height(track_height);
-      label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
 
-      panel_right_side = &add_child<Sprite>("panel_tracks");
-      panel_right_side->set_height(track_height);
-      panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
-      panel_right_side->set_layout("m:8 s:8 rtl fit");
-      panel_right_side->set_anchor(Anchor::RIGHT);
-      panel_right_side->set_parent_anchor(Anchor::RIGHT);
-      panel_right_side->set_ignore_parents_layout(true);
+      if (!panel_right_side) {
+        panel_right_side = &add_child<Sprite>("panel_tracks");
+        panel_right_side->set_height(track_height);
+        panel_right_side->set_texture(even ? "track_bg2" : "track_bg1", false);
+        panel_right_side->set_layout("m:8 s:8 rtl fit");
+        panel_right_side->set_anchor(Anchor::RIGHT);
+        panel_right_side->set_parent_anchor(Anchor::RIGHT);
+        panel_right_side->set_ignore_parents_layout(true);
+      }
 
+      if (!label_track_length) {
+        label_track_length = &panel_right_side->add_child<Label>();
+        label_track_length->set_height(track_height);
+        label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
+        label_track_length->set_resize_to_text_extents(false);
+      }
       i32 length_s = track.length_seconds;
       i32 length_m = length_s / 60;
       length_s %= 60;
       std::stringstream ss;
       ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
-      label_track_length = &panel_right_side->add_child<Label>(ss.str());
-      label_track_length->set_height(track_height);
-      label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
-      label_track_length->set_resize_to_text_extents(false);
+      label_track_length->set_text(ss.str());
+      // hack to get text extents to update :(
+      label_track_length->mark_dirty();
+      label_track_length->update();
+      label_track_length->set_width(label_track_length->get_text_extents().x);
 
-      love_icon = &panel_right_side->add_child<Sprite>("love");
-      love_icon->set_size(12, 12);
-      love_icon->set_nine_slice_margin(0.0f);
+      if (!love_icon) {
+        love_icon = &panel_right_side->add_child<Sprite>("love");
+        love_icon->set_size(12, 12);
+        love_icon->set_nine_slice_margin(0.0f);
+      }
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
 
       if (track.is_tombstone()) {
@@ -87,35 +115,10 @@ class WidgetTrack : public Button {
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
       }
 
-      hover = &add_child<Sprite>("track_hovered");
-
-      set_playback_error(track.is_playback_error());
-      update_text_colors();
-    }
-
-    void setup(size_t collection_id_, size_t album_id_, size_t track_id_, size_t track_number, bool even_) {
-      collection_id = collection_id_;
-      album_id = album_id_;
-      track_id = track_id_;
-      even = even_;
-
-      auto& track = db::track_by_id(track_id)->get();
-      if (track.artist.empty() || track.title.empty()) {
-        label_track_artist->set_text(U"");
-        label_track_title->set_text(std::filesystem::path{track.path}.filename().string());
-      } else {
-        label_track_artist->set_text(track.artist);
-        label_track_title->set_text(track.title);
+      if (!hover) {
+        hover = &add_child<Sprite>("track_hovered");
       }
-      label_track_number->set_text(std::to_string(track_number));
-      i32 length_s = track.length_seconds;
-      i32 length_m = length_s / 60;
-      length_s %= 60;
-      std::stringstream ss;
-      ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
-      label_track_length->set_text(ss.str());
 
-      love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(track_id_));
       set_playback_error(track.is_playback_error());
       update_text_colors();
     }
@@ -183,8 +186,6 @@ class WidgetTrack : public Button {
 
   public:
     bool is_hovered = false;
-    size_t collection_id{};
-    size_t album_id{};
     size_t track_id{};
 
   protected:
