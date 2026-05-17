@@ -108,7 +108,7 @@ void interface::init() {
     }
     panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
 
-    panel_albums->recreate(active_collection_id);
+    panel_albums->get_props().collection_id = active_collection_id;
 
     panel_queue->set_is_drawn(false);
     panel_queue->set_is_updated(false);
@@ -128,7 +128,7 @@ void interface::init() {
     panel_queue->on_queue_changed();
     splitter->set_is_drawn(false);
     splitter->set_is_updated(false);
-    panel_albums->recreate(std::nullopt);
+    panel_albums->get_props().collection_id = std::nullopt;
   };
 
   panel_top->on_show_collection_actions_popover = [&](size_t collection_id, Widget* widget) {
@@ -146,7 +146,7 @@ void interface::init() {
           db::rescan_collection(collection_id);
           if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
             panel_tracks->recreate();
-            panel_albums->recreate(collection_id);
+            panel_albums->recreate();
           }
         },
         [collection_id]() { show_popup_delete_collection(collection_id); },
@@ -344,7 +344,7 @@ void interface::init() {
         std::string playlist_id_str = std::to_string(playlist_id);
         ui->get_texture_atlas().remove_texture(playlist_id_str);
         ui->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().image, 64, 64);
-        panel_albums->recreate(panel_albums->get_collection_id());
+        panel_albums->recreate();
       }
     });
 
@@ -355,7 +355,7 @@ void interface::init() {
         std::string playlist_id_str = std::to_string(playlist_id);
         ui->get_texture_atlas().remove_texture(playlist_id_str);
         ui->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
-        panel_albums->recreate(panel_albums->get_collection_id());
+        panel_albums->recreate();
       });
     }
 
@@ -403,16 +403,16 @@ void interface::init() {
     if (active_collection_id == 0) {
       popover_labels = {"Playlist name (A-Z)", "Playlist name (Z-A)"};
       popover_actions = {
-        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_AZ); },
-        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_ZA); },
+        []() { panel_albums->get_props().sort_by = PanelAlbums::SortBy::NAME_AZ; },
+        []() { panel_albums->get_props().sort_by = PanelAlbums::SortBy::NAME_ZA; },
       };
     } else if (active_collection_id.has_value()) {
       popover_labels = {"Artist (A-Z)", "Artist (Z-A)", "Album name (A-Z)", "Album name (Z-A)"};
       popover_actions = {
-        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::AUTHOR_AZ); },
-        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::AUTHOR_ZA); },
-        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_AZ); },
-        []() { panel_albums->recreate(active_collection_id, PanelAlbums::SortBy::NAME_ZA); },
+        []() { panel_albums->get_props().sort_by = PanelAlbums::SortBy::AUTHOR_AZ; },
+        []() { panel_albums->get_props().sort_by = PanelAlbums::SortBy::AUTHOR_ZA; },
+        []() { panel_albums->get_props().sort_by = PanelAlbums::SortBy::NAME_AZ; },
+        []() { panel_albums->get_props().sort_by = PanelAlbums::SortBy::NAME_ZA; },
       };
     }
     vec2i at = w->get_position(Anchor::CENTER);
@@ -440,7 +440,7 @@ void interface::init() {
 
     db::add_playlist_to_collection(0, db::Playlist{text_input->label.get_text(), U"", db::PlaylistType::User});
     if (active_collection_id == 0) {
-      panel_albums->recreate(0);
+      panel_albums->get_props().collection_id = 0;
       panel_tracks->recreate();
     }
   };
@@ -466,13 +466,13 @@ void interface::init() {
     panel_tracks->collection_id = 0;
     panel_tracks->clear();
     panel_tracks->recreate();
-    panel_albums->recreate(0);
+    panel_albums->get_props().collection_id = 0;
     panel_top->recreate(0);
   } else {
     panel_tracks->collection_id = std::nullopt;
     panel_tracks->clear();
     panel_tracks->recreate();
-    panel_albums->recreate(std::nullopt);
+    panel_albums->get_props().collection_id = std::nullopt;
     panel_top->recreate(std::nullopt);
   }
 
@@ -695,12 +695,12 @@ static void delete_collection(size_t collection_id) {
   if (db::collection_by_id(*active_collection_id)->get().is_tombstone() || !active_collection_id.has_value()) {
     active_collection_id = std::nullopt;
     panel_top->recreate(active_collection_id);
-    panel_albums->recreate(active_collection_id);
+    panel_albums->get_props().collection_id = active_collection_id;
     panel_tracks->collection_id = active_collection_id;
     panel_tracks->recreate();
   } else {
     panel_top->recreate(*active_collection_id);
-    panel_albums->recreate(*active_collection_id);
+    panel_albums->get_props().collection_id = *active_collection_id;
     panel_tracks->collection_id = *active_collection_id;
     panel_tracks->recreate();
   }
@@ -708,7 +708,7 @@ static void delete_collection(size_t collection_id) {
 
 static void delete_playlist(size_t playlist_id) {
   db::mark_playlist_as_tombstone(playlist_id);
-  panel_albums->recreate(active_collection_id);
+  panel_albums->recreate();
   panel_tracks->collection_id = active_collection_id;
   panel_tracks->clear();
   panel_tracks->recreate();
@@ -726,11 +726,11 @@ static void show_add_to_playlist_popup(size_t track_id) {
   };
   auto* popup = popup_controller->create_popup(d);
   auto& playlists_view = popup->content.add_child<PanelAlbums>();
-  playlists_view.set_width(theme::playlist_cover_width * 6);
+  playlists_view.set_width((64 + 12) * 6);
   playlists_view.set_height(std::clamp(ui->get_window_height() - 300, 100, 500));
   popup->set_width(playlists_view.get_width());
   popup->set_height(playlists_view.get_height() + 40);
-  playlists_view.recreate(0);
+  playlists_view.get_props().collection_id = 0;
 
   auto* popup_controller_ = popup_controller;
   playlists_view.on_playlist_lmb = [popup_controller_, track_id](size_t playlist_id, Widget*) {
@@ -796,7 +796,7 @@ static void show_popup_set_sources(size_t collection_id) {
                            // db::rescan_collection(collection_id);
                            if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
                              panel_tracks->recreate();
-                             panel_albums->recreate(collection_id);
+                             panel_albums->get_props().collection_id = collection_id;
                            }
                          }
                        }},
@@ -828,7 +828,7 @@ static void show_popup_set_sources(size_t collection_id) {
           db::remove_path_from_collection(collection_id, path);
           if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
             panel_tracks->recreate();
-            panel_albums->recreate(collection_id);
+            panel_albums->get_props().collection_id = collection_id;
           }
           popup_controller->close_all_popups();
         });
@@ -871,7 +871,7 @@ static void show_popup_rename_playlist(size_t playlist_id) {
                          std::u32string new_name = text_input->label.get_text();
                          if (new_name.empty()) { return; }
                          db::rename_playlist(playlist_id, new_name);
-                         panel_albums->recreate(active_collection_id);
+                         panel_albums->recreate();
                        }},
   };
   auto* popup = popup_controller->create_popup(d);

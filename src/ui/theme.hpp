@@ -33,9 +33,6 @@ namespace theme {
       }
   };
 
-  static constexpr i32 playlist_cover_width = 64 + 12;
-  static constexpr i32 playlist_cover_height = 64 + 32;
-
   theme_prop get_prop(std::string_view prop);
   i32 get_button_nine_slice_margin(std::string_view name);
   std::set<std::string> get_themes();

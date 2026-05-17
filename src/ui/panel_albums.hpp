@@ -13,12 +13,12 @@
 
 class SpriteAlbumCover : public Sprite {
   public:
-    SpriteAlbumCover(UI& ui_, std::string id);
+    SpriteAlbumCover(UI& ui_, std::string id, vec2i cover_size_);
 };
 
 class WidgetAlbumCover : public Button {
   public:
-    WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id = std::nullopt);
+    WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_);
     void draw() override;
     void update() override;
     void handle_event(Input::InputEventMouseMove& ev) override;
@@ -30,6 +30,8 @@ class WidgetAlbumCover : public Button {
     Sprite* hover{};
     bool is_hovered = false;
     Label* label_title{};
+    vec2i total_size{};
+    vec2i cover_size{};
 };
 
 class PanelAlbums : public Sprite {
@@ -45,35 +47,53 @@ class PanelAlbums : public Sprite {
     PanelAlbums(UI& ui_);
     void draw() override;
     void clear();
-    void recreate(std::optional<size_t> collection_id_, SortBy sort_by_ = SortBy::AUTHOR_AZ);
     void update() override;
+    void recreate();
     using Sprite::handle_event;
     void handle_event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);
-    std::optional<size_t> get_collection_id() const { return collection_id; }
+    std::optional<size_t> get_collection_id() const { return props_.collection_id; }
 
   protected:
     void reflow();
 
   protected:
-    std::optional<size_t> collection_id{};
     double scroll_px = 0.0;
     double target_scroll_px = 0.0;
-    SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
+
     std::vector<WidgetAlbumCover*> album_widgets;
     ScrollBar* scrollbar{};
 
-    Sprite* panel_top{};
+    Sprite* panel_search{};
     Widget* albums_container{};
     TextInput* search_bar{};
     Button* button_clear_search{};
     Button* button_sort_by{};
 
+  protected:
+    bool needs_recreate = false;
+    struct props {
+        std::optional<size_t> collection_id{};
+        std::vector<size_t> playlist_ids{};
+        SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
+        bool panel_search_visible = true;
+        bool is_scrollable = true;
+
+        i32 cover_width = 64;
+        i32 cover_min_horizontal_spacing = 12;
+        i32 cover_min_vertical_spacing = 32;
+    } props_;
+
+  public:
+    props& get_props() {
+      needs_recreate = true;
+      return props_;
+    }
+
   public:
     std::function<void(size_t, Widget*)> on_playlist_lmb{};
     std::function<void(size_t, Widget*)> on_playlist_rmb{};
     std::function<void(Widget*)> on_button_sort_by_pressed{};
-    std::function<void()> on_search_bar_text_modified{};
     std::function<void(Widget*)> on_add_playlist_button_pressed{};
 };

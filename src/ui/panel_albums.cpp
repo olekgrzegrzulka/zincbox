@@ -17,17 +17,17 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id) : Sprite(ui_) {
+SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id, vec2i cover_size_) : Sprite(ui_) {
   set_texture(id);
+  set_size(cover_size_);
   set_nine_slice_margin(0.0f);
 }
 
-WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) : Button(ui_), playlist_id(playlist_id_) {
-
+WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_) : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
   set_clip_children(true);
-  set_size(theme::playlist_cover_width, theme::playlist_cover_height);
+  set_size(total_size.x, total_size.y);
   std::stringstream texture_id;
-  auto& sprite_cover = add_child<SpriteAlbumCover>(playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist");
+  auto& sprite_cover = add_child<SpriteAlbumCover>(playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist", cover_size_);
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>();
@@ -38,17 +38,18 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_) 
     label_title->set_text("Add new playlist...");
   }
   label_title->set_resize_to_text_extents(false);
-  label_title->set_width(theme::playlist_cover_width);
+  label_title->set_width(total_size.x);
   label_title->set_label_anchor(Anchor::TOP_LEFT);
   label_title->set_anchor(Anchor::TOP_LEFT);
   label_title->set_parent_anchor(Anchor::TOP_LEFT);
   label_title->set_text_color(theme::get_prop("playlist_title_text_color").as_rgba());
-  label_title->set_y(64 + 8);
+  label_title->set_y(cover_size.y + 8);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
   hover->set_nine_slice_margin(8.0f);
   hover->set_ignore_parents_layout(true);
-  hover->set_size(64, 64);
+  hover->set_size(cover_size.x, cover_size.y);
+  hover->set_is_drawn(false);
 }
 
 void WidgetAlbumCover::draw() {
@@ -60,10 +61,10 @@ void WidgetAlbumCover::update() {
 
   hover->set_is_drawn(is_hovered);
 
-  if (is_hovered && label_title->get_text_extents().x > theme::playlist_cover_width + 8) {
+  if (is_hovered && label_title->get_text_extents().x > total_size.x + 8) {
     label_title->set_x(label_title->get_x() - 1);
     if (label_title->get_x() <= -label_title->get_text_extents().x - 8) {
-      label_title->set_x(theme::playlist_cover_width + 8);
+      label_title->set_x(total_size.x + 8);
     }
   } else {
     label_title->set_x(0);
@@ -93,18 +94,16 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   albums_container = &add_child<Widget>();
   albums_container->set_pos(0, 4 + 36 + 4);
 
-  panel_top = &add_child<Sprite>("panel_albums_searchbar");
-  panel_top->set_pos(4, 4);
-  panel_top->set_height(36);
-  panel_top->set_layout("m:6 s:6 rtl fill expand");
-  panel_top->set_nine_slice_margin(8.0f);
-  panel_top->set_ignore_parents_layout(true);
-  button_sort_by = &panel_top->add_child<Button>();
-  search_bar = &panel_top->add_child<TextInput>();
+  panel_search = &add_child<Sprite>("panel_albums_searchbar");
+  panel_search->set_pos(4, 4);
+  panel_search->set_height(36);
+  panel_search->set_layout("m:6 s:6 rtl fill expand");
+  panel_search->set_nine_slice_margin(8.0f);
+  panel_search->set_ignore_parents_layout(true);
+  button_sort_by = &panel_search->add_child<Button>();
+  search_bar = &panel_search->add_child<TextInput>();
   search_bar->set_on_text_changed([this]() {
-    if (this->on_search_bar_text_modified) {
-      this->on_search_bar_text_modified();
-    }
+    recreate();
   });
   button_clear_search = &search_bar->add_child<Button>();
 
@@ -146,34 +145,44 @@ void PanelAlbums::clear() {
   album_widgets.clear();
 }
 
-void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_) {
-  sort_by = sort_by_;
-  collection_id = collection_id_;
+void PanelAlbums::recreate() {
   clear();
-  if (!collection_id_.has_value()) { return; }
 
-  auto c = db::collection_by_id(*collection_id_);
+  panel_search->set_is_updated(props_.panel_search_visible);
+  panel_search->set_is_drawn(props_.panel_search_visible);
 
-  std::vector<size_t> playlist_ids_sorted = c->get().playlist_ids;
-  if (sort_by == SortBy::NAME_AZ) {
+  scrollbar->set_is_updated(props_.is_scrollable);
+  scrollbar->set_is_drawn(props_.is_scrollable);
+
+  std::vector<size_t> playlist_ids_sorted;
+  if (props_.collection_id.has_value()) {
+    auto c = db::collection_by_id(*props_.collection_id);
+    playlist_ids_sorted = c->get().playlist_ids;
+  } else if (!props_.playlist_ids.empty()) {
+    playlist_ids_sorted = props_.playlist_ids;
+  } else {
+    return;
+  }
+
+  if (props_.sort_by == SortBy::NAME_AZ) {
     std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
       auto& lhs = db::playlist_by_id(lhs_id)->get();
       auto& rhs = db::playlist_by_id(rhs_id)->get();
       return std::tie(lhs.name, lhs.author) < std::tie(rhs.name, rhs.author);
     });
-  } else if (sort_by == SortBy::NAME_ZA) {
+  } else if (props_.sort_by == SortBy::NAME_ZA) {
     std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
       auto& lhs = db::playlist_by_id(lhs_id)->get();
       auto& rhs = db::playlist_by_id(rhs_id)->get();
       return std::tie(lhs.name, lhs.author) > std::tie(rhs.name, rhs.author);
     });
-  } else if (sort_by == SortBy::AUTHOR_AZ) {
+  } else if (props_.sort_by == SortBy::AUTHOR_AZ) {
     std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
       auto& lhs = db::playlist_by_id(lhs_id)->get();
       auto& rhs = db::playlist_by_id(rhs_id)->get();
       return std::tie(lhs.author, lhs.name) < std::tie(rhs.author, rhs.name);
     });
-  } else if (sort_by == SortBy::AUTHOR_ZA) {
+  } else if (props_.sort_by == SortBy::AUTHOR_ZA) {
     std::sort(playlist_ids_sorted.begin(), playlist_ids_sorted.end(), [](size_t lhs_id, size_t rhs_id) {
       auto& lhs = db::playlist_by_id(lhs_id)->get();
       auto& rhs = db::playlist_by_id(rhs_id)->get();
@@ -181,16 +190,13 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_
     });
   }
 
-  for (size_t playlist_id : playlist_ids_sorted) {
-    auto& playlist = db::playlist_by_id(playlist_id)->get();
-    if (playlist.is_tombstone()) { continue; }
-    auto query_sanitized = sanitize_query(search_bar->label.get_text());
-    auto playlist_name_sanitized = sanitize_query(playlist.name);
-    auto playlist_author_sanitized = sanitize_query(playlist.author);
-    if (!playlist_name_sanitized.contains(query_sanitized) && !playlist_author_sanitized.contains(query_sanitized)) {
-      continue;
-    }
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id);
+  vec2i cover_widget_size = {props_.cover_width + props_.cover_min_horizontal_spacing, props_.cover_width + props_.cover_min_vertical_spacing};
+  vec2i cover_widget_cover_size = {props_.cover_width, props_.cover_width};
+
+  std::vector<size_t> playlist_ids_sorted_filtered = db::search_playlists(search_bar->label.get_text(), playlist_ids_sorted, 512);
+
+  for (size_t playlist_id : playlist_ids_sorted_filtered) {
+    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id, cover_widget_size, cover_widget_cover_size);
     album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, playlist_id, album_widget]() {
@@ -205,8 +211,8 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_
     });
   }
 
-  if (collection_id_.value() == 0) {
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>();
+  if (props_.collection_id.has_value() && props_.collection_id == 0) {
+    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(std::nullopt, cover_widget_size, cover_widget_cover_size);
     album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, album_widget]() {
@@ -220,27 +226,29 @@ void PanelAlbums::recreate(std::optional<size_t> collection_id_, SortBy sort_by_
 }
 
 void PanelAlbums::reflow() {
+  i32 cover_total_width = props_.cover_width + props_.cover_min_horizontal_spacing;
+  i32 cover_total_height = props_.cover_width + props_.cover_min_vertical_spacing;
   i32 albums_area_width = albums_container->get_width();
-  i32 album_covers_in_one_row = albums_area_width / theme::playlist_cover_width;
-  i32 space_left = albums_area_width - album_covers_in_one_row * theme::playlist_cover_width;
+  i32 album_covers_in_one_row = albums_area_width / cover_total_width;
+  i32 space_left = albums_area_width - album_covers_in_one_row * cover_total_width;
 
   if (album_covers_in_one_row <= 0) { return; }
 
   i32 column = 0;
   i32 cover_y = 0;
   for (auto& album_widget : album_widgets) {
-    i32 x_ = space_left * (column + 1) / (album_covers_in_one_row + 1) + theme::playlist_cover_width * column;
+    i32 x_ = space_left * (column + 1) / (album_covers_in_one_row + 1) + cover_total_width * column;
     album_widget->set_pos(x_, cover_y);
 
     column += 1;
     if (column >= album_covers_in_one_row) {
       column = 0;
-      cover_y += theme::playlist_cover_height;
+      cover_y += cover_total_height;
     }
   }
 
   // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) / album_covers_in_one_row;
-  i32 content_size = cover_y + theme::playlist_cover_height + (8 + panel_top->get_height());
+  i32 content_size = cover_y + cover_total_height + (8 + panel_search->get_height());
   scrollbar->set_content_size(content_size);
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
@@ -249,14 +257,16 @@ void PanelAlbums::reflow() {
 }
 
 void PanelAlbums::update() {
-  panel_top->set_width(width - 4 - 4 - scrollbar->get_width());
-  albums_container->set_width(width - scrollbar->get_width());
-  albums_container->set_height(height - (4 + scrollbar->get_height() + 4));
-
+  if (needs_recreate) {
+    recreate();
+    needs_recreate = false;
+  }
+  panel_search->set_width(width - 4 - 4 - scrollbar->get_width());
+  albums_container->set_height(props_.panel_search_visible ? height - (4 + panel_search->get_height() + 4) : height);
+  albums_container->set_width(props_.is_scrollable ? width - scrollbar->get_width() : width);
   reflow();
-
   auto albums_container_prev_y = albums_container->get_y();
-  albums_container->set_y((4 + panel_top->get_height() + 4) - scroll_px);
+  albums_container->set_y(props_.panel_search_visible ? (4 + panel_search->get_height() + 4) - scroll_px : -scroll_px);
   if (albums_container_prev_y != albums_container->get_y()) {
     ui.mark_dirty_recursive(albums_container);
   }
@@ -268,13 +278,14 @@ void PanelAlbums::update() {
 }
 
 void PanelAlbums::handle_event(Input::InputEventMouseScroll& e) {
-  if (is_mouse_hovering()) {
+  if (props_.is_scrollable && is_mouse_hovering()) {
     scrollbar->scroll(e.offset.y);
     e.handled = true;
   }
 }
 
 float PanelAlbums::get_scroll_px() const {
+  if (!props_.is_scrollable) return 0.0f;
   return target_scroll_px;
 }
 
