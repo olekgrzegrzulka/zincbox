@@ -177,9 +177,15 @@ bool Widget::is_mouse_hovering() const {
 }
 
 bool Widget::is_mouse_hovering(vec2i at) const {
-  bool mouse_on_widget_x = at.x >= get_position(Anchor::TOP_LEFT).x && at.x < get_position(Anchor::BOTTOM_RIGHT).x;
-  bool mouse_on_widget_y = at.y >= get_position(Anchor::TOP_LEFT).y && at.y < get_position(Anchor::BOTTOM_RIGHT).y;
-  return mouse_on_widget_x && mouse_on_widget_y;
+  const Widget* tested = this;
+  for (i32 i = 0; i < 127; i += 1) {
+    if (!tested) { break; }
+    bool test_x = at.x >= tested->get_position(Anchor::TOP_LEFT).x && at.x < tested->get_position(Anchor::BOTTOM_RIGHT).x;
+    bool test_y = at.y >= tested->get_position(Anchor::TOP_LEFT).y && at.y < tested->get_position(Anchor::BOTTOM_RIGHT).y;
+    if (!test_x || !test_y) { return false; }
+    tested = tested->parent;
+  }
+  return true;
 }
 
 void Widget::set_layout(std::string_view def) {

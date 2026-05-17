@@ -240,6 +240,7 @@ class Widget {
     WIDGET_DEF_GETTER(is_drawn_on_top)
     WIDGET_DEF_GETTER(weight)
     WIDGET_DEF_GETTER(draw_behind_parent)
+    WIDGET_DEF_GETTER(parent)
 
     Layout& get_layout() {
       mark_dirty();
