@@ -88,16 +88,12 @@ class PopupController : public Widget {
       return &popup;
     };
 
-    [[deprecated]] PopupOld* create_popup(popup_descriptor d);
-
     bool is_popup_open() const;
     void close_all_popups();
-    [[deprecated]] void close_popup(std::string id);
 
   protected:
     UI& ui;
     Dimmer& dimmer;
-    std::unordered_map<std::string, Popup*> popups_old;
     Widget* popups;
     std::unordered_map<std::string, Widget*> popovers;
 };

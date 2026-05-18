@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <functional>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -27,11 +26,6 @@ void PopupController::on_dimmer_pressed() {
 }
 
 void PopupController::on_dimmer_enter_pressed() {
-  for (auto [_, p] : popups_old) {
-    if (p->on_confirm) { p->on_confirm(p); }
-    p->set_marked_for_deletion(true);
-  }
-  popups_old.clear();
 }
 
 void PopupController::on_dimmer_escape_pressed() {
@@ -39,12 +33,6 @@ void PopupController::on_dimmer_escape_pressed() {
     p->set_marked_for_deletion(true);
   }
   popovers.clear();
-
-  for (auto [_, p] : popups_old) {
-    if (p->on_cancel) { p->on_cancel(p); }
-    p->set_marked_for_deletion(true);
-  }
-  popups_old.clear();
 }
 
 void PopupController::create_popover(const popover_descriptor& d) {
@@ -109,71 +97,18 @@ void PopupController::create_popover(const popover_descriptor& d) {
   }
 };
 
-[[deprecated]] PopupOld* PopupController::create_popup(popup_descriptor d) {
-  ensure(d.button_actions.size() >= d.button_actions.size());
-  if (popups_old.contains(d.id)) { return nullptr; }
-  auto& popup = add_child<PopupOld>(*this);
-
-  auto popup_id = d.id;
-  popups_old[popup_id] = &popup;
-
-  popup.title.set_text(d.title);
-  if (d.content.has_value()) {
-    auto& content_label = popup.content.add_child<Label>(std::u32string{*d.content});
-    popup.set_width(std::max(popup.title.get_width(), content_label.get_width()) + 20);
-  } else {
-    popup.set_width(popup.title.get_width() + 20);
-  }
-
-  auto& button_container = popup.add_child<Widget>();
-  button_container.set_height(30);
-  button_container.set_layout("ltr fill expand m:0 s:4");
-  std::vector<Button*> buttons;
-  for (auto& sv : d.button_labels) {
-    auto& btn = button_container.add_child<Button>(std::u32string(sv));
-    buttons.emplace_back(&btn);
-  }
-
-  size_t button_i = 0;
-  for (auto& l : d.button_actions) {
-    auto lambda = [this, l, &popup, popup_id]() {
-      if (l) { l(&popup); }
-      if (popups_old.contains(popup_id)) { popups_old[popup_id] = nullptr; }
-
-      popup.set_marked_for_deletion(true);
-    };
-    buttons[button_i]->on_press(lambda);
-    button_i += 1;
-  }
-
-  return &popup;
-}
-
 bool PopupController::is_popup_open() const {
-  return popups_old.size() > 0 && popups->get_children().size() > 0;
+  return popups->get_children().size() > 0;
 }
 
 void PopupController::close_all_popups() {
-  for (auto [popup_id, popup] : popups_old) {
+  for (auto [popup_id, popup] : popovers) {
     popup->set_marked_for_deletion(true);
   }
-  popups_old.clear();
+  popovers.clear();
 
-  for (auto& [popup_id, popup] : popups_old) {
-    popup->close();
-    popup->set_marked_for_deletion(true);
-    popup = nullptr;
-  }
   for (auto& popup : popups->get_children()) {
     popup->set_marked_for_deletion(true);
-  }
-}
-
-[[deprecated]] void PopupController::close_popup(std::string id) {
-  if (popups_old.contains(id)) {
-    popups_old[id]->close();
-    popups_old[id]->set_marked_for_deletion(true);
-    popups_old[id] = nullptr;
   }
 }
 
@@ -184,16 +119,7 @@ void PopupController::process_input() {
     w->process_input();
   }
 
-  for (auto& [_, w] : popups_old) {
-    if (!w) { continue; }
-    w->process_input();
-  }
-
   std::erase_if(popovers, [](const auto& item) {
-    return item.second == nullptr;
-  });
-
-  std::erase_if(popups_old, [](const auto& item) {
     return item.second == nullptr;
   });
 
@@ -203,8 +129,8 @@ void PopupController::process_input() {
 void PopupController::update() {
   set_size(ui.get_window_size());
   popups->set_size(ui.get_window_size());
-  bool dimmer_block_events = popovers.size() + popups_old.size() + popups->get_children().size() > 0;
-  bool dimmer_visible = popups_old.size() + popups->get_children().size() > 0;
+  bool dimmer_block_events = popovers.size() + popups->get_children().size() > 0;
+  bool dimmer_visible = popups->get_children().size() > 0;
   dimmer.set_is_active(dimmer_block_events);
   dimmer.set_is_drawn(dimmer_visible);
   Widget::update();
