@@ -5,7 +5,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_set>
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "common/types.hpp"
@@ -24,6 +23,7 @@
 #include "splitter.hpp"
 #include "theme.hpp"
 #include "ui/panel_tracks_track.hpp"
+#include "ui/popup_definitions.hpp"
 #include "ui/popup_search.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
@@ -166,8 +166,6 @@ void interface::init() {
         nfdpathsetsize_t i;
         std::string collection_name = "Collection #" + std::to_string(db::collection_count() + 1);
         auto collection_id = db::add_collection(utf8_to_utf32(collection_name));
-        auto& collection = db::collection_by_id(collection_id)->get();
-
         for (i = 0; i < numPaths; i += 1) {
           NFD::UniquePathSetPath path;
           NFD::PathSet::GetPath(out_paths, i, path);
@@ -428,32 +426,22 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  auto confirm_action = [](Popup* p_) {
-    PopupOld* p = reinterpret_cast<PopupOld*>(p_);
-    auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
-
-    db::add_playlist_to_collection(0, db::Playlist{text_input->label.get_text(), U"", db::PlaylistType::User});
-    if (active_collection_id == 0) {
-      panel_albums->get_props().collection_id = 0;
-      panel_tracks->recreate();
-    }
-  };
-
-  auto cancel_action = [](Popup*) {};
-
   panel_albums->on_add_playlist_button_pressed = [&](Widget*) {
-    popup_descriptor pd{
-      .id = "add_playlist",
-      .title = U"Add playlist",
-      .content = std::nullopt,
-      .button_labels = {U"Cancel", U"Add"},
-      .button_actions = {cancel_action, confirm_action}};
-    auto* popup = popup_controller->create_popup(pd);
+    auto* popup = popup_controller->show_popup<PopupInput>();
     popup->set_size(300, 200);
-    popup->on_confirm = confirm_action;
-    popup->on_cancel = cancel_action;
-    auto& text_input = popup->content.add_child<TextInput>();
-    text_input.set_focused(true);
+    popup->title->set_text(U"Add playlist");
+    popup->btn_ok->get_label().set_text(U"Add");
+    popup->text_input->set_focused(true);
+
+    popup->on_ok_pressed = [popup]() {
+      db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
+      if (active_collection_id == 0) {
+        panel_albums->get_props().collection_id = 0;
+        panel_tracks->recreate();
+      }
+    };
+
+    popup->on_cancel_pressed = []() {};
   };
 
   if (db::collection_count() > 0) {
@@ -629,58 +617,22 @@ static void handle_dropped_files() {
       dropped_directories.emplace_back(path);
     }
   }
-  std::string content;
-  i32 longest_path_length = 0;
-  i32 index = 1;
-  for (auto& dir : dropped_directories) {
-    content += std::to_string(index) + ". " + dir + "\n";
-    longest_path_length = std::max(longest_path_length, (i32)dir.length());
-    index += 1;
-  }
 
-  auto content_utf32 = utf8_to_utf32(content);
-  if (dropped_directories.size() > 1) {
-    auto str_size = utf8_to_utf32(std::to_string(dropped_directories.size()));
-    auto title = U"Importing " + str_size + U" folders";
-    popup_descriptor d{
-      .id = "directories_dropped",
-      .title = title,
-      .content = content_utf32,
-      .button_labels = {
-        U"Cancel",
-        U"Add as " + str_size + U" collections",
-        U"Merge into 1 collection"},
-      .button_actions = {
-        nullptr,
-        [dropped_directories](PopupOld*) {
-          create_multiple_collections(dropped_directories);
-        },
-        [dropped_directories](PopupOld*) {
-          create_collection(dropped_directories);
-        },
-      },
-    };
-    auto popup = interface::get_popup_controller()->create_popup(d);
-    popup->set_width(550);
-  } else if (dropped_directories.size() == 1) {
-    popup_descriptor d{
-      .id = "directories_dropped",
-      .title = U"Importing 1 folder",
-      .content = content_utf32,
-      .button_labels = {
-        U"Cancel",
-        U"Add collection",
-      },
-      .button_actions = {
-        nullptr,
-        [dropped_directories](PopupOld*) {
-          create_collection(dropped_directories);
-        },
-      },
-    };
-    auto popup = interface::get_popup_controller()->create_popup(d);
-    popup->set_width(300);
-  }
+  if (dropped_directories.empty()) { return; }
+
+  auto* popup = popup_controller->show_popup<PopupImportFolders>(dropped_directories);
+
+  popup->on_add_collections_pressed = [](const std::vector<std::string>& dirs) {
+    if (dirs.size() > 1) {
+      create_multiple_collections(dirs);
+    } else {
+      create_collection(dirs);
+    }
+  };
+
+  popup->on_merge_pressed = [](const std::vector<std::string>& dirs) {
+    create_collection(dirs);
+  };
 }
 
 static void delete_collection(size_t collection_id) {
@@ -709,27 +661,10 @@ static void delete_playlist(size_t playlist_id) {
 }
 
 static void show_add_to_playlist_popup(size_t track_id) {
-  auto& track = db::track_by_id(track_id)->get();
-  std::u32string pretty_track = track.artist + U" - " + track.title;
-  popup_descriptor d{
-    .id = "add_to_playlist",
-    .title = U"Select a playlist to add this track to ",
-    .content = pretty_track,
-    .button_labels = {U"Cancel"},
-    .button_actions{nullptr},
-  };
-  auto* popup = popup_controller->create_popup(d);
-  auto& playlists_view = popup->content.add_child<PanelAlbums>();
-  playlists_view.set_width((64 + 12) * 6);
-  playlists_view.set_height(std::clamp(ui->get_window_height() - 300, 100, 500));
-  popup->set_width(playlists_view.get_width());
-  popup->set_height(playlists_view.get_height() + 40);
-  playlists_view.get_props().collection_id = 0;
+  auto* popup = popup_controller->show_popup<PopupAddToPlaylist>(track_id);
 
-  auto* popup_controller_ = popup_controller;
-  playlists_view.on_playlist_lmb = [popup_controller_, track_id](size_t playlist_id, Widget*) {
+  popup->on_playlist_selected = [track_id](size_t playlist_id) {
     db::add_track_id_to_playlist(playlist_id, track_id);
-    popup_controller_->close_all_popups();
     panel_tracks->clear();
     panel_tracks->recreate();
   };
@@ -737,140 +672,84 @@ static void show_add_to_playlist_popup(size_t track_id) {
 
 static void show_popup_delete_collection(size_t collection_id) {
   auto collection_name = db::collection_by_id(collection_id)->get().name;
-  std::string collection_name_utf8 = utf32_to_utf8(collection_name);
   std::u32string content = U"Are you sure you want to delete\nthe collection \"" + collection_name + U"\"?";
-  popup_descriptor d{
-    .id = "delete_collection",
-    .title = U"Delete collection",
-    .content = content,
-    .button_labels = {U"Cancel", U"Delete"},
-    .button_actions = {nullptr, [collection_id](PopupOld*) { delete_collection(collection_id); }},
-  };
-  auto* popup = popup_controller->create_popup(d);
+
+  auto* popup = popup_controller->show_popup<PopupConfirm>(content);
   popup->set_width(300);
+  popup->title->set_text(U"Delete collection");
+  popup->btn_ok->get_label().set_text(U"Delete");
+
+  popup->on_ok_pressed = [collection_id]() {
+    delete_collection(collection_id);
+  };
 }
 
 static void show_popup_rename_collection(size_t collection_id) {
-  auto collection_name = db::collection_by_id(collection_id)->get().name;
-  popup_descriptor d{
-    .id = "rename_collection",
-    .title = U"Rename collection",
-    .content = std::nullopt,
-    .button_labels = {U"Cancel", U"Rename"},
-    .button_actions = {nullptr, [collection_id](PopupOld* p) {
-                         auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
-                         std::u32string new_name = text_input->label.get_text();
-                         if (new_name.empty()) { return; }
-                         db::rename_collection(collection_id, new_name);
-                         panel_top->recreate(active_collection_id);
-                       }},
+  auto* popup = popup_controller->show_popup<PopupInput>();
+  popup->set_size(300, 200);
+  popup->title->set_text(U"Rename playlist");
+  popup->btn_ok->get_label().set_text(U"Rename");
+  popup->text_input->label.set_text(db::collection_by_id(collection_id)->get().name);
+  popup->text_input->set_focused(true);
+
+  popup->on_ok_pressed = [popup, collection_id]() {
+    std::u32string new_name = popup->text_input->label.get_text();
+    if (new_name.empty()) { return; }
+    db::rename_collection(collection_id, new_name);
+    panel_top->recreate(active_collection_id);
   };
-  auto* popup = popup_controller->create_popup(d);
-  auto& text_input = popup->content.add_child<TextInput>();
-  text_input.set_focused(true);
-  text_input.label.set_text(collection_name);
-  popup->set_width(300);
 }
 
 static void show_popup_set_sources(size_t collection_id) {
-  auto& collection = db::collection_by_id(collection_id)->get();
-  std::u32string content;
-  std::u32string title = U"Sources for collection \'" + collection.name + U"\'";
-  i32 num = 1;
-  popup_descriptor d{
-    .id = "set_collection_sources",
-    .title = title,
-    .content = content,
-    .button_labels = {U"Cancel", U"Add directory"},
-    .button_actions = {nullptr, [collection_id](PopupOld* p) {
-                         NFD::UniquePath out_path;
-                         auto result = NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr);
-                         if (result == NFD_OKAY) {
-                           db::add_path_to_collection(collection_id, out_path.get());
-                           // db::rescan_collection(collection_id);
-                           if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-                             panel_tracks->recreate();
-                             panel_albums->get_props().collection_id = collection_id;
-                           }
-                         }
-                       }},
-  };
-  auto* popup = popup_controller->create_popup(d);
+  auto* popup = popup_controller->show_popup<PopupSetSources>(collection_id);
 
-  if (collection.paths.size() != 0) {
-    popup->set_width(400);
-    popup->content.set_layout("ltr s:0 m:0");
-    auto& left_panel = popup->content.add_child<Widget>();
-    left_panel.set_layout("ttb s:4 m:0 fit");
-    auto& right_panel = popup->content.add_child<Widget>();
-    right_panel.set_layout("ttb s:4 m:0 fit");
-    left_panel.set_width(310);
-    left_panel.set_clip_children(true);
-    right_panel.set_width(65);
-    popup->content.set_height(std::max(50, (i32)collection.paths.size() * 34));
-    for (const auto& path : collection.paths) {
-      // size_t i = &path - &collection.paths[0];
-      std::u32string str = utf8_to_utf32(std::to_string(num)) + U". " + utf8_to_utf32(path) + U"\n";
-      auto& label = left_panel.add_child<Label>(str);
-      label.set_resize_to_text_extents(false);
-      label.set_size(310, 30);
-      label.set_label_anchor(Anchor::LEFT);
-      auto& button = right_panel.add_child<Button>(U"Remove");
-      button.set_size(65, 30);
-      button.on_press(
-        [collection_id, path]() {
-          db::remove_path_from_collection(collection_id, path);
-          if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-            panel_tracks->recreate();
-            panel_albums->get_props().collection_id = collection_id;
-          }
-          popup_controller->close_all_popups();
-        });
-      num += 1;
+  popup->on_remove_path_pressed = [collection_id](std::string path) {
+    db::remove_path_from_collection(collection_id, path);
+    if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+      panel_tracks->recreate();
+      panel_albums->get_props().collection_id = collection_id;
     }
-  } else {
-    popup->content.set_height(50);
-    popup->set_width(300);
-    popup->content.set_layout("ltr s:0 m:0 expand fit");
-    auto& label = popup->content.add_child<Label>("This collection has no sources set");
-    label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
-    label.set_label_anchor(Anchor::CENTER);
-  }
+    popup_controller->close_all_popups();
+  };
+
+  popup->on_add_dir_pressed = [collection_id]() {
+    NFD::UniquePath out_path;
+    if (NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr) == NFD_OKAY) {
+      db::add_path_to_collection(collection_id, out_path.get());
+      if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+        panel_tracks->recreate();
+        panel_albums->get_props().collection_id = collection_id;
+      }
+    }
+  };
 }
 
 static void show_popup_delete_playlist(size_t playlist_id) {
   auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-  std::string playlist_name_utf8 = utf32_to_utf8(playlist_name);
-  std::u32string content = U"Are you sure you want to delete\nthe playlist \"" + playlist_name + U"\"?";
-  popup_descriptor d{
-    .id = "delete_playlist",
-    .title = U"Delete playlist",
-    .content = content,
-    .button_labels = {U"Cancel", U"Delete"},
-    .button_actions = {nullptr, [playlist_id](PopupOld*) { delete_playlist(playlist_id); }},
-  };
-  auto* popup = popup_controller->create_popup(d);
+  std::u32string content = U"Are you sure you want to delete\nthe playlist \'" + playlist_name + U"\'?";
+
+  auto* popup = popup_controller->show_popup<PopupConfirm>(content);
   popup->set_width(300);
+  popup->title->set_text(U"Delete playlist");
+  popup->btn_ok->get_label().set_text(U"Delete");
+
+  popup->on_ok_pressed = [playlist_id]() {
+    delete_playlist(playlist_id);
+  };
 }
 
 static void show_popup_rename_playlist(size_t playlist_id) {
-  auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-  popup_descriptor d{
-    .id = "rename_playlist",
-    .title = U"Rename playlist",
-    .content = std::nullopt,
-    .button_labels = {U"Cancel", U"Rename"},
-    .button_actions = {nullptr, [playlist_id](PopupOld* p) {
-                         auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
-                         std::u32string new_name = text_input->label.get_text();
-                         if (new_name.empty()) { return; }
-                         db::rename_playlist(playlist_id, new_name);
-                         panel_albums->recreate();
-                       }},
+  auto* popup = popup_controller->show_popup<PopupInput>();
+  popup->set_size(300, 200);
+  popup->title->set_text(U"Rename playlist");
+  popup->btn_ok->get_label().set_text(U"Rename");
+  popup->text_input->label.set_text(db::playlist_by_id(playlist_id)->get().name);
+  popup->text_input->set_focused(true);
+
+  popup->on_ok_pressed = [popup, playlist_id]() {
+    std::u32string new_name = popup->text_input->label.get_text();
+    if (new_name.empty()) { return; }
+    db::rename_playlist(playlist_id, new_name);
+    panel_albums->recreate();
   };
-  auto* popup = popup_controller->create_popup(d);
-  auto& text_input = popup->content.add_child<TextInput>();
-  text_input.set_focused(true);
-  text_input.label.set_text(playlist_name);
-  popup->set_width(300);
 }
