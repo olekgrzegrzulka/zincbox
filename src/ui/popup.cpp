@@ -1,5 +1,6 @@
 #include <string>
 #include <string_view>
+#include "common/input.hpp"
 #include "common/types.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
@@ -11,6 +12,35 @@ Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> 
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
   set_anchor(Anchor::CENTER);
+}
+
+void Popup::update() {
+  if (is_dragged) {
+    vec2i delta = Input::get_mouse_pos() - drag_start_mouse_pos;
+    vec2i new_pos = drag_start_pos + delta;
+    new_pos.x = std::clamp(new_pos.x, (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2);
+    new_pos.y = std::clamp(new_pos.y, (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2);
+    set_pos(new_pos);
+  }
+  Sprite::update();
+}
+
+void Popup::handle_event(Input::InputEventMouseButton& e) {
+  if (e.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
+    if (e.action == Input::MouseAction::PRESS && is_mouse_hovering()) {
+      is_dragged = true;
+      e.handled = true;
+      drag_start_pos = {x, y};
+      drag_start_mouse_pos = Input::get_mouse_pos();
+    } else if (e.action == Input::MouseAction::RELEASE) {
+      is_dragged = false;
+      e.handled = true;
+    }
+  }
+
+  if (!e.handled) {
+    Sprite::handle_event(e);
+  }
 }
 
 PopupOld::PopupOld(UI& ui_, PopupController& controller_) : Popup(ui_, controller_, nullptr), title(add_child<Label>()), content(add_child<Widget>()) {
