@@ -11,7 +11,6 @@ Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> 
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
   set_anchor(Anchor::CENTER);
-  set_layout("ttb expand fit m:12 s:12");
 }
 
 PopupOld::PopupOld(UI& ui_, PopupController& controller_) : Popup(ui_, controller_, nullptr), title(add_child<Label>()), content(add_child<Widget>()) {

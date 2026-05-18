@@ -81,10 +81,10 @@ class PopupController : public Widget {
 
     void create_popover(const popover_descriptor& d);
 
-    template <typename T>
+    template <typename T, typename... Args>
       requires std::is_base_of_v<Popup, T>
-    T* show_popup() {
-      auto& popup = popups->add_child<T>(*this, [&](Popup* p) { p->set_marked_for_deletion(true); });
+    T* show_popup(Args&&... args) {
+      auto& popup = popups->add_child<T>(*this, [&](Popup* p) { p->set_marked_for_deletion(true); }, std::forward<Args>(args)...);
       return &popup;
     };
 
