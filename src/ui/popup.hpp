@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "common/input.hpp"
 #include "common/types.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/widget.hpp"
@@ -32,9 +33,15 @@ class Popup : public Sprite {
       if (on_close) { on_close(this); }
     }
 
+    void update() override;
+    void handle_event(Input::InputEventMouseButton&) override;
+
   protected:
     PopupController& controller;
     std::function<void(Popup*)> on_close{};
+    bool is_dragged = false;
+    vec2i drag_start_pos{};
+    vec2i drag_start_mouse_pos{};
 };
 
 class [[deprecated]] PopupOld : public Popup {
