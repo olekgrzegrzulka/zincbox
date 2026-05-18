@@ -20,6 +20,15 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   scrollbar->set_thumb_thickness(12);
   scrollbar->set_track_thickness(12);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
+
+  button_play_tooltip = &add_child<ToolTip>("Play", ToolTipPosition::BELOW, 8);
+  button_play_next_tooltip = &add_child<ToolTip>("Play next", ToolTipPosition::BELOW, 8);
+  button_play_tooltip->set_is_drawn(false);
+  button_play_next_tooltip->set_is_drawn(false);
+  button_play_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  button_play_tooltip->set_anchor(Anchor::TOP_LEFT);
+  button_play_next_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  button_play_next_tooltip->set_anchor(Anchor::TOP_LEFT);
 }
 
 void PanelTracks::draw() {
@@ -56,6 +65,26 @@ void PanelTracks::update() {
 
   old_scroll_px = scroll_px;
   old_width = width;
+
+  bool button_play_tooltip_visible = false;
+  bool button_play_next_tooltip_visible = false;
+  for (auto& v : visible_album_widgets) {
+    if (v->button_play->is_mouse_hovering()) {
+      button_play_tooltip_visible = true;
+      button_play_tooltip->set_pos(v->button_play->get_position() - get_position());
+      button_play_tooltip->set_x(button_play_tooltip->get_x() - button_play_tooltip->get_width() / 2);
+      button_play_tooltip->set_y(button_play_tooltip->get_y() + 26);
+    }
+    if (v->button_play_next->is_mouse_hovering()) {
+      button_play_next_tooltip_visible = true;
+      button_play_next_tooltip->set_pos(v->button_play_next->get_position() - get_position());
+      button_play_next_tooltip->set_x(button_play_next_tooltip->get_x() - button_play_next_tooltip->get_width() / 2);
+      button_play_next_tooltip->set_y(button_play_next_tooltip->get_y() + 26);
+    }
+  }
+
+  button_play_tooltip->set_is_drawn(button_play_tooltip_visible);
+  button_play_next_tooltip->set_is_drawn(button_play_next_tooltip_visible);
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);

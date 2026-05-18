@@ -8,6 +8,7 @@
 #include "common/types.hpp"
 #include "ui/panel_tracks_track.hpp"
 #include "ui_generic/sprite.hpp"
+#include "ui_generic/tooltip.hpp"
 
 class ScrollBar;
 class WidgetAlbum;
@@ -49,6 +50,8 @@ class PanelTracks : public Sprite {
     i32 old_width{};
     i32 max_scroll_px{};
     ScrollBar* scrollbar{};
+    ToolTip* button_play_tooltip{};
+    ToolTip* button_play_next_tooltip{};
     std::vector<std::pair<i32, size_t>> album_scroll_px;
     std::vector<WidgetAlbum*> visible_album_widgets;
 };
