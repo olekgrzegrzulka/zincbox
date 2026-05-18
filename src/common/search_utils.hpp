@@ -1,4 +1,5 @@
 #include <string>
+#include <string_view>
 
 // clang-format off
 static inline char32_t transform_to_base_char(char32_t c) {
@@ -48,7 +49,7 @@ static inline char32_t transform_to_base_char(char32_t c) {
 }
 // clang-format on
 
-static inline std::u32string sanitize_query(const std::u32string& input) {
+static inline std::u32string sanitize_query(std::u32string_view input) {
   std::u32string result;
   result.reserve(input.size());
 

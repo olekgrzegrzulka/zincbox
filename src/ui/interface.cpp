@@ -24,6 +24,7 @@
 #include "splitter.hpp"
 #include "theme.hpp"
 #include "ui/panel_tracks_track.hpp"
+#include "ui/popup_search.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
@@ -427,15 +428,8 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  panel_albums->on_search_bar_text_modified = []() {
-    if (active_collection_id.has_value()) {
-      panel_albums->recreate(active_collection_id);
-    } else {
-      panel_albums->recreate(std::nullopt);
-    }
-  };
-
-  auto confirm_action = [](Popup* p) {
+  auto confirm_action = [](Popup* p_) {
+    PopupOld* p = reinterpret_cast<PopupOld*>(p_);
     auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
 
     db::add_playlist_to_collection(0, db::Playlist{text_input->label.get_text(), U"", db::PlaylistType::User});
@@ -658,10 +652,10 @@ static void handle_dropped_files() {
         U"Merge into 1 collection"},
       .button_actions = {
         nullptr,
-        [dropped_directories](Popup*) {
+        [dropped_directories](PopupOld*) {
           create_multiple_collections(dropped_directories);
         },
-        [dropped_directories](Popup*) {
+        [dropped_directories](PopupOld*) {
           create_collection(dropped_directories);
         },
       },
@@ -679,7 +673,7 @@ static void handle_dropped_files() {
       },
       .button_actions = {
         nullptr,
-        [dropped_directories](Popup*) {
+        [dropped_directories](PopupOld*) {
           create_collection(dropped_directories);
         },
       },
@@ -750,7 +744,7 @@ static void show_popup_delete_collection(size_t collection_id) {
     .title = U"Delete collection",
     .content = content,
     .button_labels = {U"Cancel", U"Delete"},
-    .button_actions = {nullptr, [collection_id](Popup*) { delete_collection(collection_id); }},
+    .button_actions = {nullptr, [collection_id](PopupOld*) { delete_collection(collection_id); }},
   };
   auto* popup = popup_controller->create_popup(d);
   popup->set_width(300);
@@ -763,7 +757,7 @@ static void show_popup_rename_collection(size_t collection_id) {
     .title = U"Rename collection",
     .content = std::nullopt,
     .button_labels = {U"Cancel", U"Rename"},
-    .button_actions = {nullptr, [collection_id](Popup* p) {
+    .button_actions = {nullptr, [collection_id](PopupOld* p) {
                          auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
                          std::u32string new_name = text_input->label.get_text();
                          if (new_name.empty()) { return; }
@@ -788,7 +782,7 @@ static void show_popup_set_sources(size_t collection_id) {
     .title = title,
     .content = content,
     .button_labels = {U"Cancel", U"Add directory"},
-    .button_actions = {nullptr, [collection_id](Popup* p) {
+    .button_actions = {nullptr, [collection_id](PopupOld* p) {
                          NFD::UniquePath out_path;
                          auto result = NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr);
                          if (result == NFD_OKAY) {
@@ -853,7 +847,7 @@ static void show_popup_delete_playlist(size_t playlist_id) {
     .title = U"Delete playlist",
     .content = content,
     .button_labels = {U"Cancel", U"Delete"},
-    .button_actions = {nullptr, [playlist_id](Popup*) { delete_playlist(playlist_id); }},
+    .button_actions = {nullptr, [playlist_id](PopupOld*) { delete_playlist(playlist_id); }},
   };
   auto* popup = popup_controller->create_popup(d);
   popup->set_width(300);
@@ -866,7 +860,7 @@ static void show_popup_rename_playlist(size_t playlist_id) {
     .title = U"Rename playlist",
     .content = std::nullopt,
     .button_labels = {U"Cancel", U"Rename"},
-    .button_actions = {nullptr, [playlist_id](Popup* p) {
+    .button_actions = {nullptr, [playlist_id](PopupOld* p) {
                          auto* text_input = reinterpret_cast<TextInput*>(p->content.get_children()[0].get());
                          std::u32string new_name = text_input->label.get_text();
                          if (new_name.empty()) { return; }
