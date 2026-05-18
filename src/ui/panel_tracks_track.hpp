@@ -1,7 +1,6 @@
 #pragma once
 #include <sstream>
 #include <string>
-#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "theme.hpp"

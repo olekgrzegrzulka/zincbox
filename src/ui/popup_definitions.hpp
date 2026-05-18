@@ -4,7 +4,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "common/debug.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "ui/panel_albums.hpp"
@@ -264,9 +263,6 @@ class PopupSetSources : public Popup {
       left_panel->update();
       right_panel->update();
       list_container->update();
-      debug_log(title->get_height());
-      debug_log(buttons->get_height());
-
       list_container->set_height(std::max(64, left_panel->get_height()));
       list_container->set_min_height(list_container->get_height());
       list_container->set_max_height(list_container->get_height());
