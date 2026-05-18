@@ -62,4 +62,17 @@ namespace db {
 
   // track setters
   void set_track_playback_error(size_t track_id, bool playback_error);
+
+  // search
+  struct track_info {
+      size_t collection_id;
+      size_t playlist_id;
+      size_t track_id;
+  };
+  std::vector<size_t> search_playlists(std::u32string_view search_text, size_t max_size);
+  std::vector<size_t> search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size);
+  std::vector<size_t> search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids, size_t max_size);
+  std::vector<track_info> search_tracks(std::u32string_view search_text, size_t max_size);
+  std::vector<track_info> search_tracks(std::u32string_view search_text, size_t collection_id, size_t max_size);
+  std::vector<track_info> search_tracks(std::u32string_view search_text, std::span<track_info> src, size_t max_size);
 } // namespace db

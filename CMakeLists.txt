@@ -125,6 +125,8 @@ set(SOURCES
     ./src/ui/panel_queue.cpp
     ./src/ui/panel_top.cpp
     ./src/ui/theme.cpp
+    ./src/ui/popup_controller.cpp
+    ./src/ui/popup.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
