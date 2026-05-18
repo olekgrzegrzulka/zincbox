@@ -79,9 +79,6 @@ class WidgetAlbum : public Widget {
         player::play_playlist(collection_id, playlist_id, true);
       });
 
-      button_play_tooltip = &button_play->add_child<ToolTip>("Play", ToolTipPosition::BELOW, 8);
-      button_play_next_tooltip = &button_play_next->add_child<ToolTip>("Play next", ToolTipPosition::BELOW, 8);
-
       bool even = true;
       size_t playlist_track_index = 0;
       for (size_t track_id : playlist.get_track_ids()) {
@@ -125,8 +122,6 @@ class WidgetAlbum : public Widget {
     void update() override {
       set_x(12);
       set_width(parent->get_width() - 12);
-      button_play_tooltip->set_is_drawn(button_play->is_mouse_hovering());
-      button_play_next_tooltip->set_is_drawn(button_play_next->is_mouse_hovering());
       Widget::update();
     }
 
@@ -134,6 +129,4 @@ class WidgetAlbum : public Widget {
     size_t playlist_id;
     Button* button_play{};
     Button* button_play_next{};
-    ToolTip* button_play_tooltip{};
-    ToolTip* button_play_next_tooltip{};
 };
