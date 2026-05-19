@@ -297,7 +297,6 @@ void db::rescan_collection(size_t collection_id) {
     }
   }
 
-  collection.playlist_ids.clear();
   for (const auto& path : collection_paths) {
     add_path_to_collection(collection_id, path);
   }
