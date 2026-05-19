@@ -145,6 +145,7 @@ void interface::init() {
         [collection_id]() { show_popup_set_sources(collection_id); },
         [collection_id]() {
           db::rescan_collection(collection_id);
+          add_playlist_art_to_texture_atlas(collection_id);
           if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
             panel_tracks->recreate();
             panel_albums->recreate();
@@ -580,7 +581,9 @@ static void add_playlist_art_to_texture_atlas(size_t collection_id) {
   for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     std::string playlist_id_str = std::to_string(playlist_id);
-    if (ui->get_texture_atlas().has_texture(playlist_id_str, 1)) { continue; }
+    if (ui->get_texture_atlas().has_texture(playlist_id_str, 1)) {
+      ui->get_texture_atlas().remove_texture(playlist_id_str);
+    }
     ui->get_texture_atlas().add_texture(playlist_id_str, playlist.image, 64, 64);
     if (count++ >= 1023) { break; }
   }
