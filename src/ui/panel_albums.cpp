@@ -254,6 +254,7 @@ void PanelAlbums::reflow() {
   scrollbar->set_height(height);
   scrollbar->set_height(height);
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
+  albums_container->set_height(content_size);
 }
 
 void PanelAlbums::update() {
@@ -262,7 +263,6 @@ void PanelAlbums::update() {
     needs_recreate = false;
   }
   panel_search->set_width(width - 4 - 4 - scrollbar->get_width());
-  albums_container->set_height(props_.panel_search_visible ? height - (4 + panel_search->get_height() + 4) : height);
   albums_container->set_width(props_.is_scrollable ? width - scrollbar->get_width() : width);
   reflow();
   auto albums_container_prev_y = albums_container->get_y();
