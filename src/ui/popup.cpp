@@ -53,17 +53,16 @@ Popover::Popover(UI& ui_) : Sprite(ui_, "popover_panel") {
 }
 
 void Popover::update() {
-  Sprite::update();
-}
-
-void Popover::draw() {
   i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
   i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
   i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
   i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
-
   set_x(get_x() + off_screen_left - off_screen_right);
   set_y(get_y() + off_screen_top - off_screen_bottom);
+  
+  Sprite::update();
+}
 
+void Popover::draw() {
   Sprite::draw();
 }
