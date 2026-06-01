@@ -101,7 +101,12 @@ int main() {
   }
   debug_log("deserialize end");
 
-  glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); // libdecor causes lag when resizing the window on Wayland
+  // libdecor causes lag when resizing the window on Wayland
+  // but it's needed for GNOME - so disable only if not needed
+  const char* xdg_current_desktop = std::getenv("XDG_CURRENT_DESKTOP");
+  if (std::strstr(xdg_current_desktop, "KDE") != nullptr || std::strstr(xdg_current_desktop, "GNOME") == nullptr) {
+    glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR);
+  }
   if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
   vec2i window_size = {
     std::clamp(config_get_i32("window_width").value_or(800), 480, 1920 * 4),
