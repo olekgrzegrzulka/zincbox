@@ -7,6 +7,7 @@ set(GLFW_STANDALONE ON CACHE BOOL "" FORCE)
 # Native File Dialog Extended
 option(NFD_PORTAL "" ON)
 set(NFD_PORTAL ON)
+set(utf8cpp_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/utfcpp/source" CACHE PATH "" FORCE)
 
 # zlib
 set(ZLIB_BUILD_TESTING  OFF)

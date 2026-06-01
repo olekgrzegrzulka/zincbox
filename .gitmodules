@@ -7,3 +7,27 @@
 [submodule "lib/miniaudio"]
 	path = lib/miniaudio
 	url = https://github.com/mackron/miniaudio.git
+[submodule "lib/glm"]
+	path = lib/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "lib/libspng"]
+	path = lib/libspng
+	url = https://github.com/randy408/libspng.git
+[submodule "lib/miniz"]
+	path = lib/miniz
+	url = https://github.com/richgel999/miniz.git
+[submodule "lib/nativefiledialog-extended"]
+	path = lib/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "lib/sdbus-cpp"]
+	path = lib/sdbus-cpp
+	url = https://github.com/Kistler-Group/sdbus-cpp.git
+[submodule "lib/taglib"]
+	path = lib/taglib
+	url = https://github.com/taglib/taglib.git
+[submodule "lib/utfcpp"]
+	path = lib/utfcpp
+	url = https://github.com/nemtrif/utfcpp.git
+[submodule "lib/zlib"]
+	path = lib/zlib
+	url = https://github.com/madler/zlib.git
