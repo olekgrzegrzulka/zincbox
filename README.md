@@ -7,8 +7,6 @@
 
 ![Screenshot](screenshot.png)
 
-
-
 # Instructions
 
 The top panel displays your file collections, alongside dedicated 'Playlists' view for user-created playlists and 'Queue' view for active playback.
@@ -18,8 +16,6 @@ To add a new collection, click the **+** button on the top panel, or simply drag
 Press **Ctrl+F** to open the search window and quickly locate any track or playlist.
 
 To access configuration such as playback settings or theme options, click the settings icon in the top-right corner of the panel.
-
-
 
 # Building and Installation
 
@@ -31,37 +27,36 @@ This project is built using **CMake**. Follow the instructions below to install 
 
 ```bash
 sudo apt update
-sudo apt install g++ make cmake libwayland-dev libxkbcommon-dev libx11-dev \
-libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgtk-3-dev \
-libdbus-1-dev zlib1g-dev libglm-dev libgles-dev
+sudo apt install build-essential clang cmake pkg-config libsystemd-dev \
+libdbus-1-dev libx11-dev libwayland-dev libxkbcommon-dev libgl-dev \
+libasound2-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 ```
 
 ### Fedora / RHEL / AlmaLinux
 
 ```bash
-sudo dnf groupinstall "Development Tools"
-sudo dnf install cmake wayland-devel libxkbcommon-devel libX11-devel \
-libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
-gtk3-devel dbus-devel zlib-devel glm-devel mesa-libGLES-devel
+sudo dnf check-update
+sudo dnf install gcc-c++ clang make cmake pkgconf-pkg-config systemd-devel \
+dbus-devel libX11-devel wayland-devel libxkbcommon-devel mesa-libGL-devel \
+alsa-lib-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 ```
 
 ### Arch Linux / Manjaro
 
 ```bash
-sudo pacman -S --needed base-devel cmake wayland libxkbcommon libx11 \
-libxrandr libxinerama libxcursor libxi gtk3 dbus zlib glm libgles
+sudo pacman -Syu
+sudo pacman -S base-devel clang cmake pkgconf systemd dbus libx11 \
+wayland libxkbcommon mesa alsa-lib libxrandr libxinerama libxcursor libxi
 ```
 
 ### openSUSE
 
 ```bash
-sudo zypper install -t pattern devel_basis
-sudo zypper install cmake wayland-devel libxkbcommon-devel libX11-devel \
-libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
-gtk3-devel dbus-1-devel zlib-devel glm-devel Mesa-libGLES-devel
+sudo zypper refresh
+sudo zypper install gcc-c++ clang make cmake pkgconf systemd-devel \
+dbus-1-devel libX11-devel wayland-devel libxkbcommon-devel Mesa-libGL-devel \
+alsa-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 ```
-
-
 
 ## 2. Build
 
@@ -77,8 +72,6 @@ Build using the provided script (`build.sh`) with optional flags:
 
 For example
 `./build.sh release run`
-
-
 
 # Technical Details
 
