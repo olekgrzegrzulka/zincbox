@@ -83,9 +83,7 @@ cmake -B build -S . \
   -DCMAKE_C_COMPILER=$CC_PATH \
   -DENABLE_ASAN=$ASAN \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-  -DMY_FLAGS="" \
-  -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" \
-  -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold"
+  -DMY_FLAGS=""
 
 # Resource bundling
 if [ -d "./resources" ]; then
