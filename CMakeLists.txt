@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # GLFW
 set(GLFW_STANDALONE ON CACHE BOOL "" FORCE)
 
