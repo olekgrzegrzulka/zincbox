@@ -1,0 +1,8 @@
+# CMake generated Testfile for 
+# Source directory: /home/olek/Programowanie/redrawn-nouveau/lib/zlib
+# Build directory: /home/olek/Programowanie/redrawn-nouveau/lib/zlib
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+subdirs("test")
+subdirs("contrib")
