@@ -25,6 +25,7 @@ namespace io {
 
   fs::path get_user_data_path();
   fs::path get_themes_path();
+  fs::path get_db_path();
 
   class TrackFile final {
     public:
