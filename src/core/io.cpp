@@ -13,9 +13,9 @@
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
 #include "common/debug.hpp"
+#include "common/utf.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/track.hpp"
-#include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_resize2.h"
 #include "lib/stb_image/stb_image_write.h"
@@ -233,5 +233,10 @@ fs::path io::get_themes_path() {
     debug_error("themes directory exists but is not a directory");
   }
 
+  return path;
+}
+
+fs::path io::get_db_path() {
+  const fs::path path = get_user_data_path() / "musicdb";
   return path;
 }

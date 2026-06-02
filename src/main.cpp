@@ -23,6 +23,7 @@
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "common/utf.hpp"
+#include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
@@ -93,8 +94,8 @@ int main() {
   player::set_volume(volume);
 
   debug_log("deserialize start");
-  if (std::filesystem::exists("musicdb")) {
-    auto s = std::ifstream{"musicdb", std::ifstream::binary};
+  if (std::filesystem::exists(io::get_db_path())) {
+    auto s = std::ifstream{io::get_db_path(), std::ifstream::binary};
     db::deserialize(s);
   } else {
     db::create_empty_db();
@@ -167,7 +168,7 @@ int main() {
 
   {
     ScopeTimer x{"db::serialize"};
-    auto s = std::ofstream{"musicdb", std::ifstream::binary};
+    auto s = std::ofstream{io::get_db_path(), std::ifstream::binary};
     db::serialize(s);
   }
 
