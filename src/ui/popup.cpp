@@ -42,13 +42,6 @@ void Popup::handle_event(Input::InputEventMouseButton& e) {
     Sprite::handle_event(e);
   }
 }
-
-PopupOld::PopupOld(UI& ui_, PopupController& controller_) : Popup(ui_, controller_, nullptr), title(add_child<Label>()), content(add_child<Widget>()) {
-  content.set_parent_anchor(Anchor::TOP);
-  content.set_anchor(Anchor::TOP);
-  content.set_layout("ttb expand fit m:0 s:4");
-}
-
 Popover::Popover(UI& ui_) : Sprite(ui_, "popover_panel") {
 }
 

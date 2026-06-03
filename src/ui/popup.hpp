@@ -26,9 +26,6 @@ class Popup : public Sprite {
     Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_);
 
   public:
-    [[deprecated]] std::function<void(Popup*)> on_confirm{};
-    [[deprecated]] std::function<void(Popup*)> on_cancel{};
-
     void close() {
       if (on_close) { on_close(this); }
     }
@@ -42,23 +39,6 @@ class Popup : public Sprite {
     bool is_dragged = false;
     vec2i drag_start_pos{};
     vec2i drag_start_mouse_pos{};
-};
-
-class [[deprecated]] PopupOld : public Popup {
-  public:
-    PopupOld(UI& ui_, PopupController& controller_);
-
-  public:
-    Label& title;
-    Widget& content;
-};
-
-struct [[deprecated]] popup_descriptor {
-    std::string id;
-    std::u32string_view title;
-    std::optional<std::u32string_view> content;
-    std::vector<std::u32string> button_labels;
-    std::vector<std::function<void(PopupOld*)>> button_actions;
 };
 
 class Popover : public Sprite {
