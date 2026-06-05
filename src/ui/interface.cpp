@@ -52,6 +52,7 @@ static void add_playlist_art_to_texture_atlas(size_t collection_id);
 static void handle_dropped_files();
 static void delete_collection(size_t);
 static void delete_playlist(size_t);
+static void open_collection(size_t);
 static void show_add_to_playlist_popup(size_t);
 static void show_popup_delete_collection(size_t);
 static void show_popup_rename_collection(size_t);
@@ -76,46 +77,7 @@ void interface::init() {
   panel_albums = &ui->add_widget<PanelAlbums>();
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
-    if (collection_id == active_collection_id) { return; }
-
-    if (active_collection_id.has_value()) {
-      if (tracks_scroll_positions.size() <= active_collection_id.value()) {
-        tracks_scroll_positions.resize(collection_id + 1, 0.0f);
-      }
-      if (playlists_scroll_positions.size() <= active_collection_id.value()) {
-        playlists_scroll_positions.resize(collection_id + 1, 0.0f);
-      }
-      tracks_scroll_positions[active_collection_id.value()] = panel_tracks->get_scroll_px();
-      playlists_scroll_positions[active_collection_id.value()] = panel_albums->get_scroll_px();
-    }
-
-    active_collection_id = collection_id;
-
-    panel_tracks->view_type = PanelTracks::ViewType::COLLECTION;
-    panel_tracks->collection_id = active_collection_id;
-    panel_tracks->clear();
-    panel_tracks->recreate();
-    panel_tracks->set_is_drawn(true);
-    if (tracks_scroll_positions.size() <= collection_id) {
-      tracks_scroll_positions.resize(collection_id + 1, 0.0f);
-    }
-    panel_tracks->set_scroll_px(tracks_scroll_positions[collection_id]);
-    panel_tracks->set_is_updated(true);
-
-    panel_albums->set_is_drawn(true);
-    panel_albums->set_is_updated(true);
-    if (playlists_scroll_positions.size() <= collection_id) {
-      playlists_scroll_positions.resize(collection_id + 1, 0.0f);
-    }
-    panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
-
-    panel_albums->get_props().collection_id = active_collection_id;
-
-    panel_queue->set_is_drawn(false);
-    panel_queue->set_is_updated(false);
-
-    splitter->set_is_drawn(true);
-    splitter->set_is_updated(true);
+    open_collection(collection_id);
   };
 
   panel_top->on_queue_view_opened = [&]() {
@@ -661,6 +623,45 @@ static void delete_playlist(size_t playlist_id) {
   panel_tracks->collection_id = active_collection_id;
   panel_tracks->clear();
   panel_tracks->recreate();
+}
+
+static void open_collection(size_t collection_id) {
+  if (collection_id == active_collection_id) { return; }
+
+  if (tracks_scroll_positions.size() <= collection_id) {
+    tracks_scroll_positions.resize(collection_id + 1, 0.0f);
+  }
+  if (playlists_scroll_positions.size() <= collection_id) {
+    playlists_scroll_positions.resize(collection_id + 1, 0.0f);
+  }
+
+  if (active_collection_id.has_value()) {
+    tracks_scroll_positions[active_collection_id.value()] = panel_tracks->get_scroll_px();
+    playlists_scroll_positions[active_collection_id.value()] = panel_albums->get_scroll_px();
+  }
+
+  active_collection_id = collection_id;
+
+  panel_top->select(collection_id);
+
+  panel_tracks->view_type = PanelTracks::ViewType::COLLECTION;
+  panel_tracks->collection_id = active_collection_id;
+  panel_tracks->clear();
+  panel_tracks->recreate();
+  panel_tracks->set_is_drawn(true);
+  panel_tracks->set_scroll_px(tracks_scroll_positions[collection_id]);
+  panel_tracks->set_is_updated(true);
+
+  panel_albums->set_is_drawn(true);
+  panel_albums->set_is_updated(true);
+  panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
+  panel_albums->get_props().collection_id = active_collection_id;
+
+  panel_queue->set_is_drawn(false);
+  panel_queue->set_is_updated(false);
+
+  splitter->set_is_drawn(true);
+  splitter->set_is_updated(true);
 }
 
 static void show_add_to_playlist_popup(size_t track_id) {

@@ -123,3 +123,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
       1000, collection_id == selected_collection_id);
   }
 }
+
+void PanelTop::select(size_t selected_collection_id) {
+  tab_bar->open_tab(selected_collection_id);
+}

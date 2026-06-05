@@ -10,6 +10,7 @@ class PanelTop : public Sprite {
     void update() override;
     void process_input() override;
     void recreate(std::optional<size_t> selected_collection_id);
+    void select(size_t selected_collection_id);
 
   public:
     std::function<void(Widget*)> on_settings_button_pressed{};
