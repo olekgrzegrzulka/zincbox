@@ -130,6 +130,7 @@ set(SOURCES
     ./src/ui/theme.cpp
     ./src/ui/popup_controller.cpp
     ./src/ui/popup.cpp
+    ./src/ui/tab_bar.cpp
 )
 
 add_executable(${OUTPUT_NAME} ${SOURCES})
