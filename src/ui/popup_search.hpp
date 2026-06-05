@@ -54,12 +54,12 @@ class PopupSearch : public Popup {
       scrollable_content = &search_results->add_child<Widget>();
 
       albums_container = &scrollable_content->add_child<PanelAlbums>();
-      albums_container->get_props().playlist_ids = {};
-      albums_container->get_props().panel_search_visible = false;
-      albums_container->get_props().is_scrollable = false;
-      albums_container->get_props().cover_width = 48;
-      albums_container->get_props().cover_min_horizontal_spacing = 12;
-      albums_container->get_props().cover_min_vertical_spacing = 32;
+      albums_container->props.playlist_ids = {};
+      albums_container->props.panel_search_visible = false;
+      albums_container->props.is_scrollable = false;
+      albums_container->props.cover_width = 48;
+      albums_container->props.cover_min_horizontal_spacing = 12;
+      albums_container->props.cover_min_vertical_spacing = 32;
 
       tracks_container = &scrollable_content->add_child<Widget>();
       tracks_container->set_layout("ttb fill fit expand");
@@ -87,7 +87,7 @@ class PopupSearch : public Popup {
       playlist_ids.clear();
       found_tracks.clear();
       if (new_search_text.empty()) {
-        albums_container->get_props().playlist_ids = {};
+        albums_container->props.playlist_ids = {};
         albums_container->set_height(0);
         for (auto&& t : tracks_container->get_children()) {
           t->set_marked_for_deletion(true);
@@ -113,7 +113,7 @@ class PopupSearch : public Popup {
         found_tracks = db::search_tracks(search_text, collection_id, MAX_TRACKS);
       }
 
-      albums_container->get_props().playlist_ids = playlist_ids;
+      albums_container->props.playlist_ids = playlist_ids;
       albums_container->on_playlist_lmb = [this](size_t playlist_id, Widget* w) {
         if (on_playlist_lmb) { on_playlist_lmb(playlist_id, w); }
       };
