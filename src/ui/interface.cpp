@@ -98,7 +98,7 @@ void interface::init() {
 
     p->on_track_lmb = [p](size_t collection_id, size_t playlist_id, size_t track_id, Widget*) {
       open_collection(collection_id);
-      panel_tracks->scroll_to_playlist(playlist_id);
+      panel_tracks->scroll_to_track(playlist_id, track_id);
       p->close();
     };
   };
@@ -111,6 +111,15 @@ void interface::init() {
   splitter = &ui->add_widget<Splitter>();
   panel_albums = &ui->add_widget<PanelAlbums>();
   panel_controls = &ui->add_widget<PanelControls>();
+
+  panel_controls->on_playing_track_pressed = []() {
+    auto playing = player::get_playing();
+    if (playing.has_value()) {
+      open_collection(playing->collection_id);
+      panel_albums->scroll_to_playlist(playing->playlist_id);
+      panel_tracks->scroll_to_track(playing->playlist_id, playing->track_id);
+    }
+  };
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
     open_collection(collection_id);

@@ -44,6 +44,23 @@ void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
   }
 }
 
+void PanelTracks::scroll_to_track(size_t target_playlist_id, size_t target_track_id) {
+  for (auto [scroll, playlist_id] : album_scroll_px) {
+    if (playlist_id == target_playlist_id) {
+      auto playlist = db::playlist_by_id(playlist_id);
+      if (!playlist.has_value()) { return; }
+      for (size_t track_index = 0; track_index < playlist->get().track_ids.size(); track_index += 1) {
+        if (playlist->get().track_ids[track_index] == target_track_id) {
+          scrollbar->set_scroll_offset(scroll + track_index * theme::get_prop("tracklist_track_height").as_i32() + theme::get_prop("tracklist_playlist_header_height").as_i32());
+          return;
+        }
+      }
+
+      return;
+    }
+  }
+}
+
 void PanelTracks::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 

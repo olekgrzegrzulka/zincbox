@@ -20,7 +20,7 @@ class PanelTracks : public Sprite {
     void draw() override;
     void recreate(std::optional<size_t> collection_id_);
     void scroll_to_playlist(size_t playlist_id);
-    void scroll_to_now_playing_album();
+    void scroll_to_track(size_t playlist_id, size_t track_id);
     void update() override;
     using Sprite::event;
     void event(Input::InputEventMouseScroll&) override;
