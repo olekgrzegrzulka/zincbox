@@ -39,6 +39,7 @@ static std::vector<float> tracks_scroll_positions;
 static std::vector<float> playlists_scroll_positions;
 
 static std::unique_ptr<UI> ui;
+static class ShortcutInterceptor* shortcut_interceptor{};
 static PopupController* popup_controller{};
 static PanelTop* panel_top{};
 static PanelTracks* panel_tracks{};
@@ -60,7 +61,22 @@ static void show_popup_set_sources(size_t);
 static void show_popup_delete_playlist(size_t);
 static void show_popup_rename_playlist(size_t);
 
-class ShortcutInterceptor {
+class ShortcutInterceptor : public Widget {
+  public:
+    ShortcutInterceptor(UI& ui_) : Widget(ui_) {}
+
+    void event(Input::InputEventKey& ev) override {
+      if (ev.action != Input::KeyAction::RELEASE) { return; }
+      bool ctrl = Input::key_pressed(Input::Key::KEY_LEFT_CONTROL) || Input::key_pressed(Input::Key::KEY_RIGHT_CONTROL);
+      bool shift = Input::key_pressed(Input::Key::KEY_LEFT_SHIFT) || Input::key_pressed(Input::Key::KEY_RIGHT_SHIFT);
+      if (ctrl && ev.key == Input::Key::KEY_F && search_popup_invoked) {
+        ev.handled = true;
+        search_popup_invoked();
+      }
+    }
+
+  public:
+    std::function<void(void)> search_popup_invoked{};
 };
 
 void interface::init() {
@@ -68,16 +84,19 @@ void interface::init() {
   theme::load_theme("default", *ui.get());
   init_atlas();
 
+  shortcut_interceptor = &ui->add_widget<ShortcutInterceptor>();
+  shortcut_interceptor->search_popup_invoked = []() {
+    popup_controller->show_popup<PopupSearch>();
+  };
   popup_controller = &ui->add_widget<PopupController>();
   popup_controller->set_is_drawn_on_top(true);
-
-  panel_controls = &ui->add_widget<PanelControls>();
   panel_top = &ui->add_widget<PanelTop>();
   panel_tracks = &ui->add_widget<PanelTracks>();
   panel_queue = &ui->add_widget<PanelQueue>();
   panel_queue->set_is_drawn(false);
   splitter = &ui->add_widget<Splitter>();
   panel_albums = &ui->add_widget<PanelAlbums>();
+  panel_controls = &ui->add_widget<PanelControls>();
 
   panel_top->on_collection_opened = [&](size_t collection_id) {
     open_collection(collection_id);
