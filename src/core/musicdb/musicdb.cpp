@@ -600,6 +600,11 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   return result;
 }
 
+bool sanitize_and_contains(const std::u32string& query_sanitized, const std::u32string& field) {
+  auto s = sanitize_query(field);
+  return s.contains(query_sanitized);
+};
+
 std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, size_t collection_id, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
   std::vector<db::track_info> result;
@@ -611,17 +616,17 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
       auto& track = db::track_by_id(track_id)->get();
       if (track.is_tombstone()) { continue; }
 
-      bool pass = false;
-      auto track_title_sanitized = sanitize_query(track.title);
-      if (track_title_sanitized.contains(query_sanitized)) { pass = true; }
-      auto track_artist_sanitized = sanitize_query(track.artist);
-      if (!pass && track_artist_sanitized.contains(query_sanitized)) { pass = true; }
-      auto track_album_artist_sanitized = sanitize_query(track.album_artist);
-      if (!pass && track_album_artist_sanitized.contains(query_sanitized)) { pass = true; }
-      if (!pass) { continue; }
+      if (sanitize_and_contains(query_sanitized, track.title) ||
+          sanitize_and_contains(query_sanitized, track.artist) ||
+          sanitize_and_contains(query_sanitized, track.album_artist) ||
+          sanitize_and_contains(query_sanitized, utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
 
-      result.emplace_back(db::track_info{collection_id, playlist_id, track_id});
-      if (result.size() >= max_size) { break; }
+        result.emplace_back(db::track_info{collection_id, playlist_id, track_id});
+        if (result.size() >= max_size) { break; }
+
+      } else {
+        continue;
+      }
     }
   }
   return result;
@@ -633,17 +638,17 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   for (db::track_info track_info_ : src) {
     auto& track = db::track_by_id(track_info_.track_id)->get();
     if (track.is_tombstone()) { continue; }
-    bool pass = false;
-    auto track_title_sanitized = sanitize_query(track.title);
-    if (track_title_sanitized.contains(query_sanitized)) { pass = true; }
-    auto track_artist_sanitized = sanitize_query(track.artist);
-    if (!pass && track_artist_sanitized.contains(query_sanitized)) { pass = true; }
-    auto track_album_artist_sanitized = sanitize_query(track.album_artist);
-    if (!pass && track_album_artist_sanitized.contains(query_sanitized)) { pass = true; }
-    if (!pass) { continue; }
+    if (sanitize_and_contains(query_sanitized, track.title) ||
+        sanitize_and_contains(query_sanitized, track.artist) ||
+        sanitize_and_contains(query_sanitized, track.album_artist) ||
+        sanitize_and_contains(query_sanitized, utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
 
-    result.emplace_back(track_info_);
-    if (result.size() >= max_size) { break; }
+      result.emplace_back(track_info_);
+      if (result.size() >= max_size) { break; }
+
+    } else {
+      continue;
+    }
   }
   return result;
 }
