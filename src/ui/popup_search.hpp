@@ -137,7 +137,7 @@ class PopupSearch : public Popup {
         w->set_min_height(track_height);
         w->set_max_height(track_height);
         w->on_press([this, t, w]() {if (on_track_lmb) {on_track_lmb(t.collection_id, t.playlist_id, t.track_id, w);} });
-        w->on_press_rmb([this, t, w]() {if (on_track_lmb) {on_track_rmb(t.collection_id, t.playlist_id, t.track_id, w);} });
+        w->on_press_rmb([this, t, w]() {if (on_track_rmb) {on_track_rmb(t.collection_id, t.playlist_id, t.track_id, w);} });
         i += 1;
       }
 
@@ -191,10 +191,10 @@ class PopupSearch : public Popup {
     }
 
   public:
-    std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb;
-    std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb;
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_lmb;
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_rmb;
+    std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb{};
+    std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_rmb{};
 
   protected:
     TextInput* search_bar{};
