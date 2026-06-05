@@ -178,9 +178,9 @@ class WidgetTrack : public Button {
       Sprite::update();
     }
 
-    void handle_event(Input::InputEventMouseMove& ev) override {
+    void event(Input::InputEventMouseMove& ev) override {
       is_hovered = is_mouse_hovering();
-      Button::handle_event(ev);
+      Button::event(ev);
     }
 
   public:

@@ -39,7 +39,7 @@ void ScrollBar::scroll(float force) {
   value = std::clamp(value - force * 40, min_value, max_value);
 }
 
-void ScrollBar::handle_event(Input::InputEventMouseScroll& ev) {
+void ScrollBar::event(Input::InputEventMouseScroll& ev) {
   if (!is_dragged && is_mouse_hovering()) {
     scroll(ev.offset.y);
     ev.handled = true;

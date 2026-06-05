@@ -194,13 +194,13 @@ PanelControls::~PanelControls() {
   player::signal_on_track_changed.disconnect(slot_on_track_changed);
 }
 
-void PanelControls::handle_event(Input::InputEventMouseButton& ev) {
+void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) {
     ev.handled = true;
   }
 }
 
-void PanelControls::handle_event(Input::InputEventKey& ev) {
+void PanelControls::event(Input::InputEventKey& ev) {
   bool shift = Input::key_pressed(Input::Key::KEY_LEFT_SHIFT) || Input::key_pressed(Input::Key::KEY_RIGHT_SHIFT);
   if (ev.action == Input::KeyAction::PRESS) {
     if (ev.key == Input::Key::KEY_LEFT) {

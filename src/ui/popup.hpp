@@ -31,7 +31,7 @@ class Popup : public Sprite {
     }
 
     void update() override;
-    void handle_event(Input::InputEventMouseButton&) override;
+    void event(Input::InputEventMouseButton&) override;
 
   protected:
     PopupController& controller;

@@ -84,7 +84,7 @@ void Tab::update() {
   Button::update();
 }
 
-void Tab::handle_event(Input::InputEventMouseButton& ev) {
+void Tab::event(Input::InputEventMouseButton& ev) {
   using enum Input::MouseButton;
   using enum Input::MouseAction;
   bool handled = false;
@@ -95,7 +95,7 @@ void Tab::handle_event(Input::InputEventMouseButton& ev) {
     }
   }
 
-  Button::handle_event(ev);
+  Button::event(ev);
   ev.handled = ev.handled || handled;
 }
 

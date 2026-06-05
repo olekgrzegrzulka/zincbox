@@ -25,7 +25,7 @@ void Popup::update() {
   Sprite::update();
 }
 
-void Popup::handle_event(Input::InputEventMouseButton& e) {
+void Popup::event(Input::InputEventMouseButton& e) {
   if (e.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
     if (e.action == Input::MouseAction::PRESS && is_mouse_hovering()) {
       is_dragged = true;
@@ -39,7 +39,7 @@ void Popup::handle_event(Input::InputEventMouseButton& e) {
   }
 
   if (!e.handled) {
-    Sprite::handle_event(e);
+    Sprite::event(e);
   }
 }
 Popover::Popover(UI& ui_) : Sprite(ui_, "popover_panel") {

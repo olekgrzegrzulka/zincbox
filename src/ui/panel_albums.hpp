@@ -21,7 +21,7 @@ class WidgetAlbumCover : public Button {
     WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_);
     void draw() override;
     void update() override;
-    void handle_event(Input::InputEventMouseMove& ev) override;
+    void event(Input::InputEventMouseMove& ev) override;
 
   public:
     const std::optional<size_t> playlist_id = 0;
@@ -49,8 +49,8 @@ class PanelAlbums : public Sprite {
     void clear();
     void update() override;
     void recreate();
-    using Sprite::handle_event;
-    void handle_event(Input::InputEventMouseScroll&) override;
+    using Sprite::event;
+    void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);
     std::optional<size_t> get_collection_id() const { return props_.collection_id; }

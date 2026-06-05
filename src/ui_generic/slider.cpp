@@ -177,19 +177,19 @@ void Slider::update() {
 
   Widget::update();
 }
-void Slider::handle_event(Input::InputEventMouseButton&) {
+void Slider::event(Input::InputEventMouseButton&) {
 }
-void Slider::handle_event(Input::InputEventMouseMove&) {
+void Slider::event(Input::InputEventMouseMove&) {
 }
-void Slider::handle_event(Input::InputEventMouseScroll&) {
+void Slider::event(Input::InputEventMouseScroll&) {
 }
-void Slider::handle_event(Input::InputEventKey&) {
+void Slider::event(Input::InputEventKey&) {
 }
-void Slider::handle_event(Input::InputEventMouseEntered&) {
+void Slider::event(Input::InputEventMouseEntered&) {
 }
-void Slider::handle_event(Input::InputEventMouseLeft&) {
+void Slider::event(Input::InputEventMouseLeft&) {
 }
-void Slider::handle_event(Input::InputEventCloseWindow&) {
+void Slider::event(Input::InputEventCloseWindow&) {
 }
 
 void Slider::set_texture_thumb_pressed(const std::string& id) {

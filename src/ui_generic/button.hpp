@@ -206,9 +206,9 @@ class Button : public Sprite {
       }
     }
 
-    void handle_event(Input::InputEventMouseButton&) override;
+    void event(Input::InputEventMouseButton&) override;
 
-    void handle_event(Input::InputEventMouseMove&) override;
+    void event(Input::InputEventMouseMove&) override;
 
-    void handle_event(Input::InputEventMouseScroll&) override;
+    void event(Input::InputEventMouseScroll&) override;
 };

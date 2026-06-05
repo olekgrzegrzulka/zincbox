@@ -75,13 +75,13 @@ class Slider : public Widget {
       Widget::draw();
     }
 
-    void handle_event(Input::InputEventMouseButton&) override;
-    void handle_event(Input::InputEventMouseMove&) override;
-    void handle_event(Input::InputEventMouseScroll&) override;
-    void handle_event(Input::InputEventKey&) override;
-    void handle_event(Input::InputEventMouseEntered&) override;
-    void handle_event(Input::InputEventMouseLeft&) override;
-    void handle_event(Input::InputEventCloseWindow&) override;
+    void event(Input::InputEventMouseButton&) override;
+    void event(Input::InputEventMouseMove&) override;
+    void event(Input::InputEventMouseScroll&) override;
+    void event(Input::InputEventKey&) override;
+    void event(Input::InputEventMouseEntered&) override;
+    void event(Input::InputEventMouseLeft&) override;
+    void event(Input::InputEventCloseWindow&) override;
 
     WIDGET_DEF_GETTER(value)
     WIDGET_DEF_GETTER(min_value)

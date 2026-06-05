@@ -156,13 +156,10 @@ class Widget {
   public:
     Widget(UI& ui_) : ui{ui_} {}
     Widget(UI& ui_, i32 width_, i32 height_) : ui{ui_}, width{width_}, height{height_} {}
-
     virtual ~Widget() {};
 
-    virtual void process_input();
-
+    virtual void input();
     virtual void update();
-
     virtual void draw();
 
     // Returns widget's scene position relative to some anchor
@@ -259,9 +256,7 @@ class Widget {
       dirty = true;
     }
 
-    auto& get_children() {
-      return children;
-    }
+    auto& get_children() { return children; }
 
   public:
     template <class T, class... Args>
@@ -273,61 +268,14 @@ class Widget {
       return widget;
     }
 
-    void move_child_to_top(const Widget& child) {
-      auto it = std::find_if(children.begin(), children.end(), [&](auto&& a) {
-        return a.get() == &child;
-      });
-
-      if (it != children.end()) {
-        auto temp = std::move(*it);
-        children.erase(it);
-        children.insert(children.begin(), std::move(temp));
-      }
-    }
-
-    void move_child_to_bottom(const Widget& child) {
-      auto it = std::find_if(children.begin(), children.end(), [&](auto&& a) {
-        return a.get() == &child;
-      });
-
-      if (it != children.end()) {
-        auto temp = std::move(*it);
-        children.erase(it);
-        children.insert(children.end(), std::move(temp));
-      }
-    }
-
     bool is_mouse_hovering() const;
     bool is_mouse_hovering(vec2i) const;
 
-    // bool remove_child(Widget* w) {
-    //   for (size_t i = 0; i < children.size(); i += 1) {
-    //     if (children[i].get() == w) {
-    //       children.erase(children.begin() + i);
-    //       return true;
-    //     }
-    //   }
-    //   return false;
-    // }
-
-    virtual void handle_event(Input::InputEventMouseButton&) {
-    }
-
-    virtual void handle_event(Input::InputEventMouseMove&) {
-    }
-
-    virtual void handle_event(Input::InputEventMouseScroll&) {
-    }
-
-    virtual void handle_event(Input::InputEventKey&) {
-    }
-
-    virtual void handle_event(Input::InputEventMouseEntered&) {
-    }
-
-    virtual void handle_event(Input::InputEventMouseLeft&) {
-    }
-
-    virtual void handle_event(Input::InputEventCloseWindow&) {
-    }
+    virtual void event(Input::InputEventMouseButton&) {}
+    virtual void event(Input::InputEventMouseMove&) {}
+    virtual void event(Input::InputEventMouseScroll&) {}
+    virtual void event(Input::InputEventKey&) {}
+    virtual void event(Input::InputEventMouseEntered&) {}
+    virtual void event(Input::InputEventMouseLeft&) {}
+    virtual void event(Input::InputEventCloseWindow&) {}
 };

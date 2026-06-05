@@ -22,7 +22,7 @@ class ScrollBar : public Slider {
 
     void scroll(float force);
 
-    void handle_event(Input::InputEventMouseScroll&) override;
+    void event(Input::InputEventMouseScroll&) override;
 
     void set_content_size(i32 v) {
       content_size = v;

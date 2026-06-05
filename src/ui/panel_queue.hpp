@@ -22,8 +22,8 @@ class PanelQueue : public Sprite {
     void on_queue_changed();
     void on_queue_changed_at(size_t);
     void update() override;
-    using Sprite::handle_event;
-    void handle_event(Input::InputEventMouseScroll&) override;
+    using Sprite::event;
+    void event(Input::InputEventMouseScroll&) override;
     void clear();
 
   public:

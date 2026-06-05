@@ -69,7 +69,7 @@ class ComboBox : public Sprite {
       }
     }
 
-    void handle_event(Input::InputEventMouseScroll& ev) override {
+    void event(Input::InputEventMouseScroll& ev) override {
       if (dropdown_bg.is_mouse_hovering()) {
         target_scroll_progress += ev.offset.y * -1.0f;
         ev.handled = true;

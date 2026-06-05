@@ -72,9 +72,9 @@ void WidgetAlbumCover::update() {
   Button::update();
 }
 
-void WidgetAlbumCover::handle_event(Input::InputEventMouseMove& ev) {
+void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
   is_hovered = is_mouse_hovering();
-  Button::handle_event(ev);
+  Button::event(ev);
 }
 
 PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
@@ -277,7 +277,7 @@ void PanelAlbums::update() {
   Sprite::update();
 }
 
-void PanelAlbums::handle_event(Input::InputEventMouseScroll& e) {
+void PanelAlbums::event(Input::InputEventMouseScroll& e) {
   if (props_.is_scrollable && is_mouse_hovering()) {
     scrollbar->scroll(e.offset.y);
     e.handled = true;
