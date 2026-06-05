@@ -17,6 +17,9 @@ class PanelControls : public Sprite {
     void event(Input::InputEventKey&) override;
     void update() override;
 
+  public:
+    std::function<void(void)> on_playing_track_pressed{};
+
   protected:
     Button* button_play_pause{};
     Sprite* button_play_pause_img{};
@@ -31,6 +34,8 @@ class PanelControls : public Sprite {
     Slider* volume_bar{};
     Label* label_progress{};
     Label* label_track{};
+    Sprite* label_track_underline{};
+    bool label_track_underline_pressed = false;
 
     Signal<>::slot_key slot_on_track_changed;
     bool is_playing = false;

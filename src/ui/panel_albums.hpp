@@ -49,6 +49,7 @@ class PanelAlbums : public Sprite {
     void clear();
     void update() override;
     void recreate();
+    void scroll_to_playlist(size_t);
     using Sprite::event;
     void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;

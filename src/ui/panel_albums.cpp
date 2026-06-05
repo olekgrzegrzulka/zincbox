@@ -225,6 +225,15 @@ void PanelAlbums::recreate() {
   reflow();
 }
 
+void PanelAlbums::scroll_to_playlist(size_t playlist_id) {
+  for (auto& album_widget : album_widgets) {
+    if (album_widget->playlist_id == playlist_id) {
+      scroll_px = album_widget->get_x();
+      break;
+    }
+  }
+}
+
 void PanelAlbums::reflow() {
   i32 cover_total_width = props.cover_width + props.cover_min_horizontal_spacing;
   i32 cover_total_height = props.cover_width + props.cover_min_vertical_spacing;

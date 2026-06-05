@@ -122,7 +122,13 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   seekbar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
 
   label_track = &panel_middle.add_child<Label>();
+  label_track->set_resize_to_text_extents(false);
   label_track->set_label_anchor(Anchor::LEFT);
+
+  label_track_underline = &panel_middle.add_child<Sprite>("text_input_caret");
+  label_track_underline->set_ignore_parents_layout(true);
+  label_track_underline->set_width(1);
+  label_track_underline->set_height(1);
 
   slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
     auto playing = player::get_playing();
@@ -136,6 +142,9 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
         label_track->set_text(track.artist + U" - " + track.title);
       }
     }
+    label_track->update();
+    label_track_underline->set_width(label_track->get_text_extents().x);
+    label_track_underline->set_y(label_track->get_text_extents().y + 2);
   });
 
   seekbar->on_drag_ended([](float, float ms) {
@@ -197,6 +206,16 @@ PanelControls::~PanelControls() {
 void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) {
     ev.handled = true;
+  }
+
+  if (label_track_underline->get_is_drawn() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
+    if (ev.action == Input::MouseAction::PRESS) {
+      label_track_underline_pressed = true;
+    }
+    if (ev.action == Input::MouseAction::RELEASE && label_track_underline_pressed) {
+      label_track_underline_pressed = false;
+      if (on_playing_track_pressed) { on_playing_track_pressed(); }
+    }
   }
 }
 
@@ -268,6 +287,11 @@ void PanelControls::update() {
 
   label_progress->set_text(ss.str());
   label_progress->set_is_drawn(width > 650);
+
+  label_track_underline->set_is_drawn(label_track->is_mouse_hovering() && Input::get_mouse_x() < label_track->get_position().x + label_track->get_text_extents().x);
+  if (!label_track_underline->get_is_drawn()) {
+    label_track_underline_pressed = false;
+  }
 
   if (is_playing != player::is_playing()) {
     is_playing = player::is_playing();
