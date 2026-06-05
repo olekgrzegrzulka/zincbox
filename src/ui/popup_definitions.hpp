@@ -309,7 +309,7 @@ class PopupAddToPlaylist : public Popup {
       playlists_view->set_height(std::clamp(ui.get_window_height() - 300, 100, 500));
       playlists_view->set_min_height(playlists_view->get_height());
       playlists_view->set_max_height(playlists_view->get_height());
-      playlists_view->get_props().collection_id = 0;
+      playlists_view->props.collection_id = 0;
       playlists_view->set_anchor(Anchor::CENTER);
       playlists_view->set_parent_anchor(Anchor::CENTER);
 

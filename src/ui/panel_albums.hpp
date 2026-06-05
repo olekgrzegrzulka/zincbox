@@ -53,7 +53,7 @@ class PanelAlbums : public Sprite {
     void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);
-    std::optional<size_t> get_collection_id() const { return props_.collection_id; }
+    std::optional<size_t> get_collection_id() const { return props.collection_id; }
 
   protected:
     void reflow();
@@ -71,9 +71,8 @@ class PanelAlbums : public Sprite {
     Button* button_clear_search{};
     Button* button_sort_by{};
 
-  protected:
-    bool needs_recreate = false;
-    struct props {
+  public:
+    struct Props {
         std::optional<size_t> collection_id{};
         std::vector<size_t> playlist_ids{};
         SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
@@ -83,13 +82,14 @@ class PanelAlbums : public Sprite {
         i32 cover_width = 64;
         i32 cover_min_horizontal_spacing = 12;
         i32 cover_min_vertical_spacing = 32;
-    } props_;
 
-  public:
-    props& get_props() {
-      needs_recreate = true;
-      return props_;
-    }
+        bool operator==(const Props&) const = default;
+    };
+
+    Props props{};
+
+  protected:
+    Props props_old{};
 
   public:
     std::function<void(size_t, Widget*)> on_playlist_lmb{};

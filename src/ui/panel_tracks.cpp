@@ -35,14 +35,6 @@ void PanelTracks::draw() {
   Sprite::draw();
 }
 
-void PanelTracks::recreate() {
-  if (view_type == ViewType::NONE) {
-    clear();
-  } else if (view_type == ViewType::COLLECTION) {
-    recreate(collection_id);
-  }
-}
-
 void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
   for (auto [scroll, playlist_id] : album_scroll_px) {
     if (playlist_id == target_playlist_id) {
@@ -56,7 +48,7 @@ void PanelTracks::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 
   if ((i32)scroll_px != (i32)old_scroll_px || width != old_width) {
-    recreate();
+    recreate(collection_id);
 
     for (auto& v : visible_album_widgets) {
       ui.mark_dirty_recursive(v);
