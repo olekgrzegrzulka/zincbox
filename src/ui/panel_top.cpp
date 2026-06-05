@@ -92,6 +92,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
   };
 
   tab_bar->add_tab(TabBar::tab_info{
+                     .id = db::collection_count(),
                      .is_draggable = false,
                      .label = U"Queue",
                      .padding = 10,

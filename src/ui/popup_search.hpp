@@ -1,6 +1,7 @@
+#include <functional>
 #include "common/input.hpp"
 #include "common/search_utils.hpp"
-#include "core/musicdb//musicdb.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/panel_tracks_track.hpp"
 #include "ui/popup_controller.hpp"
@@ -11,6 +12,8 @@
 #include "ui_generic/widget.hpp"
 
 class PopupSearch : public Popup {
+    using Widget::event;
+
   public:
     PopupSearch(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_) : Popup(ui_, controller_, on_close_) {
       playlist_ids.reserve(MAX_PLAYLISTS);
@@ -28,6 +31,7 @@ class PopupSearch : public Popup {
       search_bar->set_anchor(Anchor::TOP);
       search_bar->set_parent_anchor(Anchor::TOP);
       search_bar->set_pos(0, 8);
+      search_bar->set_focused(true);
 
       search_results = &add_child<Sprite>("panel_albums");
       search_results->set_layout("rtl fill expand");
@@ -96,14 +100,26 @@ class PopupSearch : public Popup {
         return;
       }
       if (checkbox_search_all_collections->is_checked()) {
-        playlist_ids = db::search_playlists(search_text, MAX_PLAYLISTS);
+        auto res = db::search_playlists(search_text, MAX_PLAYLISTS);
+        for (auto& r : res) {
+          playlist_ids.emplace_back(r.playlist_id);
+        }
         found_tracks = db::search_tracks(search_text, MAX_TRACKS);
       } else {
-        playlist_ids = db::search_playlists(search_text, collection_id, MAX_PLAYLISTS);
+        auto res = db::search_playlists(search_text, MAX_PLAYLISTS);
+        for (auto& r : res) {
+          playlist_ids.emplace_back(r.playlist_id);
+        }
         found_tracks = db::search_tracks(search_text, collection_id, MAX_TRACKS);
       }
 
       albums_container->get_props().playlist_ids = playlist_ids;
+      albums_container->on_playlist_lmb = [this](size_t playlist_id, Widget* w) {
+        if (on_playlist_lmb) { on_playlist_lmb(playlist_id, w); }
+      };
+      albums_container->on_playlist_rmb = [this](size_t playlist_id, Widget* w) {
+        if (on_playlist_rmb) { on_playlist_rmb(playlist_id, w); }
+      };
       if (playlist_ids.size() > 0) {
         albums_container->set_height((((48 + 12) * playlist_ids.size()) / albums_container->get_width() + 1) * (48 + 32));
       } else {
@@ -117,9 +133,11 @@ class PopupSearch : public Popup {
       i32 i = 1;
       i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
       for (db::track_info& t : found_tracks) {
-        auto& w = tracks_container->add_child<WidgetTrack>(t.track_id, i, i % 2 == 0);
-        w.set_min_height(track_height);
-        w.set_max_height(track_height);
+        auto* w = &tracks_container->add_child<WidgetTrack>(t.track_id, i, i % 2 == 0);
+        w->set_min_height(track_height);
+        w->set_max_height(track_height);
+        w->on_press([this, t, w]() {if (on_track_lmb) {on_track_lmb(t.collection_id, t.playlist_id, t.track_id, w);} });
+        w->on_press_rmb([this, t, w]() {if (on_track_lmb) {on_track_rmb(t.collection_id, t.playlist_id, t.track_id, w);} });
         i += 1;
       }
 
@@ -158,12 +176,25 @@ class PopupSearch : public Popup {
       Popup::update();
     }
 
+    void event(Input::InputEventKey& e) override {
+      if (e.key == Input::Key::KEY_ESCAPE && e.action == Input::KeyAction::RELEASE) {
+        close();
+        e.handled = true;
+      }
+    }
+
     void event(Input::InputEventMouseScroll& e) override {
       if (is_mouse_hovering()) {
         scrollbar->scroll(e.offset.y);
         e.handled = true;
       }
     }
+
+  public:
+    std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb;
+    std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb;
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_lmb;
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_rmb;
 
   protected:
     TextInput* search_bar{};
