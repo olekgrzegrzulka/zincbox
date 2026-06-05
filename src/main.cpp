@@ -83,7 +83,7 @@ int main() {
   mpris::init();
   player::init();
   mpris::init();
-  config_load_from_file("music.cfg");
+  config_load_from_file(io::get_cfg_path());
   i32 repeat_mode = config_get_i32("repeat_mode").value_or(0);
   repeat_mode = std::clamp(repeat_mode, 0, (i32)player::RepeatMode::REPEAT_MODE_SIZE - 1);
   player::set_repeat_mode((player::RepeatMode)repeat_mode);
@@ -175,7 +175,7 @@ int main() {
   config_set_i32("repeat_mode", (i32)player::get_repeat_mode());
   config_set_i32("shuffle_mode", (i32)player::get_shuffle_mode());
   config_set_float("volume", player::get_volume());
-  config_save_to_file("music.cfg");
+  config_save_to_file(io::get_cfg_path());
   interface::deinit();
   player::deinit();
   mpris::deinit();
