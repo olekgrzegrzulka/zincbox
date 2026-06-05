@@ -60,6 +60,9 @@ static void show_popup_set_sources(size_t);
 static void show_popup_delete_playlist(size_t);
 static void show_popup_rename_playlist(size_t);
 
+class ShortcutInterceptor {
+};
+
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
   theme::load_theme("default", *ui.get());

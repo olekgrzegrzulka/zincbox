@@ -12,9 +12,9 @@ class PanelControls : public Sprite {
   public:
     PanelControls(UI& ui_);
     ~PanelControls() override;
-    using Sprite::handle_event;
-    void handle_event(Input::InputEventMouseButton&) override;
-    void handle_event(Input::InputEventKey&) override;
+    using Sprite::event;
+    void event(Input::InputEventMouseButton&) override;
+    void event(Input::InputEventKey&) override;
     void update() override;
 
   protected:

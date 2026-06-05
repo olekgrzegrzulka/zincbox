@@ -8,7 +8,7 @@ class PanelTop : public Sprite {
   public:
     PanelTop(UI& ui_);
     void update() override;
-    void process_input() override;
+    void input() override;
     void recreate(std::optional<size_t> selected_collection_id);
     void select(size_t selected_collection_id);
 

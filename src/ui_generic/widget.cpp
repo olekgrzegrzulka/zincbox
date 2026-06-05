@@ -16,15 +16,15 @@ vec2i Widget::get_position(Anchor relative_to) const {
 void Widget::draw() {
 }
 
-void Widget::process_input() {
+void Widget::input() {
   for (auto&& child : children) {
     if (child->get_is_updated() && !child->get_marked_for_deletion()) {
-      child->process_input();
+      child->input();
     }
   }
 
   for (auto& ev : Input::get_event_queue()) {
-    std::visit([&](auto& event) { handle_event(event); }, ev);
+    std::visit([&](auto& ev) { event(ev); }, ev);
   }
 }
 void Widget::update() {

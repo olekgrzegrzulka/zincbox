@@ -36,23 +36,23 @@ class Dimmer : public Sprite {
       Sprite::update();
     }
 
-    void handle_event(Input::InputEventMouseButton& ev) override {
+    void event(Input::InputEventMouseButton& ev) override {
       if (ev.action == Input::MouseAction::PRESS) {
         ev.handled = true;
         if (on_pressed) { on_pressed(); }
       }
     }
 
-    void handle_event(Input::InputEventMouseScroll& ev) override {
+    void event(Input::InputEventMouseScroll& ev) override {
       ev.handled = true;
       if (on_pressed) { on_pressed(); }
     }
 
-    void handle_event(Input::InputEventMouseMove& ev) override {
+    void event(Input::InputEventMouseMove& ev) override {
       ev.handled = true;
     }
 
-    void handle_event(Input::InputEventKey& ev) override {
+    void event(Input::InputEventKey& ev) override {
       if (ev.action == Input::KeyAction::RELEASE && ev.key == Input::Key::KEY_ENTER) {
         if (on_enter_pressed) { on_enter_pressed(); }
         ev.handled = true;
@@ -72,7 +72,7 @@ class Dimmer : public Sprite {
 class PopupController : public Widget {
   public:
     PopupController(UI& ui_);
-    void process_input() override;
+    void input() override;
     void update() override;
 
     void on_dimmer_pressed();

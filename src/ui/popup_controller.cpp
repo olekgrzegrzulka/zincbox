@@ -112,18 +112,18 @@ void PopupController::close_all_popups() {
   }
 }
 
-void PopupController::process_input() {
-  popups->process_input();
+void PopupController::input() {
+  popups->input();
   for (auto& [_, w] : popovers) {
     if (!w) { continue; }
-    w->process_input();
+    w->input();
   }
 
   std::erase_if(popovers, [](const auto& item) {
     return item.second == nullptr;
   });
 
-  if (dimmer.get_is_updated()) { dimmer.process_input(); }
+  if (dimmer.get_is_updated()) { dimmer.input(); }
 }
 
 void PopupController::update() {

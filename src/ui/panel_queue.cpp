@@ -139,7 +139,7 @@ void PanelQueue::update() {
   Sprite::update();
 }
 
-void PanelQueue::handle_event(Input::InputEventMouseScroll& e) {
+void PanelQueue::event(Input::InputEventMouseScroll& e) {
   if (is_mouse_hovering()) {
     scrollbar->scroll(e.offset.y);
     e.handled = true;

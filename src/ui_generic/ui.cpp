@@ -51,14 +51,14 @@ void UI::process_input() {
   for (auto&& widget : widgets) {
     if (!widget->get_is_updated()) { continue; }
     if (widget->get_is_drawn_on_top()) {
-      widget->process_input();
+      widget->input();
     }
   }
 
   for (auto&& widget : widgets) {
     if (!widget->get_is_updated()) { continue; }
     if (!widget->get_is_drawn_on_top()) {
-      widget->process_input();
+      widget->input();
     }
   }
 }

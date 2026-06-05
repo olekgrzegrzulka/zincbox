@@ -19,7 +19,7 @@ class Tab : public Button {
     void move_smooth(i32 to);
     void move(i32 to);
     void update() override;
-    void handle_event(Input::InputEventMouseButton& ev) override;
+    void event(Input::InputEventMouseButton& ev) override;
 
   public:
     Label& label;

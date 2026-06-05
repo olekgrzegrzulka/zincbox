@@ -95,7 +95,7 @@ void PanelTracks::update() {
   Sprite::update();
 }
 
-void PanelTracks::handle_event(Input::InputEventMouseScroll& e) {
+void PanelTracks::event(Input::InputEventMouseScroll& e) {
   if (is_mouse_hovering()) {
     scrollbar->scroll(e.offset.y);
     e.handled = true;

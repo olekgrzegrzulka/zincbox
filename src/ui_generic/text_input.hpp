@@ -9,7 +9,7 @@ class TextInput : public Sprite {
     TextInput(UI& ui_);
     void update() override;
     void clear();
-    void handle_event(Input::InputEventKey&) override;
+    void event(Input::InputEventKey&) override;
     void set_on_text_changed(std::function<void()> l) { lambda_on_text_changed = l; }
     Label& label;
     Sprite& caret;

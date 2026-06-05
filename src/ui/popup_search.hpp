@@ -158,7 +158,7 @@ class PopupSearch : public Popup {
       Popup::update();
     }
 
-    void handle_event(Input::InputEventMouseScroll& e) override {
+    void event(Input::InputEventMouseScroll& e) override {
       if (is_mouse_hovering()) {
         scrollbar->scroll(e.offset.y);
         e.handled = true;

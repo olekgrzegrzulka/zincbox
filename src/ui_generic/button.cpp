@@ -78,7 +78,7 @@ void Button::set_texture_disabled(std::string id) {
   } // FIXME check if texture actually changed
 }
 
-void Button::handle_event(Input::InputEventMouseButton& ev) {
+void Button::event(Input::InputEventMouseButton& ev) {
   using enum Input::MouseButton;
   using enum Input::MouseAction;
   using enum ButtonState;
@@ -146,7 +146,7 @@ void Button::handle_event(Input::InputEventMouseButton& ev) {
   }
 }
 
-void Button::handle_event(Input::InputEventMouseMove& ev) {
+void Button::event(Input::InputEventMouseMove& ev) {
   using enum Input::MouseButton;
   using enum Input::MouseAction;
   using enum ButtonState;
@@ -181,5 +181,5 @@ void Button::handle_event(Input::InputEventMouseMove& ev) {
   }
 }
 
-void Button::handle_event(Input::InputEventMouseScroll&) {
+void Button::event(Input::InputEventMouseScroll&) {
 }

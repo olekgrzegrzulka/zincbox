@@ -27,8 +27,8 @@ class PanelTracks : public Sprite {
     void scroll_to_playlist(size_t playlist_id);
     void scroll_to_now_playing_album();
     void update() override;
-    using Sprite::handle_event;
-    void handle_event(Input::InputEventMouseScroll&) override;
+    using Sprite::event;
+    void event(Input::InputEventMouseScroll&) override;
     void clear();
     float get_scroll_px() const;
     void set_scroll_px(float px);

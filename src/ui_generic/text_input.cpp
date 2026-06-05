@@ -91,7 +91,7 @@ void TextInput::clear() {
   if (lambda_on_text_changed) { lambda_on_text_changed(); }
 }
 
-void TextInput::handle_event(Input::InputEventKey& ev) {
+void TextInput::event(Input::InputEventKey& ev) {
   if (focused) {
     ev.handled = true;
   }
