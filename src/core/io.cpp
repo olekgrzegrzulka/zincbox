@@ -237,6 +237,11 @@ fs::path io::get_themes_path() {
 }
 
 fs::path io::get_db_path() {
-  const fs::path path = get_user_data_path() / "musicdb";
+  const fs::path path = get_user_data_path() / "zincbox.db";
+  return path;
+}
+
+fs::path io::get_cfg_path() {
+  const fs::path path = get_user_data_path() / "zincbox.cfg";
   return path;
 }
