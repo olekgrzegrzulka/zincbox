@@ -105,7 +105,6 @@ TabBar::TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
   tab_container = &add_child<Widget>();
   tab_container->set_height(height);
   button_add = &add_child<ZincboxButton>("add_tab");
-  button_add->set_ignore_parents_layout(true);
   button_add->set_nine_slice_margin(0.0f);
   button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
   button_add->set_anchor(Anchor::BOTTOM_LEFT);
@@ -241,7 +240,6 @@ void TabBar::update() {
   }
 
   tab_container->set_width(tab_x);
-  button_add->set_x(tab_x + 4);
   Sprite::update();
 }
 
