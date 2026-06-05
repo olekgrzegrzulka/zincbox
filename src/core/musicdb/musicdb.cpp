@@ -196,6 +196,15 @@ Playlist& db::playlist_loved_tracks() {
   return playlists[0];
 }
 
+std::optional<size_t> db::collection_of_playlist(size_t playlist_id) {
+  for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
+    for (size_t p : collections[collection_id].playlist_ids) {
+      if (playlist_id == p) { return collection_id; }
+    }
+  }
+  return std::nullopt;
+}
+
 size_t db::add_collection(std::u32string_view name) {
   collections.emplace_back(Collection{name});
   return collections.size() - 1;
@@ -500,31 +509,35 @@ void db::set_track_playback_error(size_t track_id, bool error) {
   track.set_playback_error(error);
 }
 
-std::vector<size_t> db::search_playlists(std::u32string_view search_text, size_t max_size) {
+std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_text, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
-  std::vector<size_t> result;
-  for (size_t playlist_id = 0; playlist_id < playlists.size(); playlist_id += 1) {
-    auto& playlist = db::playlist_by_id(playlist_id)->get();
-    if (playlist.is_tombstone()) { continue; }
+  std::vector<playlist_info> result;
+  for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
+    auto& collection = db::collection_by_id(collection_id)->get();
+    if (collection.is_tombstone()) { continue; }
+    for (size_t playlist_id : collection.playlist_ids) {
+      auto& playlist = db::playlist_by_id(playlist_id)->get();
+      if (playlist.is_tombstone()) { continue; }
 
-    bool pass = false;
-    auto playlist_name_sanitized = sanitize_query(playlist.name);
-    if (playlist_name_sanitized.contains(query_sanitized)) { pass = true; }
-    auto playlist_author_sanitized = sanitize_query(playlist.author);
-    if (!pass && playlist_author_sanitized.contains(query_sanitized)) { pass = true; }
-    if (!pass) { continue; }
+      bool pass = false;
+      auto playlist_name_sanitized = sanitize_query(playlist.name);
+      if (playlist_name_sanitized.contains(query_sanitized)) { pass = true; }
+      auto playlist_author_sanitized = sanitize_query(playlist.author);
+      if (!pass && playlist_author_sanitized.contains(query_sanitized)) { pass = true; }
+      if (!pass) { continue; }
 
-    result.emplace_back(playlist_id);
-    if (result.size() >= max_size) { break; }
+      result.emplace_back(playlist_info{.collection_id = collection_id, .playlist_id = playlist_id});
+      if (result.size() >= max_size) { break; }
+    }
   }
   return result;
 }
 
-std::vector<size_t> db::search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size) {
+std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
-  std::vector<size_t> result;
+  std::vector<playlist_info> result;
   for (size_t playlist_id : collections[collection_id].playlist_ids) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     if (playlist.is_tombstone()) { continue; }
@@ -536,7 +549,7 @@ std::vector<size_t> db::search_playlists(std::u32string_view search_text, size_t
     if (!pass && playlist_author_sanitized.contains(query_sanitized)) { pass = true; }
     if (!pass) { continue; }
 
-    result.emplace_back(playlist_id);
+    result.emplace_back(playlist_info{.collection_id = collection_id, .playlist_id = playlist_id});
     if (result.size() >= max_size) { break; }
   }
   return result;

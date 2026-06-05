@@ -25,6 +25,7 @@ namespace db {
   size_t collection_count();
   size_t playlist_loved_tracks_id();
   Playlist& playlist_loved_tracks();
+  std::optional<size_t> collection_of_playlist(size_t playlist_id);
 
   // collection setters
   size_t add_collection(std::u32string_view);
@@ -69,8 +70,12 @@ namespace db {
       size_t playlist_id;
       size_t track_id;
   };
-  std::vector<size_t> search_playlists(std::u32string_view search_text, size_t max_size);
-  std::vector<size_t> search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size);
+  struct playlist_info {
+      size_t collection_id;
+      size_t playlist_id;
+  };
+  std::vector<playlist_info> search_playlists(std::u32string_view search_text, size_t max_size);
+  std::vector<playlist_info> search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size);
   std::vector<size_t> search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids, size_t max_size);
   std::vector<track_info> search_tracks(std::u32string_view search_text, size_t max_size);
   std::vector<track_info> search_tracks(std::u32string_view search_text, size_t collection_id, size_t max_size);

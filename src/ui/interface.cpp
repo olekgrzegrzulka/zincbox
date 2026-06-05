@@ -86,7 +86,21 @@ void interface::init() {
 
   shortcut_interceptor = &ui->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = []() {
-    popup_controller->show_popup<PopupSearch>();
+    auto* p = popup_controller->show_popup<PopupSearch>();
+    p->on_playlist_lmb = [p](size_t playlist_id, Widget*) {
+      auto collection_id = db::collection_of_playlist(playlist_id);
+      if (collection_id.has_value()) {
+        open_collection(collection_id.value());
+        panel_tracks->scroll_to_playlist(playlist_id);
+        p->close();
+      }
+    };
+
+    p->on_track_lmb = [p](size_t collection_id, size_t playlist_id, size_t track_id, Widget*) {
+      open_collection(collection_id);
+      panel_tracks->scroll_to_playlist(playlist_id);
+      p->close();
+    };
   };
   popup_controller = &ui->add_widget<PopupController>();
   popup_controller->set_is_drawn_on_top(true);
