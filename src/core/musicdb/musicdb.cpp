@@ -29,6 +29,8 @@ static std::vector<db::Track> tracks;
 static std::unordered_map<std::u32string, size_t> path_to_track_id;
 static std::unordered_map<std::u32string, std::unordered_set<size_t>> title_to_track_ids;
 
+static constexpr size_t DB_VERSION = 0;
+
 void db::create_empty_db() {
   collections.clear();
   playlists.clear();
@@ -40,6 +42,7 @@ void db::create_empty_db() {
 }
 
 void db::serialize(std::ofstream& os) {
+  write_bin(os, DB_VERSION);
   // Initially mark all tracks and playlists as tombstone, and keep track of playlists removed by user
   for (size_t track_id = 0; track_id < tracks.size(); track_id += 1) {
     tracks[track_id].set_tombstone(true);
@@ -113,6 +116,12 @@ void db::serialize(std::ofstream& os) {
 }
 
 void db::deserialize(std::ifstream& is) {
+  size_t db_version{};
+  read_bin(is, db_version);
+  if (db_version != DB_VERSION) {
+    debug_error("Database version number mismatch! Migration currently not supported");
+  }
+
   collections.clear();
   playlists.clear();
   tracks.clear();
