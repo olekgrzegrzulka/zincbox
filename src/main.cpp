@@ -82,7 +82,6 @@ int main() {
   NFD::Init();
   mpris::init();
   player::init();
-  mpris::init();
   config_load_from_file(io::get_cfg_path());
   i32 repeat_mode = config_get_i32("repeat_mode").value_or(0);
   repeat_mode = std::clamp(repeat_mode, 0, (i32)player::RepeatMode::REPEAT_MODE_SIZE - 1);
