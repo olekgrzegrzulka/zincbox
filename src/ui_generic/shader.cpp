@@ -2,6 +2,7 @@
 #include <string>
 #include <glm/gtc/type_ptr.hpp>
 #include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "opengl_includes.hpp"
 #include "shader.hpp"
@@ -123,7 +124,7 @@ void Shader::set_uniform_mat4(std::string name, glm::mat4 value) const {
 i32 Shader::get_uniform_location(const std::string& name) const {
   auto it = uniforms.find(name);
   if (it == uniforms.end()) {
-    debug_error("No uniform named ", name, " in shader");
+    out::log_error("no uniform named {} in shader", name);
     return -1;
   }
   return it->second;
@@ -133,7 +134,8 @@ std::string Shader::read_shader_file(std::string file_name) const {
   std::ifstream file{"./shaders/" + file_name};
 
   if (!file.is_open()) {
-    debug_error("Failed to open shader file " + file_name);
+    out::log_critical("failed to open shader file {}", file_name);
+    exit(1);
   }
 
   std::stringstream file_string;
@@ -159,8 +161,9 @@ u32 Shader::compile_shader(std::string source_, i32 type) const {
     char* info_log = new char[max_log_length];
     glGetShaderInfoLog(shader, max_log_length, &max_log_length, info_log);
 
-    debug_error("Shader compilation error:\n", info_log);
+    out::log_critical("shader compilation error:\n {}", info_log);
     delete[] info_log;
+    exit(1);
   }
 
   return shader;
@@ -183,8 +186,9 @@ u32 Shader::compile_shader(const char* source, i32 type) const {
     char* info_log = new char[max_log_length];
     glGetShaderInfoLog(shader, max_log_length, &max_log_length, info_log);
 
-    debug_error("Shader compilation error:\n", info_log);
+    out::log_critical("shader compilation error:\n {}", info_log);
     delete[] info_log;
+    exit(1);
   }
 
   return shader;
@@ -205,6 +209,9 @@ u32 Shader::create_shader_program() const {
   glLinkProgram(shader_program_);
   i32 success;
   glGetProgramiv(shader_program_, GL_LINK_STATUS, &success);
-  if (!success) { debug_error("Failed to link shader program"); }
+  if (!success) {
+    out::log_critical("failed to link shader program");
+    exit(1);
+  }
   return shader_program_;
 }

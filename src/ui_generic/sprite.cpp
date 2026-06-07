@@ -120,7 +120,7 @@ TextureAtlas& Sprite::get_texture_atlas() {
 void Sprite::set_texture(std::string id, bool resize_to_texture_size) {
   auto val = get_texture_atlas().get(id);
   if (!val.has_value()) {
-    debug_warn("atlas texture not found: " + id);
+    out::debug_warning("atlas texture not found: {}", id);
     return;
   }
   uv_start = val->get().start;

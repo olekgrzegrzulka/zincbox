@@ -8,8 +8,10 @@
 #include <string_view>
 #include <unordered_set>
 #include <vector>
+#include <fmt/base.h>
 #include "collection.hpp"
 #include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/search_utils.hpp"
 #include "common/serialize.hpp"
 #include "common/types.hpp"
@@ -119,7 +121,8 @@ void db::deserialize(std::ifstream& is) {
   size_t db_version{};
   read_bin(is, db_version);
   if (db_version != DB_VERSION) {
-    debug_error("Database version number mismatch! Migration currently not supported");
+    out::log_critical("Database version number mismatch! Migration currently not supported");
+    exit(1);
   }
 
   collections.clear();
@@ -161,25 +164,25 @@ void db::deserialize(std::ifstream& is) {
 }
 
 void db::print_collections() {
-  debug_log("Collection count: ", collections.size());
-  debug_log("Playlist count: ", playlists.size());
-  debug_log("Track count: ", tracks.size());
-  debug_log("Database tree:");
+  out::println("Collection count: {}", collections.size());
+  out::println("Playlist count: {}", playlists.size());
+  out::println("Track count: {}", tracks.size());
+  out::println("Database tree:");
   for (auto& c : collections) {
-    debug_log("Collection ", utf32_to_utf8(c.name));
+    out::println("Collection {}", utf32_to_utf8(c.name));
     for (auto p_id : c.playlist_ids) {
       auto& p = playlists[p_id];
       if (!p.tombstone) {
-        debug_log("\tPlaylist ", utf32_to_utf8(p.name), " - ", utf32_to_utf8(p.author));
+        out::println("\tPlaylist {} - {}", utf32_to_utf8(p.name), utf32_to_utf8(p.author));
       } else {
-        debug_log("\tPlaylist ", utf32_to_utf8(p.name), " - ", utf32_to_utf8(p.author), " (tombstone)");
+        out::println("\tPlaylist {} - {} (tombstone)", utf32_to_utf8(p.name), utf32_to_utf8(p.author));
       }
       for (size_t t_id : p.get_track_ids()) {
         auto& t = tracks[t_id];
         if (!t.is_tombstone()) {
-          debug_log("\t\t", t.track_number, ". ", utf32_to_utf8(t.artist), " - ", utf32_to_utf8(t.title));
+          out::println(("\t\t{}. {}, {}"), t.track_number, utf32_to_utf8(t.artist), utf32_to_utf8(t.title));
         } else {
-          debug_log("\t\t", t.track_number, ". ", utf32_to_utf8(t.artist), " - ", utf32_to_utf8(t.title), " (tombstone)");
+          out::println(("\t\t{}. {}, {} (tombstone)"), t.track_number, utf32_to_utf8(t.artist), utf32_to_utf8(t.title));
         }
       }
     }

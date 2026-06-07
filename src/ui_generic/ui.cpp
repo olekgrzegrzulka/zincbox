@@ -30,8 +30,8 @@ UI::UI(i32 window_width_, i32 window_height_)
   window_width = window_width_;
   window_height = window_height_;
   if (FT_Init_FreeType(&freetype_lib)) {
-    debug_error("failed to initialize freetype");
-    return;
+    out::log_critical("failed to initialize freetype");
+    exit(1);
   }
   matrix = glm::mat4{1.0};
   matrix = glm::scale(matrix, glm::vec3(1.0f, -1.0f, 1.0f));

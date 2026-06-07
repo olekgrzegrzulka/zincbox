@@ -9,6 +9,7 @@
 #include <vector>
 #include "common/color.hpp"
 #include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "core/io.hpp"
 #include "lib/inifile.h"
@@ -42,7 +43,7 @@ theme::theme_prop theme::get_prop(std::string_view prop) {
   if (!props_not_found.contains(prop)) {
     std::string prop_str(prop);
     props_not_found.emplace(prop_str);
-    debug_warn("theme has no property " + prop_str);
+    out::debug_warning("theme has no property {}", prop_str);
   }
   return theme_prop{std::monostate()};
 }
@@ -59,8 +60,8 @@ void load_resources() {
   resources_ttf_path.clear();
 
   if (!mz_zip_reader_init_mem(&zip_archive, resources_zip, sizeof(resources_zip), 0)) {
-    debug_error("failed to load resources from memory");
-    return;
+    out::log_critical("failed to load resources from memory");
+    exit(1);
   }
 
   for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
@@ -107,7 +108,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   if (!load_theme_from_resources) {
     // Check if the theme exists in the themes directory
     if (!fs::is_directory(theme_path)) {
-      debug_warn("no theme found at ", std::string{theme_path});
+      out::log_warning("no theme found at {}", std::string{theme_path});
       load_theme("", ui);
       return;
     }
@@ -117,7 +118,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
     bool invalid_theme = !success || !ini.contains("theme");
     if (invalid_theme) {
-      debug_warn("failed to load theme ", theme_name, ", invalid or missing theme.cfg");
+      out::log_warning("failed to load theme {} invalid or missing theme.cfg", theme_name);
       load_theme("", ui);
       return;
     }
@@ -133,26 +134,26 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     if (font_path != "") {
       ui.set_font_face(font_path, 14);
     } else {
-      debug_warn("no ttf file found in ", std::string{theme_name});
+      out::log_warning("no ttf file found in {}", std::string{theme_name});
       load_theme("", ui);
       return;
     }
   } else {
     load_resources();
     if (!resources.contains("theme.cfg")) {
-      debug_error("theme.cfg not found");
-      return;
+      out::log_critical("theme.cfg not found");
+      exit(1);
     }
     std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()), resources["theme.cfg"].size());
     ini.from_string(str_theme_cfg);
     if (!ini.contains("theme")) {
-      debug_error("failed to parse theme.cfg");
-      return;
+      out::log_critical("failed to parse theme.cfg");
+      exit(1);
     }
 
     if (resources_ttf_path.empty()) {
-      debug_error("no ttf file found in default theme");
-      return;
+      out::log_critical("no ttf file found in default theme");
+      exit(1);
     }
     ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
   }
@@ -203,7 +204,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
       }
     }
 
-    debug_warn("theme has no ", filenames[0], ".png, loading from default theme");
+    out::debug_warning("theme has no {}.png, loading from default theme", filenames[0]);
     load_resources();
     for (std::string filename : filenames) {
       auto it = resources.find(filename + ".png");

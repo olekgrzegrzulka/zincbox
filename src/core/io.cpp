@@ -13,6 +13,7 @@
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
 #include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/track.hpp"
@@ -212,10 +213,12 @@ fs::path io::get_user_data_path() {
 
   if (!fs::exists(fs::path(path))) {
     if (!fs::create_directories(fs::path(path))) {
-      debug_error("failed to create user data directory");
+      out::log_critical("failed to create user data directory");
+      exit(1);
     }
   } else if (!fs::is_directory(fs::path(path))) {
-    debug_error("user data directory exists but is not a directory");
+    out::log_critical("user data directory exists but is not a directory");
+    exit(1);
   }
 
   user_data_path = fs::path(path);
@@ -227,10 +230,12 @@ fs::path io::get_themes_path() {
 
   if (!fs::exists(fs::path(path))) {
     if (!fs::create_directories(fs::path(path))) {
-      debug_error("failed to create themes directory");
+      out::log_critical("failed to create themes directory");
+      exit(1);
     }
   } else if (!fs::is_directory(fs::path(path))) {
-    debug_error("themes directory exists but is not a directory");
+    out::log_critical("themes directory exists but is not a directory");
+    exit(1);
   }
 
   return path;

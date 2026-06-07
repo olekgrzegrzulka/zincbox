@@ -6,6 +6,7 @@
 #include <thread>
 #include <glm/vec3.hpp>
 #include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_write.h"
@@ -26,7 +27,10 @@ bool TextureAtlas::add_texture(std::string_view id, std::string path) {
   i32 width, height, channels;
   stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
-  if (!data) { debug_error("failed to load texture " + path); }
+  if (!data) {
+    out::log_critical("failed to load texture {}", path);
+    exit(1);
+  }
 
   auto at = paste_texture(data, width, height);
 
@@ -46,7 +50,7 @@ bool TextureAtlas::add_texture(std::string_view id, const std::vector<u8>& data_
   if (textures.contains(id)) { return false; }
   stbi_uc* data = (stbi_uc*)data_.data();
   if (!data) {
-    debug_warn("failed to load texture from data");
+    out::debug_warning("failed to load texture from data");
     return false;
   }
 
@@ -68,7 +72,7 @@ bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, 
   if (textures.contains(id)) { return false; }
   stbi_uc* data = (stbi_uc*)data_;
   if (!data) {
-    debug_warn("failed to load texture from data");
+    out::debug_warning("failed to load texture from data");
     return false;
   }
 
@@ -130,9 +134,9 @@ void TextureAtlas::save_to_file(std::string filename) {
   std::thread th([filename, size_px_copy, data_copy]() {
     i32 status = stbi_write_png(filename.c_str(), size_px_copy, size_px_copy, 4, data_copy, 4 * size_px_copy);
     if (status == 1) {
-      debug_log("Saved texture atlas to ", filename);
+      out::debug_info("Saved texture atlas to {}", filename);
     } else {
-      debug_warn("Couldn't save texture atlas to ", filename);
+      out::debug_warning("Couldn't save texture atlas to {}", filename);
     }
   });
   th.detach();
@@ -216,7 +220,7 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
       }
     }
   }
-  debug_warn("find_space_for_texture, no space found for texture of size ", width, "x", height);
+  out::debug_warning("find_space_for_texture, no space found for texture of size {}px by {}px", width, height);
   return std::nullopt;
 }
 

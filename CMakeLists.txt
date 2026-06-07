@@ -91,6 +91,7 @@ add_subdirectory(lib/glm SYSTEM)
 add_subdirectory(lib/stb_image SYSTEM)
 add_subdirectory(lib/glad SYSTEM)
 add_subdirectory(lib/miniz SYSTEM)
+add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
 
 # add_subdirectory(lib/miniaudio SYSTEM)
 
@@ -100,6 +101,7 @@ set(SOURCES
     ./lib/miniaudio/miniaudio.c
     ./src/common/config.cpp
     ./src/common/input.cpp
+    ./src/common/logger.cpp
     ./src/core/musicdb/musicdb.cpp
     ./src/core/musicdb/collection.cpp
     ./src/core/musicdb/playlist.cpp
@@ -194,4 +196,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
 target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
+target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

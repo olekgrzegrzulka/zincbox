@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <fmt/core.h>
+#include <fmt/format.h>
 #include "types.hpp"
 
 struct hsva {
@@ -122,3 +124,27 @@ namespace color_utils {
     return std::nullopt;
   }
 } // namespace color_utils
+
+template <>
+struct fmt::formatter<rgba> {
+    constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+    auto format(const rgba& c, fmt::format_context& ctx) const {
+      return fmt::format_to(ctx.out(), "rgba({},{},{},{})",
+                            static_cast<u32>(c.r),
+                            static_cast<u32>(c.g),
+                            static_cast<u32>(c.b),
+                            static_cast<u32>(c.a));
+    }
+};
+
+template <>
+struct fmt::formatter<hsva> {
+    constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+    auto format(const hsva& c, fmt::format_context& ctx) const {
+      return fmt::format_to(ctx.out(), "hsva({}°, {}, {}, {})",
+                            static_cast<i32>(c.h),
+                            static_cast<i32>(c.s),
+                            static_cast<i32>(c.v),
+                            static_cast<i32>(c.a));
+    }
+};

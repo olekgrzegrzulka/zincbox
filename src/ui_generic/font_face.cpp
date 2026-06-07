@@ -19,8 +19,8 @@
 
 FontFace::FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height) {
   if (FT_New_Face(freetype_lib, path.c_str(), 0, &freetype_face)) {
-    debug_error("failed to load font at ", path);
-    return;
+    out::log_critical("failed to load font at {}", path);
+    exit(1);
   }
 
   bool success = (try_creating_glyph_data(256, pixel_height) ||
@@ -28,8 +28,8 @@ FontFace::FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height)
                   try_creating_glyph_data(1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
-    debug_error("failed to create font texture atlas of font at ", path);
-    return;
+    out::log_critical("failed to create font texture atlas of font at {}", path);
+    exit(1);
   }
   glCreateSamplers(1, &sampler);
   glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -42,8 +42,8 @@ FontFace::FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height)
 
 FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height) {
   if (FT_New_Memory_Face(freetype_lib, static_cast<const FT_Byte*>(data), data_size, 0, &freetype_face)) {
-    debug_error("failed to load font");
-    return;
+    out::log_critical("failed to load font");
+    exit(1);
   }
 
   bool success = (try_creating_glyph_data(256, pixel_height) ||
@@ -51,8 +51,8 @@ FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 p
                   try_creating_glyph_data(1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
-    debug_error("failed to create font texture atlas of font");
-    return;
+    out::log_critical("failed to create font texture atlas of font");
+    exit(1);
   }
   glCreateSamplers(1, &sampler);
   glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -62,7 +62,6 @@ FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 p
 
   // save_glyph_texture_to_file("./assets/glyphs.png");
 }
-
 
 /*
   [[maybe_unused]] void save_glyph_texture_to_file(const char* filename) const {

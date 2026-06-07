@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 #include <glm/vec3.hpp>
+#include "common/color.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "vertex.hpp"
