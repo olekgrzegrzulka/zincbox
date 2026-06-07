@@ -303,6 +303,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   atlas_add_texture("popover_arrow_inverted");
   add_custom_button("add_tab");
   add_custom_button("button_popover");
+  atlas_add_texture("notification");
   // icons
   atlas_add_texture("left", {"icons/left"});
   atlas_add_texture("right", {"icons/right"});

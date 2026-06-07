@@ -89,12 +89,8 @@ class WidgetTrack : public Button {
         label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
         label_track_length->set_resize_to_text_extents(false);
       }
-      i32 length_s = track.length_seconds;
-      i32 length_m = length_s / 60;
-      length_s %= 60;
-      std::stringstream ss;
-      ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
-      label_track_length->set_text(ss.str());
+
+      label_track_length->set_text(track.pretty_length());
       // hack to get text extents to update :(
       label_track_length->mark_dirty();
       label_track_length->update();

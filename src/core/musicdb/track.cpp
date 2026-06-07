@@ -1,5 +1,6 @@
 
 #include "track.hpp"
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include "common/serialize.hpp"
@@ -46,4 +47,24 @@ void db::Track::serialize(std::ostream& os) const {
 std::string db::Track::to_string() const {
   return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) +
          (is_tombstone() ? " (tombstone)" : "");
+}
+
+std::u32string db::Track::pretty_name() const {
+  if (!title.empty()) {
+    if (!artist.empty()) {
+      return artist + U" - " + title;
+    } else {
+      return title;
+    }
+  } else {
+    return utf8_to_utf32(std::filesystem::path(path).filename().string());
+  }
+}
+std::u32string db::Track::pretty_length() const {
+  i32 length_s = length_seconds;
+  i32 length_m = length_seconds / 60;
+  length_s %= 60;
+  std::stringstream ss;
+  ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
+  return utf8_to_utf32(ss.str());
 }

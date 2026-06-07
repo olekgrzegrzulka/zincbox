@@ -281,7 +281,7 @@ class PopupSetSources : public Popup {
     Button* btn_add_dir{};
 
     std::function<void()> on_add_dir_pressed{};
-    std::function<void(std::string)> on_remove_path_pressed{};
+    std::function<void(const std::string&)> on_remove_path_pressed{};
 };
 
 class PopupAddToPlaylist : public Popup {
