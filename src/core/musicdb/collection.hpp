@@ -21,8 +21,8 @@ namespace db {
     public:
       Collection(std::u32string_view name_) { name = name_; }
       Collection(std::ifstream&);
-      bool add_path(fs::path);
-      bool remove_path(fs::path);
+      bool add_path(const fs::path&);
+      bool remove_path(const fs::path&);
       size_t add_playlist(size_t playlist_id) {
         playlist_ids.emplace_back(playlist_id);
         return playlist_ids.size() - 1;

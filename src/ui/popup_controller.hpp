@@ -13,20 +13,15 @@
 
 class Dimmer : public Sprite {
   public:
-    Dimmer(UI& ui_) : Sprite(ui_, "dim") {
-    }
+    Dimmer(UI& ui_) : Sprite(ui_, "dim") {}
 
     void set_is_active(bool active) {
       set_is_updated(active);
-      if (!active) {
-        prev_window_size = std::nullopt;
-      }
+      if (!active) { prev_window_size = std::nullopt; }
     }
 
     void update() override {
-      if (!prev_window_size.has_value()) {
-        prev_window_size = ui.get_window_size();
-      }
+      if (!prev_window_size.has_value()) { prev_window_size = ui.get_window_size(); }
       if (prev_window_size != ui.get_window_size()) {
         prev_window_size = ui.get_window_size();
         if (on_pressed) { on_pressed(); }
@@ -48,9 +43,7 @@ class Dimmer : public Sprite {
       if (on_pressed) { on_pressed(); }
     }
 
-    void event(Input::InputEventMouseMove& ev) override {
-      ev.handled = true;
-    }
+    void event(Input::InputEventMouseMove& ev) override { ev.handled = true; }
 
     void event(Input::InputEventKey& ev) override {
       if (ev.action == Input::KeyAction::RELEASE && ev.key == Input::Key::KEY_ENTER) {
@@ -84,7 +77,8 @@ class PopupController : public Widget {
     template <typename T, typename... Args>
       requires std::is_base_of_v<Popup, T>
     T* show_popup(Args&&... args) {
-      auto& popup = popups->add_child<T>(*this, [&](Popup* p) { p->set_marked_for_deletion(true); }, std::forward<Args>(args)...);
+      auto& popup =
+        popups->add_child<T>(*this, [&](Popup* p) { p->set_marked_for_deletion(true); }, std::forward<Args>(args)...);
       return &popup;
     };
 

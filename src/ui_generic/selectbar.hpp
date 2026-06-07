@@ -8,10 +8,7 @@
 
 class SelectBar : public Sprite {
   public:
-    enum class Orientation {
-      HORIZONTAL,
-      VERTICAL
-    };
+    enum class Orientation { HORIZONTAL, VERTICAL };
 
   protected:
     Sprite& highlight;
@@ -32,8 +29,6 @@ class SelectBar : public Sprite {
     Button& add_option(std::string label);
     void select(i32 index, bool animation = true);
     i32 get_selected_index() const { return selected_index; }
-    void on_change(std::function<void(i32)> lambda_) {
-      lambda_change = lambda_;
-    }
+    void on_change(std::function<void(i32)> lambda_) { lambda_change = lambda_; }
     Sprite& get_highlight() { return highlight; }
 };

@@ -40,17 +40,11 @@ class Button : public Sprite {
     vec2f uv_end_disabled{};
 
   public:
-    Button(UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>()) {
-      init();
-    }
+    Button(UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>()) { init(); }
 
-    Button(UI& ui_, std::u32string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
-      init();
-    }
+    Button(UI& ui_, std::u32string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) { init(); }
 
-    Button(UI& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) {
-      init();
-    }
+    Button(UI& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) { init(); }
 
     void init() {
       set_size(64, 24);
@@ -70,21 +64,13 @@ class Button : public Sprite {
 
     virtual void update() override;
 
-    virtual void draw() override {
-      Sprite::draw();
-    }
+    virtual void draw() override { Sprite::draw(); }
 
-    void on_press(std::function<void()> lambda_press_) {
-      lambda_press = lambda_press_;
-    }
+    void on_press(std::function<void()> lambda_press_) { lambda_press = lambda_press_; }
 
-    void on_depress(std::function<void()> lambda_depress_) {
-      lambda_depress = lambda_depress_;
-    }
+    void on_depress(std::function<void()> lambda_depress_) { lambda_depress = lambda_depress_; }
 
-    void on_press_rmb(std::function<void()> lambda_press_rmb_) {
-      lambda_press_rmb = lambda_press_rmb_;
-    }
+    void on_press_rmb(std::function<void()> lambda_press_rmb_) { lambda_press_rmb = lambda_press_rmb_; }
 
     // Returns true if button's state was changed
     bool set_state(ButtonState state_) {
@@ -95,9 +81,7 @@ class Button : public Sprite {
       return true;
     }
 
-    void set_is_switched(bool state_) {
-      is_switched = state_;
-    }
+    void set_is_switched(bool state_) { is_switched = state_; }
 
     void set_disabled(bool disabled) {
       if (disabled) {

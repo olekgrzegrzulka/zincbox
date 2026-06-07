@@ -2,8 +2,7 @@
 #include <functional>
 #include <unordered_map>
 
-template <typename... Args>
-class Signal final {
+template <typename... Args> class Signal final {
   public:
     using slot_key = size_t;
     using slot_t = std::function<void(Args...)>;
@@ -16,9 +15,7 @@ class Signal final {
       return current_key++;
     }
 
-    void disconnect(slot_key key) const {
-      slots.erase(key);
-    }
+    void disconnect(slot_key key) const { slots.erase(key); }
 
     void emit(Args... args) const {
       for (const auto& slot : slots) {

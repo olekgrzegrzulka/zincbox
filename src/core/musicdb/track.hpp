@@ -5,7 +5,7 @@
 
 namespace db {
 
-  enum TrackFlag {
+  enum TrackFlag : u8 {
     TOMBSTONE = 1,
     NOT_FOUND_DURING_RESCAN = 2,
     PLAYBACK_ERROR = 3,
@@ -13,15 +13,8 @@ namespace db {
   };
 
   struct Track final {
-      Track(i32 track_number,
-            std::u32string title,
-            std::u32string artist,
-            std::u32string album_artist,
-            std::u32string genre,
-            i32 year,
-            i32 bitrate,
-            i32 length_seconds,
-            std::u32string path);
+      Track(i32 track_number, std::u32string title, std::u32string artist, std::u32string album_artist,
+            std::u32string genre, i32 year, i32 bitrate, i32 length_seconds, std::u32string path);
 
       Track(std::ifstream&);
 

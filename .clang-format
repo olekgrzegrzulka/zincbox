@@ -3,7 +3,7 @@ AllowShortBlocksOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 PointerAlignment: Left
 AlwaysBreakTemplateDeclarations: MultiLine
-ColumnLimit: 0
+ColumnLimit: 120
 
 IncludeCategories:
   # Headers in <> without extension.
@@ -37,3 +37,6 @@ TabWidth: 2
 ContinuationIndentWidth: 2
 NamespaceIndentation: All
 ConstructorInitializerIndentWidth: 2
+
+AllowShortEnumsOnASingleLine: true
+IndentGotoLabels: true

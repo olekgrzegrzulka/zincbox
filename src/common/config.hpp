@@ -18,5 +18,5 @@ void config_get_i32_if_set(std::string_view key, i32&);
 void config_get_float_if_set(std::string_view key, float&);
 void config_get_string_if_set(std::string_view key, std::string&);
 
-void config_save_to_file(std::string file);
-void config_load_from_file(std::string file);
+void config_save_to_file(const std::string& file);
+void config_load_from_file(const std::string& file);

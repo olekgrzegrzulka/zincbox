@@ -6,24 +6,17 @@
 #include "common/types.hpp"
 #include "common/utf.hpp"
 
-db::Track::Track(i32 track_number,
-                 std::u32string title,
-                 std::u32string artist,
-                 std::u32string album_artist,
-                 std::u32string genre,
-                 i32 year,
-                 i32 bitrate,
-                 i32 length_seconds,
-                 std::u32string path) {
+db::Track::Track(i32 track_number, std::u32string title, std::u32string artist, std::u32string album_artist,
+                 std::u32string genre, i32 year, i32 bitrate, i32 length_seconds, std::u32string path) {
   this->track_number = track_number;
-  this->title = title;
-  this->artist = artist;
-  this->album_artist = album_artist;
-  this->genre = genre;
+  this->title = std::move(title);
+  this->artist = std::move(artist);
+  this->album_artist = std::move(album_artist);
+  this->genre = std::move(genre);
   this->year = year;
   this->bitrate = bitrate;
   this->length_seconds = length_seconds;
-  this->path = path;
+  this->path = std::move(path);
 }
 
 db::Track::Track(std::ifstream& is) {
@@ -51,5 +44,6 @@ void db::Track::serialize(std::ostream& os) const {
 }
 
 std::string db::Track::to_string() const {
-  return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) + (is_tombstone() ? " (tombstone)" : "");
+  return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) +
+         (is_tombstone() ? " (tombstone)" : "");
 }

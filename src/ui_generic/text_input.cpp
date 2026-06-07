@@ -20,8 +20,10 @@ TextInput::TextInput(UI& ui_) : Sprite(ui_), label(add_child<Label>()), caret(ad
 void TextInput::update() {
   Sprite::update();
 
-  bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x && Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x;
-  bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y && Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
+  bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x &&
+                           Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x;
+  bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y &&
+                           Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
 
   bool mouse_hovering = mouse_on_widget_x && mouse_on_widget_y;
   // bool lmb_pressed = Input::mouse_pressed(Input::Mouse::MOUSE_BUTTON_LEFT);
@@ -47,9 +49,7 @@ void TextInput::update() {
   if (focused) {
     if (backspace) {
       if (backspace_clock <= 0.0f) {
-        if (label.erase_last_character() && lambda_on_text_changed) {
-          lambda_on_text_changed();
-        }
+        if (label.erase_last_character() && lambda_on_text_changed) { lambda_on_text_changed(); }
         backspace_clock += backspace_first_echo ? backspace_echo_length_initial : backspace_echo_length;
         backspace_first_echo = false;
         caret_blink_clock = std::min(caret_blink_clock + caret_blink_time, caret_blink_time);
@@ -92,7 +92,5 @@ void TextInput::clear() {
 }
 
 void TextInput::event(Input::InputEventKey& ev) {
-  if (focused) {
-    ev.handled = true;
-  }
+  if (focused) { ev.handled = true; }
 }

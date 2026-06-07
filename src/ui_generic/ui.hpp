@@ -20,8 +20,7 @@ class UI final {
     UI(i32 window_width_, i32 window_height_);
     ~UI() = default;
 
-    template <class T, class... Args>
-    T& add_widget(Args&&... args) {
+    template <class T, class... Args> T& add_widget(Args&&... args) {
       widgets_to_add.emplace_back(std::make_unique<T>(*this, std::forward<Args>(args)...));
       T& widget = static_cast<T&>(*widgets_to_add.back().get());
       widget.set_window_width(window_width);
@@ -60,7 +59,8 @@ class UI final {
   private:
     void update_widget_recursive(std::unique_ptr<Widget>& widget);
 
-    void draw_widget_recursive(Widget* widget, std::vector<Widget*>* to_be_drawn_later, std::optional<rect2i> scissor_rect = std::nullopt);
+    void draw_widget_recursive(Widget* widget, std::vector<Widget*>* to_be_drawn_later,
+                               std::optional<rect2i> scissor_rect = std::nullopt);
 
   protected:
     glm::mat4 matrix;

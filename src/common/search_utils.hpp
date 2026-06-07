@@ -3,9 +3,9 @@
 
 // clang-format off
 static inline char32_t transform_to_base_char(char32_t c) {
-  if (c >= U'A' && c <= U'Z') return c + (U'a' - U'A');
-  if (c >= U'a' && c <= U'z') return c;
-  if (c >= U'0' && c <= U'9') return c;
+  if (c >= U'A' && c <= U'Z') { return c + (U'a' - U'A'); }
+  if (c >= U'a' && c <= U'z') { return c; }
+  if (c >= U'0' && c <= U'9') { return c; }
 
   switch (c) {
     // A
@@ -43,7 +43,7 @@ static inline char32_t transform_to_base_char(char32_t c) {
     case U'ź': case U'ż': case U'ž': return U'z';
 
     default:
-      if (c <= 32) return U' ';
+      if (c <= 32) { return U' '; }
       return c;
   }
 }
@@ -69,9 +69,7 @@ static inline std::u32string sanitize_query(std::u32string_view input) {
     }
   }
 
-  if (!result.empty() && result.back() == U' ') {
-    result.pop_back();
-  }
+  if (!result.empty() && result.back() == U' ') { result.pop_back(); }
 
   return result;
 }

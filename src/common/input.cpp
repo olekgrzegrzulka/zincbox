@@ -37,8 +37,7 @@ namespace Input {
   } // namespace detail
 
   void glfw_cursor_position_callback(GLFWwindow*, double x, double y) {
-    InputEventMouseMove ev{
-      .to = {x, y}};
+    InputEventMouseMove ev{.to = {x, y}};
     detail::event_queue.emplace_back(ev);
   }
 
@@ -67,9 +66,7 @@ namespace Input {
     detail::event_queue.emplace_back(ev);
   }
 
-  void glfw_char_callback(GLFWwindow*, u32 c) {
-    detail::keyboard_characters_curr += c;
-  }
+  void glfw_char_callback(GLFWwindow*, u32 c) { detail::keyboard_characters_curr += c; }
 
   void glfw_key_callback(GLFWwindow*, i32 key, i32 scancode, i32 action, i32) {
     KeyAction key_action{};
@@ -186,25 +183,15 @@ namespace Input {
     detail::dropped_paths.clear();
   }
 
-  vec2i get_mouse_pos() {
-    return {detail::mouse_x, detail::mouse_y};
-  }
+  vec2i get_mouse_pos() { return {detail::mouse_x, detail::mouse_y}; }
 
-  i32 get_mouse_x() {
-    return detail::mouse_x;
-  }
+  i32 get_mouse_x() { return detail::mouse_x; }
 
-  i32 get_mouse_y() {
-    return detail::mouse_y;
-  }
+  i32 get_mouse_y() { return detail::mouse_y; }
 
-  i32 get_window_x() {
-    return detail::window_x;
-  }
+  i32 get_window_x() { return detail::window_x; }
 
-  i32 get_window_y() {
-    return detail::window_y;
-  }
+  i32 get_window_y() { return detail::window_y; }
 
   std::vector<InputEvent>& get_event_queue() {
     auto new_end = std::remove_if(detail::event_queue.begin(), detail::event_queue.end(), [](const InputEvent& ev) {
@@ -234,23 +221,15 @@ namespace Input {
     return state == JUST_PRESSED || state == PRESSED;
   }
 
-  bool key_just_pressed(Key button) {
-    return detail::key_states[(size_t)button] == detail::ButtonState::JUST_PRESSED;
-  }
+  bool key_just_pressed(Key button) { return detail::key_states[(size_t)button] == detail::ButtonState::JUST_PRESSED; }
 
   bool key_just_released(Key button) {
     return detail::key_states[(size_t)button] == detail::ButtonState::JUST_RELEASED;
   }
 
-  vec2f get_mouse_scroll() {
-    return detail::accumulated_scroll;
-  }
+  vec2f get_mouse_scroll() { return detail::accumulated_scroll; }
 
-  vec2i get_mouse_delta() {
-    return {
-      detail::mouse_x - detail::last_mouse_x,
-      detail::mouse_y - detail::last_mouse_y};
-  }
+  vec2i get_mouse_delta() { return {detail::mouse_x - detail::last_mouse_x, detail::mouse_y - detail::last_mouse_y}; }
 
   vec2i get_window_size() {
     i32 width = 0;
@@ -259,9 +238,7 @@ namespace Input {
     return {width, height};
   }
 
-  std::u32string get_typed_characters() {
-    return detail::keyboard_characters_prev;
-  }
+  std::u32string get_typed_characters() { return detail::keyboard_characters_prev; }
 
   std::string key_to_string(Input::Key key) {
     switch ((i32)key) {
@@ -389,11 +366,7 @@ namespace Input {
     };
   }
 
-  const std::vector<std::string>& get_dropped_paths() {
-    return detail::dropped_paths;
-  }
+  const std::vector<std::string>& get_dropped_paths() { return detail::dropped_paths; }
 
-  void set_cursor(Input::Cursor cursor) {
-    glfwSetCursor(detail::glfw_window, detail::cursors[(size_t)cursor]);
-  }
+  void set_cursor(Input::Cursor cursor) { glfwSetCursor(detail::glfw_window, detail::cursors[(size_t)cursor]); }
 }; // namespace Input

@@ -36,7 +36,8 @@ bool TextureAtlas::add_texture(std::string_view id, std::string path) {
 
   TextureAtlasData uv;
   uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(),
+            (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
   textures[std::string(id)] = uv;
@@ -58,7 +59,8 @@ bool TextureAtlas::add_texture(std::string_view id, const std::vector<u8>& data_
 
   TextureAtlasData uv;
   uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(),
+            (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
   textures[std::string(id)] = uv;
@@ -80,7 +82,8 @@ bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, 
 
   TextureAtlasData uv;
   uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(), (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(),
+            (at.y + height) / (float)atlas_size_px + half_pixel()};
   uv.width = width;
   uv.height = height;
   textures[std::string(id)] = uv;
@@ -88,9 +91,7 @@ bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, 
   return true;
 }
 
-void TextureAtlas::add_texture_alias(std::string id, std::string to) {
-  aliases[id] = to;
-}
+void TextureAtlas::add_texture_alias(std::string id, std::string to) { aliases[id] = to; }
 
 bool TextureAtlas::remove_texture(std::string_view id) {
   bool textures_contains_id = textures.contains(id);
@@ -113,9 +114,7 @@ bool TextureAtlas::remove_texture(std::string_view id) {
     dirty = true;
     textures.erase(id_str);
   }
-  if (aliases_contains_id) {
-    aliases.erase(std::string(id));
-  }
+  if (aliases_contains_id) { aliases.erase(std::string(id)); }
 
   return textures_contains_id || aliases_contains_id;
 }
@@ -203,7 +202,8 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
         for (i32 square_height = 0; square_height < std::ceil(height / (double)grid_size_px); square_height += 1) {
           size_t square_i = (atlas_size_px / grid_size_px) * (square_y + square_height) + (square_x + square_width);
           // size_t square_i = square_x + square_y * (atlas_size / square_size_px);
-          if (square_x + square_width >= (atlas_size_px / grid_size_px) || square_y + square_height >= (atlas_size_px / grid_size_px)) {
+          if (square_x + square_width >= (atlas_size_px / grid_size_px) ||
+              square_y + square_height >= (atlas_size_px / grid_size_px)) {
             fail = true;
             break;
           }
@@ -215,9 +215,7 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
         if (fail) { break; }
       }
 
-      if (!fail) {
-        return std::make_pair(square_x * grid_size_px, square_y * grid_size_px);
-      }
+      if (!fail) { return std::make_pair(square_x * grid_size_px, square_y * grid_size_px); }
     }
   }
   out::debug_warning("find_space_for_texture, no space found for texture of size {}px by {}px", width, height);
@@ -240,9 +238,7 @@ void TextureAtlas::mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, b
 
 vec2i TextureAtlas::paste_texture(stbi_uc* data, i32 width, i32 height) {
   auto [x, y] = find_space_for_texture(width + 2 * margin_px, height + 2 * margin_px).value_or(std::make_pair(0, 0));
-  mark_space_for_texture(
-    x + margin_px, y + margin_px,
-    width + 2 * margin_px, height + 2 * margin_px);
+  mark_space_for_texture(x + margin_px, y + margin_px, width + 2 * margin_px, height + 2 * margin_px);
 
   for (i32 oy = 0; oy < height; oy += 1) {
     for (i32 ox = 0; ox < width; ox += 1) {

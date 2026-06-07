@@ -37,9 +37,7 @@ class Label final : public Widget {
     WIDGET_DEF_GETTER(text_extents);
     WIDGET_DEF_SETTER_DIRTY(label_anchor);
 
-    void set_text(std::string_view text_) {
-      set_text(utf8_to_utf32(text_));
-    }
+    void set_text(std::string_view text_) { set_text(utf8_to_utf32(text_)); }
 
     void set_text(std::u32string_view text_) {
       if (text == text_) { return; }
@@ -48,9 +46,7 @@ class Label final : public Widget {
       dirty = true;
     }
 
-    glm::vec3 get_text_color() const {
-      return text_color;
-    }
+    glm::vec3 get_text_color() const { return text_color; }
 
     void set_text_color(rgba text_color_) {
       set_text_color(glm::vec3{text_color_.r / 255.0, text_color_.g / 255.0, text_color_.b / 255.0});
@@ -70,9 +66,7 @@ class Label final : public Widget {
       dirty = true;
     }
 
-    void append_text(std::string_view append) {
-      append_text(utf8_to_utf32(append));
-    }
+    void append_text(std::string_view append) { append_text(utf8_to_utf32(append)); }
 
     bool erase_last_character() {
       if (text.length() > 0) {

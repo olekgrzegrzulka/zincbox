@@ -3,8 +3,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-template <size_t Size, class T>
-struct vertex {
+template <size_t Size, class T> struct vertex {
   public:
     glm::vec<Size, T> pos;
     glm::vec<2, T> uv;

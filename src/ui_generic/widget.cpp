@@ -6,21 +6,16 @@
 
 vec2i Widget::get_position(Anchor relative_to) const {
   vec2i value = anchor_to_uv(parent_anchor) * vec2f{ui.get_window_size()};
-  if (parent) {
-    value = parent->get_position(parent_anchor);
-  }
+  if (parent) { value = parent->get_position(parent_anchor); }
   value += vec2f(x, y) - vec2f(width, height) * anchor_to_uv(anchor);
   value += vec2f{width, height} * anchor_to_uv(relative_to);
   return value;
 }
-void Widget::draw() {
-}
+void Widget::draw() {}
 
 void Widget::input() {
   for (auto&& child : children) {
-    if (child->get_is_updated() && !child->get_marked_for_deletion()) {
-      child->input();
-    }
+    if (child->get_is_updated() && !child->get_marked_for_deletion()) { child->input(); }
   }
 
   for (auto& ev : Input::get_event_queue()) {
@@ -172,16 +167,16 @@ void Widget::update() {
   }
 }
 
-bool Widget::is_mouse_hovering() const {
-  return is_mouse_hovering(Input::get_mouse_pos());
-}
+bool Widget::is_mouse_hovering() const { return is_mouse_hovering(Input::get_mouse_pos()); }
 
 bool Widget::is_mouse_hovering(vec2i at) const {
   const Widget* tested = this;
   for (i32 i = 0; i < 127; i += 1) {
     if (!tested) { break; }
-    bool test_x = at.x >= tested->get_position(Anchor::TOP_LEFT).x && at.x < tested->get_position(Anchor::BOTTOM_RIGHT).x;
-    bool test_y = at.y >= tested->get_position(Anchor::TOP_LEFT).y && at.y < tested->get_position(Anchor::BOTTOM_RIGHT).y;
+    bool test_x =
+      at.x >= tested->get_position(Anchor::TOP_LEFT).x && at.x < tested->get_position(Anchor::BOTTOM_RIGHT).x;
+    bool test_y =
+      at.y >= tested->get_position(Anchor::TOP_LEFT).y && at.y < tested->get_position(Anchor::BOTTOM_RIGHT).y;
     if (!test_x || !test_y) { return false; }
     tested = tested->parent;
   }
@@ -219,13 +214,11 @@ void Widget::set_layout(std::string_view def) {
 
       if (token[0] == 'm') l.margin = static_cast<i32>(val);
       else l.spacing = static_cast<i32>(val);
-    } else if (token == "ltr" || token == "left_to_right" ||
-               token == "h" || token == "hor" || token == "horizontal") {
+    } else if (token == "ltr" || token == "left_to_right" || token == "h" || token == "hor" || token == "horizontal") {
       l.direction = LayoutDirection::LEFT_TO_RIGHT;
     } else if (token == "rtl" || token == "right_to_left") {
       l.direction = LayoutDirection::RIGHT_TO_LEFT;
-    } else if (token == "ttb" || token == "top_to_bottom" ||
-               token == "v" || token == "ver" || token == "vertical") {
+    } else if (token == "ttb" || token == "top_to_bottom" || token == "v" || token == "ver" || token == "vertical") {
       l.direction = LayoutDirection::TOP_TO_BOTTOM;
     } else if (token == "btt" || token == "bottom_to_top") {
       l.direction = LayoutDirection::BOTTOM_TO_TOP;
@@ -261,9 +254,7 @@ void Widget::set_size(i32 w_, i32 h_) {
   if (w_ != width || h_ != height) {
     width = w_;
     height = h_;
-    if (layout.enabled) {
-      ui.mark_dirty_recursive(this);
-    }
+    if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
 
@@ -271,9 +262,7 @@ void Widget::set_size(vec2i size_) {
   if (width != x || height != y) {
     width = size_.x;
     height = size_.y;
-    if (layout.enabled) {
-      ui.mark_dirty_recursive(this);
-    }
+    if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
 
@@ -281,9 +270,7 @@ void Widget::set_width(i32 width_) {
   if (width_ != width) {
     width = width_;
     dirty = true;
-    if (layout.enabled) {
-      ui.mark_dirty_recursive(this);
-    }
+    if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
 
@@ -291,8 +278,6 @@ void Widget::set_height(i32 height_) {
   if (height_ != height) {
     height = height_;
     dirty = true;
-    if (layout.enabled) {
-      ui.mark_dirty_recursive(this);
-    }
+    if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }

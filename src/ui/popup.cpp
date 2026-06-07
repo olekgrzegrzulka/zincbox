@@ -7,7 +7,8 @@
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/widget.hpp"
 
-Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_) : Sprite(ui_, "panel_popup"), controller(controller_), on_close(on_close_) {
+Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+  : Sprite(ui_, "panel_popup"), controller(controller_), on_close(on_close_) {
   set_is_drawn_on_top(true);
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
@@ -38,12 +39,9 @@ void Popup::event(Input::InputEventMouseButton& e) {
     }
   }
 
-  if (!e.handled) {
-    Sprite::event(e);
-  }
+  if (!e.handled) { Sprite::event(e); }
 }
-Popover::Popover(UI& ui_) : Sprite(ui_, "popover_panel") {
-}
+Popover::Popover(UI& ui_) : Sprite(ui_, "popover_panel") {}
 
 void Popover::update() {
   i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
@@ -52,10 +50,8 @@ void Popover::update() {
   i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
   set_x(get_x() + off_screen_left - off_screen_right);
   set_y(get_y() + off_screen_top - off_screen_bottom);
-  
+
   Sprite::update();
 }
 
-void Popover::draw() {
-  Sprite::draw();
-}
+void Popover::draw() { Sprite::draw(); }

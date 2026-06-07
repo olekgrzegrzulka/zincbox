@@ -136,8 +136,9 @@ int main() {
     out::log_critical("failed to load glad");
     exit(1);
   }
-  // FIXME: glfwSwapBuffers hangs with  glfwSwapInterval(1), resulting in app not working in the background
-  // possibly fixed by: https://github.com/glfw/glfw/commit/413ba1dceb77f0d4552d565e7acc69a4379c6df8
+  // FIXME: glfwSwapBuffers hangs with  glfwSwapInterval(1), resulting in app not working
+  // in the background possibly fixed by:
+  // https://github.com/glfw/glfw/commit/413ba1dceb77f0d4552d565e7acc69a4379c6df8
   bool vsync = false;
   glfwSwapInterval(vsync ? 1 : 0);
   glEnable(GL_BLEND);

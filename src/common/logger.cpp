@@ -25,9 +25,7 @@ static std::unordered_set<std::string> filtered_files = {};
 
 void out::add_file_to_blacklist(std::string_view filename) { filtered_files.emplace(filename); }
 
-void out::remove_file_from_blacklist(const std::string& filename) {
-  filtered_files.erase(filename);
-}
+void out::remove_file_from_blacklist(const std::string& filename) { filtered_files.erase(filename); }
 
 void out::detail::print_log(LogLevel level, std::string_view tag, std::string_view message) {
   auto color = color::blue;
@@ -67,9 +65,11 @@ void out::detail::debug_log(LogLevel level, std::string_view message, size_t ski
 
   if (level == CRITICAL) {
     // red text
-    fmt::print("{}{}[{}:{}] {}{}{}{}\n", style::bold, color, filename, line_number, style::normal, color::red, message, color::normal);
+    fmt::print("{}{}[{}:{}] {}{}{}{}\n", style::bold, color, filename, line_number, style::normal, color::red, message,
+               color::normal);
   } else {
     // normal text
-    fmt::print("{}{}[{}:{}] {}{}{}\n", style::bold, color, filename, line_number, color::normal, style::normal, message);
+    fmt::print("{}{}[{}:{}] {}{}{}\n", style::bold, color, filename, line_number, color::normal, style::normal,
+               message);
   }
 }

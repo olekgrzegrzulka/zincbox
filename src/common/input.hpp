@@ -9,7 +9,7 @@ struct GLFWwindow;
 
 namespace Input {
 
-  enum class Key {
+  enum class Key : u16 {
     /* Printable keys */
     KEY_SPACE = 32,
     KEY_APOSTROPHE = 39 /* ' */,
@@ -137,13 +137,13 @@ namespace Input {
     KEY_SIZE = KEY_LAST + 1
   };
 
-  enum class KeyAction {
+  enum class KeyAction : u8 {
     PRESS,
     RELEASE,
     REPEAT,
   };
 
-  enum class MouseButton {
+  enum class MouseButton : u8 {
     MOUSE_BUTTON_LEFT,
     MOUSE_BUTTON_RIGHT,
     MOUSE_BUTTON_MIDDLE,
@@ -155,12 +155,12 @@ namespace Input {
     MOUSE_BUTTON_SIZE,
   };
 
-  enum class MouseAction {
+  enum class MouseAction : u8 {
     PRESS,
     RELEASE,
   };
 
-  enum class Cursor {
+  enum class Cursor : u8 {
     ARROW,
     IBEAM,
     CROSSHAIR,
@@ -208,15 +208,10 @@ namespace Input {
       bool handled = false;
   };
 
-  using InputEvent = std::variant<
-    InputEventMouseButton,
-    InputEventMouseMove,
-    InputEventMouseScroll,
-    InputEventKey,
-    InputEventMouseEntered,
-    InputEventMouseLeft
-    // InputEventCloseWindow
-    >;
+  using InputEvent = std::variant<InputEventMouseButton, InputEventMouseMove, InputEventMouseScroll, InputEventKey,
+                                  InputEventMouseEntered, InputEventMouseLeft
+                                  // InputEventCloseWindow
+                                  >;
 
   void glfw_cursor_position_callback(GLFWwindow*, double x, double y);
   void glfw_mouse_button_callback(GLFWwindow*, i32 button, i32 action, i32 mods);
