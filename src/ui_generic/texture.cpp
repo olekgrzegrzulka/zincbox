@@ -22,7 +22,8 @@ u32 Texture::load_texture(std::string file_path) {
   stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
   if (!data) {
-    debug_error("failed to load texture" + file_path);
+    out::log_critical("failed to load texture {}", file_path);
+    exit(1);
   }
 
   GLuint texture_ = 0;

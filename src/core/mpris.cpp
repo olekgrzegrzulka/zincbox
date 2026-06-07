@@ -1,5 +1,6 @@
 #include "core/mpris.hpp"
 #include <string>
+#include "common/logger.hpp"
 
 #ifndef _WIN32
 #include <map>
@@ -91,7 +92,7 @@ void mpris::init() {
       connection->enterEventLoop();
 
     } catch (const sdbus::Error& e) {
-      debug_warn("d-bus error: ", e.getName(), " - ", e.getMessage());
+      out::log_error("d-bus error: {} - {} ", e.getName(), e.getMessage());
     }
   });
   thread.detach();

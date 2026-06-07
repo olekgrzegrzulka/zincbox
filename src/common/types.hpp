@@ -1,4 +1,6 @@
 #pragma once
+#include <fmt/core.h>
+#include <fmt/format.h>
 #include <glm/common.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -110,7 +112,36 @@ struct rect2i {
     }
 };
 
-enum class BufferMode : i32 {
-  BLEND,
-  ERASE,
+template <typename T, glm::qualifier Q>
+struct fmt::formatter<glm::vec<2, T, Q>> {
+    constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+    auto format(const glm::vec<2, T, Q>& v, fmt::format_context& ctx) const {
+      return fmt::format_to(ctx.out(), "glm::vec2({}, {})", v.x, v.y);
+    }
+};
+
+template <typename T, glm::qualifier Q>
+struct fmt::formatter<glm::vec<3, T, Q>> {
+    constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+    auto format(const glm::vec<3, T, Q>& v, fmt::format_context& ctx) const {
+      return fmt::format_to(ctx.out(), "glm::vec3({}, {}, {})", v.x, v.y, v.z);
+    }
+};
+
+template <typename T, glm::qualifier Q>
+struct fmt::formatter<glm::vec<4, T, Q>> {
+    constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+    auto format(const glm::vec<4, T, Q>& v, fmt::format_context& ctx) const {
+      return fmt::format_to(ctx.out(), "glm::vec4({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+    }
+};
+
+template <>
+struct fmt::formatter<rect2i> {
+    constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+    auto format(const rect2i& r, fmt::format_context& ctx) const {
+      return fmt::format_to(ctx.out(), "rect2i({}, {}, {}, {})",
+                            r.begin.x, r.begin.y,
+                            r.size.x, r.size.y);
+    }
 };

@@ -579,10 +579,7 @@ static void init_atlas() {
 
 static void add_playlist_art_to_texture_atlas(size_t collection_id) {
   i32 count = 0;
-  if (!db::collection_by_id(collection_id).has_value()) {
-    debug_warn("add_playlist_art_to_texture_atlas(): bad collection_id");
-    return;
-  }
+  if (!db::collection_by_id(collection_id).has_value()) { return; }
   for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     std::string playlist_id_str = std::to_string(playlist_id);

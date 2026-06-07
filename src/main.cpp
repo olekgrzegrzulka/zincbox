@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <optional>
 #include <ostream>
@@ -22,6 +21,8 @@
 #include "common/config.hpp"
 #include "common/debug.hpp"
 #include "common/input.hpp"
+#include "common/logger.hpp"
+#include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
 #include "core/mpris.hpp"
@@ -48,7 +49,7 @@ void check_opengl_errors() {
   while ((error = glGetError()) != GL_NO_ERROR) {
     std::stringstream error_hex;
     error_hex << std::hex << error << ": " << get_opengl_error_string(error);
-    debug_warn("GL error 0x", error_hex.str());
+    out::debug_error("GL error 0x{}", error_hex.str());
   }
 }
 
@@ -78,7 +79,6 @@ void set_window_title(GLFWwindow* window) {
 }
 
 int main() {
-  std::cout << std::setprecision(2) << std::fixed << std::showpoint << std::boolalpha;
   NFD::Init();
   mpris::init();
   player::init();
@@ -92,14 +92,14 @@ int main() {
   float volume = std::clamp(config_get_float("volume").value_or(0.5f), 0.0f, 1.0f);
   player::set_volume(volume);
 
-  debug_log("deserialize start");
+  out::debug_info("deserialize start");
   if (std::filesystem::exists(io::get_db_path())) {
     auto s = std::ifstream{io::get_db_path(), std::ifstream::binary};
     db::deserialize(s);
   } else {
     db::create_empty_db();
   }
-  debug_log("deserialize end");
+  out::debug_info("deserialize end");
 
   // libdecor causes lag when resizing the window on Wayland
   // but it's needed for GNOME - so disable only if not needed
@@ -107,14 +107,20 @@ int main() {
   if (std::strstr(xdg_current_desktop, "KDE") != nullptr || std::strstr(xdg_current_desktop, "GNOME") == nullptr) {
     glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR);
   }
-  if (!glfwInit()) { debug_error("Failed to initialzie GLFW"); }
+  if (!glfwInit()) {
+    out::log_critical("failed to initialize GLFW");
+    exit(1);
+  }
   vec2i window_size = {
     std::clamp(config_get_i32("window_width").value_or(800), 480, 1920 * 4),
     std::clamp(config_get_i32("window_height").value_or(600), 320, 1080 * 4),
   };
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "zincbox", NULL, NULL);
-  if (!window) { debug_error("Failed to create window"); }
+  if (!window) {
+    out::log_critical("failed to create window");
+    exit(1);
+  }
   glfwMakeContextCurrent(window);
   glfwSetWindowUserPointer(window, &window_size);
   glfwSetWindowSizeCallback(window, [](GLFWwindow* window_, int width, int height) -> void {
@@ -126,7 +132,10 @@ int main() {
   glfwSetWindowSizeLimits(window, 480, 320, GLFW_DONT_CARE, GLFW_DONT_CARE);
   glfwGetWindowSize(window, &window_size.x, &window_size.y);
   int o = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-  if (o == 0) { debug_error("failed to load GLAD loader"); }
+  if (o == 0) {
+    out::log_critical("failed to load glad");
+    exit(1);
+  }
   // FIXME: glfwSwapBuffers hangs with  glfwSwapInterval(1), resulting in app not working in the background
   // possibly fixed by: https://github.com/glfw/glfw/commit/413ba1dceb77f0d4552d565e7acc69a4379c6df8
   bool vsync = false;
