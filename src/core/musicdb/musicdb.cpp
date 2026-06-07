@@ -45,7 +45,8 @@ void db::create_empty_db() {
 
 void db::serialize(std::ofstream& os) {
   write_bin(os, DB_VERSION);
-  // Initially mark all tracks and playlists as tombstone, and keep track of playlists removed by user
+  // Initially mark all tracks and playlists as tombstone, and keep track of playlists
+  // removed by user
   for (size_t track_id = 0; track_id < tracks.size(); track_id += 1) {
     tracks[track_id].set_tombstone(true);
   }
@@ -93,9 +94,7 @@ void db::serialize(std::ofstream& os) {
 
   size_t nontombstoned_collections_count = 0;
   for (size_t old_collection_id = 0; old_collection_id < collections.size(); old_collection_id += 1) {
-    if (!collections[old_collection_id].is_tombstone()) {
-      nontombstoned_collections_count += 1;
-    }
+    if (!collections[old_collection_id].is_tombstone()) { nontombstoned_collections_count += 1; }
   }
 
   write_bin(os, nontombstoned_collections_count);
@@ -157,9 +156,7 @@ void db::deserialize(std::ifstream& is) {
   }
 
   for (auto& p : playlists) {
-    if (p.type == PlaylistType::Album) {
-      p.sort_by_track_number();
-    }
+    if (p.type == PlaylistType::Album) { p.sort_by_track_number(); }
   }
 }
 
@@ -247,13 +244,12 @@ void visit_directory(size_t collection_id, std::string_view path) {
         io::TrackFile track_file(entry.path());
         if (track_file.is_valid()) {
           Track track = track_file.get_track().value();
-          size_t playlist_id = db::get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
+          size_t playlist_id =
+            db::get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
           album_ids_visited.insert(playlist_id);
           auto track_id = db::add_track_to_playlist(playlist_id, track);
           tracks[track_id].flag_not_found_during_rescan = false;
-          if (playlists[playlist_id].image.empty()) {
-            playlists[playlist_id].image = track_file.get_album_art();
-          }
+          if (playlists[playlist_id].image.empty()) { playlists[playlist_id].image = track_file.get_album_art(); }
         } else {
         }
       } else if (io::is_cover_file(entry) && !cover_file_path.has_value()) {
@@ -265,9 +261,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
   if (cover_file_path.has_value()) {
     for (size_t playlist_id : album_ids_visited) {
       auto& playlist = playlists[playlist_id];
-      if (playlist.image.empty()) {
-        io::add_cover_file(playlist, *cover_file_path);
-      }
+      if (playlist.image.empty()) { io::add_cover_file(playlist, *cover_file_path); }
     }
   }
 }
@@ -283,9 +277,7 @@ bool db::add_path_to_collection(size_t collection_id, std::string_view path) {
 
   for (size_t playlist_id : collection.playlist_ids) {
     auto& playlist = playlists[playlist_id];
-    if (playlist.type == PlaylistType::Album) {
-      playlist.sort_by_track_number();
-    }
+    if (playlist.type == PlaylistType::Album) { playlist.sort_by_track_number(); }
   }
 
   return true;
@@ -301,9 +293,9 @@ bool db::remove_path_from_collection(size_t collection_id, std::string_view path
 }
 
 void db::rescan_collection(size_t collection_id) {
-  if (collection_id >= collections.size() ||
-      collection_id == 0 ||
-      collections[collection_id].is_tombstone()) { return; }
+  if (collection_id >= collections.size() || collection_id == 0 || collections[collection_id].is_tombstone()) {
+    return;
+  }
 
   auto& collection = collections[collection_id];
   auto collection_paths = std::move(collection.paths);
@@ -343,7 +335,7 @@ std::optional<std::reference_wrapper<const Playlist>> db::playlist_by_id(size_t 
   return playlists[id];
 }
 
-std::optional<size_t> db::playlist_id_by_path(fs::path path) {
+std::optional<size_t> db::playlist_id_by_path(const fs::path& path) {
   for (size_t i = 0; i < playlists.size(); i += 1) {
     if (playlists[i].album_path == utf8_to_utf32(path.string())) { return i; }
   }
@@ -362,8 +354,10 @@ const std::vector<Playlist>& db::all_playlists() { return playlists; }
 
 size_t db::playlist_count() { return playlists.size(); }
 
-size_t db::get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist, std::u32string_view file_path) {
-  // if album_name is empty, album name becomes the name of the parent directory of the track file
+size_t db::get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist,
+                        std::u32string_view file_path) {
+  // if album_name is empty, album name becomes the name of the parent directory of the
+  // track file
   if (album_name.empty()) {
     fs::path path(file_path);
     auto album_name_utf32 = (path.parent_path().filename().u32string());
@@ -423,7 +417,7 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
     return *found_track_id;
   }
 
-  auto compare_metadata = [](auto a, auto b) {
+  auto compare_metadata = [](const auto& a, const auto& b) {
     if constexpr (std::is_arithmetic_v<std::decay_t<decltype(a)>> && std::is_arithmetic_v<std::decay_t<decltype(b)>>) {
       return a == b;
     } else {
@@ -439,8 +433,10 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
         bool same_artist = compare_metadata(db::track_by_id(found_track_id)->get().artist, track.artist);
         if (same_artist) {
           i32 similiarity_index = 0;
-          similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().track_number, track.track_number);
-          similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().album_artist, track.album_artist);
+          similiarity_index +=
+            1 * compare_metadata(db::track_by_id(found_track_id)->get().track_number, track.track_number);
+          similiarity_index +=
+            1 * compare_metadata(db::track_by_id(found_track_id)->get().album_artist, track.album_artist);
           similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().genre, track.genre);
           similiarity_index += 1 * compare_metadata(db::track_by_id(found_track_id)->get().year, track.year);
           track_similiarity[similiarity_index] = found_track_id;
@@ -449,7 +445,8 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
     }
 
     if (track_similiarity.size() > 0) {
-      // if we have at least 2 matching metadata fields (and title + artist), consider it the same track
+      // if we have at least 2 matching metadata fields (and title + artist), consider it
+      // the same track
       if (track_similiarity.rbegin()->first >= 2) {
         size_t found_track_id = track_similiarity.rbegin()->second;
         auto& existing_track = tracks[found_track_id];
@@ -473,7 +470,7 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track track) {
   return tracks.size() - 1;
 }
 
-void db::set_playlist_image(size_t playlist_id, std::string image_path) {
+void db::set_playlist_image(size_t playlist_id, std::string_view image_path) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
   playlist.image.clear();
@@ -546,7 +543,8 @@ std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_t
   return result;
 }
 
-std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size) {
+std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_text, size_t collection_id,
+                                                    size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
   std::vector<playlist_info> result;
@@ -567,7 +565,8 @@ std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_t
   return result;
 }
 
-std::vector<size_t> db::search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids, size_t max_size) {
+std::vector<size_t> db::search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids,
+                                         size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
   std::vector<size_t> result;
@@ -593,7 +592,7 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   std::vector<db::track_info> result;
 
   for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
-    auto found_tracks = search_tracks(search_text, collection_id, max_size - result.size());
+    auto found_tracks = search_tracks(query_sanitized, collection_id, max_size - result.size());
     result.insert(result.end(), found_tracks.begin(), found_tracks.end());
     if (result.size() >= max_size) {
       result.resize(max_size);
@@ -619,10 +618,10 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
       auto& track = db::track_by_id(track_id)->get();
       if (track.is_tombstone()) { continue; }
 
-      if (sanitize_and_contains(query_sanitized, track.title) ||
-          sanitize_and_contains(query_sanitized, track.artist) ||
+      if (sanitize_and_contains(query_sanitized, track.title) || sanitize_and_contains(query_sanitized, track.artist) ||
           sanitize_and_contains(query_sanitized, track.album_artist) ||
-          sanitize_and_contains(query_sanitized, utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
+          sanitize_and_contains(query_sanitized,
+                                utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
 
         result.emplace_back(db::track_info{collection_id, playlist_id, track_id});
         if (result.size() >= max_size) { break; }
@@ -635,14 +634,14 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   return result;
 }
 
-std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, std::span<track_info> src, size_t max_size) {
+std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, std::span<track_info> src,
+                                              size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
   std::vector<db::track_info> result;
   for (db::track_info track_info_ : src) {
     auto& track = db::track_by_id(track_info_.track_id)->get();
     if (track.is_tombstone()) { continue; }
-    if (sanitize_and_contains(query_sanitized, track.title) ||
-        sanitize_and_contains(query_sanitized, track.artist) ||
+    if (sanitize_and_contains(query_sanitized, track.title) || sanitize_and_contains(query_sanitized, track.artist) ||
         sanitize_and_contains(query_sanitized, track.album_artist) ||
         sanitize_and_contains(query_sanitized, utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
 

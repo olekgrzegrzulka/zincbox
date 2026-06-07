@@ -13,9 +13,7 @@ PanelQueue::PanelQueue(UI& ui_) : Sprite(ui_, "panel_queue") {
   scrollbar = &add_child<ScrollBar>();
   scrollbar->set_anchor(Anchor::LEFT);
   scrollbar->set_parent_anchor(Anchor::LEFT);
-  scrollbar->on_value_changed([&, this](i32, i32 scroll_offset) {
-    target_scroll_px = scroll_offset;
-  });
+  scrollbar->on_value_changed([&, this](i32, i32 scroll_offset) { target_scroll_px = scroll_offset; });
   scrollbar->set_width(12);
   scrollbar->set_thumb_thickness(12);
   scrollbar->set_track_thickness(12);
@@ -41,9 +39,7 @@ PanelQueue::~PanelQueue() {
   player::signal_on_track_changed.disconnect(slot_on_track_changed);
 }
 
-void PanelQueue::draw() {
-  Sprite::draw();
-}
+void PanelQueue::draw() { Sprite::draw(); }
 
 void PanelQueue::on_view_changed() {
   i32 i = -1;
@@ -66,14 +62,10 @@ void PanelQueue::on_queue_appended_to_back() {
   queue_tracks.emplace_back(track);
 
   track->on_press([this, queue_i, track]() {
-    if (this->on_queue_element_lmb) {
-      this->on_queue_element_lmb(queue_i, track);
-    }
+    if (this->on_queue_element_lmb) { this->on_queue_element_lmb(queue_i, track); }
   });
   track->on_press_rmb([this, queue_i, track]() {
-    if (this->on_queue_element_rmb) {
-      this->on_queue_element_rmb(queue_i, track);
-    }
+    if (this->on_queue_element_rmb) { this->on_queue_element_rmb(queue_i, track); }
   });
 
   max_scroll_px = queue_size * theme::get_prop("tracklist_track_height").as_i32();
@@ -100,14 +92,10 @@ void PanelQueue::on_queue_changed() {
     queue_tracks.emplace_back(track);
 
     track->on_press([this, queue_i, track]() {
-      if (this->on_queue_element_lmb) {
-        this->on_queue_element_lmb(queue_i, track);
-      }
+      if (this->on_queue_element_lmb) { this->on_queue_element_lmb(queue_i, track); }
     });
     track->on_press_rmb([this, queue_i, track]() {
-      if (this->on_queue_element_rmb) {
-        this->on_queue_element_rmb(queue_i, track);
-      }
+      if (this->on_queue_element_rmb) { this->on_queue_element_rmb(queue_i, track); }
     });
 
     auto playing_index = player::get_playing_index();
@@ -123,9 +111,7 @@ void PanelQueue::on_queue_changed() {
 void PanelQueue::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 
-  if ((i32)scroll_px != (i32)old_scroll_px || width != old_width) {
-    on_view_changed();
-  }
+  if ((i32)scroll_px != (i32)old_scroll_px || width != old_width) { on_view_changed(); }
 
   old_scroll_px = scroll_px;
   old_width = width;

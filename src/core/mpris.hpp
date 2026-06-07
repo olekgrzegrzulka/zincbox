@@ -5,16 +5,7 @@
 #include "common/types.hpp"
 
 namespace mpris {
-  enum class CommandType {
-    PLAY,
-    PAUSE,
-    NEXT,
-    PREVIOUS,
-    STOP,
-    SET,
-    SEEK,
-    PLAY_PAUSE
-  };
+  enum class CommandType : u8 { PLAY, PAUSE, NEXT, PREVIOUS, STOP, SET, SEEK, PLAY_PAUSE };
 
   struct Command {
       CommandType type{};
@@ -48,10 +39,7 @@ namespace mpris {
   void notify_playback_status_playing();
   void notify_playback_status_paused();
   void notify_playback_status_stopped();
-  void notify_track_change(std::string title,
-                           std::string artist,
-                           std::string album,
-                           i64 duration_ms);
+  void notify_track_change(std::string title, std::string artist, std::string album, i64 duration_ms);
   void notify_volume(double volume);
   void notify_seeked(i64 position_ms);
 } // namespace mpris

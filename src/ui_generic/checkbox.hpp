@@ -8,13 +8,9 @@
 
 class Checkbox : public Widget {
   public:
-    Checkbox(UI& ui_) : Widget(ui_) {
-      init(U"");
-    }
+    Checkbox(UI& ui_) : Widget(ui_) { init(U""); }
 
-    Checkbox(UI& ui_, std::u32string_view label_text) : Widget(ui_) {
-      init(label_text);
-    }
+    Checkbox(UI& ui_, std::u32string_view label_text) : Widget(ui_) { init(label_text); }
 
     void init(std::u32string_view label_text) {
       uv_checkbox_idle = ui.get_texture_atlas().get("checkbox_idle")->get();
@@ -31,12 +27,8 @@ class Checkbox : public Widget {
       button = &add_child<Button>();
       button->set_is_drawn(false);
       button->set_switch_mode(true);
-      button->on_press([this]() {
-        sprite_check->set_is_drawn(true);
-      });
-      button->on_depress([this]() {
-        sprite_check->set_is_drawn(false);
-      });
+      button->on_press([this]() { sprite_check->set_is_drawn(true); });
+      button->on_depress([this]() { sprite_check->set_is_drawn(false); });
       sprite_checkbox = &add_child<Sprite>("checkbox_idle");
       sprite_checkbox->set_anchor(Anchor::CENTER_LEFT);
       sprite_checkbox->set_parent_anchor(Anchor::CENTER_LEFT);
@@ -45,9 +37,7 @@ class Checkbox : public Widget {
       sprite_check->set_anchor(Anchor::CENTER);
     }
 
-    bool is_checked() const {
-      return sprite_check->get_is_drawn();
-    }
+    bool is_checked() const { return sprite_check->get_is_drawn(); }
 
     void update() override {
       i32 inside_width = sprite_check->get_width() + 6 + label->get_width();

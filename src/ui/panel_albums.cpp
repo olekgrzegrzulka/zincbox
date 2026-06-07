@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cstddef>
 #include <functional>
-#include <sstream>
 #include <string>
 #include <vector>
 #include "common/input.hpp"
@@ -18,16 +17,17 @@
 #include "ui_generic/widget.hpp"
 
 SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id, vec2i cover_size_) : Sprite(ui_) {
-  set_texture(id);
+  set_texture(std::move(id));
   set_size(cover_size_);
   set_nine_slice_margin(0.0f);
 }
 
-WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_) : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
+WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_)
+  : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
   set_clip_children(true);
   set_size(total_size.x, total_size.y);
-  std::stringstream texture_id;
-  auto& sprite_cover = add_child<SpriteAlbumCover>(playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist", cover_size_);
+  auto& sprite_cover = add_child<SpriteAlbumCover>(
+    playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist", cover_size_);
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>();
@@ -63,9 +63,7 @@ void WidgetAlbumCover::update() {
 
   if (is_hovered && label_title->get_text_extents().x > total_size.x + 8) {
     label_title->set_x(label_title->get_x() - 1);
-    if (label_title->get_x() <= -label_title->get_text_extents().x - 8) {
-      label_title->set_x(total_size.x + 8);
-    }
+    if (label_title->get_x() <= -label_title->get_text_extents().x - 8) { label_title->set_x(total_size.x + 8); }
   } else {
     label_title->set_x(0);
   }
@@ -87,9 +85,7 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   scrollbar->set_thumb_thickness(12);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
   scrollbar->set_track_thickness(12);
-  scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) {
-    target_scroll_px = scroll_offset;
-  });
+  scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
   albums_container = &add_child<Widget>();
   albums_container->set_pos(0, 4 + 36 + 4);
@@ -102,17 +98,13 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   panel_search->set_ignore_parents_layout(true);
   button_sort_by = &panel_search->add_child<Button>();
   search_bar = &panel_search->add_child<TextInput>();
-  search_bar->set_on_text_changed([this]() {
-    recreate();
-  });
+  search_bar->set_on_text_changed([this]() { recreate(); });
   button_clear_search = &search_bar->add_child<Button>();
 
   button_sort_by->set_max_width(24);
   button_sort_by->set_max_height(24);
   button_sort_by->on_press([this]() {
-    if (this->on_button_sort_by_pressed) {
-      this->on_button_sort_by_pressed(this->button_sort_by);
-    }
+    if (this->on_button_sort_by_pressed) { this->on_button_sort_by_pressed(this->button_sort_by); }
   });
   auto& img = button_sort_by->add_child<Sprite>("sort_by");
   img.set_parent_anchor(Anchor::CENTER);
@@ -129,14 +121,10 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   button_clear_search->set_anchor(Anchor::RIGHT);
   button_clear_search->set_parent_anchor(Anchor::RIGHT);
 
-  button_clear_search->on_press([this]() {
-    this->search_bar->clear();
-  });
+  button_clear_search->on_press([this]() { this->search_bar->clear(); });
 }
 
-void PanelAlbums::draw() {
-  Sprite::draw();
-}
+void PanelAlbums::draw() { Sprite::draw(); }
 
 void PanelAlbums::clear() {
   for (auto& w : album_widgets) {
@@ -190,35 +178,33 @@ void PanelAlbums::recreate() {
     });
   }
 
-  vec2i cover_widget_size = {props.cover_width + props.cover_min_horizontal_spacing, props.cover_width + props.cover_min_vertical_spacing};
+  vec2i cover_widget_size = {props.cover_width + props.cover_min_horizontal_spacing,
+                             props.cover_width + props.cover_min_vertical_spacing};
   vec2i cover_widget_cover_size = {props.cover_width, props.cover_width};
 
-  std::vector<size_t> playlist_ids_sorted_filtered = db::search_playlists(search_bar->label.get_text(), playlist_ids_sorted, 512);
+  std::vector<size_t> playlist_ids_sorted_filtered =
+    db::search_playlists(search_bar->label.get_text(), playlist_ids_sorted, 512);
 
   for (size_t playlist_id : playlist_ids_sorted_filtered) {
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id, cover_widget_size, cover_widget_cover_size);
+    auto* album_widget =
+      &albums_container->add_child<WidgetAlbumCover>(playlist_id, cover_widget_size, cover_widget_cover_size);
     album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, playlist_id, album_widget]() {
-      if (on_playlist_lmb) {
-        on_playlist_lmb(playlist_id, album_widget);
-      }
+      if (on_playlist_lmb) { on_playlist_lmb(playlist_id, album_widget); }
     });
     album_widget->on_press_rmb([this, playlist_id, album_widget]() {
-      if (on_playlist_rmb) {
-        on_playlist_rmb(playlist_id, album_widget);
-      }
+      if (on_playlist_rmb) { on_playlist_rmb(playlist_id, album_widget); }
     });
   }
 
   if (props.collection_id.has_value() && props.collection_id == 0) {
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(std::nullopt, cover_widget_size, cover_widget_cover_size);
+    auto* album_widget =
+      &albums_container->add_child<WidgetAlbumCover>(std::nullopt, cover_widget_size, cover_widget_cover_size);
     album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, album_widget]() {
-      if (on_add_playlist_button_pressed) {
-        on_add_playlist_button_pressed(album_widget);
-      }
+      if (on_add_playlist_button_pressed) { on_add_playlist_button_pressed(album_widget); }
     });
   }
 
@@ -256,7 +242,8 @@ void PanelAlbums::reflow() {
     }
   }
 
-  // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) / album_covers_in_one_row;
+  // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) /
+  // album_covers_in_one_row;
   i32 content_size = cover_y + cover_total_height + (8 + panel_search->get_height());
   scrollbar->set_content_size(content_size);
   scrollbar->set_page_size(height);
@@ -276,9 +263,7 @@ void PanelAlbums::update() {
   reflow();
   auto albums_container_prev_y = albums_container->get_y();
   albums_container->set_y(props.panel_search_visible ? (4 + panel_search->get_height() + 4) - scroll_px : -scroll_px);
-  if (albums_container_prev_y != albums_container->get_y()) {
-    ui.mark_dirty_recursive(albums_container);
-  }
+  if (albums_container_prev_y != albums_container->get_y()) { ui.mark_dirty_recursive(albums_container); }
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);

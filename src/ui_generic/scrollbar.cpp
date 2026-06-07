@@ -31,13 +31,9 @@ void ScrollBar::recalculate_values() {
   value = std::clamp(value, min_value, max_value);
 }
 
-void ScrollBar::draw() {
-  Slider::draw();
-}
+void ScrollBar::draw() { Slider::draw(); }
 
-void ScrollBar::scroll(float force) {
-  value = std::clamp(value - force * 40, min_value, max_value);
-}
+void ScrollBar::scroll(float force) { value = std::clamp(value - force * 40, min_value, max_value); }
 
 void ScrollBar::event(Input::InputEventMouseScroll& ev) {
   if (!is_dragged && is_mouse_hovering()) {

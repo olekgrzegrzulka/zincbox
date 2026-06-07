@@ -62,14 +62,11 @@ bool play_track() {
 
   ma_result result;
 
-  result = ma_sound_init_from_file(&engine,
-                                   utf32_to_utf8(track.path).c_str(),
-                                   MA_SOUND_FLAG_NO_PITCH,
-                                   NULL,
-                                   NULL,
-                                   &sound);
+  result =
+    ma_sound_init_from_file(&engine, utf32_to_utf8(track.path).c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
   if (result != MA_SUCCESS) {
-    out::log_warning("player::play: ma_sound_init_from_file returned {} for {}", (i32)result, utf32_to_utf8(track.path));
+    out::log_warning("player::play: ma_sound_init_from_file returned {} for {}", (i32)result,
+                     utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -77,7 +74,8 @@ bool play_track() {
   float ret;
   result = ma_sound_get_length_in_seconds(&sound, &ret);
   if (result != MA_SUCCESS) {
-    out::log_warning("player::play: ma_sound_get_length_in_seconds returned {} for {}", (i32)result, utf32_to_utf8(track.path));
+    out::log_warning("player::play: ma_sound_get_length_in_seconds returned {} for {}", (i32)result,
+                     utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -103,17 +101,11 @@ bool play_track() {
   mpris::notify_playback_status_playing();
   mpris::notify_volume(volume);
   if (!track.title.empty() && !track.artist.empty()) {
-    mpris::notify_track_change(
-      utf32_to_utf8(track.title),
-      utf32_to_utf8(track.artist),
-      utf32_to_utf8(playlist.name),
-      track.length_seconds * 1000);
+    mpris::notify_track_change(utf32_to_utf8(track.title), utf32_to_utf8(track.artist), utf32_to_utf8(playlist.name),
+                               track.length_seconds * 1000);
   } else {
-    mpris::notify_track_change(
-      std::filesystem::path(utf32_to_utf8(track.path)).filename().string(),
-      "",
-      utf32_to_utf8(playlist.name),
-      track.length_seconds * 1000);
+    mpris::notify_track_change(std::filesystem::path(utf32_to_utf8(track.path)).filename().string(), "",
+                               utf32_to_utf8(playlist.name), track.length_seconds * 1000);
   }
 
   db::set_track_playback_error(playing->track_id, false);
@@ -121,9 +113,7 @@ bool play_track() {
 }
 
 void player::update() {
-  if (is_at_end() && get_playing().has_value()) {
-    next_track();
-  }
+  if (is_at_end() && get_playing().has_value()) { next_track(); }
 }
 
 bool player::play(playing_t play, bool clear_queue) {
@@ -242,9 +232,7 @@ void player::set_volume(float v) {
   mpris::notify_volume(v);
 }
 
-float player::get_volume() {
-  return volume;
-}
+float player::get_volume() { return volume; }
 
 bool is_in_tracks_history(size_t track_id, i32 from_index, i32 to_index) {
   if (playing_queue.size() == 0) { return false; }
@@ -269,9 +257,7 @@ void player::next_track(i32 tries) {
 
   if (playing_index.value() < playing_queue.size() - 1) {
     playing_index = playing_index.value() + 1;
-    if (!play_track()) {
-      next_track(tries - 1);
-    }
+    if (!play_track()) { next_track(tries - 1); }
     return;
   }
 
@@ -285,12 +271,13 @@ void player::next_track(i32 tries) {
   } else if (shuffle_mode == ShuffleMode::OFF) {
     auto next_track_id = playlist->get().next_track_id(playing.track_id);
     if (next_track_id.has_value()) {
-      bool result = play(player::playing_t{
-                           .collection_id = playing.collection_id,
-                           .playlist_id = playing.playlist_id,
-                           .track_id = next_track_id.value(),
-                         },
-                         false);
+      bool result = play(
+        player::playing_t{
+          .collection_id = playing.collection_id,
+          .playlist_id = playing.playlist_id,
+          .track_id = next_track_id.value(),
+        },
+        false);
       if (!result) {
         next_track(tries - 1);
         return;
@@ -301,12 +288,13 @@ void player::next_track(i32 tries) {
         auto next_playlist = db::playlist_by_id(next_playlist_id.value());
         if (!next_playlist.has_value()) { return; }
         if (next_playlist->get().get_tracks_count() == 0) { return; }
-        bool result = play(player::playing_t{
-                             .collection_id = playing.collection_id,
-                             .playlist_id = next_playlist_id.value(),
-                             .track_id = next_playlist->get().get_track_ids()[0],
-                           },
-                           false);
+        bool result = play(
+          player::playing_t{
+            .collection_id = playing.collection_id,
+            .playlist_id = next_playlist_id.value(),
+            .track_id = next_playlist->get().get_track_ids()[0],
+          },
+          false);
         if (!result) {
           next_track(tries - 1);
           return;
@@ -317,12 +305,13 @@ void player::next_track(i32 tries) {
         out::debug_warning("player::play: empty playlist");
         return;
       }
-      bool result = play(player::playing_t{
-                           .collection_id = playing.collection_id,
-                           .playlist_id = playing.playlist_id,
-                           .track_id = playlist->get().get_track_ids()[0],
-                         },
-                         false);
+      bool result = play(
+        player::playing_t{
+          .collection_id = playing.collection_id,
+          .playlist_id = playing.playlist_id,
+          .track_id = playlist->get().get_track_ids()[0],
+        },
+        false);
       if (!result) {
         next_track(tries - 1);
         return;
@@ -343,17 +332,19 @@ void player::next_track(i32 tries) {
         }
         rand_track_id = rng.pick(std::span{db::playlist_by_id(rand_playlist_id)->get().get_track_ids()});
         i32 last_tracks_to_check = std::clamp(collection_track_count / 2, 0, 30);
-        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check, playing_index.value_or(0))) {
+        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check,
+                                  playing_index.value_or(0))) {
           break;
         }
       }
 
-      bool result = play(player::playing_t{
-                           .collection_id = playing.collection_id,
-                           .playlist_id = rand_playlist_id,
-                           .track_id = rand_track_id,
-                         },
-                         false);
+      bool result = play(
+        player::playing_t{
+          .collection_id = playing.collection_id,
+          .playlist_id = rand_playlist_id,
+          .track_id = rand_track_id,
+        },
+        false);
       if (!result) {
         next_track(tries - 1);
         return;
@@ -362,17 +353,20 @@ void player::next_track(i32 tries) {
       size_t rand_track_id = 0;
       for (i32 shuffle_tries = 10; shuffle_tries > 0; shuffle_tries -= 1) {
         rand_track_id = rng.pick(std::span{db::playlist_by_id(playing.playlist_id)->get().get_track_ids()});
-        i32 last_tracks_to_check = std::clamp((i32)db::playlist_by_id(playing.playlist_id)->get().get_tracks_count() / 2, 0, 30);
-        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check, playing_index.value_or(0))) {
+        i32 last_tracks_to_check =
+          std::clamp((i32)db::playlist_by_id(playing.playlist_id)->get().get_tracks_count() / 2, 0, 30);
+        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check,
+                                  playing_index.value_or(0))) {
           break;
         }
       }
-      bool result = play(player::playing_t{
-                           .collection_id = playing.collection_id,
-                           .playlist_id = playing.playlist_id,
-                           .track_id = rand_track_id,
-                         },
-                         false);
+      bool result = play(
+        player::playing_t{
+          .collection_id = playing.collection_id,
+          .playlist_id = playing.playlist_id,
+          .track_id = rand_track_id,
+        },
+        false);
       if (!result) {
         next_track(tries - 1);
         return;
@@ -386,8 +380,10 @@ void player::next_track(i32 tries) {
     return;
   }
 
-  // debug_warn("player::next_track: couldn't find track with track_id = ", playlist_track_ids[*playing_index]);
-  // debug_warn("player::next_track: couldn't find track on playlist: track_id = ",play.track_id, ", playlist_id: ", play.playlist_id, ", collection_id: ", play.collection_id);
+  // debug_warn("player::next_track: couldn't find track with track_id = ",
+  // playlist_track_ids[*playing_index]); debug_warn("player::next_track: couldn't find
+  // track on playlist: track_id = ",play.track_id, ", playlist_id: ", play.playlist_id,
+  // ", collection_id: ", play.collection_id);
 }
 
 void player::prev_track(i32 tries) {
@@ -474,29 +470,19 @@ i32 player::get_current_time_ms() {
   return ret * 1000.0f;
 }
 
-i32 player::get_total_duration_ms() {
-  return total_duration_ms;
-}
+i32 player::get_total_duration_ms() { return total_duration_ms; }
 
-bool player::is_playing() {
-  return ma_sound_is_playing(&sound);
-}
+bool player::is_playing() { return ma_sound_is_playing(&sound); }
 
-bool player::is_at_end() {
-  return ma_sound_at_end(&sound);
-}
+bool player::is_at_end() { return ma_sound_at_end(&sound); }
 
 std::optional<player::playing_t> player::get_playing() {
   if (!playing_index.has_value()) { return std::nullopt; }
   return playing_queue[playing_index.value()];
 }
 
-const std::vector<player::playing_t>& player::get_playing_queue() {
-  return playing_queue;
-}
-std::optional<size_t> player::get_playing_index() {
-  return playing_index;
-}
+const std::vector<player::playing_t>& player::get_playing_queue() { return playing_queue; }
+std::optional<size_t> player::get_playing_index() { return playing_index; }
 
 void player::set_playing_index(size_t i) {
   if (i >= playing_queue.size()) { return; }
@@ -504,16 +490,8 @@ void player::set_playing_index(size_t i) {
   play_track();
 }
 
-player::ShuffleMode player::get_shuffle_mode() {
-  return shuffle_mode;
-}
-void player::set_shuffle_mode(ShuffleMode s) {
-  shuffle_mode = s;
-}
+player::ShuffleMode player::get_shuffle_mode() { return shuffle_mode; }
+void player::set_shuffle_mode(ShuffleMode s) { shuffle_mode = s; }
 
-player::RepeatMode player::get_repeat_mode() {
-  return repeat_mode;
-}
-void player::set_repeat_mode(RepeatMode r) {
-  repeat_mode = r;
-}
+player::RepeatMode player::get_repeat_mode() { return repeat_mode; }
+void player::set_repeat_mode(RepeatMode r) { repeat_mode = r; }

@@ -10,15 +10,19 @@
 
 class WidgetAlbum : public Widget {
   protected:
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_lmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_rmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index,
+                       WidgetTrack* widget)>
+      on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index,
+                       WidgetTrack* widget)>
+      on_track_rmb{};
     std::vector<WidgetTrack*> track_widgets;
     Signal<>::slot_key slot_on_track_changed;
 
   public:
-    WidgetAlbum(UI& ui_, size_t collection_id, size_t playlist_id_,
-                decltype(on_track_lmb) on_track_lmb_,
-                decltype(on_track_rmb) on_track_rmb_) : Widget(ui_) {
+    WidgetAlbum(UI& ui_, size_t collection_id, size_t playlist_id_, decltype(on_track_lmb) on_track_lmb_,
+                decltype(on_track_rmb) on_track_rmb_)
+      : Widget(ui_) {
       playlist_id = playlist_id_;
       on_track_lmb = on_track_lmb_;
       on_track_rmb = on_track_rmb_;
@@ -53,9 +57,7 @@ class WidgetAlbum : public Widget {
       label_author.set_label_anchor(Anchor::LEFT);
       label_author.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
       label_author.set_x(8);
-      if (playlist.author.empty()) {
-        label_author.set_is_drawn(false);
-      }
+      if (playlist.author.empty()) { label_author.set_is_drawn(false); }
 
       auto& label_name = labels.add_child<Label>();
       label_name.set_text(playlist.name);
@@ -72,12 +74,8 @@ class WidgetAlbum : public Widget {
       buttons.set_layout("rtl m:8 s:6");
       button_play_next = &buttons.add_child<ZincboxButton>("inline_play_next");
       button_play = &buttons.add_child<ZincboxButton>("inline_play");
-      button_play_next->on_press([this, collection_id]() {
-        player::play_playlist(collection_id, playlist_id, false);
-      });
-      button_play->on_press([this, collection_id]() {
-        player::play_playlist(collection_id, playlist_id, true);
-      });
+      button_play_next->on_press([this, collection_id]() { player::play_playlist(collection_id, playlist_id, false); });
+      button_play->on_press([this, collection_id]() { player::play_playlist(collection_id, playlist_id, true); });
 
       bool even = true;
       size_t playlist_track_index = 0;
@@ -86,19 +84,14 @@ class WidgetAlbum : public Widget {
         auto w = &add_child<WidgetTrack>(track_id, playlist_track_index + 1, even);
         track_widgets.emplace_back(w);
         w->on_press([this, collection_id, track_id, playlist_track_index, w]() {
-          if (on_track_lmb) {
-            this->on_track_lmb(collection_id, playlist_id, track_id, playlist_track_index, w);
-          }
+          if (on_track_lmb) { this->on_track_lmb(collection_id, playlist_id, track_id, playlist_track_index, w); }
         });
         w->on_press_rmb([this, collection_id, track_id, playlist_track_index, w]() {
-          if (on_track_rmb) {
-            this->on_track_rmb(collection_id, playlist_id, track_id, playlist_track_index, w);
-          }
+          if (on_track_rmb) { this->on_track_rmb(collection_id, playlist_id, track_id, playlist_track_index, w); }
         });
 
         if (auto playing = player::get_playing()) {
-          w->set_highlighted(w->track_id == playing->track_id &&
-                             playlist_id == playing->playlist_id &&
+          w->set_highlighted(w->track_id == playing->track_id && playlist_id == playing->playlist_id &&
                              collection_id == playing->collection_id);
         }
 
@@ -107,17 +100,14 @@ class WidgetAlbum : public Widget {
 
       slot_on_track_changed = player::signal_on_track_changed.connect([this, collection_id]() {
         for (auto* w : track_widgets) {
-          w->set_highlighted(player::get_playing().has_value() &&
-                             w->track_id == player::get_playing()->track_id &&
+          w->set_highlighted(player::get_playing().has_value() && w->track_id == player::get_playing()->track_id &&
                              playlist_id == player::get_playing()->playlist_id &&
                              collection_id == player::get_playing()->collection_id);
         }
       });
     }
 
-    ~WidgetAlbum() override {
-      player::signal_on_track_changed.disconnect(slot_on_track_changed);
-    }
+    ~WidgetAlbum() override { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
     void update() override {
       set_x(12);

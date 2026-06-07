@@ -6,10 +6,9 @@
 #include "ui.hpp"
 #include "widget.hpp"
 
-Slider::Slider(UI& ui_, SliderOrientation orientation_) : Widget::Widget(ui_),
-                                                          track(add_child<Sprite>()),
-                                                          track_active(track.add_child<Sprite>()),
-                                                          thumb(track.add_child<Sprite>()) {
+Slider::Slider(UI& ui_, SliderOrientation orientation_)
+  : Widget::Widget(ui_), track(add_child<Sprite>()), track_active(track.add_child<Sprite>()),
+    thumb(track.add_child<Sprite>()) {
   orientation = orientation_;
 
   set_size(100, 10);
@@ -74,23 +73,19 @@ void Slider::update() {
   bool mouse_on_thumb = false;
   bool mouse_on_track = false;
   if (orientation == HORIZONTAL) {
-    mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x &&
-                      mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
+    mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x && mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
                       mouse_y >= thumb.get_position(TOP_LEFT).y - drag_area_inflation &&
                       mouse_y <= thumb.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
-    mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x &&
-                      mouse_x <= track.get_position(BOTTOM_RIGHT).x &&
+    mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x && mouse_x <= track.get_position(BOTTOM_RIGHT).x &&
                       mouse_y >= track.get_position(TOP_LEFT).y - drag_area_inflation &&
                       mouse_y <= track.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
   } else {
     mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x - drag_area_inflation &&
                       mouse_x <= thumb.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
-                      mouse_y >= thumb.get_position(TOP_LEFT).y &&
-                      mouse_y <= thumb.get_position(BOTTOM_RIGHT).y);
+                      mouse_y >= thumb.get_position(TOP_LEFT).y && mouse_y <= thumb.get_position(BOTTOM_RIGHT).y);
     mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x - drag_area_inflation &&
                       mouse_x <= track.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
-                      mouse_y >= track.get_position(TOP_LEFT).y &&
-                      mouse_y <= track.get_position(BOTTOM_RIGHT).y);
+                      mouse_y >= track.get_position(TOP_LEFT).y && mouse_y <= track.get_position(BOTTOM_RIGHT).y);
   }
 
   if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
@@ -133,9 +128,7 @@ void Slider::update() {
     drag_ended = true;
   }
 
-  if (drag_ended && lambda_drag_end) {
-    lambda_drag_end(drag_start_value, value);
-  }
+  if (drag_ended && lambda_drag_end) { lambda_drag_end(drag_start_value, value); }
 
   if (is_dragged) {
     thumb.set_uv_start(uv_start_thumb_pressed);
@@ -169,28 +162,19 @@ void Slider::update() {
   }
 
   if (old_value != value) {
-    if (lambda_value_changed) {
-      lambda_value_changed(old_value, value);
-    }
+    if (lambda_value_changed) { lambda_value_changed(old_value, value); }
     old_value = value;
   }
 
   Widget::update();
 }
-void Slider::event(Input::InputEventMouseButton&) {
-}
-void Slider::event(Input::InputEventMouseMove&) {
-}
-void Slider::event(Input::InputEventMouseScroll&) {
-}
-void Slider::event(Input::InputEventKey&) {
-}
-void Slider::event(Input::InputEventMouseEntered&) {
-}
-void Slider::event(Input::InputEventMouseLeft&) {
-}
-void Slider::event(Input::InputEventCloseWindow&) {
-}
+void Slider::event(Input::InputEventMouseButton&) {}
+void Slider::event(Input::InputEventMouseMove&) {}
+void Slider::event(Input::InputEventMouseScroll&) {}
+void Slider::event(Input::InputEventKey&) {}
+void Slider::event(Input::InputEventMouseEntered&) {}
+void Slider::event(Input::InputEventMouseLeft&) {}
+void Slider::event(Input::InputEventCloseWindow&) {}
 
 void Slider::set_texture_thumb_pressed(const std::string& id) {
   auto t_ = ui.get_texture_atlas().get(id);

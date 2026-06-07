@@ -1,9 +1,7 @@
 #include "font_face.hpp"
 #include <algorithm>
-#include <codecvt>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <ft2build.h>
 #include <glm/vec2.hpp>
 #include "common/debug.hpp"
@@ -17,14 +15,13 @@
 // #define STB_IMAGE_WRITE_IMPLEMENTATION
 // #include "stb_image_write.h"
 
-FontFace::FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height) {
+FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_height) {
   if (FT_New_Face(freetype_lib, path.c_str(), 0, &freetype_face)) {
     out::log_critical("failed to load font at {}", path);
     exit(1);
   }
 
-  bool success = (try_creating_glyph_data(256, pixel_height) ||
-                  try_creating_glyph_data(512, pixel_height) ||
+  bool success = (try_creating_glyph_data(256, pixel_height) || try_creating_glyph_data(512, pixel_height) ||
                   try_creating_glyph_data(1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
@@ -46,8 +43,7 @@ FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 p
     exit(1);
   }
 
-  bool success = (try_creating_glyph_data(256, pixel_height) ||
-                  try_creating_glyph_data(512, pixel_height) ||
+  bool success = (try_creating_glyph_data(256, pixel_height) || try_creating_glyph_data(512, pixel_height) ||
                   try_creating_glyph_data(1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
@@ -74,7 +70,8 @@ FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 p
 
     std::vector<u8> texture_data(width * height);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, texture_data.data());
-    stbi_write_png(filename, width, height, channels, texture_data.data(), width * channels);
+    stbi_write_png(filename, width, height, channels, texture_data.data(), width *
+  channels);
   }
  */
 void FontFace::bind(u32 slot) const {
@@ -102,16 +99,7 @@ bool FontFace::try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height)
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glActiveTexture(GL_TEXTURE0);
 
-  glTexImage2D(
-    GL_TEXTURE_2D,
-    0,
-    GL_RED,
-    texture_dimensions,
-    texture_dimensions,
-    0,
-    GL_RED,
-    GL_UNSIGNED_BYTE,
-    nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, texture_dimensions, texture_dimensions, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
 
   glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -150,7 +138,8 @@ bool FontFace::try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height)
 
     // end of texture
     if (current_y + glyph_height >= texture_dimensions) {
-      // debug_warn("texture of size ", texture_dimensions, " is too small to fit the font texture atlas");
+      // debug_warn("texture of size ", texture_dimensions, " is too small to fit the font
+      // texture atlas");
       fail = true;
       break;
     }
@@ -158,16 +147,8 @@ bool FontFace::try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height)
     ensure(current_x >= 0 && current_x + glyph_width < texture_dimensions);
     ensure(current_y >= 0 && current_y + glyph_height < texture_dimensions);
 
-    glTexSubImage2D(
-      GL_TEXTURE_2D,
-      0,
-      current_x,
-      current_y,
-      glyph_width,
-      glyph_height,
-      GL_RED,
-      GL_UNSIGNED_BYTE,
-      freetype_face->glyph->bitmap.buffer);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, current_x, current_y, glyph_width, glyph_height, GL_RED, GL_UNSIGNED_BYTE,
+                    freetype_face->glyph->bitmap.buffer);
 
     float half_pixel = 0.5f / texture_dimensions;
 
@@ -180,9 +161,7 @@ bool FontFace::try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height)
         freetype_face->glyph->bitmap_left,
         freetype_face->glyph->bitmap_top,
       },
-      .advance{
-        freetype_face->glyph->advance.x,
-        freetype_face->glyph->advance.y},
+      .advance{freetype_face->glyph->advance.x, freetype_face->glyph->advance.y},
       .uv_start{
         (current_x + half_pixel) / (float)texture_dimensions,
         (current_y + half_pixel) / (float)texture_dimensions,
@@ -193,7 +172,7 @@ bool FontFace::try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height)
       },
     };
 
-    glyph_map[charcode] = std::move(font_glyph);
+    glyph_map[charcode] = font_glyph;
 
     current_x += glyph_width;
     row_height = std::max(glyph_height, row_height);

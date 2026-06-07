@@ -94,9 +94,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
   volume_bar->set_min_value(0.0f);
   volume_bar->set_max_value(1.0f);
-  volume_bar->on_value_changed([](float, float volume) {
-    player::set_volume(volume);
-  });
+  volume_bar->on_value_changed([](float, float volume) { player::set_volume(volume); });
 
   label_progress = &panel_right.add_child<Label>("0:00 / 0:00");
   label_progress->set_max_width(80);
@@ -148,9 +146,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   });
 
   seekbar->on_drag_ended([](float, float ms) {
-    if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) {
-      player::seek_ms(ms);
-    }
+    if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) { player::seek_ms(ms); }
   });
 
   button_play_pause->on_press([&]() {
@@ -161,17 +157,11 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
     }
   });
 
-  button_stop->on_press([&]() {
-    player::stop();
-  });
+  button_stop->on_press([&]() { player::stop(); });
 
-  button_prev->on_press([&]() {
-    player::prev_track();
-  });
+  button_prev->on_press([&]() { player::prev_track(); });
 
-  button_next->on_press([&]() {
-    player::next_track();
-  });
+  button_next->on_press([&]() { player::next_track(); });
 
   button_repeat->on_press([&button_repeat_img]() {
     auto repeat_mode = player::get_repeat_mode();
@@ -199,19 +189,13 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   });
 }
 
-PanelControls::~PanelControls() {
-  player::signal_on_track_changed.disconnect(slot_on_track_changed);
-}
+PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
 void PanelControls::event(Input::InputEventMouseButton& ev) {
-  if (is_mouse_hovering()) {
-    ev.handled = true;
-  }
+  if (is_mouse_hovering()) { ev.handled = true; }
 
   if (label_track_underline->get_is_drawn() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
-    if (ev.action == Input::MouseAction::PRESS) {
-      label_track_underline_pressed = true;
-    }
+    if (ev.action == Input::MouseAction::PRESS) { label_track_underline_pressed = true; }
     if (ev.action == Input::MouseAction::RELEASE && label_track_underline_pressed) {
       label_track_underline_pressed = false;
       if (on_playing_track_pressed) { on_playing_track_pressed(); }
@@ -259,9 +243,7 @@ void PanelControls::update() {
   seekbar->set_min_value(0);
   seekbar->set_max_value(player::get_total_duration_ms());
 
-  if (!volume_bar->is_being_dragged()) {
-    volume_bar->set_value(player::get_volume(), false);
-  }
+  if (!volume_bar->is_being_dragged()) { volume_bar->set_value(player::get_volume(), false); }
 
   if (seekbar->is_being_dragged()) {
     current_time_s = seekbar->get_value() / 1000;
@@ -288,10 +270,10 @@ void PanelControls::update() {
   label_progress->set_text(ss.str());
   label_progress->set_is_drawn(width > 650);
 
-  label_track_underline->set_is_drawn(label_track->is_mouse_hovering() && Input::get_mouse_x() < label_track->get_position().x + label_track->get_text_extents().x);
-  if (!label_track_underline->get_is_drawn()) {
-    label_track_underline_pressed = false;
-  }
+  label_track_underline->set_is_drawn(label_track->is_mouse_hovering() &&
+                                      Input::get_mouse_x() <
+                                        label_track->get_position().x + label_track->get_text_extents().x);
+  if (!label_track_underline->get_is_drawn()) { label_track_underline_pressed = false; }
 
   if (is_playing != player::is_playing()) {
     is_playing = player::is_playing();

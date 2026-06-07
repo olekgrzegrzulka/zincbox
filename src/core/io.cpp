@@ -27,16 +27,14 @@ namespace fs = std::filesystem;
 std::optional<fs::path> user_data_path;
 
 std::vector<u8> io::resize_album_art_to_64x64(const std::vector<u8>& raw_data) {
-  if (raw_data.empty()) return {};
+  if (raw_data.empty()) { return {}; }
 
   int width, height, channels;
   u8* img = stbi_load_from_memory(raw_data.data(), (int)raw_data.size(), &width, &height, &channels, STBI_rgb_alpha);
-  if (!img) return {};
+  if (!img) { return {}; }
 
   std::vector<u8> resized(64 * 64 * 4);
-  stbir_resize_uint8_linear(img, width, height, 0,
-                            resized.data(), 64, 64, 0,
-                            STBIR_RGBA);
+  stbir_resize_uint8_linear(img, width, height, 0, resized.data(), 64, 64, 0, STBIR_RGBA);
 
   stbi_image_free(img);
   return resized;
@@ -105,23 +103,23 @@ std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
   return {};
 }
 
-bool io::is_cover_file(fs::path path) {
+bool io::is_cover_file(const fs::path& path) {
   auto ext = path.extension();
-  return (ext == ".jpg" || ext == ".JPG" || ext == ".png" || ext == ".PNG" || ext == ".jpeg" || ext == ".JPEG" || ext == ".bmp" || ext == ".BMP" || ext == ".webp" || ext == ".WEBP");
+  return (ext == ".jpg" || ext == ".JPG" || ext == ".png" || ext == ".PNG" || ext == ".jpeg" || ext == ".JPEG" ||
+          ext == ".bmp" || ext == ".BMP" || ext == ".webp" || ext == ".WEBP");
 }
 
-bool io::is_music_file(fs::path path) {
+bool io::is_music_file(const fs::path& path) {
   auto ext = path.extension();
-  return (ext == ".mp3" || ext == ".MP3" || ext == ".flac" || ext == ".FLAC" || ext == ".ogg" || ext == ".OGG" || ext == ".wav" || ext == ".WAV");
+  return (ext == ".mp3" || ext == ".MP3" || ext == ".flac" || ext == ".FLAC" || ext == ".ogg" || ext == ".OGG" ||
+          ext == ".wav" || ext == ".WAV");
 }
 
-io::TrackFile::TrackFile(TrackFile&& other)
-  : track(std::move(other.track)),
-    album_art(std::move(other.album_art)),
-    album_name(std::move(other.album_name)),
+io::TrackFile::TrackFile(TrackFile&& other) noexcept
+  : track(std::move(other.track)), album_art(std::move(other.album_art)), album_name(std::move(other.album_name)),
     album_artist(std::move(other.album_artist)) {}
 
-io::TrackFile& io::TrackFile::operator=(TrackFile&& other) {
+io::TrackFile& io::TrackFile::operator=(TrackFile&& other) noexcept {
   if (this != &other) {
     track = std::move(other.track);
     album_art = std::move(other.album_art);
@@ -131,7 +129,7 @@ io::TrackFile& io::TrackFile::operator=(TrackFile&& other) {
   return *this;
 }
 
-io::TrackFile::TrackFile(fs::path path) {
+io::TrackFile::TrackFile(const fs::path& path) {
   ScopeTimer timer("TrackFile " + std::string(path));
 
   TagLib::FileStream fstream(path.c_str(), true);
@@ -158,39 +156,27 @@ io::TrackFile::TrackFile(fs::path path) {
   album_name = utf8_to_utf32(tag->album().to8Bit(true));
 
   track = db::Track{
-    (i32)tag->track(),
-    utf8_to_utf32(tag->title().to8Bit(true)),
-    utf8_to_utf32(tag->artist().to8Bit(true)),
-    album_artist,
-    utf8_to_utf32(tag->genre().to8Bit(true)),
-    (i32)tag->year(),
-    audio_props->bitrate(),
-    audio_props->lengthInSeconds(),
-    utf8_to_utf32(path.string()),
+    (i32)tag->track(),      utf8_to_utf32(tag->title().to8Bit(true)), utf8_to_utf32(tag->artist().to8Bit(true)),
+    album_artist,           utf8_to_utf32(tag->genre().to8Bit(true)), (i32)tag->year(),
+    audio_props->bitrate(), audio_props->lengthInSeconds(),           utf8_to_utf32(path.string()),
   };
 }
 
 std::vector<u8> io::TrackFile::get_album_art() {
   TagLib::FileStream fstream(utf32_to_utf8(track->path).c_str(), true);
   TagLib::FileRef f(&fstream);
-  if (album_art.empty()) {
-    album_art = fetch_album_art(f);
-  }
+  if (album_art.empty()) { album_art = fetch_album_art(f); }
   return album_art;
 }
 
-bool io::add_cover_file(db::Playlist& playlist, fs::path path) {
-  if (!playlist.image.empty()) {
-    return false;
-  }
+bool io::add_cover_file(db::Playlist& playlist, const fs::path& path) {
+  if (!playlist.image.empty()) { return false; }
   i32 width, height, channels;
   stbi_uc* data = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
   if (!data) { return false; }
   std::vector<u8> data_64x64{};
   data_64x64.resize(64 * 64 * 4);
-  stbir_resize_uint8_linear(data, width, height, 0,
-                            data_64x64.data(), 64, 64, 0,
-                            STBIR_RGBA);
+  stbir_resize_uint8_linear(data, width, height, 0, data_64x64.data(), 64, 64, 0, STBIR_RGBA);
   stbi_image_free(data);
 
   playlist.image = data_64x64;
@@ -206,7 +192,8 @@ fs::path io::get_user_data_path() {
   const std::string path = std::string(getenv("HOME")) + "/Library/Application Support/zincbox/";
 #elif defined(__linux__)
   const char* xdg_data = getenv("XDG_DATA_HOME");
-  const std::string path = (xdg_data ? std::string(xdg_data) : std::string(getenv("HOME")) + "/.local/share") + "/zincbox/";
+  const std::string path =
+    (xdg_data ? std::string(xdg_data) : std::string(getenv("HOME")) + "/.local/share") + "/zincbox/";
 #else
 #error "unknown platform"
 #endif

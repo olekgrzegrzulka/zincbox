@@ -3,12 +3,12 @@
 #include <string>
 #include "common/logger.hpp"
 
-#define ensure(condition)                                        \
-  do {                                                           \
-    if (!(condition)) {                                          \
-      out::debug_critical("Assertion '{}' failed!", #condition); \
-      exit(1);                                                   \
-    }                                                            \
+#define ensure(condition)                                                                                              \
+  do {                                                                                                                 \
+    if (!(condition)) {                                                                                                \
+      out::debug_critical("Assertion '{}' failed!", #condition);                                                       \
+      exit(1);                                                                                                         \
+    }                                                                                                                  \
   } while (false);
 
 struct ScopeTimer {

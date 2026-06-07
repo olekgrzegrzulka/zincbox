@@ -23,13 +23,13 @@ db::Collection::Collection(std::ifstream& is) {
   }
 }
 
-bool db::Collection::add_path(fs::path path) {
+bool db::Collection::add_path(const fs::path& path) {
   if (playlist_ids.size() > 0 && playlist_ids[0] == 0) { return false; }
   paths.emplace(path.string());
   return true;
 }
 
-bool db::Collection::remove_path(fs::path path) {
+bool db::Collection::remove_path(const fs::path& path) {
   if (playlist_ids.size() > 0 && playlist_ids[0] == 0) { return false; }
   return paths.erase(path.string()) > 0;
 }

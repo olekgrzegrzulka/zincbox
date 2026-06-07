@@ -12,9 +12,7 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-Label::Label(UI& ui_) : Widget::Widget(ui_) {
-  set_text_color(theme::get_prop("text_color").as_rgba());
-}
+Label::Label(UI& ui_) : Widget::Widget(ui_) { set_text_color(theme::get_prop("text_color").as_rgba()); }
 
 Label::Label(UI& ui_, std::string_view text_) : Widget::Widget(ui_) {
   set_text_color(theme::get_prop("text_color").as_rgba());
@@ -34,9 +32,7 @@ Label::~Label() {
 }
 
 void Label::set_resize_to_text_extents(bool to) {
-  if (to != resize_to_text_extents) {
-    resize_to_text_extents = to;
-  }
+  if (to != resize_to_text_extents) { resize_to_text_extents = to; }
   if (resize_to_text_extents) {
     set_width(text_extents.x);
     set_height(text_extents.y);
@@ -118,7 +114,8 @@ void Label::update_mesh() {
 
     auto size_screen_uv = vec2f(glyph->size.x, glyph->size.y) / vec2f(window_width_, window_height_);
 
-    auto position_screen_uv = vec2f(pen.x + glyph->bearing.x, pen.y - glyph->bearing.y) / vec2f{window_width_, window_height_};
+    auto position_screen_uv =
+      vec2f(pen.x + glyph->bearing.x, pen.y - glyph->bearing.y) / vec2f{window_width_, window_height_};
 
     auto start = position_screen_uv;
     auto end = start + size_screen_uv;

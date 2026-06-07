@@ -32,8 +32,12 @@ class PanelTracks : public Sprite {
     void create_playlist(size_t playlist_id, i32 album_start_px);
 
   public:
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_lmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index, WidgetTrack* widget)> on_track_rmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index,
+                       WidgetTrack* widget)>
+      on_track_lmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index,
+                       WidgetTrack* widget)>
+      on_track_rmb{};
 
   protected:
     std::optional<size_t> collection_id{};

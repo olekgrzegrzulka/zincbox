@@ -14,7 +14,8 @@ enum class ToolTipPosition {
 
 class ToolTip : public Sprite {
   public:
-    ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16) : Sprite(ui_, "tooltip") {
+    ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
+      : Sprite(ui_, "tooltip") {
       pos = pos_;
       distance = distance_;
       set_ignore_parents_layout(true);
@@ -75,9 +76,7 @@ class ToolTip : public Sprite {
       Sprite::update();
     }
 
-    void draw() override {
-      Sprite::draw();
-    }
+    void draw() override { Sprite::draw(); }
 
   protected:
     Label* label{};

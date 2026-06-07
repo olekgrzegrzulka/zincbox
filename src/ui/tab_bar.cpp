@@ -20,9 +20,7 @@ Tab::Tab(UI& ui_) : Button(ui_), label(add_child<Label>()) {
   set_texture_inactive();
   set_nine_slice_margin(8.0f);
 
-  on_press([&]() {
-    on_active(this);
-  });
+  on_press([&]() { on_active(this); });
 
   on_press_rmb([this]() {
     if (on_right_click) { on_right_click(this); }
@@ -90,9 +88,7 @@ void Tab::event(Input::InputEventMouseButton& ev) {
   bool handled = false;
   if (is_mouse_hovering() && ev.button == MOUSE_BUTTON_LEFT && ev.action == PRESS) {
     handled = true;
-    if (on_drag_start) {
-      on_drag_start(index);
-    }
+    if (on_drag_start) { on_drag_start(index); }
   }
 
   Button::event(ev);
@@ -113,9 +109,7 @@ TabBar::TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
   });
 }
 
-void TabBar::add_tab(tab_info info, bool select) {
-  add_tab(info, tabs.size(), select);
-}
+void TabBar::add_tab(tab_info info, bool select) { add_tab(info, tabs.size(), select); }
 
 void TabBar::add_tab(tab_info info, size_t at, bool select) {
   at = std::min(at, tabs.size());
@@ -152,9 +146,7 @@ void TabBar::add_tab(tab_info info, size_t at, bool select) {
 }
 
 void TabBar::open_tab(i32 id) {
-  if (tab_valid(selected_tab_index) && tabs[selected_tab_index]->id == id) {
-    return;
-  }
+  if (tab_valid(selected_tab_index) && tabs[selected_tab_index]->id == id) { return; }
   auto it = std::find_if(tabs.begin(), tabs.end(), [id](Tab* t) { return t->id == id; });
   if (it != tabs.end()) {
     Tab* t = *it;
@@ -164,9 +156,7 @@ void TabBar::open_tab(i32 id) {
 
 void TabBar::close_tab(i32 id) {
   auto it = std::find_if(tabs.begin(), tabs.end(), [id](Tab* t) { return t->id == id; });
-  if (it != tabs.end()) {
-    tabs.erase(it);
-  }
+  if (it != tabs.end()) { tabs.erase(it); }
 }
 
 void TabBar::close_all_tabs() {
@@ -177,9 +167,7 @@ void TabBar::close_all_tabs() {
 }
 
 void TabBar::update() {
-  if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
-    dragged_tab_index = -1;
-  }
+  if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) { dragged_tab_index = -1; }
 
   i32 mouse_x = Input::get_mouse_x() - x;
   i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - mouse_x - x);
@@ -193,12 +181,8 @@ void TabBar::update() {
       }
       sum += next->get_width();
       if (mouse_x > sum && mouse_x < sum + tabs[dragged_tab_index]->get_width()) {
-        if (selected_tab_index == dragged_tab_index) {
-          selected_tab_index += 1;
-        }
-        if (swap_tabs(dragged_tab_index, dragged_tab_index + 1)) {
-          dragged_tab_index += 1;
-        }
+        if (selected_tab_index == dragged_tab_index) { selected_tab_index += 1; }
+        if (swap_tabs(dragged_tab_index, dragged_tab_index + 1)) { dragged_tab_index += 1; }
       }
     }
     if (dragged_tab_index - 1 >= 0) {
@@ -208,12 +192,8 @@ void TabBar::update() {
         sum += tabs[i]->get_width();
       }
       if (mouse_x > sum && mouse_x < sum + prev->get_width()) {
-        if (selected_tab_index == dragged_tab_index) {
-          selected_tab_index -= 1;
-        }
-        if (swap_tabs(dragged_tab_index, dragged_tab_index - 1)) {
-          dragged_tab_index -= 1;
-        }
+        if (selected_tab_index == dragged_tab_index) { selected_tab_index -= 1; }
+        if (swap_tabs(dragged_tab_index, dragged_tab_index - 1)) { dragged_tab_index -= 1; }
       }
     }
   }
@@ -248,9 +228,7 @@ void TabBar::update_tab_textures(i32 id) {
     t->set_texture_inactive();
   }
   selected_tab_index = id;
-  if (tab_valid(selected_tab_index)) {
-    tabs[selected_tab_index]->set_texture_active();
-  }
+  if (tab_valid(selected_tab_index)) { tabs[selected_tab_index]->set_texture_active(); }
 }
 
 void TabBar::on_tab_drag_start(i32 id) {
@@ -261,9 +239,7 @@ void TabBar::on_tab_drag_start(i32 id) {
   }
 }
 
-bool TabBar::tab_valid(size_t index) const {
-  return index < tabs.size();
-}
+bool TabBar::tab_valid(size_t index) const { return index < tabs.size(); }
 
 bool TabBar::swap_tabs(size_t index_a, size_t index_b) {
   if (!tab_valid(index_a) || !tab_valid(index_a)) { return false; }

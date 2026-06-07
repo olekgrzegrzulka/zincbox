@@ -38,11 +38,12 @@ namespace db {
 
   // playlist getters
   std::optional<std::reference_wrapper<const Playlist>> playlist_by_id(size_t);
-  std::optional<size_t> playlist_id_by_path(fs::path);
+  std::optional<size_t> playlist_id_by_path(const fs::path&);
   std::vector<size_t> playlist_ids_by_name(std::u32string_view);
   const std::vector<Playlist>& all_playlists();
   size_t playlist_count();
-  size_t get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist, std::u32string_view file_path);
+  size_t get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist,
+                      std::u32string_view file_path);
 
   // playlist setters
   void mark_playlist_as_tombstone(size_t);
@@ -50,7 +51,7 @@ namespace db {
   bool remove_track_id_from_playlist(size_t playlist_id, size_t track_id);
   bool remove_track_index_from_playlist(size_t playlist_id, size_t track_index);
   size_t add_track_to_playlist(size_t playlist_id, Track);
-  void set_playlist_image(size_t playlist_id, std::string image_path);
+  void set_playlist_image(size_t playlist_id, std::string_view image_path);
   void reset_playlist_image(size_t playlist_id);
   void rename_playlist(size_t playlist_id, std::u32string_view new_name);
 
@@ -76,7 +77,8 @@ namespace db {
   };
   std::vector<playlist_info> search_playlists(std::u32string_view search_text, size_t max_size);
   std::vector<playlist_info> search_playlists(std::u32string_view search_text, size_t collection_id, size_t max_size);
-  std::vector<size_t> search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids, size_t max_size);
+  std::vector<size_t> search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids,
+                                       size_t max_size);
   std::vector<track_info> search_tracks(std::u32string_view search_text, size_t max_size);
   std::vector<track_info> search_tracks(std::u32string_view search_text, size_t collection_id, size_t max_size);
   std::vector<track_info> search_tracks(std::u32string_view search_text, std::span<track_info> src, size_t max_size);

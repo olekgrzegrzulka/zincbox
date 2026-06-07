@@ -57,9 +57,7 @@ class TextureAtlas {
     std::vector<u8> image;
     struct StringHash {
         using is_transparent = void;
-        size_t operator()(std::string_view sv) const {
-          return std::hash<std::string_view>{}(sv);
-        }
+        size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
     };
     std::unordered_map<std::string, TextureAtlasData, StringHash, std::equal_to<>> textures;
     std::unordered_map<std::string, std::string, StringHash, std::equal_to<>> aliases;

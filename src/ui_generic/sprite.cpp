@@ -6,18 +6,13 @@
 #include "ui.hpp"
 #include "widget.hpp"
 
-Sprite::Sprite(UI& ui_) : Widget(ui_) {
-}
+Sprite::Sprite(UI& ui_) : Widget(ui_) {}
 
-Sprite::Sprite(UI& ui_, i32 width_, i32 height_) : Widget(ui_, width_, height_) {
-}
+Sprite::Sprite(UI& ui_, i32 width_, i32 height_) : Widget(ui_, width_, height_) {}
 
-Sprite::~Sprite() {
-}
+Sprite::~Sprite() {}
 
-void Sprite::update() {
-  Widget::update();
-}
+void Sprite::update() { Widget::update(); }
 
 void Sprite::draw() {
   if (dirty) {
@@ -33,9 +28,7 @@ void Sprite::draw() {
   }
 
   std::reference_wrapper<const Shader> sprite_shader = ui.get_sprite_shader();
-  if (shader.has_value()) {
-    sprite_shader = shader.value();
-  }
+  if (shader.has_value()) { sprite_shader = shader.value(); }
   // auto& widget_texture = ui.get_widget_texture();
 
   sprite_shader.get().use();
@@ -64,10 +57,19 @@ void Sprite::update_mesh() {
   end = end * vec2f(2.0) - vec2f(1.0);
 
   vertices = {
-    vertex_sprite{{start.x, end.y}, {uv_start.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
-    vertex_sprite{{end.x, end.y}, {uv_end.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
-    vertex_sprite{{start.x, start.y}, {uv_start.x, uv_start.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
-    vertex_sprite{{end.x, start.y}, {uv_end.x, uv_start.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
+    vertex_sprite{
+      {start.x, end.y}, {uv_start.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
+    vertex_sprite{
+      {end.x, end.y}, {uv_end.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
+    vertex_sprite{{start.x, start.y},
+                  {uv_start.x, uv_start.y},
+                  nine_slice_margin,
+                  nine_slice_scale,
+                  {width, height},
+                  uv_start,
+                  uv_end},
+    vertex_sprite{
+      {end.x, start.y}, {uv_end.x, uv_start.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
   };
 }
 
@@ -94,10 +96,12 @@ void Sprite::setup_buffers() {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv)));
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, nine_slice_margin)));
+  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite),
+                        (void*)(offsetof(vertex_sprite, nine_slice_margin)));
   glEnableVertexAttribArray(2);
 
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, nine_slice_scale)));
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite),
+                        (void*)(offsetof(vertex_sprite, nine_slice_scale)));
   glEnableVertexAttribArray(3);
 
   glVertexAttribIPointer(4, 2, GL_UNSIGNED_INT, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, widget_size)));
@@ -113,9 +117,7 @@ void Sprite::setup_buffers() {
   glBindVertexArray(0);
 }
 
-TextureAtlas& Sprite::get_texture_atlas() {
-  return ui.get_texture_atlas();
-}
+TextureAtlas& Sprite::get_texture_atlas() { return ui.get_texture_atlas(); }
 
 void Sprite::set_texture(std::string id, bool resize_to_texture_size) {
   auto val = get_texture_atlas().get(id);

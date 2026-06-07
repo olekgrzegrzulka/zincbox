@@ -12,7 +12,9 @@
 
 class Spinner : public TextInput {
   public:
-    Spinner(UI& ui_) : TextInput(ui_), button_label(add_child<Sprite>()), button_increase(add_child<Button>()), button_decrease(add_child<Button>()) {
+    Spinner(UI& ui_)
+      : TextInput(ui_), button_label(add_child<Sprite>()), button_increase(add_child<Button>()),
+        button_decrease(add_child<Button>()) {
 
       button_label.set_texture("spinner_buttons");
       button_label.set_x(-6);
@@ -62,9 +64,7 @@ class Spinner : public TextInput {
 
       try {
         new_value = std::stoi(str);
-      } catch (std::invalid_argument) {
-        new_value = value;
-      } catch (std::out_of_range) {
+      } catch (std::invalid_argument) { new_value = value; } catch (std::out_of_range) {
         if (str.starts_with('-')) {
           new_value = std::numeric_limits<i32>::min();
         } else {
@@ -84,8 +84,10 @@ class Spinner : public TextInput {
       button_increase.set_size(32, height / 2);
       button_decrease.set_size(32, height / 2);
 
-      bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x && Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x;
-      bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y && Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
+      bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x &&
+                               Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x;
+      bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y &&
+                               Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
       auto scroll = Input::get_mouse_scroll();
 
       if (focused && mouse_on_widget_x && mouse_on_widget_y) {
@@ -108,8 +110,10 @@ class Spinner : public TextInput {
         }
       }
 
-      bool increase_pressed = button_increase.is_mouse_hovering() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
-      bool decrease_pressed = button_decrease.is_mouse_hovering() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
+      bool increase_pressed =
+        button_increase.is_mouse_hovering() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
+      bool decrease_pressed =
+        button_decrease.is_mouse_hovering() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
       if (focused) {
         if (increase_pressed != decrease_pressed) {
           if (buttons_clock <= 0) {
@@ -167,9 +171,7 @@ class Spinner : public TextInput {
       on_text_changed();
     }
 
-    void on_value_changed(std::function<void()> lambda_value_changed_) {
-      lambda_value_changed = lambda_value_changed_;
-    }
+    void on_value_changed(std::function<void()> lambda_value_changed_) { lambda_value_changed = lambda_value_changed_; }
 
     void set_min_value(i32 min_value_) {
       if (min_value_ == max_value) { return; }

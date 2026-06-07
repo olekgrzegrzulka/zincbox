@@ -98,9 +98,7 @@ void Button::event(Input::InputEventMouseButton& ev) {
   }
 
   if (mouse_hovering && rmb_held && rmb_released) {
-    if (state != ButtonState::DISABLED && lambda_press_rmb) {
-      lambda_press_rmb();
-    }
+    if (state != ButtonState::DISABLED && lambda_press_rmb) { lambda_press_rmb(); }
     rmb_held = false;
   }
 
@@ -155,12 +153,8 @@ void Button::event(Input::InputEventMouseMove& ev) {
 
   mouse_hovering = is_mouse_hovering(ev.to);
   if (mouse_hovering) {
-    if (!switch_mode && state == IDLE) {
-      set_state(HOVERED);
-    }
-    if (switch_mode && (state == IDLE || state == PRESSED)) {
-      set_state(HOVERED);
-    }
+    if (!switch_mode && state == IDLE) { set_state(HOVERED); }
+    if (switch_mode && (state == IDLE || state == PRESSED)) { set_state(HOVERED); }
   }
 
   if (mouse_hovering && mouse_pressed) {
@@ -181,5 +175,4 @@ void Button::event(Input::InputEventMouseMove& ev) {
   }
 }
 
-void Button::event(Input::InputEventMouseScroll&) {
-}
+void Button::event(Input::InputEventMouseScroll&) {}

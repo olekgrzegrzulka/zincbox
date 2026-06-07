@@ -54,22 +54,14 @@ Shader::Shader(const char* vert, const char* frag) {
 }
 
 Shader::~Shader() {
-  if (vertex_shader != 0) {
-    glDeleteShader(vertex_shader);
-  }
+  if (vertex_shader != 0) { glDeleteShader(vertex_shader); }
 
-  if (fragment_shader != 0) {
-    glDeleteShader(fragment_shader);
-  }
+  if (fragment_shader != 0) { glDeleteShader(fragment_shader); }
 
-  if (shader_program != 0) {
-    glDeleteProgram(shader_program);
-  }
+  if (shader_program != 0) { glDeleteProgram(shader_program); }
 };
 
-void Shader::use() const {
-  glUseProgram(shader_program);
-}
+void Shader::use() const { glUseProgram(shader_program); }
 
 void Shader::set_uniform_u32(std::string name, u32 value) const {
   auto location = get_uniform_location(name);
@@ -194,13 +186,9 @@ u32 Shader::compile_shader(const char* source, i32 type) const {
   return shader;
 }
 
-u32 Shader::compile_vertex_shader(std::string source) const {
-  return compile_shader(source, GL_VERTEX_SHADER);
-}
+u32 Shader::compile_vertex_shader(std::string source) const { return compile_shader(source, GL_VERTEX_SHADER); }
 
-u32 Shader::compile_fragment_shader(std::string source) const {
-  return compile_shader(source, GL_FRAGMENT_SHADER);
-}
+u32 Shader::compile_fragment_shader(std::string source) const { return compile_shader(source, GL_FRAGMENT_SHADER); }
 
 u32 Shader::create_shader_program() const {
   u32 shader_program_ = glCreateProgram();

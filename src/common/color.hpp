@@ -54,18 +54,19 @@ namespace color_utils {
     std::vector<float> nums;
     size_t start = s.find('(');
     size_t end = s.find(')');
-    if (start == std::string::npos || end == std::string::npos) return {};
+    if (start == std::string::npos || end == std::string::npos) { return {}; }
 
     std::string content(s.substr(start + 1, end - start - 1));
     char* p = content.data();
     char* end_ptr = p + content.size();
     while (p < end_ptr) {
-      while (p < end_ptr && (std::isspace(*p) || *p == ','))
-        p++;
-      if (p >= end_ptr) break;
+      while (p < end_ptr && (std::isspace(*p) || *p == ',')) {
+        p += 1;
+      }
+      if (p >= end_ptr) { break; }
       char* next;
       float val = std::strtof(p, &next);
-      if (p == next) break;
+      if (p == next) { break; }
       nums.push_back(val);
       p = next;
     }
@@ -73,17 +74,16 @@ namespace color_utils {
   }
 
   static inline std::optional<rgba> parse_color(std::string_view str) {
-    if (str.empty()) return std::nullopt;
+    if (str.empty()) { return std::nullopt; }
 
     std::string_view hex = str;
-    if (hex[0] == '#') hex.remove_prefix(1);
+    if (hex[0] == '#') { hex.remove_prefix(1); }
 
     if (hex.length() == 6 || hex.length() == 8) {
       uint32_t val = 0;
       auto [ptr, ec] = std::from_chars(hex.data(), hex.data() + hex.length(), val, 16);
       if (ec == std::errc{}) {
-        if (hex.length() == 6)
-          return rgba{u8(val >> 16), u8(val >> 8), u8(val), 255};
+        if (hex.length() == 6) { return rgba{u8(val >> 16), u8(val >> 8), u8(val), 255}; }
         return rgba{u8(val >> 24), u8(val >> 16), u8(val >> 8), u8(val)};
       }
     }
@@ -92,59 +92,53 @@ namespace color_utils {
     bool is_float = str.find('.') != std::string_view::npos;
 
     if (str.starts_with("rgb")) {
-      if (nums.size() < 3) return std::nullopt;
+      if (nums.size() < 3) { return std::nullopt; }
       float alpha = (nums.size() == 4) ? (is_float ? nums[3] : nums[3] / 255.0f) : 1.0f;
-      if (is_float && nums[0] <= 1.0f && nums[1] <= 1.0f && nums[2] <= 1.0f)
-        return rgba{color_utils::to_u8(nums[0]), color_utils::to_u8(nums[1]), color_utils::to_u8(nums[2]), color_utils::to_u8(alpha)};
+      if (is_float && nums[0] <= 1.0f && nums[1] <= 1.0f && nums[2] <= 1.0f) {
+        return rgba{color_utils::to_u8(nums[0]), color_utils::to_u8(nums[1]), color_utils::to_u8(nums[2]),
+                    color_utils::to_u8(alpha)};
+      }
       return rgba{u8(nums[0]), u8(nums[1]), u8(nums[2]), color_utils::to_u8(alpha)};
     }
 
     if (str.starts_with("hsl")) {
-      if (nums.size() < 3) return std::nullopt;
+      if (nums.size() < 3) { return std::nullopt; }
       float h = nums[0], s = nums[1], l = nums[2];
-      if (s > 1.0f) s /= 100.0f;
-      if (l > 1.0f) l /= 100.0f;
+      if (s > 1.0f) { s /= 100.0f; }
+      if (l > 1.0f) { l /= 100.0f; }
       float a = (nums.size() == 4) ? (nums[3] > 1.0f ? nums[3] / 255.0f : nums[3]) : 1.0f;
       return color_utils::hsl_to_rgb(h, s, l, a);
     }
 
     if (str.starts_with("hsv")) {
-      if (nums.size() < 3) return std::nullopt;
+      if (nums.size() < 3) { return std::nullopt; }
       float h = nums[0], s = nums[1], v = nums[2];
-      if (s > 1.0f) s /= 100.0f;
-      if (v > 1.0f) v /= 100.0f;
+      if (s > 1.0f) { s /= 100.0f; }
+      if (v > 1.0f) { v /= 100.0f; }
       float a = (nums.size() == 4) ? (nums[3] > 1.0f ? nums[3] / 255.0f : nums[3]) : 1.0f;
       return color_utils::hsv_to_rgb(h, s, v, a);
     }
 
-    if (str == "transparent") return rgba{0, 0, 0, 0};
-    if (str == "white") return rgba{255, 255, 255, 255};
-    if (str == "black") return rgba{0, 0, 0, 255};
+    if (str == "transparent") { return rgba{0, 0, 0, 0}; }
+    if (str == "white") { return rgba{255, 255, 255, 255}; }
+    if (str == "black") { return rgba{0, 0, 0, 255}; }
 
     return std::nullopt;
   }
 } // namespace color_utils
 
-template <>
-struct fmt::formatter<rgba> {
+template <> struct fmt::formatter<rgba> {
     constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
     auto format(const rgba& c, fmt::format_context& ctx) const {
-      return fmt::format_to(ctx.out(), "rgba({},{},{},{})",
-                            static_cast<u32>(c.r),
-                            static_cast<u32>(c.g),
-                            static_cast<u32>(c.b),
-                            static_cast<u32>(c.a));
+      return fmt::format_to(ctx.out(), "rgba({},{},{},{})", static_cast<u32>(c.r), static_cast<u32>(c.g),
+                            static_cast<u32>(c.b), static_cast<u32>(c.a));
     }
 };
 
-template <>
-struct fmt::formatter<hsva> {
+template <> struct fmt::formatter<hsva> {
     constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
     auto format(const hsva& c, fmt::format_context& ctx) const {
-      return fmt::format_to(ctx.out(), "hsva({}°, {}, {}, {})",
-                            static_cast<i32>(c.h),
-                            static_cast<i32>(c.s),
-                            static_cast<i32>(c.v),
-                            static_cast<i32>(c.a));
+      return fmt::format_to(ctx.out(), "hsva({}°, {}, {}, {})", static_cast<i32>(c.h), static_cast<i32>(c.s),
+                            static_cast<i32>(c.v), static_cast<i32>(c.a));
     }
 };

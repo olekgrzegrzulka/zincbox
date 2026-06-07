@@ -81,9 +81,7 @@ struct rect2i {
           .size = size,
         };
       }
-      return rect2i{.begin = begin, .size = size}
-        .expanded(to.begin)
-        .expanded(to.begin + to.size - vec2i{1, 1});
+      return rect2i{.begin = begin, .size = size}.expanded(to.begin).expanded(to.begin + to.size - vec2i{1, 1});
     }
 
     [[nodiscard]] rect2i intersected(const rect2i& b) const {
@@ -98,50 +96,38 @@ struct rect2i {
 
       vec2i intersect_size = intersect_max - intersect_min;
 
-      if (intersect_size.x <= 0 || intersect_size.y <= 0) {
-        return rect2i{.begin = {0, 0}, .size = {0, 0}};
-      }
+      if (intersect_size.x <= 0 || intersect_size.y <= 0) { return rect2i{.begin = {0, 0}, .size = {0, 0}}; }
 
-      return rect2i{
-        .begin = intersect_min,
-        .size = intersect_size};
+      return rect2i{.begin = intersect_min, .size = intersect_size};
     }
 
-    bool is_empty() const {
-      return size.x <= 0 || size.y <= 0;
-    }
+    bool is_empty() const { return size.x <= 0 || size.y <= 0; }
 };
 
-template <typename T, glm::qualifier Q>
-struct fmt::formatter<glm::vec<2, T, Q>> {
+template <typename T, glm::qualifier Q> struct fmt::formatter<glm::vec<2, T, Q>> {
     constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
     auto format(const glm::vec<2, T, Q>& v, fmt::format_context& ctx) const {
       return fmt::format_to(ctx.out(), "glm::vec2({}, {})", v.x, v.y);
     }
 };
 
-template <typename T, glm::qualifier Q>
-struct fmt::formatter<glm::vec<3, T, Q>> {
+template <typename T, glm::qualifier Q> struct fmt::formatter<glm::vec<3, T, Q>> {
     constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
     auto format(const glm::vec<3, T, Q>& v, fmt::format_context& ctx) const {
       return fmt::format_to(ctx.out(), "glm::vec3({}, {}, {})", v.x, v.y, v.z);
     }
 };
 
-template <typename T, glm::qualifier Q>
-struct fmt::formatter<glm::vec<4, T, Q>> {
+template <typename T, glm::qualifier Q> struct fmt::formatter<glm::vec<4, T, Q>> {
     constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
     auto format(const glm::vec<4, T, Q>& v, fmt::format_context& ctx) const {
       return fmt::format_to(ctx.out(), "glm::vec4({}, {}, {}, {})", v.x, v.y, v.z, v.w);
     }
 };
 
-template <>
-struct fmt::formatter<rect2i> {
+template <> struct fmt::formatter<rect2i> {
     constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
     auto format(const rect2i& r, fmt::format_context& ctx) const {
-      return fmt::format_to(ctx.out(), "rect2i({}, {}, {}, {})",
-                            r.begin.x, r.begin.y,
-                            r.size.x, r.size.y);
+      return fmt::format_to(ctx.out(), "rect2i({}, {}, {}, {})", r.begin.x, r.begin.y, r.size.x, r.size.y);
     }
 };

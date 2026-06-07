@@ -26,9 +26,7 @@ static constexpr u8 resources_zip[] = {
 
 struct StringHash {
     using is_transparent = void;
-    size_t operator()(std::string_view sv) const {
-      return std::hash<std::string_view>{}(sv);
-    }
+    size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
 };
 
 static std::unordered_map<std::string, theme::theme_prop, StringHash, std::equal_to<>> properties;
@@ -37,9 +35,7 @@ static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::eq
 static std::string resources_ttf_path;
 
 theme::theme_prop theme::get_prop(std::string_view prop) {
-  if (auto it = properties.find(prop); it != properties.end()) {
-    return it->second;
-  }
+  if (auto it = properties.find(prop); it != properties.end()) { return it->second; }
   if (!props_not_found.contains(prop)) {
     std::string prop_str(prop);
     props_not_found.emplace(prop_str);
@@ -49,7 +45,8 @@ theme::theme_prop theme::get_prop(std::string_view prop) {
 }
 
 i32 theme::get_button_nine_slice_margin(std::string_view name) {
-  return get_prop(std::string(name) + "_button_nine_slice_margin").as_i32(get_prop("button_nine_slice_margin").as_i32());
+  return get_prop(std::string(name) + "_button_nine_slice_margin")
+    .as_i32(get_prop("button_nine_slice_margin").as_i32());
 }
 
 void load_resources() {
@@ -94,9 +91,7 @@ std::set<std::string> theme::get_themes() {
   return ret;
 }
 
-void theme::load_default_theme(UI& ui) {
-  load_theme("", ui);
-}
+void theme::load_default_theme(UI& ui) { load_theme("", ui); }
 
 void theme::load_theme(std::string_view theme_name, UI& ui) {
   const bool load_theme_from_resources = theme_name == "";
@@ -144,7 +139,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
       out::log_critical("theme.cfg not found");
       exit(1);
     }
-    std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()), resources["theme.cfg"].size());
+    std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()),
+                              resources["theme.cfg"].size());
     ini.from_string(str_theme_cfg);
     if (!ini.contains("theme")) {
       out::log_critical("failed to parse theme.cfg");
@@ -190,7 +186,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
 
   auto& atlas = ui.get_texture_atlas();
 
-  auto atlas_add_texture = [&load_theme_from_resources, &theme_path, &atlas](std::string id, std::vector<std::string> filenames = {}) -> bool {
+  auto atlas_add_texture = [&load_theme_from_resources, &theme_path,
+                            &atlas](std::string id, std::vector<std::string> filenames = {}) -> bool {
     if (filenames.size() == 0) { filenames = {id}; }
     if (!load_theme_from_resources) {
       for (std::string filename : filenames) {

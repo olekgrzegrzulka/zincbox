@@ -15,16 +15,15 @@ class PopupSearch : public Popup {
     using Widget::event;
 
   public:
-    PopupSearch(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_) : Popup(ui_, controller_, on_close_) {
+    PopupSearch(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+      : Popup(ui_, controller_, on_close_) {
       playlist_ids.reserve(MAX_PLAYLISTS);
       found_tracks.reserve(MAX_TRACKS);
 
       get_layout().enabled = false;
 
       search_bar = &add_child<TextInput>();
-      search_bar->set_on_text_changed([this]() {
-        update_search_results();
-      });
+      search_bar->set_on_text_changed([this]() { update_search_results(); });
       search_bar->set_height(22);
       search_bar->set_min_height(22);
       search_bar->set_max_height(22);
@@ -47,9 +46,7 @@ class PopupSearch : public Popup {
       scrollbar->set_track_thickness(12);
       scrollbar->set_max_width(12);
       scrollbar->set_orientation(SliderOrientation::VERTICAL);
-      scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) {
-        target_scroll_px = scroll_offset;
-      });
+      scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
       scrollable_content = &search_results->add_child<Widget>();
 
@@ -79,9 +76,7 @@ class PopupSearch : public Popup {
 
     void update_search_results() {
       auto new_search_text = sanitize_query(search_bar->label.get_text());
-      if (search_text == new_search_text) {
-        return;
-      }
+      if (search_text == new_search_text) { return; }
 
       search_text = new_search_text;
       playlist_ids.clear();
@@ -121,7 +116,8 @@ class PopupSearch : public Popup {
         if (on_playlist_rmb) { on_playlist_rmb(playlist_id, w); }
       };
       if (playlist_ids.size() > 0) {
-        albums_container->set_height((((48 + 12) * playlist_ids.size()) / albums_container->get_width() + 1) * (48 + 32));
+        albums_container->set_height((((48 + 12) * playlist_ids.size()) / albums_container->get_width() + 1) *
+                                     (48 + 32));
       } else {
         albums_container->set_height(0);
       }
@@ -136,8 +132,12 @@ class PopupSearch : public Popup {
         auto* w = &tracks_container->add_child<WidgetTrack>(t.track_id, i, i % 2 == 0);
         w->set_min_height(track_height);
         w->set_max_height(track_height);
-        w->on_press([this, t, w]() {if (on_track_lmb) {on_track_lmb(t.collection_id, t.playlist_id, t.track_id, w);} });
-        w->on_press_rmb([this, t, w]() {if (on_track_rmb) {on_track_rmb(t.collection_id, t.playlist_id, t.track_id, w);} });
+        w->on_press([this, t, w]() {
+          if (on_track_lmb) { on_track_lmb(t.collection_id, t.playlist_id, t.track_id, w); }
+        });
+        w->on_press_rmb([this, t, w]() {
+          if (on_track_rmb) { on_track_rmb(t.collection_id, t.playlist_id, t.track_id, w); }
+        });
         i += 1;
       }
 

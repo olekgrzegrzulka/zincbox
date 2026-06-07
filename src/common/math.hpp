@@ -6,13 +6,11 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-template <class T>
-static constexpr T manhattan_distance(glm::vec<2, T> first, glm::vec<2, T> second) {
+template <class T> static constexpr T manhattan_distance(glm::vec<2, T> first, glm::vec<2, T> second) {
   return std::abs(first.x - second.x) + std::abs(first.y - second.y);
 }
 
-template <class T>
-static constexpr T manhattan_distance(glm::vec<3, T> first, glm::vec<3, T> second) {
+template <class T> static constexpr T manhattan_distance(glm::vec<3, T> first, glm::vec<3, T> second) {
   return std::abs(first.x - second.x) + std::abs(first.y - second.y) + std::abs(first.z - second.z);
 }
 
@@ -26,9 +24,9 @@ static void sort_vector_by_manhattan_distance(std::vector<glm::vec<3, T>>& vecto
   });
 }
 
-// Adapted from https://github.com/godotengine/godot/blob/0eadbdb5d0709e4e557e52377fa075d3e2f0ad1f/core/math/math_funcs.h#L511
-template <class T>
-constexpr T wrapi(T value, T min, T max) {
+// Adapted from
+// https://github.com/godotengine/godot/blob/0eadbdb5d0709e4e557e52377fa075d3e2f0ad1f/core/math/math_funcs.h#L511
+template <class T> constexpr T wrapi(T value, T min, T max) {
   T range = max - min;
   return range == 0 ? min : min + ((((value - min) % range) + range) % range);
 }

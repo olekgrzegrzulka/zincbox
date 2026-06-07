@@ -13,9 +13,7 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   scrollbar = &add_child<ScrollBar>();
   scrollbar->set_anchor(Anchor::LEFT);
   scrollbar->set_parent_anchor(Anchor::LEFT);
-  scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) {
-    target_scroll_px = scroll_offset;
-  });
+  scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
   scrollbar->set_width(12);
   scrollbar->set_thumb_thickness(12);
   scrollbar->set_track_thickness(12);
@@ -31,9 +29,7 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   button_play_next_tooltip->set_anchor(Anchor::TOP_LEFT);
 }
 
-void PanelTracks::draw() {
-  Sprite::draw();
-}
+void PanelTracks::draw() { Sprite::draw(); }
 
 void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
   for (auto [scroll, playlist_id] : album_scroll_px) {
@@ -51,7 +47,8 @@ void PanelTracks::scroll_to_track(size_t target_playlist_id, size_t target_track
       if (!playlist.has_value()) { return; }
       for (size_t track_index = 0; track_index < playlist->get().track_ids.size(); track_index += 1) {
         if (playlist->get().track_ids[track_index] == target_track_id) {
-          scrollbar->set_scroll_offset(scroll + track_index * theme::get_prop("tracklist_track_height").as_i32() + theme::get_prop("tracklist_playlist_header_height").as_i32());
+          scrollbar->set_scroll_offset(scroll + track_index * theme::get_prop("tracklist_track_height").as_i32() +
+                                       theme::get_prop("tracklist_playlist_header_height").as_i32());
           return;
         }
       }
@@ -118,9 +115,7 @@ void PanelTracks::clear() {
   visible_album_widgets.clear();
 }
 
-float PanelTracks::get_scroll_px() const {
-  return target_scroll_px;
-}
+float PanelTracks::get_scroll_px() const { return target_scroll_px; }
 
 void PanelTracks::set_scroll_px(float px) {
   scroll_px = px;
@@ -142,7 +137,8 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
     auto& album = db::playlist_by_id(album_id)->get();
     if (album.is_tombstone()) { continue; }
     album_scroll_px.emplace_back(max_scroll_px, album_id);
-    max_scroll_px += theme::get_prop("tracklist_playlist_header_height").as_i32() + theme::get_prop("tracklist_track_height").as_i32() * album.get_tracks_count();
+    max_scroll_px += theme::get_prop("tracklist_playlist_header_height").as_i32() +
+                     theme::get_prop("tracklist_track_height").as_i32() * album.get_tracks_count();
   }
 
   scrollbar->set_content_size(max_scroll_px);
@@ -154,9 +150,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   for (i32 i = 0; i < (i32)album_scroll_px.size(); i += 1) {
     i32 album_start_px = album_scroll_px[i].first;
     i32 album_end_px = max_scroll_px;
-    if (i + 1 < (i32)album_scroll_px.size()) {
-      album_end_px = album_scroll_px[i + 1].first;
-    }
+    if (i + 1 < (i32)album_scroll_px.size()) { album_end_px = album_scroll_px[i + 1].first; }
 
     i32 view_start_px = scroll_px;
     i32 view_end_px = scroll_px + get_height();
@@ -167,9 +161,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   }
 
   for (auto& w : visible_album_widgets) {
-    if (!w->passed_visibility_test) {
-      w->set_marked_for_deletion(true);
-    }
+    if (!w->passed_visibility_test) { w->set_marked_for_deletion(true); }
   }
 
   std::erase_if(visible_album_widgets, [](auto&& w) { return !w->passed_visibility_test; });

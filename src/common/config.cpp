@@ -11,33 +11,20 @@
 
 struct string_hash {
     using is_transparent = void;
-    [[nodiscard]] size_t operator()(const char* txt) const {
-      return std::hash<std::string_view>{}(txt);
-    }
-    [[nodiscard]] size_t operator()(std::string_view txt) const {
-      return std::hash<std::string_view>{}(txt);
-    }
-    [[nodiscard]] size_t operator()(const std::string& txt) const {
-      return std::hash<std::string>{}(txt);
-    }
+    [[nodiscard]] size_t operator()(const char* txt) const { return std::hash<std::string_view>{}(txt); }
+    [[nodiscard]] size_t operator()(std::string_view txt) const { return std::hash<std::string_view>{}(txt); }
+    [[nodiscard]] size_t operator()(const std::string& txt) const { return std::hash<std::string>{}(txt); }
 };
 
 std::unordered_map<std::string, ConfigValue, string_hash, std::equal_to<>> map{};
 
-void config_set_i32(std::string_view key, i32 value) {
-  map[std::string{key}] = ConfigValue{value};
-}
+void config_set_i32(std::string_view key, i32 value) { map[std::string{key}] = ConfigValue{value}; }
 
-void config_set_float(std::string_view key, float value) {
-  map[std::string{key}] = ConfigValue{value};
-}
+void config_set_float(std::string_view key, float value) { map[std::string{key}] = ConfigValue{value}; }
 
-void config_set_string(std::string_view key, std::string value) {
-  map[std::string{key}] = ConfigValue{value};
-}
+void config_set_string(std::string_view key, std::string value) { map[std::string{key}] = ConfigValue{value}; }
 
-template <class T>
-std::optional<T> config_get(std::string_view key) {
+template <class T> std::optional<T> config_get(std::string_view key) {
   if (auto v = map.find(key); v != map.end() && std::holds_alternative<T>(v->second)) {
     return std::get<T>(v->second);
   } else {
@@ -62,7 +49,7 @@ void config_get_string_if_set(std::string_view key, std::string& out) {
   if (value.has_value()) { out = *value; }
 }
 
-void config_save_to_file(std::string file) {
+void config_save_to_file(const std::string& file) {
   std::ofstream stream{file};
   for (auto& v : map) {
     std::stringstream ss;
@@ -74,7 +61,7 @@ void config_save_to_file(std::string file) {
     stream.write(str.c_str(), str.size());
   }
 }
-void config_load_from_file(std::string file) {
+void config_load_from_file(const std::string& file) {
   std::ifstream stream{file};
   if (!stream.is_open()) {
     std::ofstream ofstream{file};
@@ -89,7 +76,7 @@ void config_load_from_file(std::string file) {
   bool insert_to_map = false;
   std::string* src = &key;
 
-  auto insert_ = [](std::string_view key_, std::string value_str_) {
+  auto insert_ = [](std::string_view key_, const std::string& value_str_) {
     try {
       if (value_str_.find('.') != std::string::npos) {
         float value = std::stof(value_str_, nullptr);
@@ -98,9 +85,7 @@ void config_load_from_file(std::string file) {
         i32 value = std::stoi(value_str_, nullptr);
         config_set_i32(key_, value);
       }
-    } catch (std::exception&) {
-      config_set_string(key_, value_str_);
-    }
+    } catch (std::exception&) { config_set_string(key_, value_str_); }
   };
 
   for (size_t i = 0; i < config.size(); i += 1) {

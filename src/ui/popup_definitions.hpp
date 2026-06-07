@@ -55,7 +55,8 @@ class PopupInput : public Popup {
 
 class PopupConfirm : public Popup {
   public:
-    PopupConfirm(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_, std::u32string_view content_)
+    PopupConfirm(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
+                 std::u32string_view content_)
       : Popup(ui_, controller_, on_close_) {
       set_layout("ttb fill fit expand m:8 s:8");
 
@@ -100,7 +101,8 @@ class PopupConfirm : public Popup {
 
 class PopupImportFolders : public Popup {
   public:
-    PopupImportFolders(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_, std::span<std::string> dropped_directories)
+    PopupImportFolders(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
+                       std::span<std::string> dropped_directories)
       : Popup(ui_, controller_, on_close_) {
 
       set_layout("ttb expand fit fill m:8 s:8");
@@ -314,9 +316,7 @@ class PopupAddToPlaylist : public Popup {
       playlists_view->set_parent_anchor(Anchor::CENTER);
 
       playlists_view->on_playlist_lmb = [this](size_t playlist_id, Widget*) {
-        if (on_playlist_selected) {
-          on_playlist_selected(playlist_id);
-        }
+        if (on_playlist_selected) { on_playlist_selected(playlist_id); }
         close();
       };
 
@@ -330,9 +330,7 @@ class PopupAddToPlaylist : public Popup {
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
       btn_cancel = &buttons->add_child<Button>(U"Cancel");
-      btn_cancel->on_press([this]() {
-        close();
-      });
+      btn_cancel->on_press([this]() { close(); });
 
       set_width(playlists_view->get_width() + 16);
       set_height(playlists_view->get_height() + 100);

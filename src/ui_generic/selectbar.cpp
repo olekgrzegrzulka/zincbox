@@ -12,13 +12,9 @@ SelectBar::SelectBar(UI& ui_, Orientation orientation) : Sprite(ui_), highlight(
   highlight.set_ignore_parents_layout(true);
   highlight.set_is_drawn(false);
 
-  auto dir = (orientation == Orientation::HORIZONTAL)
-               ? LayoutDirection::LEFT_TO_RIGHT
-               : LayoutDirection::TOP_TO_BOTTOM;
+  auto dir = (orientation == Orientation::HORIZONTAL) ? LayoutDirection::LEFT_TO_RIGHT : LayoutDirection::TOP_TO_BOTTOM;
 
-  bool fill = (orientation == Orientation::HORIZONTAL)
-                ? true
-                : false;
+  bool fill = (orientation == Orientation::HORIZONTAL) ? true : false;
 
   get_layout() = {
     .enabled = true,
@@ -38,9 +34,7 @@ Button& SelectBar::add_option(std::string label) {
   options.push_back(&btn);
   i32 index = options.size() - 1;
 
-  btn.on_press([this, index]() {
-    select(index);
-  });
+  btn.on_press([this, index]() { select(index); });
 
   if (options.size() == 1) {
     select(0);
@@ -63,9 +57,7 @@ void SelectBar::select(i32 index, bool animation) {
     anim_progress = animation ? 0.0f : 1.0f;
 
     selected_index = index;
-    if (lambda_change) {
-      lambda_change(selected_index);
-    }
+    if (lambda_change) { lambda_change(selected_index); }
   }
 }
 
@@ -74,9 +66,7 @@ void SelectBar::update() {
 
   if (options.empty()) { return; }
 
-  if (anim_progress < 1.0f) {
-    anim_progress = std::min(1.0f, anim_progress + 0.25f);
-  }
+  if (anim_progress < 1.0f) { anim_progress = std::min(1.0f, anim_progress + 0.25f); }
 
   for (i32 i = 0; i < (i32)options.size(); i += 1) {
     options[i]->set_is_self_drawn(i != selected_index && anim_progress >= 1.0f);

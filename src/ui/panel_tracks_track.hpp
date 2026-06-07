@@ -114,9 +114,7 @@ class WidgetTrack : public Button {
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
       }
 
-      if (!hover) {
-        hover = &add_child<Sprite>("track_hovered");
-      }
+      if (!hover) { hover = &add_child<Sprite>("track_hovered"); }
 
       set_playback_error(track.is_playback_error());
       update_text_colors();

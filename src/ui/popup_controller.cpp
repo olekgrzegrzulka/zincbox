@@ -25,8 +25,7 @@ void PopupController::on_dimmer_pressed() {
   popovers.clear();
 }
 
-void PopupController::on_dimmer_enter_pressed() {
-}
+void PopupController::on_dimmer_enter_pressed() {}
 
 void PopupController::on_dimmer_escape_pressed() {
   for (auto [_, p] : popovers) {
@@ -97,9 +96,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
   }
 };
 
-bool PopupController::is_popup_open() const {
-  return popups->get_children().size() > 0;
-}
+bool PopupController::is_popup_open() const { return popups->get_children().size() > 0; }
 
 void PopupController::close_all_popups() {
   for (auto [popup_id, popup] : popovers) {
@@ -119,9 +116,7 @@ void PopupController::input() {
     w->input();
   }
 
-  std::erase_if(popovers, [](const auto& item) {
-    return item.second == nullptr;
-  });
+  std::erase_if(popovers, [](const auto& item) { return item.second == nullptr; });
 
   if (dimmer.get_is_updated()) { dimmer.input(); }
 }

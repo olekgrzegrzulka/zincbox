@@ -36,12 +36,7 @@ class WidgetAlbumCover : public Button {
 
 class PanelAlbums : public Sprite {
   public:
-    enum class SortBy {
-      NAME_AZ,
-      NAME_ZA,
-      AUTHOR_AZ,
-      AUTHOR_ZA,
-    };
+    enum class SortBy : u8 { NAME_AZ, NAME_ZA, AUTHOR_AZ, AUTHOR_ZA };
 
   public:
     PanelAlbums(UI& ui_);

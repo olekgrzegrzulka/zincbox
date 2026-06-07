@@ -34,7 +34,9 @@ class ComboBoxItem : public Button {
 
 class ComboBox : public Sprite {
   public:
-    ComboBox(UI& ui_) : Sprite(ui_), button(add_child<Button>()), button_icon(add_child<Sprite>()), dropdown_bg(add_child<Panel>(Panel::Rectangular)), label_item(add_child<Label>()) {
+    ComboBox(UI& ui_)
+      : Sprite(ui_), button(add_child<Button>()), button_icon(add_child<Sprite>()),
+        dropdown_bg(add_child<Panel>(Panel::Rectangular)), label_item(add_child<Label>()) {
       set_size(64, 24);
       set_texture("combo_box", false);
       set_nine_slice_margin(2);
@@ -79,7 +81,8 @@ class ComboBox : public Sprite {
     void update() override {
       Sprite::update();
 
-      target_scroll_progress = std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, item_labels.size() - item_widgets.size() + 1));
+      target_scroll_progress =
+        std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, item_labels.size() - item_widgets.size() + 1));
 
       if (std::abs(scroll_progress - target_scroll_progress) > 0.02f) {
         scroll_progress = std::lerp(scroll_progress, target_scroll_progress, 0.4f);
@@ -120,7 +123,8 @@ class ComboBox : public Sprite {
         }
       }
 
-      i32 dropdown_height = 2 * dropdown_padding + (item_height + dropdown_padding) * std::min<i32>(item_labels.size(), dropdown_max_length);
+      i32 dropdown_height = 2 * dropdown_padding +
+                            (item_height + dropdown_padding) * std::min<i32>(item_labels.size(), dropdown_max_length);
       float dropdown_animation_eased = std::sin(std::numbers::pi * (dropdown_animation_progress - 0.5f)) * 0.5 + 0.5;
       if (dropdown_state == DropDownState::APPEARING) {
         dropdown_height = std::lerp(0, dropdown_height, dropdown_animation_eased);
@@ -136,21 +140,13 @@ class ComboBox : public Sprite {
       // debug_warn(items_to_draw);
     }
 
-    void draw() override {
-      Sprite::draw();
-    }
+    void draw() override { Sprite::draw(); }
 
-    void on_item_selected(std::function<void(i32)> lambda_select_) {
-      lambda_select = lambda_select_;
-    }
+    void on_item_selected(std::function<void(i32)> lambda_select_) { lambda_select = lambda_select_; }
 
-    void add_item(std::string label) {
-      item_labels.emplace_back(label);
-    }
+    void add_item(std::string label) { item_labels.emplace_back(label); }
 
-    std::string get_selected_item() const {
-      return label_item.get_text();
-    }
+    std::string get_selected_item() const { return label_item.get_text(); }
 
   protected:
     void on_button_pressed() {
@@ -171,9 +167,7 @@ class ComboBox : public Sprite {
       label_item.set_text(item_labels[label_i]);
       button.press();
 
-      if (lambda_select) {
-        lambda_select(label_i);
-      }
+      if (lambda_select) { lambda_select(label_i); }
     }
 
   protected:
@@ -188,18 +182,14 @@ class ComboBox : public Sprite {
     i32 dropdown_padding = 1;
     static constexpr i32 dropdown_max_length = 10;
 
-    enum class DropDownState {
-      HIDDEN,
-      APPEARING,
-      DISAPPEARING,
-      VISIBLE
-    };
+    enum class DropDownState { HIDDEN, APPEARING, DISAPPEARING, VISIBLE };
     DropDownState dropdown_state = ComboBox::DropDownState::HIDDEN;
     float dropdown_animation_progress = 0.0;
     float target_scroll_progress = 0.0;
     float scroll_progress = 0.0; // 1.0 per one item scrolled
 
-    std::array<ComboBoxItem*, dropdown_max_length + 1> item_widgets; // +1 to accomodate for partially visible extra item
+    std::array<ComboBoxItem*, dropdown_max_length + 1>
+      item_widgets; // +1 to accomodate for partially visible extra item
     std::vector<std::string> item_labels;
 
   public:

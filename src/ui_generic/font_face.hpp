@@ -24,7 +24,7 @@ class FontFace {
   public:
     FontFace() = default;
 
-    FontFace(FT_Library& freetype_lib, std::string path, i32 pixel_height);
+    FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_height);
     FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height);
 
     void bind(u32 slot) const;

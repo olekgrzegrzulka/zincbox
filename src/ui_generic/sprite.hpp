@@ -36,9 +36,7 @@ class Sprite : public Widget {
 
   public:
     Sprite(UI& ui_);
-    Sprite(UI& ui_, std::string id_) : Widget(ui_) {
-      set_texture(id_, true);
-    }
+    Sprite(UI& ui_, std::string id_) : Widget(ui_) { set_texture(id_, true); }
     Sprite(UI& ui_, i32 width_, i32 height_);
 
     ~Sprite() override;

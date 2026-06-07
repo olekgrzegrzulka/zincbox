@@ -11,30 +11,25 @@
 
 class UI;
 
-#define WIDGET_DEF_SETTER_DIRTY(field)         \
-  void set_##field(decltype(field) field##_) { \
-    if (field == field##_) { return; }         \
-    field = field##_;                          \
-    dirty = true;                              \
+#define WIDGET_DEF_SETTER_DIRTY(field)                                                                                 \
+  void set_##field(decltype(field) field##_) {                                                                         \
+    if ((field) == field##_) { return; }                                                                               \
+    (field) = field##_;                                                                                                \
+    dirty = true;                                                                                                      \
   }
 
-#define WIDGET_DEF_SETTER(field)               \
-  void set_##field(decltype(field) field##_) { \
-    if (field == field##_) { return; }         \
-    field = field##_;                          \
+#define WIDGET_DEF_SETTER(field)                                                                                       \
+  void set_##field(decltype(field) field##_) {                                                                         \
+    if ((field) == field##_) { return; }                                                                               \
+    (field) = field##_;                                                                                                \
   }
 
-#define WIDGET_DEF_GETTER(field) \
+#define WIDGET_DEF_GETTER(field)                                                                                       \
   decltype(field) get_##field() const { return field; }
 
-enum class LayoutDirection {
-  LEFT_TO_RIGHT,
-  RIGHT_TO_LEFT,
-  TOP_TO_BOTTOM,
-  BOTTOM_TO_TOP,
-};
+enum class LayoutDirection : u8 { LEFT_TO_RIGHT, RIGHT_TO_LEFT, TOP_TO_BOTTOM, BOTTOM_TO_TOP };
 
-enum class Anchor {
+enum class Anchor : u8 {
   TOP_LEFT,
   TOP_CENTER,
   TOP_RIGHT,
@@ -167,7 +162,10 @@ class Widget {
     vec2i get_position(Anchor relative_to = Anchor::TOP_LEFT) const;
 
     WIDGET_DEF_GETTER(name);
-    WIDGET_DEF_SETTER(name);
+    void set_name(std::string name_) {
+      if (name == name_) { return; }
+      name = std::move(name_);
+    }
     WIDGET_DEF_SETTER(marked_for_deletion)
     WIDGET_DEF_SETTER_DIRTY(is_updated)
     WIDGET_DEF_SETTER_DIRTY(x)
@@ -190,18 +188,14 @@ class Widget {
       if (is_drawn == to) { return; }
       is_drawn = to;
       mark_dirty();
-      if (parent) {
-        parent->mark_dirty();
-      }
+      if (parent) { parent->mark_dirty(); }
     }
 
     void set_ignore_parents_layout(bool to) {
       if (ignore_parents_layout == to) { return; }
       ignore_parents_layout = to;
       mark_dirty();
-      if (parent) {
-        parent->mark_dirty();
-      }
+      if (parent) { parent->mark_dirty(); }
     }
 
     WIDGET_DEF_SETTER_DIRTY(is_drawn_on_top)
@@ -252,15 +246,12 @@ class Widget {
     void set_size(i32 w, i32 h);
     void set_size(vec2i);
 
-    void mark_dirty() {
-      dirty = true;
-    }
+    void mark_dirty() { dirty = true; }
 
     auto& get_children() { return children; }
 
   public:
-    template <class T, class... Args>
-    T& add_child(Args&&... args) {
+    template <class T, class... Args> T& add_child(Args&&... args) {
       static_assert(std::is_base_of_v<Widget, T>);
       children.emplace_back(std::make_unique<T>(ui, std::forward<Args>(args)...));
       T& widget = static_cast<T&>(*children.back().get());

@@ -1,0 +1,2 @@
+Checks: 'bugprone-*,performance-*, -bugprone-easily-swappable-parameters, readability-braces-around-statements, -bugprone-narrowing-conversions'
+WarningsAsErrors: ''

@@ -18,9 +18,7 @@ PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   button_settings->set_parent_anchor(Anchor::CENTER_RIGHT);
   button_settings->set_anchor(Anchor::CENTER_RIGHT);
   button_settings->on_press([this]() {
-    if (this->on_settings_button_pressed) {
-      this->on_settings_button_pressed(this->button_settings);
-    }
+    if (this->on_settings_button_pressed) { this->on_settings_button_pressed(this->button_settings); }
   });
 
   button_right = &add_child<Button>("");
@@ -52,9 +50,7 @@ void PanelTop::input() {
   std::array<Widget*, 4> custom_children_input_update_order = {button_right, button_left, button_settings, tab_bar};
 
   for (auto&& child : custom_children_input_update_order) {
-    if (child->get_is_updated() && !child->get_marked_for_deletion()) {
-      child->input();
-    }
+    if (child->get_is_updated() && !child->get_marked_for_deletion()) { child->input(); }
   }
 
   for (auto& ev : Input::get_event_queue()) {
@@ -67,15 +63,18 @@ void PanelTop::update() {
 
   button_left->set_is_drawn(tab_bar->get_x() != 0);
   button_left->set_is_updated(button_left->get_is_drawn());
-  button_right->set_is_drawn(ui.get_window_width() < tab_bar->get_width() && tab_bar->get_x() != ui.get_window_width() - tab_bar->get_width());
+  button_right->set_is_drawn(ui.get_window_width() < tab_bar->get_width() &&
+                             tab_bar->get_x() != ui.get_window_width() - tab_bar->get_width());
   button_right->set_is_updated(button_right->get_is_drawn());
 
-  if (button_right->is_mouse_hovering() && button_right->get_is_drawn() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
+  if (button_right->is_mouse_hovering() && button_right->get_is_drawn() &&
+      Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
     tab_bar->set_x(std::max(tab_bar->get_x() - 3, ui.get_window_width() - tab_bar->get_width()));
     ui.mark_dirty_recursive(this);
   }
 
-  if (button_left->is_mouse_hovering() && button_left->get_is_drawn() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
+  if (button_left->is_mouse_hovering() && button_left->get_is_drawn() &&
+      Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
     tab_bar->set_x(std::min(tab_bar->get_x() + 3, 0));
     ui.mark_dirty_recursive(this);
   }
@@ -86,45 +85,44 @@ void PanelTop::update() {
 void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
   tab_bar->close_all_tabs();
   tab_bar->on_add_tab_button_pressed = [this]() {
-    if (this->on_add_collection_button_pressed) {
-      this->on_add_collection_button_pressed(tab_bar);
-    }
+    if (this->on_add_collection_button_pressed) { this->on_add_collection_button_pressed(tab_bar); }
   };
 
-  tab_bar->add_tab(TabBar::tab_info{
-                     .id = db::collection_count(),
-                     .is_draggable = false,
-                     .label = U"Queue",
-                     .padding = 10,
-                     .on_open = [this]() {
-                       if (on_queue_view_opened) {
-                         on_queue_view_opened();
-                       }
-                     },
-                   },
-                   0, false);
+  tab_bar->add_tab(
+    TabBar::tab_info{
+      .id = db::collection_count(),
+      .is_draggable = false,
+      .label = U"Queue",
+      .padding = 10,
+      .on_open =
+        [this]() {
+          if (on_queue_view_opened) { on_queue_view_opened(); }
+        },
+    },
+    0, false);
 
   for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
     auto& collection = db::collection_by_id(collection_id)->get();
     if (collection.is_tombstone()) { continue; }
 
-    tab_bar->add_tab(
-      TabBar::tab_info{
-        .id = (i32)collection_id,
-        .is_draggable = true,
-        .label = collection.name,
-        .padding = 20,
-        .on_open = [this, collection_id]() {
-          if (on_collection_opened) { this->on_collection_opened(collection_id); } },
-        .on_right_click = [this, collection_id](Tab* t) {
-          if (this->on_show_collection_actions_popover) {
-            this->on_show_collection_actions_popover(collection_id, t);
-          } },
-      },
-      1000, collection_id == selected_collection_id);
+    tab_bar->add_tab(TabBar::tab_info{
+                       .id = (i32)collection_id,
+                       .is_draggable = true,
+                       .label = collection.name,
+                       .padding = 20,
+                       .on_open =
+                         [this, collection_id]() {
+                           if (on_collection_opened) { this->on_collection_opened(collection_id); }
+                         },
+                       .on_right_click =
+                         [this, collection_id](Tab* t) {
+                           if (this->on_show_collection_actions_popover) {
+                             this->on_show_collection_actions_popover(collection_id, t);
+                           }
+                         },
+                     },
+                     1000, collection_id == selected_collection_id);
   }
 }
 
-void PanelTop::select(size_t selected_collection_id) {
-  tab_bar->open_tab(selected_collection_id);
-}
+void PanelTop::select(size_t selected_collection_id) { tab_bar->open_tab(selected_collection_id); }

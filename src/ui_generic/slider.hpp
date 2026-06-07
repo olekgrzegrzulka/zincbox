@@ -57,23 +57,15 @@ class Slider : public Widget {
   public:
     Slider(UI& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
 
-    void on_value_changed(std::function<void(float, float)> a) {
-      lambda_value_changed = a;
-    }
+    void on_value_changed(std::function<void(float, float)> a) { lambda_value_changed = a; }
 
-    void on_drag_ended(std::function<void(float, float)> a) {
-      lambda_drag_end = a;
-    }
+    void on_drag_ended(std::function<void(float, float)> a) { lambda_drag_end = a; }
 
-    bool is_being_dragged() {
-      return is_dragged;
-    }
+    bool is_being_dragged() { return is_dragged; }
 
     void update() override;
 
-    void draw() override {
-      Widget::draw();
-    }
+    void draw() override { Widget::draw(); }
 
     void event(Input::InputEventMouseButton&) override;
     void event(Input::InputEventMouseMove&) override;
@@ -91,9 +83,7 @@ class Slider : public Widget {
 
     void set_value(float new_value, bool signal = true) {
       value = new_value;
-      if (!signal) {
-        old_value = new_value;
-      }
+      if (!signal) { old_value = new_value; }
     }
     WIDGET_DEF_SETTER_DIRTY(min_value)
     WIDGET_DEF_SETTER_DIRTY(max_value)

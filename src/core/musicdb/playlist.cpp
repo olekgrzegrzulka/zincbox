@@ -85,9 +85,7 @@ bool db::Playlist::has_track_id(size_t track_id) const {
 
 std::optional<size_t> db::Playlist::find_track_index(size_t track_id) const {
   for (size_t i = 0; i < track_ids.size(); i += 1) {
-    if (track_ids[i] == track_id) {
-      return i;
-    }
+    if (track_ids[i] == track_id) { return i; }
   }
   return std::nullopt;
 }

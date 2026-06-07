@@ -15,9 +15,7 @@ class Random {
       rng.seed(rd());
     }
 
-    Random(i32 seed) {
-      rng.seed(seed);
-    }
+    Random(i32 seed) { rng.seed(seed); }
 
     template <typename T>
       requires std::is_integral_v<T>
@@ -40,23 +38,19 @@ class Random {
       return distribution(rng) * static_cast<T>(2) - static_cast<T>(1);
     }
 
-    template <class T>
-    T pick(std::span<T> values, std::span<int> weights) {
+    template <class T> T pick(std::span<T> values, std::span<int> weights) {
       ensure(values.size() == weights.size());
 
       std::discrete_distribution<int> distribution(weights.begin(), weights.end());
       return values[distribution(rng)];
     }
 
-    template <class T>
-    T pick(std::span<T> values) {
+    template <class T> T pick(std::span<T> values) {
       if (values.size() == 0) { return T(); }
       return values[next<size_t>(0, values.size() - 1)];
     }
 
-    bool rand_bool() {
-      return next<i32>(0, 1) == 1;
-    }
+    bool rand_bool() { return next<i32>(0, 1) == 1; }
 };
 
 namespace StaticRandom {
