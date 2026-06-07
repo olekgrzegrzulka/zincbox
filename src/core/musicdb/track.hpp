@@ -36,6 +36,8 @@ namespace db {
     public:
       void serialize(std::ostream&) const;
       std::string to_string() const;
+      std::u32string pretty_name() const;
+      std::u32string pretty_length() const;
 
       void set_tombstone(bool t) { flags.set(TrackFlag::TOMBSTONE, t); }
       bool is_tombstone() const { return flags.test(TrackFlag::TOMBSTONE); }
