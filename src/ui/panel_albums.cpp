@@ -31,9 +31,11 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>();
+  label_author = &add_child<Label>();
   if (playlist_id.has_value()) {
     auto& playlist = db::playlist_by_id(playlist_id.value())->get();
     label_title->set_text(playlist.name);
+    label_author->set_text(playlist.author);
   } else {
     label_title->set_text("Add new playlist...");
   }
@@ -44,6 +46,14 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   label_title->set_parent_anchor(Anchor::TOP_LEFT);
   label_title->set_text_color(theme::get_prop("playlist_title_text_color").as_rgba());
   label_title->set_y(cover_size.y + 8);
+
+  label_author->set_resize_to_text_extents(false);
+  label_author->set_width(total_size.x);
+  label_author->set_label_anchor(Anchor::TOP_LEFT);
+  label_author->set_anchor(Anchor::TOP_LEFT);
+  label_author->set_parent_anchor(Anchor::TOP_LEFT);
+  label_author->set_text_color(theme::get_prop("playlist_author_text_color").as_rgba(rgba{255, 255, 255, 255}));
+  label_author->set_y(cover_size.y + 8 + 16);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
   hover->set_nine_slice_margin(8.0f);
