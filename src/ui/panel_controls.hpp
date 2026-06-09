@@ -29,8 +29,9 @@ class PanelControls : public Sprite {
     Button* button_prev{};
     Button* button_shuffle{};
     Button* button_repeat{};
-    ToolTip* button_shuffle_tooltip{};
-    ToolTip* button_repeat_tooltip{};
+    ToolTip* tooltip_button_shuffle{};
+    ToolTip* tooltip_button_repeat{};
+    ToolTip* tooltip_timestamp{};
     Slider* seekbar{};
     Slider* volume_bar{};
     Label* label_progress{};
