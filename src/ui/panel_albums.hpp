@@ -30,6 +30,7 @@ class WidgetAlbumCover : public Button {
     Sprite* hover{};
     bool is_hovered = false;
     Label* label_title{};
+    Label* label_author{};
     vec2i total_size{};
     vec2i cover_size{};
 };
@@ -77,7 +78,7 @@ class PanelAlbums : public Sprite {
 
         i32 cover_width = 64;
         i32 cover_min_horizontal_spacing = 12;
-        i32 cover_min_vertical_spacing = 32;
+        i32 cover_min_vertical_spacing = 46;
 
         bool operator==(const Props&) const = default;
     };
