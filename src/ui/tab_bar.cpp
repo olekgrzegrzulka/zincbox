@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "common/input.hpp"
+#include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
@@ -32,6 +33,7 @@ void Tab::set_texture_active() {
   set_texture_hovered("tab_active_hovered");
   set_texture_idle("tab_active_idle");
   set_texture_pressed("tab_active_pressed");
+  label.set_text_color(theme::get_prop("text_color").as_rgba());
   if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
   } else if (mouse_hovering) {
@@ -46,6 +48,7 @@ void Tab::set_texture_inactive() {
   set_texture_hovered("tab_inactive_hovered");
   set_texture_idle("tab_inactive_idle");
   set_texture_pressed("tab_inactive_pressed");
+  label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
   if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
   } else if (mouse_hovering) {
