@@ -37,8 +37,12 @@ class PanelControls : public Sprite {
     Label* label_progress{};
     Label* label_track{};
     Sprite* label_track_underline{};
+
     bool label_track_underline_lmb = false;
     bool label_track_underline_rmb = false;
+    i32 progress_ms_prev = -1000;
+    i32 total_ms_prev = -1000;
+    i32 tooltip_ms_prev = -1000;
 
     Signal<>::slot_key slot_on_track_changed;
     bool is_playing = false;

@@ -249,58 +249,58 @@ void PanelControls::event(Input::InputEventKey& ev) {
 }
 
 void PanelControls::update() {
-  i32 current_time_ms;
 
   seekbar->set_min_value(0);
   seekbar->set_max_value(player::get_total_duration_ms());
 
   if (!volume_bar->is_being_dragged()) { volume_bar->set_value(player::get_volume(), false); }
 
-  if (seekbar->is_being_dragged()) {
-    current_time_ms = seekbar->get_value();
-  } else {
-    current_time_ms = player::get_current_time_ms();
+  i32 progress_ms = seekbar->is_being_dragged() ? seekbar->get_value() : player::get_current_time_ms();
+  i32 total_ms = player::get_total_duration_ms();
+  i32 progress_s = progress_ms / 1000;
+  i32 total_s = total_ms / 1000;
+
+  if ((progress_s != progress_ms_prev / 1000) || (total_s != total_ms_prev / 1000)) {
+    i32 progress_m = progress_s / 60;
+    progress_s %= 60;
+    i32 total_m = total_s / 60;
+    total_s %= 60;
+
+    std::stringstream ss;
+    ss << std::right << std::setfill('0');
+    ss << std::setw(0) << progress_m << ":";
+    ss << std::setw(2) << progress_s;
+    ss << " / ";
+    ss << std::setw(0) << total_m << ":";
+    ss << std::setw(2) << total_s;
+    label_progress->set_text(ss.str());
   }
-  i32 current_time_s = current_time_ms / 1000;
-  i32 current_time_m = current_time_s / 60;
-  current_time_s %= 60;
 
-  i32 total_duration_s = player::get_total_duration_ms() / 1000;
-  i32 total_duration_m = total_duration_s / 60;
-  total_duration_s %= 60;
-
-  std::stringstream ss;
-  ss << std::right << std::setfill('0');
-  ss << std::setw(0) << current_time_m << ":";
-  ss << std::setw(2) << current_time_s;
-  ss << " / ";
-  ss << std::setw(0) << total_duration_m << ":";
-  ss << std::setw(2) << total_duration_s;
+  label_progress->set_is_drawn(width > 650);
 
   seekbar->set_value(player::get_current_time_ms(), false);
 
   if (seekbar->is_mouse_hovering()) {
     i32 x_rel = Input::get_mouse_x() - seekbar->get_position(Anchor::LEFT).x;
-    i32 ms = x_rel / (double)seekbar->get_width() * player::get_total_duration_ms();
-    if (seekbar->get_thumb().is_mouse_hovering()) { ms = seekbar->get_value(); }
-    if (seekbar->is_being_dragged()) { ms = current_time_ms; }
-    i32 seconds = ms / 1000;
-    i32 minutes = seconds / 60;
-    seconds %= 60;
-    std::stringstream ss_hover;
-    ss_hover << std::right << std::setfill('0');
-    ss_hover << std::setw(0) << minutes << ":";
-    ss_hover << std::setw(2) << seconds;
+    i32 tooltip_ms = x_rel / (double)seekbar->get_width() * player::get_total_duration_ms();
+    if (seekbar->get_thumb().is_mouse_hovering()) { tooltip_ms = seekbar->get_value(); }
+    if (seekbar->is_being_dragged()) { tooltip_ms = progress_ms; }
+    i32 tooltip_s = tooltip_ms / 1000;
+    if (tooltip_s != tooltip_ms_prev / 1000) {
+      i32 tooltip_m = tooltip_s / 60;
+      tooltip_s %= 60;
+      std::stringstream ss_hover;
+      ss_hover << std::right << std::setfill('0');
+      ss_hover << std::setw(0) << tooltip_m << ":";
+      ss_hover << std::setw(2) << tooltip_s;
+      tooltip_timestamp->set_text(ss_hover.str());
+    }
     tooltip_timestamp->set_is_drawn(true);
-    tooltip_timestamp->set_text(ss_hover.str());
     // tooltip is centered - subtract half width to compensate
     tooltip_timestamp->set_x(x_rel - seekbar->get_width() / 2);
   } else {
     tooltip_timestamp->set_is_drawn(false);
   }
-
-  label_progress->set_text(ss.str());
-  label_progress->set_is_drawn(width > 650);
 
   label_track_underline->set_is_drawn(label_track->is_mouse_hovering() &&
                                       Input::get_mouse_x() <
