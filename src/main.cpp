@@ -62,7 +62,7 @@ void set_window_title(GLFWwindow* window) {
   std::string window_title;
   if (playing.has_value()) {
     auto& track = db::track_by_id(playing->track_id)->get();
-    window_title = "zincbox (" + utf32_to_utf8(track.pretty_name());
+    window_title = "zincbox (" + utf32_to_utf8(track.pretty_name()) + ")";
   } else {
     window_title = "zincbox";
   }
