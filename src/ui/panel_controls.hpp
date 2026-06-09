@@ -18,7 +18,8 @@ class PanelControls : public Sprite {
     void update() override;
 
   public:
-    std::function<void(void)> on_playing_track_pressed{};
+    std::function<void(Widget*)> on_playing_track_lmb{};
+    std::function<void(Widget*)> on_playing_track_rmb{};
 
   protected:
     Button* button_play_pause{};
@@ -35,7 +36,8 @@ class PanelControls : public Sprite {
     Label* label_progress{};
     Label* label_track{};
     Sprite* label_track_underline{};
-    bool label_track_underline_pressed = false;
+    bool label_track_underline_lmb = false;
+    bool label_track_underline_rmb = false;
 
     Signal<>::slot_key slot_on_track_changed;
     bool is_playing = false;

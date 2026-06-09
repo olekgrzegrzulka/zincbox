@@ -11,6 +11,7 @@
 #include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/playlist.hpp"
 #include "core/player.hpp"
 #include "interface.hpp"
 #include "interface_notifications.hpp"
@@ -54,13 +55,19 @@ static void add_playlist_art_to_texture_atlas(size_t collection_id);
 static void handle_dropped_files();
 static void delete_collection(size_t);
 static void delete_playlist(size_t);
-static void open_collection(size_t);
+static void show_collection(size_t);
 static void show_add_to_playlist_popup(size_t);
 static void show_popup_delete_collection(size_t);
 static void show_popup_rename_collection(size_t);
 static void show_popup_set_sources(size_t);
 static void show_popup_delete_playlist(size_t);
 static void show_popup_rename_playlist(size_t);
+
+static void show_popover_track_actions(size_t collection_id, size_t playlist_id, size_t track_id,
+                                       std::optional<size_t> playlist_track_index, Widget* widget,
+                                       bool remove_from_playlist_option = false);
+static void show_popover_collection_actions(size_t collection_id, Widget* widget);
+static void show_popover_queue_element_actions(size_t queue_index, Widget* widget);
 
 class ShortcutInterceptor : public Widget {
   public:
@@ -92,14 +99,14 @@ void interface::init() {
     p->on_playlist_lmb = [p](size_t playlist_id, Widget*) {
       auto collection_id = db::collection_of_playlist(playlist_id);
       if (collection_id.has_value()) {
-        open_collection(collection_id.value());
+        show_collection(collection_id.value());
         panel_tracks->scroll_to_playlist(playlist_id);
         p->close();
       }
     };
 
     p->on_track_lmb = [p](size_t collection_id, size_t playlist_id, size_t track_id, Widget*) {
-      open_collection(collection_id);
+      show_collection(collection_id);
       panel_tracks->scroll_to_track(playlist_id, track_id);
       p->close();
     };
@@ -115,16 +122,24 @@ void interface::init() {
   panel_albums = &ui->add_widget<PanelAlbums>();
   panel_controls = &ui->add_widget<PanelControls>();
 
-  panel_controls->on_playing_track_pressed = []() {
+  panel_controls->on_playing_track_lmb = [](Widget*) -> void {
     auto playing = player::get_playing();
     if (playing.has_value()) {
-      open_collection(playing->collection_id);
+      show_collection(playing->collection_id);
       panel_albums->scroll_to_playlist(playing->playlist_id);
       panel_tracks->scroll_to_track(playing->playlist_id, playing->track_id);
     }
   };
 
-  panel_top->on_collection_opened = [&](size_t collection_id) { open_collection(collection_id); };
+  panel_controls->on_playing_track_rmb = [](Widget* w) -> void {
+    auto playing = player::get_playing();
+    if (playing.has_value()) {
+      show_popover_track_actions(playing->collection_id, playing->playlist_id, playing->track_id, std::nullopt, w,
+                                 false);
+    }
+  };
+
+  panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
 
   panel_top->on_queue_view_opened = [&]() {
     active_collection_id = std::nullopt;
@@ -140,30 +155,7 @@ void interface::init() {
     panel_albums->props.collection_id = std::nullopt;
   };
 
-  panel_top->on_show_collection_actions_popover = [&](size_t collection_id, Widget* widget) {
-    if (collection_id == 0) { return; }
-    vec2i at = widget->get_position(Anchor::CENTER);
-    popover_descriptor d{
-      .id = "collection_actions",
-      .at = at,
-      .distance = 10,
-      .button_labels = {"Rename", "Set sources", "Re-scan", "Delete"},
-      .button_actions = {
-        [collection_id]() { show_popup_rename_collection(collection_id); },
-        [collection_id]() { show_popup_set_sources(collection_id); },
-        [collection_id]() {
-          db::rescan_collection(collection_id);
-          add_playlist_art_to_texture_atlas(collection_id);
-          if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-            panel_tracks->recreate(active_collection_id);
-            panel_albums->recreate();
-          }
-        },
-        [collection_id]() { show_popup_delete_collection(collection_id); },
-      },
-    };
-    popup_controller->create_popover(d);
-  };
+  panel_top->on_show_collection_actions_popover = show_popover_collection_actions;
 
   panel_top->on_add_collection_button_pressed = [&](Widget*) {
     NFD::UniquePathSet out_paths;
@@ -201,128 +193,11 @@ void interface::init() {
 
   panel_queue->on_queue_element_lmb = [&](size_t queue_index, Widget*) { player::set_playing_index(queue_index); };
 
-  panel_queue->on_queue_element_rmb = [&](size_t queue_index, Widget* widget) {
-    auto play = player::get_playing_queue()[queue_index];
-    size_t track_id = play.track_id;
-    // size_t playlist_id = play.playlist_id;
-    // size_t collection_id = play.collection_id;
-    bool is_loved = db::playlist_loved_tracks().has_track_id(track_id);
+  panel_queue->on_queue_element_rmb = show_popover_queue_element_actions;
 
-    std::vector<std::string> popover_labels;
-    std::vector<std::function<void()>> popover_actions;
-
-    popover_labels.emplace_back("Remove from queue");
-    popover_actions.emplace_back([queue_index]() {
-      player::remove_from_queue(queue_index);
-      panel_queue->on_queue_changed();
-    });
-
-    if (!is_loved) {
-      popover_labels.emplace_back("Love track");
-      popover_actions.emplace_back([track_id, queue_index]() {
-        if (db::add_track_id_to_playlist(0, track_id)) {
-          auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
-          notifications->push(U"Loved \'" + pretty_name + U"\'");
-        }
-        panel_queue->on_queue_changed_at(queue_index);
-      });
-    } else {
-      popover_labels.emplace_back("Un-love track");
-      popover_actions.emplace_back([track_id, queue_index]() {
-        if (db::remove_track_id_from_playlist(0, track_id)) {
-          auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
-          notifications->push(U"Un-loved \'" + pretty_name + U"\'");
-        }
-        panel_queue->on_queue_changed_at(queue_index);
-      });
-    }
-
-    popover_labels.emplace_back("Add to playlist...");
-    popover_actions.emplace_back([track_id]() { show_add_to_playlist_popup(track_id); });
-
-    vec2i at = widget->get_position(Anchor::CENTER);
-    at.x = Input::get_mouse_x();
-    popover_descriptor d{
-      .id = "playlist_track_actions",
-      .at = at,
-      .distance = 4,
-      .button_labels = popover_labels,
-      .button_actions = popover_actions,
-    };
-    popup_controller->create_popover(d);
-  };
-
-  panel_tracks->on_track_rmb = [&](size_t collection_id, size_t playlist_id, size_t track_id,
-                                   size_t playlist_track_index, Widget* widget) {
-    if (!db::track_by_id(track_id).has_value()) { return; }
-    bool is_loved = db::playlist_loved_tracks().has_track_id(track_id);
-    bool is_user_playlist = db::playlist_by_id(playlist_id).value().get().type == db::PlaylistType::User;
-
-    std::vector<std::string> popover_labels;
-    std::vector<std::function<void()>> popover_actions;
-
-    popover_labels.emplace_back("Play next");
-    popover_actions.emplace_back([track_id, playlist_id, collection_id]() {
-      player::enqueue(
-        player::playing_t{.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id},
-        player::get_playing_index().value_or(player::get_playing_queue().size()));
-
-      notifications->push(U"\'" + db::track_by_id(track_id)->get().pretty_name() + U"\' will be playing next");
-    });
-
-    if (!is_loved) {
-      popover_labels.emplace_back("Love track");
-      popover_actions.emplace_back([track_id]() {
-        auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
-        notifications->push(U"Loved \'" + pretty_name + U"\'");
-        db::add_track_id_to_playlist(0, track_id);
-        panel_tracks->clear();
-        panel_tracks->recreate(active_collection_id);
-      });
-    } else {
-      popover_labels.emplace_back("Un-love track");
-      popover_actions.emplace_back([track_id, playlist_id, playlist_track_index]() {
-        auto& loved_tracks_playlist = db::playlist_loved_tracks();
-        auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
-        if (playlist_id == db::playlist_loved_tracks_id()) {
-          loved_tracks_playlist.remove_track_by_index(playlist_track_index);
-          notifications->push(U"Un-loved \'" + pretty_name + U"\'");
-        } else {
-          loved_tracks_playlist.remove_track_by_id(track_id);
-          notifications->push(U"Un-loved \'" + pretty_name + U"\'");
-        }
-        panel_tracks->clear();
-        panel_tracks->recreate(active_collection_id);
-      });
-    }
-
-    popover_labels.emplace_back("Add to playlist...");
-    popover_actions.emplace_back([track_id]() { show_add_to_playlist_popup(track_id); });
-
-    if (is_user_playlist) {
-      popover_labels.emplace_back("Remove from playlist");
-      popover_actions.emplace_back([playlist_id, playlist_track_index]() {
-        auto playlist = db::playlist_by_id(playlist_id)->get();
-        size_t track_id = playlist.track_ids[playlist_track_index];
-        if (db::remove_track_index_from_playlist(playlist_id, playlist_track_index)) {
-          auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
-          notifications->push(U"Removed " + track_pretty_name + U" from " + U"\'" + playlist.name + U"\'");
-        }
-        panel_tracks->clear();
-        panel_tracks->recreate(active_collection_id);
-      });
-    }
-
-    vec2i at = widget->get_position(Anchor::CENTER);
-    at.x = Input::get_mouse_x();
-    popover_descriptor d{
-      .id = "playlist_track_actions",
-      .at = at,
-      .distance = 4,
-      .button_labels = popover_labels,
-      .button_actions = popover_actions,
-    };
-    popup_controller->create_popover(d);
+  panel_tracks->on_track_rmb = [](size_t collection_id, size_t playlist_id, size_t track_id,
+                                  size_t playlist_track_index, WidgetTrack* widget) {
+    show_popover_track_actions(collection_id, playlist_id, track_id, playlist_track_index, widget, true);
   };
 
   panel_albums->on_playlist_lmb = [&](size_t playlist_id, Widget*) { panel_tracks->scroll_to_playlist(playlist_id); };
@@ -658,7 +533,7 @@ static void delete_playlist(size_t playlist_id) {
   panel_tracks->recreate(active_collection_id);
 }
 
-static void open_collection(size_t collection_id) {
+static void show_collection(size_t collection_id) {
   if (collection_id == active_collection_id) { return; }
 
   if (tracks_scroll_positions.size() <= collection_id) { tracks_scroll_positions.resize(collection_id + 1, 0.0f); }
@@ -793,3 +668,171 @@ static void show_popup_rename_playlist(size_t playlist_id) {
     panel_albums->recreate();
   };
 }
+
+static void show_popover_track_actions(size_t collection_id, size_t playlist_id, size_t track_id,
+                                       std::optional<size_t> playlist_track_index, Widget* widget,
+                                       bool remove_from_playlist_option) {
+  if (!db::track_by_id(track_id).has_value()) { return; }
+  bool is_loved = db::playlist_loved_tracks().has_track_id(track_id);
+  bool is_user_playlist = db::playlist_by_id(playlist_id).value().get().type == db::PlaylistType::User;
+
+  std::vector<std::string> popover_labels;
+  std::vector<std::function<void()>> popover_actions;
+
+  popover_labels.emplace_back("Play next");
+  popover_actions.emplace_back([track_id, playlist_id, collection_id]() {
+    player::enqueue(player::playing_t{.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id},
+                    player::get_playing_index().value_or(player::get_playing_queue().size()));
+
+    notifications->push(U"\'" + db::track_by_id(track_id)->get().pretty_name() + U"\' will be playing next");
+  });
+
+  if (!is_loved) {
+    popover_labels.emplace_back("Love track");
+    popover_actions.emplace_back([track_id]() {
+      auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
+      notifications->push(U"Loved \'" + pretty_name + U"\'");
+      db::add_track_id_to_playlist(0, track_id);
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    });
+  } else {
+    popover_labels.emplace_back("Un-love track");
+    popover_actions.emplace_back([track_id, playlist_id, playlist_track_index]() {
+      auto& loved_tracks_playlist = db::playlist_loved_tracks();
+      auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
+      if (playlist_id == db::playlist_loved_tracks_id()) {
+        if (playlist_track_index.has_value()) {
+          loved_tracks_playlist.remove_track_by_index(playlist_track_index.value());
+        } else {
+          loved_tracks_playlist.remove_track_by_id(track_id);
+        }
+        notifications->push(U"Un-loved \'" + pretty_name + U"\'");
+      } else {
+        loved_tracks_playlist.remove_track_by_id(track_id);
+        notifications->push(U"Un-loved \'" + pretty_name + U"\'");
+      }
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    });
+  }
+
+  popover_labels.emplace_back("Add to playlist...");
+  popover_actions.emplace_back([track_id]() { show_add_to_playlist_popup(track_id); });
+
+  if (remove_from_playlist_option && is_user_playlist) {
+    popover_labels.emplace_back("Remove from playlist");
+    popover_actions.emplace_back([track_id, playlist_id, playlist_track_index]() {
+      auto playlist = db::playlist_by_id(playlist_id)->get();
+      if (playlist_track_index.has_value()) {
+        ensure(playlist.track_ids.size() > playlist_track_index.value());
+        ensure(track_id == playlist.track_ids[playlist_track_index.value()]);
+        if (db::remove_track_index_from_playlist(playlist_id, playlist_track_index.value())) {
+          auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
+          notifications->push(U"Removed " + track_pretty_name + U" from " + U"\'" + playlist.name + U"\'");
+        }
+      } else {
+        if (db::remove_track_id_from_playlist(playlist_id, track_id)) {
+          auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
+          notifications->push(U"Removed " + track_pretty_name + U" from " + U"\'" + playlist.name + U"\'");
+        }
+      }
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    });
+  }
+
+  vec2i at = widget->get_position(Anchor::CENTER);
+  at.x = Input::get_mouse_x();
+  popover_descriptor d{
+    .id = "playlist_track_actions",
+    .at = at,
+    .distance = 4,
+    .button_labels = popover_labels,
+    .button_actions = popover_actions,
+  };
+  popup_controller->create_popover(d);
+};
+
+static void show_popover_collection_actions(size_t collection_id, Widget* widget) {
+  if (collection_id == 0) { return; }
+  vec2i at = widget->get_position(Anchor::CENTER);
+  popover_descriptor d{
+    .id = "collection_actions",
+    .at = at,
+    .distance = 10,
+    .button_labels = {"Rename", "Set sources", "Re-scan", "Delete"},
+    .button_actions = {
+      [collection_id]() { show_popup_rename_collection(collection_id); },
+      [collection_id]() { show_popup_set_sources(collection_id); },
+      [collection_id]() {
+        db::rescan_collection(collection_id);
+        add_playlist_art_to_texture_atlas(collection_id);
+        if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+          panel_tracks->recreate(active_collection_id);
+          panel_albums->recreate();
+        }
+      },
+      [collection_id]() { show_popup_delete_collection(collection_id); },
+    },
+  };
+  popup_controller->create_popover(d);
+};
+
+static void show_popover_queue_element_actions(size_t queue_index, Widget* widget) {
+  auto play = player::get_playing_queue()[queue_index];
+  size_t track_id = play.track_id;
+  size_t playlist_id = play.playlist_id;
+  size_t collection_id = play.collection_id;
+  bool is_loved = db::playlist_loved_tracks().has_track_id(track_id);
+
+  std::vector<std::string> popover_labels;
+  std::vector<std::function<void()>> popover_actions;
+
+  popover_labels.emplace_back("Remove from queue");
+  popover_actions.emplace_back([queue_index]() {
+    player::remove_from_queue(queue_index);
+    panel_queue->on_queue_changed();
+  });
+
+  bool is_album = db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album;
+  popover_labels.emplace_back(is_album ? "Show in album" : "Show in playlist");
+  popover_actions.emplace_back([collection_id, playlist_id, track_id]() {
+    show_collection(collection_id);
+    panel_tracks->scroll_to_track(playlist_id, track_id);
+  });
+
+  if (!is_loved) {
+    popover_labels.emplace_back("Love track");
+    popover_actions.emplace_back([track_id, queue_index]() {
+      if (db::add_track_id_to_playlist(0, track_id)) {
+        auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
+        notifications->push(U"Loved \'" + pretty_name + U"\'");
+      }
+      panel_queue->on_queue_changed_at(queue_index);
+    });
+  } else {
+    popover_labels.emplace_back("Un-love track");
+    popover_actions.emplace_back([track_id, queue_index]() {
+      if (db::remove_track_id_from_playlist(0, track_id)) {
+        auto pretty_name = db::track_by_id(track_id)->get().pretty_name();
+        notifications->push(U"Un-loved \'" + pretty_name + U"\'");
+      }
+      panel_queue->on_queue_changed_at(queue_index);
+    });
+  }
+
+  popover_labels.emplace_back("Add to playlist...");
+  popover_actions.emplace_back([track_id]() { show_add_to_playlist_popup(track_id); });
+
+  vec2i at = widget->get_position(Anchor::CENTER);
+  at.x = Input::get_mouse_x();
+  popover_descriptor d{
+    .id = "playlist_track_actions",
+    .at = at,
+    .distance = 4,
+    .button_labels = popover_labels,
+    .button_actions = popover_actions,
+  };
+  popup_controller->create_popover(d);
+};

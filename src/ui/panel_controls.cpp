@@ -194,11 +194,19 @@ PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(slo
 void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 
-  if (label_track_underline->get_is_drawn() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
-    if (ev.action == Input::MouseAction::PRESS) { label_track_underline_pressed = true; }
-    if (ev.action == Input::MouseAction::RELEASE && label_track_underline_pressed) {
-      label_track_underline_pressed = false;
-      if (on_playing_track_pressed) { on_playing_track_pressed(); }
+  if (label_track_underline->get_is_drawn()) {
+    if (ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
+      if (ev.action == Input::MouseAction::PRESS) { label_track_underline_lmb = true; }
+      if (ev.action == Input::MouseAction::RELEASE && label_track_underline_lmb) {
+        label_track_underline_lmb = false;
+        if (on_playing_track_lmb) { on_playing_track_lmb(label_track); }
+      }
+    } else if (ev.button == Input::MouseButton::MOUSE_BUTTON_RIGHT) {
+      if (ev.action == Input::MouseAction::PRESS) { label_track_underline_rmb = true; }
+      if (ev.action == Input::MouseAction::RELEASE && label_track_underline_rmb) {
+        label_track_underline_rmb = false;
+        if (on_playing_track_rmb) { on_playing_track_rmb(label_track); }
+      }
     }
   }
 }
@@ -273,7 +281,10 @@ void PanelControls::update() {
   label_track_underline->set_is_drawn(label_track->is_mouse_hovering() &&
                                       Input::get_mouse_x() <
                                         label_track->get_position().x + label_track->get_text_extents().x);
-  if (!label_track_underline->get_is_drawn()) { label_track_underline_pressed = false; }
+  if (!label_track_underline->get_is_drawn()) {
+    label_track_underline_lmb = false;
+    label_track_underline_rmb = false;
+  }
 
   if (is_playing != player::is_playing()) {
     is_playing = player::is_playing();
