@@ -3,6 +3,9 @@
 #include <string>
 #include "common/logger.hpp"
 
+#ifdef NDEBUG
+#define ensure(condition)
+#else
 #define ensure(condition)                                                                                              \
   do {                                                                                                                 \
     if (!(condition)) {                                                                                                \
@@ -10,6 +13,7 @@
       exit(1);                                                                                                         \
     }                                                                                                                  \
   } while (false);
+#endif
 
 struct ScopeTimer {
     std::string message;
