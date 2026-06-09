@@ -58,13 +58,10 @@ class Slider : public Widget {
     Slider(UI& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
 
     void on_value_changed(std::function<void(float, float)> a) { lambda_value_changed = a; }
-
     void on_drag_ended(std::function<void(float, float)> a) { lambda_drag_end = a; }
-
     bool is_being_dragged() { return is_dragged; }
 
     void update() override;
-
     void draw() override { Widget::draw(); }
 
     void event(Input::InputEventMouseButton&) override;
@@ -80,6 +77,8 @@ class Slider : public Widget {
     WIDGET_DEF_GETTER(max_value)
     WIDGET_DEF_SETTER(drag_area_inflation)
     WIDGET_DEF_GETTER(drag_area_inflation)
+
+    const Sprite& get_thumb() const { return thumb; }
 
     void set_value(float new_value, bool signal = true) {
       value = new_value;
