@@ -10,6 +10,7 @@ class UI;
 class Shader;
 
 struct vertex_sprite {
+    i32 type = 0;
     vec2f pos;
     vec2f uv;
     float nine_slice_margin = 0.0f;

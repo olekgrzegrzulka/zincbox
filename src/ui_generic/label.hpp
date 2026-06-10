@@ -12,6 +12,13 @@
 class UI;
 class Sprite;
 
+struct vertex_label final {
+    i32 type = 1;
+    vec2f pos;
+    vec2f uv;
+    vec3f color{1.0};
+};
+
 class Label final : public Widget {
   private:
     std::u32string text;
@@ -19,7 +26,7 @@ class Label final : public Widget {
     Anchor label_anchor = Anchor::CENTER;
     u32 vao = 0;
     u32 vbo = 0;
-    std::vector<vertex2> vertices;
+    std::vector<vertex_label> vertices;
     glm::vec3 text_color = {1.0, 1.0, 1.0};
     vec2f text_extents{};
 
