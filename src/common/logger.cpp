@@ -1,23 +1,10 @@
 #include "common/logger.hpp"
 #include <stacktrace>
 #include <unordered_set>
+#include <fmt/color.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include "common/types.hpp"
-
-namespace style {
-  static constexpr std::string normal = "\033[0m";
-  static constexpr std::string bold = "\033[1m";
-} // namespace style
-
-namespace color {
-  static constexpr std::string red = "\033[31m";
-  static constexpr std::string green = "\033[32m";
-  static constexpr std::string yellow = "\033[33m";
-  static constexpr std::string blue = "\033[34m";
-  static constexpr std::string magenta = "\033[35m";
-  static constexpr std::string normal = "\033[39m";
-} // namespace color
 
 using enum out::LogLevel;
 
@@ -28,15 +15,20 @@ void out::add_file_to_blacklist(std::string_view filename) { filtered_files.empl
 void out::remove_file_from_blacklist(const std::string& filename) { filtered_files.erase(filename); }
 
 void out::detail::print_log(LogLevel level, std::string_view tag, std::string_view message) {
-  auto color = color::blue;
+  auto tag_color = fmt::terminal_color::white;
   switch (level) {
-  case INFO: color = color::green; break;
-  case WARNING: color = color::yellow; break;
-  case ERROR: color = color::red; break;
-  case CRITICAL: color = color::magenta; break;
+  case INFO: tag_color = fmt::terminal_color::green; break;
+  case WARNING: tag_color = fmt::terminal_color::yellow; break;
+  case ERROR:
+  case CRITICAL: tag_color = fmt::terminal_color::red; break;
   }
 
-  fmt::print("{}{}[{}] {}{}{}\n", style::bold, color, tag, color::normal, style::normal, message);
+  fmt::print(fmt::emphasis::bold | fg(tag_color), "[{}] ", tag);
+  if (level == CRITICAL) {
+    fmt::print(fg(fmt::terminal_color::bright_red), "{}\n", message);
+  } else {
+    fmt::print("{}\n", message);
+  }
 }
 
 void out::detail::debug_log(LogLevel level, std::string_view message, size_t skip) {
@@ -55,21 +47,18 @@ void out::detail::debug_log(LogLevel level, std::string_view message, size_t ski
 
   if (filtered_files.contains(filename)) { return; }
 
-  auto color = color::blue;
+  auto tag_color = fmt::terminal_color::white;
   switch (level) {
-  case INFO: color = color::green; break;
-  case WARNING: color = color::yellow; break;
-  case ERROR: color = color::red; break;
-  case CRITICAL: color = color::magenta; break;
+  case INFO: tag_color = fmt::terminal_color::green; break;
+  case WARNING: tag_color = fmt::terminal_color::yellow; break;
+  case ERROR:
+  case CRITICAL: tag_color = fmt::terminal_color::red; break;
   }
 
+  fmt::print(fmt::emphasis::bold | fg(tag_color), "[{}:{}] ", filename, line_number);
   if (level == CRITICAL) {
-    // red text
-    fmt::print("{}{}[{}:{}] {}{}{}{}\n", style::bold, color, filename, line_number, style::normal, color::red, message,
-               color::normal);
+    fmt::print(fg(fmt::terminal_color::bright_red), "{}\n", message);
   } else {
-    // normal text
-    fmt::print("{}{}[{}:{}] {}{}{}\n", style::bold, color, filename, line_number, color::normal, style::normal,
-               message);
+    fmt::print("{}\n", message);
   }
 }

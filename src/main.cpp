@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <optional>
 #include <ostream>
 #include <thread>
@@ -155,7 +154,6 @@ int main() {
 
     auto t2 = high_resolution_clock::now();
     long delta_us = duration_cast<microseconds>(t2 - t1).count();
-    // std::cout << "delta = " << duration_cast<milliseconds>(t2 - t1).count() << " ms\n";
     long sleep_us = std::max(1000.0, 16666.0 - delta_us);
     if (!vsync) { std::this_thread::sleep_for(microseconds(sleep_us)); }
   }
