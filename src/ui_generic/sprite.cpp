@@ -16,30 +16,17 @@ void Sprite::update() { Widget::update(); }
 
 void Sprite::draw() {
   if (dirty) {
-
     // FIXME: this can cause a 1 frame delay when children are updated BEFORE parent
     for (auto&& c : children) {
       c->mark_dirty();
     }
-
     update_mesh();
     setup_buffers();
     dirty = false;
   }
 
-  std::reference_wrapper<const Shader> sprite_shader = ui.get_sprite_shader();
-  if (shader.has_value()) { sprite_shader = shader.value(); }
-  // auto& widget_texture = ui.get_widget_texture();
-
-  sprite_shader.get().use();
-  sprite_shader.get().set_uniform_mat4("matrix", ui.get_matrix());
-  // FIXME: don't hardcode texture size
-  sprite_shader.get().set_uniform_float("tex_size", 16, 16);
-  get_texture_atlas().bind(0);
-  // widget_texture.bind(0);
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
   Widget::draw();
 }
 
@@ -57,19 +44,32 @@ void Sprite::update_mesh() {
   end = end * vec2f(2.0) - vec2f(1.0);
 
   vertices = {
-    vertex_sprite{
-      {start.x, end.y}, {uv_start.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
-    vertex_sprite{
-      {end.x, end.y}, {uv_end.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
-    vertex_sprite{{start.x, start.y},
-                  {uv_start.x, uv_start.y},
+    vertex_sprite{0,
+                  {start.x, end.y},
+                  {uv_start.x, uv_end.y},
                   nine_slice_margin,
                   nine_slice_scale,
                   {width, height},
                   uv_start,
                   uv_end},
     vertex_sprite{
-      {end.x, start.y}, {uv_end.x, uv_start.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
+      0, {end.x, end.y}, {uv_end.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
+    vertex_sprite{0,
+                  {start.x, start.y},
+                  {uv_start.x, uv_start.y},
+                  nine_slice_margin,
+                  nine_slice_scale,
+                  {width, height},
+                  uv_start,
+                  uv_end},
+    vertex_sprite{0,
+                  {end.x, start.y},
+                  {uv_end.x, uv_start.y},
+                  nine_slice_margin,
+                  nine_slice_scale,
+                  {width, height},
+                  uv_start,
+                  uv_end},
   };
 }
 
@@ -90,28 +90,31 @@ void Sprite::setup_buffers() {
 
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex_sprite), vertices.data(), GL_DYNAMIC_DRAW);
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)offsetof(vertex_sprite, pos));
+  glVertexAttribPointer(0, 1, GL_INT, GL_FALSE, sizeof(vertex_sprite), (void*)offsetof(vertex_sprite, type));
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)offsetof(vertex_sprite, pos));
   glEnableVertexAttribArray(1);
 
-  glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite),
-                        (void*)(offsetof(vertex_sprite, nine_slice_margin)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv)));
   glEnableVertexAttribArray(2);
 
   glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite),
-                        (void*)(offsetof(vertex_sprite, nine_slice_scale)));
+                        (void*)(offsetof(vertex_sprite, nine_slice_margin)));
   glEnableVertexAttribArray(3);
 
-  glVertexAttribIPointer(4, 2, GL_UNSIGNED_INT, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, widget_size)));
+  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite),
+                        (void*)(offsetof(vertex_sprite, nine_slice_scale)));
   glEnableVertexAttribArray(4);
 
-  glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv_start)));
+  glVertexAttribIPointer(5, 2, GL_UNSIGNED_INT, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, widget_size)));
   glEnableVertexAttribArray(5);
 
-  glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv_end)));
+  glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv_start)));
   glEnableVertexAttribArray(6);
+
+  glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv_end)));
+  glEnableVertexAttribArray(7);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);

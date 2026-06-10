@@ -45,8 +45,7 @@ class UI final {
     vec2i get_window_size() const { return vec2i{window_width, window_height}; }
     const glm::mat4& get_matrix() const { return matrix; }
     const FontFace& get_font_face() const { return font_face; }
-    const Shader& get_sprite_shader() const { return sprite_shader; }
-    const Shader& get_text_shader() const { return text_shader; }
+    const Shader& get_shader() const { return shader; }
     TextureAtlas& get_texture_atlas() { return texture_atlas; }
 
     void mark_dirty_recursive(Widget* w) {
@@ -67,9 +66,8 @@ class UI final {
     std::vector<std::unique_ptr<Widget>> widgets;
     std::vector<std::unique_ptr<Widget>> widgets_to_add;
     FT_Library freetype_lib;
-    Shader sprite_shader;
+    Shader shader;
     FontFace font_face;
-    Shader text_shader;
     TextureAtlas texture_atlas;
     i32 window_width = 0;
     i32 window_height = 0;

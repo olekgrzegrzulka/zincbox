@@ -13,20 +13,15 @@
 #include "ui.hpp"
 #include "widget.hpp"
 
-static constexpr char sprite_frag[] = {
-#embed "../shaders/sprite.frag"
+static constexpr char shader_frag[] = {
+#embed "../shaders/ui.frag"
   , 0};
-static constexpr char sprite_vert[] = {
-#embed "../shaders/sprite.vert"
+static constexpr char shader_vert[] = {
+#embed "../shaders/ui.vert"
   , 0};
-static constexpr char text_frag[] = {
-#embed "../shaders/text.frag"
-  , 0};
-static constexpr char text_vert[] = {
-#embed "../shaders/text.vert"
-  , 0};
+
 UI::UI(i32 window_width_, i32 window_height_)
-  : sprite_shader{sprite_vert, sprite_frag}, text_shader{text_vert, text_frag} {
+  : shader{shader_vert, shader_frag}{
   window_width = window_width_;
   window_height = window_height_;
   if (FT_Init_FreeType(&freetype_lib)) {
@@ -72,6 +67,15 @@ void UI::draw() {
   glDisable(GL_DEPTH_TEST);
 
   std::vector<Widget*> to_be_drawn_later;
+
+  shader.use();
+  shader.set_uniform_mat4("matrix", get_matrix());
+
+  // FIXME: don't hardcode texture size
+  shader.set_uniform_float("tex_size", 16, 16);
+
+  texture_atlas.bind(0);
+  font_face.bind(1);
 
   for (auto&& widget : widgets) {
     draw_widget_recursive(widget.get(), &to_be_drawn_later);

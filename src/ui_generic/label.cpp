@@ -51,16 +51,8 @@ void Label::update() {
 }
 
 void Label::draw() {
-  auto& text_shader = ui.get_text_shader();
-  auto& font_face = ui.get_font_face();
-
-  text_shader.use();
-  text_shader.set_uniform_mat4("matrix", ui.get_matrix());
-  text_shader.set_uniform_float("color", text_color.r, text_color.g, text_color.b);
-  font_face.bind(0);
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-
   Widget::draw();
 }
 
@@ -126,13 +118,13 @@ void Label::update_mesh() {
     auto uv_start = glyph->uv_start;
     auto uv_end = glyph->uv_end;
 
-    vertices.emplace_back(vertex2{{start.x, end.y}, {uv_start.x, uv_end.y}});
-    vertices.emplace_back(vertex2{{end.x, end.y}, {uv_end.x, uv_end.y}});
-    vertices.emplace_back(vertex2{{start.x, start.y}, {uv_start.x, uv_start.y}});
+    vertices.emplace_back(vertex_label{.pos = {start.x, end.y}, .uv = {uv_start.x, uv_end.y}, .color = text_color});
+    vertices.emplace_back(vertex_label{.pos = {end.x, end.y}, .uv = {uv_end.x, uv_end.y}, .color = text_color});
+    vertices.emplace_back(vertex_label{.pos = {start.x, start.y}, .uv = {uv_start.x, uv_start.y}, .color = text_color});
 
-    vertices.emplace_back(vertex2{{end.x, end.y}, {uv_end.x, uv_end.y}});
-    vertices.emplace_back(vertex2{{end.x, start.y}, {uv_end.x, uv_start.y}});
-    vertices.emplace_back(vertex2{{start.x, start.y}, {uv_start.x, uv_start.y}});
+    vertices.emplace_back(vertex_label{.pos = {end.x, end.y}, .uv = {uv_end.x, uv_end.y}, .color = text_color});
+    vertices.emplace_back(vertex_label{.pos = {end.x, start.y}, .uv = {uv_end.x, uv_start.y}, .color = text_color});
+    vertices.emplace_back(vertex_label{.pos = {start.x, start.y}, .uv = {uv_start.x, uv_start.y}, .color = text_color});
 
     pen.x += glyph->advance.x / 64.0f;
   }
@@ -152,13 +144,19 @@ void Label::setup_buffers() {
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex2), vertices.data(), GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex_label), vertices.data(), GL_DYNAMIC_DRAW);
 
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex2), (void*)offsetof(vertex2, pos));
+  glVertexAttribPointer(0, 1, GL_INT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, type));
   glEnableVertexAttribArray(0);
 
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex2), (void*)(offsetof(vertex2, uv)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, pos));
   glEnableVertexAttribArray(1);
+
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)(offsetof(vertex_label, uv)));
+  glEnableVertexAttribArray(2);
+
+  glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)(offsetof(vertex_label, color)));
+  glEnableVertexAttribArray(8);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
