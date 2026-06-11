@@ -2,10 +2,13 @@
 #include "track.hpp"
 #include <filesystem>
 #include <fstream>
+#include <optional>
+#include <span>
 #include <string>
 #include "common/serialize.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
+#include "core/musicdb/types.hpp"
 
 db::Track::Track(i32 track_number, std::u32string title, std::u32string artist, std::u32string album_artist,
                  std::u32string genre, i32 year, i32 bitrate, i32 length_seconds, std::u32string path) {
@@ -21,6 +24,7 @@ db::Track::Track(i32 track_number, std::u32string title, std::u32string artist, 
 }
 
 db::Track::Track(std::ifstream& is) {
+  read_bin(is, originating_album_id);
   read_bin(is, track_number);
   read_str(is, title);
   read_str(is, artist);
@@ -32,7 +36,12 @@ db::Track::Track(std::ifstream& is) {
   read_str(is, path);
 }
 
-void db::Track::serialize(std::ostream& os) const {
+void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old_playlist_id_to_new_playlist_id) const {
+  auto origin = db::INVALID_ID;
+  if (old_playlist_id_to_new_playlist_id.has_value()) {
+    origin = old_playlist_id_to_new_playlist_id.value()[originating_album_id];
+  }
+  write_bin(os, origin);
   write_bin(os, track_number);
   write_str(os, title);
   write_str(os, artist);

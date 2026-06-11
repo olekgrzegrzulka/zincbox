@@ -18,10 +18,11 @@ namespace db {
       std::u32string name;
       std::u32string album_path;
       std::u32string author;
-      std::vector<uint8_t> image;
+      std::vector<u8> image;
       PlaylistType type;
       bool tombstone = false;
       std::vector<size_t> track_ids;
+      std::u32string cover_file_path;
 
     public:
       Playlist(std::ifstream&);

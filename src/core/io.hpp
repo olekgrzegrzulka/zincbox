@@ -19,6 +19,7 @@ namespace io {
 
   std::vector<u8> resize_album_art_to_64x64(const std::vector<u8>& raw_data);
   std::vector<u8> fetch_album_art(const TagLib::FileRef&);
+  std::optional<fs::path> save_album_art(const TagLib::FileRef&);
   bool is_cover_file(const fs::path& path);
   bool is_music_file(const fs::path& path);
   bool add_cover_file(db::Playlist& playlist, const fs::path& path);
@@ -27,6 +28,7 @@ namespace io {
   fs::path get_themes_path();
   fs::path get_db_path();
   fs::path get_cfg_path();
+  fs::path get_cover_cache_path();
 
   class TrackFile final {
     public:
@@ -40,6 +42,7 @@ namespace io {
       bool is_valid() const { return track.has_value(); }
       std::optional<db::Track> get_track() const { return track; }
       std::vector<u8> get_album_art();
+      std::optional<fs::path> save_album_art();
       std::u32string get_album_name() const { return album_name; }
       std::u32string get_album_artist() const { return album_artist; }
 
