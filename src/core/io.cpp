@@ -1,7 +1,9 @@
 #include "io.hpp"
+#include <cstdio>
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <spng.h>
 #include <taglib/fileref.h>
 #include <taglib/flac/flacfile.h>
 #include <taglib/mp4/mp4file.h>
@@ -9,11 +11,13 @@
 #include <taglib/mpeg/mpegfile.h>
 #include <taglib/ogg/vorbis/vorbisfile.h>
 #include <taglib/tag.h>
+#include <taglib/toolkit/tbytevector.h>
 #include <taglib/toolkit/tfilestream.h>
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
+#include "common/random.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/track.hpp"
@@ -31,7 +35,10 @@ std::vector<u8> io::resize_album_art_to_64x64(const std::vector<u8>& raw_data) {
 
   int width, height, channels;
   u8* img = stbi_load_from_memory(raw_data.data(), (int)raw_data.size(), &width, &height, &channels, STBI_rgb_alpha);
-  if (!img) { return {}; }
+  if (!img) {
+    stbi_image_free(img);
+    return {};
+  }
 
   std::vector<u8> resized(64 * 64 * 4);
   stbir_resize_uint8_linear(img, width, height, 0, resized.data(), 64, 64, 0, STBIR_RGBA);
@@ -40,17 +47,14 @@ std::vector<u8> io::resize_album_art_to_64x64(const std::vector<u8>& raw_data) {
   return resized;
 }
 
-std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
+std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef& ref) {
   if (auto* mpeg = dynamic_cast<TagLib::MPEG::File*>(ref.file())) {
     if (mpeg->ID3v2Tag()) {
       auto frames = mpeg->ID3v2Tag()->frameList("APIC");
       if (!frames.isEmpty()) {
         auto* frame = reinterpret_cast<TagLib::ID3v2::AttachedPictureFrame*>(frames.front());
         auto data = frame->picture();
-
-        auto art = std::vector<u8>(data.data(), data.data() + data.size());
-        auto resized = resize_album_art_to_64x64(art);
-        return resized;
+        return data;
       }
     }
   }
@@ -61,16 +65,11 @@ std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
 
       const auto& fieldListMap = tag->fieldListMap();
       if (fieldListMap.contains("METADATA_BLOCK_PICTURE")) {
-
         auto pictures = tag->pictureList();
-
         if (!pictures.isEmpty()) {
           TagLib::FLAC::Picture* pic = pictures[0];
           auto data = pic->data();
-
-          auto art = std::vector<u8>(data.data(), data.data() + data.size());
-          auto resized = resize_album_art_to_64x64(art);
-          return resized;
+          return data;
         }
       }
     }
@@ -80,9 +79,7 @@ std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
     const auto& pics = flac->pictureList();
     if (!pics.isEmpty()) {
       auto data = pics.front()->data();
-      auto art = std::vector<u8>(data.data(), data.data() + data.size());
-      auto resized = resize_album_art_to_64x64(art);
-      return resized;
+      return data;
     }
   }
 
@@ -93,14 +90,76 @@ std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
         auto coverList = items["covr"].toCoverArtList();
         if (!coverList.isEmpty()) {
           auto data = coverList.front().data();
-          auto art = std::vector<u8>(data.data(), data.data() + data.size());
-          auto resized = resize_album_art_to_64x64(art);
-          return resized;
+          return data;
         }
       }
     }
   }
+  return std::nullopt;
+}
+
+std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
+  auto picture_frame = get_picture_frame(ref);
+  if (picture_frame.has_value()) {
+    auto art = std::vector<u8>(picture_frame->data(), picture_frame->data() + picture_frame->size());
+    auto resized = resize_album_art_to_64x64(art);
+    return resized;
+  }
   return {};
+}
+
+std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
+  auto picture_frame = get_picture_frame(ref);
+  if (!picture_frame) { return std::nullopt; }
+
+  int width, height, channels;
+  auto art = std::vector<u8>(picture_frame->data(), picture_frame->data() + picture_frame->size());
+  u8* img = stbi_load_from_memory(art.data(), (int)art.size(), &width, &height, &channels, STBI_rgb_alpha);
+  if (!img) {
+    stbi_image_free(img);
+    return std::nullopt;
+  }
+
+  auto path = io::get_cover_cache_path();
+
+  size_t filename = StaticRandom::get().next<size_t>(1000000000, 9999999999);
+  std::filesystem::path file_path = std::filesystem::path(path) / (std::to_string(filename) + ".png");
+
+  FILE* out_file = fopen(file_path.string().c_str(), "wb");
+  if (!out_file) { return std::nullopt; }
+
+  spng_ctx* enc_ctx = spng_ctx_new(SPNG_CTX_ENCODER);
+  if (!enc_ctx) {
+    fclose(out_file);
+    return std::nullopt;
+  }
+
+  spng_set_png_file(enc_ctx, out_file);
+  struct spng_ihdr ihdr = {
+    .width = width,
+    .height = height,
+    .bit_depth = 8,
+    .color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA,
+    .compression_method = 0,
+    .filter_method = 0,
+    .interlace_method = 0,
+  };
+  spng_set_ihdr(enc_ctx, &ihdr);
+  size_t image_size = width * height * 4;
+  int error = spng_encode_image(enc_ctx, img, image_size, SPNG_FMT_PNG, SPNG_ENCODE_FINALIZE);
+  if (error != 0) {
+    out::debug_error("spng_encode_image error {} {}", error, spng_strerror(error));
+    stbi_image_free(img);
+    spng_ctx_free(enc_ctx);
+    fclose(out_file);
+    return std::nullopt;
+  }
+
+  stbi_image_free(img);
+  spng_ctx_free(enc_ctx);
+  fclose(out_file);
+
+  return file_path;
 }
 
 bool io::is_cover_file(const fs::path& path) {
@@ -169,17 +228,65 @@ std::vector<u8> io::TrackFile::get_album_art() {
   return album_art;
 }
 
+std::optional<fs::path> io::TrackFile::save_album_art() {
+  TagLib::FileStream fstream(utf32_to_utf8(track->path).c_str(), true);
+  TagLib::FileRef f(&fstream);
+  return io::save_album_art(f);
+}
+
+std::optional<fs::path> save_album_art(stbi_uc* data, i32 width, i32 height) {
+  auto path = io::get_cover_cache_path();
+
+  size_t filename = StaticRandom::get().next<size_t>(1000000000, 9999999999);
+  std::filesystem::path file_path = std::filesystem::path(path) / (std::to_string(filename) + ".png");
+  FILE* out_file = fopen(file_path.string().c_str(), "wb");
+  if (!out_file) { return std::nullopt; }
+
+  spng_ctx* enc_ctx = spng_ctx_new(SPNG_CTX_ENCODER);
+  if (!enc_ctx) {
+    fclose(out_file);
+    return std::nullopt;
+  }
+
+  spng_set_png_file(enc_ctx, out_file);
+  struct spng_ihdr ihdr = {
+    .width = width,
+    .height = height,
+    .bit_depth = 8,
+    .color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA,
+    .compression_method = 0,
+    .filter_method = 0,
+    .interlace_method = 0,
+  };
+  spng_set_ihdr(enc_ctx, &ihdr);
+  size_t image_size = width * height * 4;
+  int error = spng_encode_image(enc_ctx, data, image_size, SPNG_FMT_PNG, SPNG_ENCODE_FINALIZE);
+  if (error != 0) {
+    out::debug_error("spng_encode_image error {} {}", error, spng_strerror(error));
+    spng_ctx_free(enc_ctx);
+    fclose(out_file);
+    return std::nullopt;
+  }
+
+  spng_ctx_free(enc_ctx);
+  fclose(out_file);
+
+  return file_path;
+}
+
 bool io::add_cover_file(db::Playlist& playlist, const fs::path& path) {
   if (!playlist.image.empty()) { return false; }
   i32 width, height, channels;
   stbi_uc* data = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
   if (!data) { return false; }
+  auto cover_path = ::save_album_art(data, width, height);
   std::vector<u8> data_64x64{};
   data_64x64.resize(64 * 64 * 4);
   stbir_resize_uint8_linear(data, width, height, 0, data_64x64.data(), 64, 64, 0, STBIR_RGBA);
   stbi_image_free(data);
 
   playlist.image = data_64x64;
+  playlist.cover_file_path = utf8_to_utf32(cover_path->string());
   return true;
 }
 
@@ -213,7 +320,7 @@ fs::path io::get_user_data_path() {
 }
 
 fs::path io::get_themes_path() {
-  const fs::path path = get_user_data_path() / "themes";
+  fs::path path = get_user_data_path() / "themes";
 
   if (!fs::exists(fs::path(path))) {
     if (!fs::create_directories(fs::path(path))) {
@@ -228,12 +335,22 @@ fs::path io::get_themes_path() {
   return path;
 }
 
-fs::path io::get_db_path() {
-  const fs::path path = get_user_data_path() / "zincbox.db";
-  return path;
-}
+fs::path io::get_db_path() { return get_user_data_path() / "zincbox.db"; }
 
-fs::path io::get_cfg_path() {
-  const fs::path path = get_user_data_path() / "zincbox.cfg";
+fs::path io::get_cfg_path() { return get_user_data_path() / "zincbox.cfg"; }
+
+fs::path io::get_cover_cache_path() {
+  fs::path path = get_user_data_path() / "cover_cache";
+
+  if (!fs::exists(fs::path(path))) {
+    if (!fs::create_directories(fs::path(path))) {
+      out::log_critical("failed to create cover_cache directory");
+      exit(1);
+    }
+  } else if (!fs::is_directory(fs::path(path))) {
+    out::log_critical("cover_cache directory exists but is not a directory");
+    exit(1);
+  }
+
   return path;
 }

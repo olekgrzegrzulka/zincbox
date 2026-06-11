@@ -27,6 +27,7 @@ db::Playlist::Playlist(std::ifstream& is) {
     read_bin(is, value);
     track_ids[i] = value;
   }
+  read_str(is, cover_file_path);
 }
 
 bool db::Playlist::add_track(size_t track_id) {
@@ -102,6 +103,7 @@ void db::Playlist::serialize(std::ostream& os) const {
   for (size_t track_id : track_ids) {
     write_bin(os, track_id);
   }
+  write_str(os, cover_file_path);
 }
 
 void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_track_id_to_new_track_id) const {
@@ -113,4 +115,5 @@ void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_tr
   for (size_t track_id : track_ids) {
     write_bin(os, old_track_id_to_new_track_id[track_id]);
   }
+  write_str(os, cover_file_path);
 }

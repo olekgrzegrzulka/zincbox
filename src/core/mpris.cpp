@@ -1,5 +1,6 @@
 #include "core/mpris.hpp"
 #include <string>
+#include <utility>
 #include "common/logger.hpp"
 
 #ifndef _WIN32
@@ -18,6 +19,7 @@ static i64 duration_us;
 static std::string title;
 static std::string artist;
 static std::string album;
+static std::string cover_path;
 
 static const char* const player_name = "zincbox";
 static const char* const player_id = "org.mpris.MediaPlayer2.zincbox";
@@ -53,7 +55,8 @@ void mpris::init() {
               {"mpris:length", sdbus::Variant(duration_us)},
               {"xesam:title", sdbus::Variant(title)},
               {"xesam:artist", sdbus::Variant(std::vector<std::string>{artist})},
-              {"xesam:album", sdbus::Variant(album)}};
+              {"xesam:album", sdbus::Variant(album)},
+              {"mpris:artUrl", sdbus::Variant(std::string{cover_path})}};
           }),
           sdbus::registerMethod("Quit").implementedAs([]() {}),
           sdbus::registerMethod("Next").implementedAs([]() { command_queue.push(Command{.type = CommandType::NEXT}); }),
@@ -113,11 +116,13 @@ void mpris::notify_playback_status_stopped() {
   }
 }
 
-void mpris::notify_track_change(std::string title_, std::string artist_, std::string album_, i64 duration_ms) {
+void mpris::notify_track_change(std::string title_, std::string artist_, std::string album_, i64 duration_ms,
+                                std::string cover_path_) {
   title = std::move(title_);
   artist = std::move(artist_);
   album = std::move(album_);
   duration_us = duration_ms * 1000;
+  cover_path = "file://" + std::move(cover_path_);
   if (mpris_object) {
     mpris_object->emitPropertiesChangedSignal("org.mpris.MediaPlayer2.Player", {sdbus::PropertyName("Metadata")});
   }
