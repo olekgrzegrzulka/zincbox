@@ -111,7 +111,6 @@ std::vector<u8> io::fetch_album_art(const TagLib::FileRef& ref) {
 std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
   auto picture_frame = get_picture_frame(ref);
   if (!picture_frame) { return std::nullopt; }
-
   int width, height, channels;
   auto art = std::vector<u8>(picture_frame->data(), picture_frame->data() + picture_frame->size());
   u8* img = stbi_load_from_memory(art.data(), (int)art.size(), &width, &height, &channels, STBI_rgb_alpha);
@@ -119,7 +118,12 @@ std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
     stbi_image_free(img);
     return std::nullopt;
   }
-
+  std::vector<u8> img_resized;
+  double scale = std::min(512.0 / width, 512.0 / height);
+  i32 w = width * scale;
+  i32 h = height * scale;
+  img_resized.resize((long)4 * w * h);
+  stbir_resize_uint8_linear(img, width, height, 0, img_resized.data(), w, h, 0, STBIR_RGBA);
   auto path = io::get_cover_cache_path();
 
   size_t filename = StaticRandom::get().next<size_t>(1000000000, 9999999999);
@@ -127,7 +131,6 @@ std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
 
   FILE* out_file = fopen(file_path.string().c_str(), "wb");
   if (!out_file) { return std::nullopt; }
-
   spng_ctx* enc_ctx = spng_ctx_new(SPNG_CTX_ENCODER);
   if (!enc_ctx) {
     fclose(out_file);
@@ -136,8 +139,8 @@ std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
 
   spng_set_png_file(enc_ctx, out_file);
   struct spng_ihdr ihdr = {
-    .width = width,
-    .height = height,
+    .width = w,
+    .height = h,
     .bit_depth = 8,
     .color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA,
     .compression_method = 0,
@@ -145,8 +148,8 @@ std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
     .interlace_method = 0,
   };
   spng_set_ihdr(enc_ctx, &ihdr);
-  size_t image_size = width * height * 4;
-  int error = spng_encode_image(enc_ctx, img, image_size, SPNG_FMT_PNG, SPNG_ENCODE_FINALIZE);
+  size_t image_size = w * h * 4;
+  int error = spng_encode_image(enc_ctx, img_resized.data(), image_size, SPNG_FMT_PNG, SPNG_ENCODE_FINALIZE);
   if (error != 0) {
     out::debug_error("spng_encode_image error {} {}", error, spng_strerror(error));
     stbi_image_free(img);
@@ -154,7 +157,6 @@ std::optional<fs::path> io::save_album_art(const TagLib::FileRef& ref) {
     fclose(out_file);
     return std::nullopt;
   }
-
   stbi_image_free(img);
   spng_ctx_free(enc_ctx);
   fclose(out_file);
