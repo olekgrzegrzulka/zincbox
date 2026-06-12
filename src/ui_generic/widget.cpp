@@ -14,8 +14,24 @@ vec2i Widget::get_position(Anchor relative_to) const {
 void Widget::draw() {}
 
 void Widget::input() {
-  for (auto&& child : children) {
-    if (child->get_is_updated() && !child->get_marked_for_deletion()) { child->input(); }
+  for (auto&& child = children.rbegin(); child != children.rend(); child += 1) {
+    if (!child->get()->get_is_updated() || child->get()->get_marked_for_deletion()) { continue; }
+    if (!child->get()->is_drawn_on_top) { continue; }
+    child->get()->input();
+  }
+
+  for (auto&& child = children.rbegin(); child != children.rend(); child += 1) {
+    if (!child->get()->get_is_updated() || child->get()->get_marked_for_deletion()) { continue; }
+    if (child->get()->is_drawn_on_top) { continue; }
+    if (child->get()->draw_behind_parent) { continue; }
+    child->get()->input();
+  }
+
+  for (auto&& child = children.rbegin(); child != children.rend(); child += 1) {
+    if (!child->get()->get_is_updated() || child->get()->get_marked_for_deletion()) { continue; }
+    if (child->get()->is_drawn_on_top) { continue; }
+    if (!child->get()->draw_behind_parent) { continue; }
+    child->get()->input();
   }
 
   for (auto& ev : Input::get_event_queue()) {

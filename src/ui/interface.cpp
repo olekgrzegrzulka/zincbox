@@ -355,7 +355,7 @@ void interface::init() {
   }
 }
 
-void interface::process_input() {
+void interface::input() {
   while (auto cmd = mpris::command_pop()) {
     switch (cmd->type) {
     case mpris::CommandType::PLAY: player::resume(); break;
@@ -396,7 +396,7 @@ void interface::process_input() {
   }
 
   handle_dropped_files();
-  ui->process_input();
+  ui->input();
 }
 
 void interface::update(vec2i window_size) {

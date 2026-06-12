@@ -28,7 +28,7 @@ class UI final {
       return widget;
     }
 
-    virtual void process_input();
+    virtual void input();
     virtual void update(i32 window_width_, i32 window_height_);
     virtual void draw();
 

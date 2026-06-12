@@ -144,7 +144,7 @@ int main() {
     glfwPollEvents();
     Input::update();
     player::update();
-    interface::process_input();
+    interface::input();
     interface::update(window_size);
     interface::draw();
     Input::clear();
