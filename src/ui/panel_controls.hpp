@@ -13,6 +13,7 @@ class PanelControls : public Sprite {
     PanelControls(UI& ui_);
     ~PanelControls() override;
     using Sprite::event;
+    void event(Input::InputEventMouseScroll&) override;
     void event(Input::InputEventMouseButton&) override;
     void event(Input::InputEventKey&) override;
     void update() override;
@@ -32,6 +33,7 @@ class PanelControls : public Sprite {
     ToolTip* tooltip_button_shuffle{};
     ToolTip* tooltip_button_repeat{};
     ToolTip* tooltip_timestamp{};
+    ToolTip* tooltip_volume{};
     Slider* seekbar{};
     Slider* volume_bar{};
     Label* label_progress{};
@@ -43,6 +45,7 @@ class PanelControls : public Sprite {
     i32 progress_ms_prev = -1000;
     i32 total_ms_prev = -1000;
     i32 tooltip_ms_prev = -1000;
+    double volume_prev = -1.0;
 
     Signal<>::slot_key slot_on_track_changed;
     bool is_playing = false;

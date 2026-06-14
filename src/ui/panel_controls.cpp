@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <ios>
 #include <sstream>
+#include <string>
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
@@ -96,6 +97,8 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   volume_bar->set_min_value(0.0f);
   volume_bar->set_max_value(1.0f);
   volume_bar->on_value_changed([](float, float volume) { player::set_volume(volume); });
+
+  tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
 
   label_progress = &panel_right.add_child<Label>("0:00 / 0:00");
   label_progress->set_max_width(80);
@@ -194,6 +197,14 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
 
 PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
+void PanelControls::event(Input::InputEventMouseScroll& ev) {
+  if (volume_bar->is_mouse_hovering()) {
+    i32 sign = ev.offset.y / std::abs(ev.offset.y);
+    player::set_volume(player::get_volume() + sign * 0.03);
+    ev.handled = true;
+  }
+}
+
 void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 
@@ -287,6 +298,7 @@ void PanelControls::update() {
     if (seekbar->is_being_dragged()) { tooltip_ms = progress_ms; }
     i32 tooltip_s = tooltip_ms / 1000;
     if (tooltip_s != tooltip_ms_prev / 1000) {
+      tooltip_ms_prev = tooltip_ms;
       i32 tooltip_m = tooltip_s / 60;
       tooltip_s %= 60;
       std::stringstream ss_hover;
@@ -300,6 +312,20 @@ void PanelControls::update() {
     tooltip_timestamp->set_x(x_rel - seekbar->get_width() / 2);
   } else {
     tooltip_timestamp->set_is_drawn(false);
+  }
+
+  if (volume_bar->is_mouse_hovering()) {
+    double tooltip_value = volume_bar->get_value();
+    if (volume_bar->get_thumb().is_mouse_hovering()) { tooltip_value = volume_bar->get_value(); }
+    if (tooltip_value != volume_prev) {
+      volume_prev = tooltip_value;
+      tooltip_volume->set_text(std::to_string((i32)(tooltip_value * 100)) + "%");
+    }
+    tooltip_volume->set_is_drawn(true);
+    // tooltip is centered - subtract half width to compensate
+    tooltip_volume->set_x((volume_bar->get_value() - 0.5) * volume_bar->get_width());
+  } else {
+    tooltip_volume->set_is_drawn(false);
   }
 
   label_track_underline->set_is_drawn(label_track->is_mouse_hovering() &&
