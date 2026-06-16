@@ -260,9 +260,9 @@ void visit_directory(size_t collection_id, std::string_view path) {
           track.originating_album_id = playlist_id;
           tracks[track_id].set_not_found_during_rescan(false);
           auto& playlist = playlists[playlist_id];
-          if (playlist.image.empty() && track_file.fetch_album_art()) {
-            playlist.cover_file_path = utf8_to_utf32(track_file.album_art_path.value().string());
-            playlist.image = std::move(track_file.album_art_64x64);
+          if (playlist.art_64x64.empty() && track_file.fetch_album_art()) {
+            playlist.art_file_path = utf8_to_utf32(track_file.art_file_path.value().string());
+            playlist.art_64x64 = std::move(track_file.art_64x64);
           }
         } else {
         }
@@ -275,7 +275,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
   if (cover_file_path.has_value()) {
     for (size_t playlist_id : album_ids_visited) {
       auto& playlist = playlists[playlist_id];
-      if (playlist.image.empty()) { playlist.fetch_cover_art(cover_file_path.value()); }
+      if (playlist.art_64x64.empty()) { playlist.fetch_cover_art(cover_file_path.value()); }
     }
   }
 }
@@ -487,14 +487,14 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track& track) {
 void db::set_playlist_image(size_t playlist_id, std::string_view image_path) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
-  playlist.image.clear();
+  playlist.art_64x64.clear();
   playlist.fetch_cover_art(image_path);
 }
 
 void db::reset_playlist_image(size_t playlist_id) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
-  playlist.image.clear();
+  playlist.art_64x64.clear();
 }
 
 void db::rename_playlist(size_t playlist_id, std::u32string_view new_name) {
