@@ -36,13 +36,13 @@ std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef&);
 static Random rng{};
 
 TrackFile::TrackFile(TrackFile&& other) noexcept
-  : track(std::move(other.track)), album_art_64x64(std::move(other.album_art_64x64)),
+  : track(std::move(other.track)), art_64x64(std::move(other.art_64x64)),
     album_name(std::move(other.album_name)), album_artist(std::move(other.album_artist)) {}
 
 TrackFile& TrackFile::operator=(TrackFile&& other) noexcept {
   if (this != &other) {
     track = std::move(other.track);
-    album_art_64x64 = std::move(other.album_art_64x64);
+    art_64x64 = std::move(other.art_64x64);
     album_name = std::move(other.album_name);
     album_artist = std::move(other.album_artist);
   }
@@ -89,21 +89,21 @@ bool TrackFile::fetch_album_art(TagLib::FileRef* ref) {
   if (ref) {
     auto picture_frame = get_picture_frame(*ref);
     if (picture_frame.has_value()) {
-      album_art_64x64 =
+      art_64x64 =
         resize_album_art_to_64x64(reinterpret_cast<const u8*>(picture_frame->data()), (int)picture_frame->size());
-      album_art_path = save_album_art(reinterpret_cast<const u8*>(picture_frame->data()), (int)picture_frame->size());
+      art_file_path = save_album_art(reinterpret_cast<const u8*>(picture_frame->data()), (int)picture_frame->size());
     }
   } else {
     TagLib::FileStream fstream(path.c_str(), true);
     TagLib::FileRef f(&fstream);
     auto picture_frame = get_picture_frame(f);
     if (picture_frame.has_value()) {
-      album_art_64x64 =
+      art_64x64 =
         resize_album_art_to_64x64(reinterpret_cast<const u8*>(picture_frame->data()), (int)picture_frame->size());
-      album_art_path = save_album_art(reinterpret_cast<const u8*>(picture_frame->data()), (int)picture_frame->size());
+      art_file_path = save_album_art(reinterpret_cast<const u8*>(picture_frame->data()), (int)picture_frame->size());
     }
   }
-  return album_art_path.has_value() && !album_art_64x64.empty();
+  return art_file_path.has_value() && !art_64x64.empty();
 }
 
 std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef& ref) {

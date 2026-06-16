@@ -30,8 +30,8 @@ class TrackFile final {
   public:
     std::filesystem::path path;
     std::optional<db::Track> track;
-    std::vector<u8> album_art_64x64;
-    std::optional<std::filesystem::path> album_art_path;
+    std::vector<u8> art_64x64;
+    std::optional<std::filesystem::path> art_file_path;
     std::u32string album_name;
     std::u32string album_artist;
 };

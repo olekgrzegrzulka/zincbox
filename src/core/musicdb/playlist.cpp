@@ -15,11 +15,11 @@ db::Playlist::Playlist(std::ifstream& is) {
 
   size_t image_size = 0;
   read_bin(is, image_size);
-  image.resize(image_size);
+  art_64x64.resize(image_size);
   for (size_t i = 0; i < image_size; i += 1) {
     u8 value;
     read_bin(is, value);
-    image[i] = value;
+    art_64x64[i] = value;
   }
   read_bin(is, type);
   size_t track_ids_size = 0;
@@ -30,7 +30,7 @@ db::Playlist::Playlist(std::ifstream& is) {
     read_bin(is, value);
     track_ids[i] = value;
   }
-  read_str(is, cover_file_path);
+  read_str(is, art_file_path);
 }
 
 bool db::Playlist::add_track(size_t track_id) {
@@ -63,15 +63,15 @@ void db::Playlist::sort_by_track_number() {
 bool db::Playlist::fetch_cover_art(const fs::path& path) {
   i32 width, height, channels;
   stbi_uc* img = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-  image = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
+  art_64x64 = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
   auto path_art = TrackFile::save_album_art(img, width, height, channels);
   stbi_image_free(img);
   if (path_art.has_value()) {
-    cover_file_path = utf8_to_utf32(path_art.value().string());
+    art_file_path = utf8_to_utf32(path_art.value().string());
   } else {
     path_art->clear();
   }
-  return !image.empty() && !cover_file_path.empty();
+  return !art_64x64.empty() && !art_file_path.empty();
 }
 
 std::optional<size_t> db::Playlist::next_track_id(size_t track_id) const {
@@ -111,8 +111,8 @@ std::optional<size_t> db::Playlist::find_track_index(size_t track_id) const {
 void db::Playlist::serialize(std::ostream& os) const {
   write_str(os, name);
   write_str(os, author);
-  write_bin(os, image.size());
-  for (auto a : image) {
+  write_bin(os, art_64x64.size());
+  for (auto a : art_64x64) {
     write_bin(os, a);
   }
   write_bin(os, type);
@@ -120,17 +120,17 @@ void db::Playlist::serialize(std::ostream& os) const {
   for (size_t track_id : track_ids) {
     write_bin(os, track_id);
   }
-  write_str(os, cover_file_path);
+  write_str(os, art_file_path);
 }
 
 void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_track_id_to_new_track_id) const {
   write_str(os, name);
   write_str(os, author);
-  write_blob(os, image);
+  write_blob(os, art_64x64);
   write_bin(os, type);
   write_bin(os, track_ids.size());
   for (size_t track_id : track_ids) {
     write_bin(os, old_track_id_to_new_track_id[track_id]);
   }
-  write_str(os, cover_file_path);
+  write_str(os, art_file_path);
 }
