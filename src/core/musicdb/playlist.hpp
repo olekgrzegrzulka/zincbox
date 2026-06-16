@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -37,6 +38,7 @@ namespace db {
       void sort_by_track_number();
       void set_tombstone(bool t) { tombstone = t; }
       bool is_tombstone() const { return tombstone; }
+      bool fetch_cover_art(const std::filesystem::path&);
 
       std::optional<size_t> next_track_id(size_t track_id) const;
       std::optional<size_t> prev_track_id(size_t track_id) const;

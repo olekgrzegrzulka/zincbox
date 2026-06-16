@@ -4,7 +4,10 @@
 #include <vector>
 #include "common/serialize.hpp"
 #include "common/types.hpp"
+#include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/track_file.hpp"
+#include "lib/stb_image/stb_image.h"
 
 db::Playlist::Playlist(std::ifstream& is) {
   read_str(is, name);
@@ -55,6 +58,20 @@ void db::Playlist::sort_by_track_number() {
     auto& rhs = db::track_by_id(rhs_id)->get();
     return std::tie(lhs.track_number) < std::tie(rhs.track_number);
   });
+}
+
+bool db::Playlist::fetch_cover_art(const fs::path& path) {
+  i32 width, height, channels;
+  stbi_uc* img = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+  image = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
+  auto path_art = TrackFile::save_album_art(img, width, height, channels);
+  stbi_image_free(img);
+  if (path_art.has_value()) {
+    cover_file_path = utf8_to_utf32(path_art.value().string());
+  } else {
+    path_art->clear();
+  }
+  return !image.empty() && !cover_file_path.empty();
 }
 
 std::optional<size_t> db::Playlist::next_track_id(size_t track_id) const {
