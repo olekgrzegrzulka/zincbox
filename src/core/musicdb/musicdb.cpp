@@ -17,6 +17,7 @@
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
+#include "core/track_file.hpp"
 #include "musicdb.hpp"
 #include "playlist.hpp"
 #include "track.hpp"
@@ -249,21 +250,19 @@ void visit_directory(size_t collection_id, std::string_view path) {
       visit_directory(collection_id, entry.path().string());
     } else if (entry.is_regular_file()) {
       if (io::is_music_file(entry)) {
-        io::TrackFile track_file(entry.path());
-        if (track_file.is_valid()) {
-          Track track = track_file.get_track().value();
+        TrackFile track_file(entry.path(), false);
+        if (track_file.track.has_value()) {
+          Track track = track_file.track.value();
           size_t playlist_id =
-            db::get_album_id(collection_id, track_file.get_album_name(), track_file.get_album_artist(), track.path);
+            db::get_album_id(collection_id, track_file.album_name, track_file.album_artist, track.path);
           album_ids_visited.insert(playlist_id);
           auto track_id = db::add_track_to_playlist(playlist_id, track);
           track.originating_album_id = playlist_id;
           tracks[track_id].set_not_found_during_rescan(false);
-          if (playlists[playlist_id].image.empty()) {
-            auto cover_path = track_file.save_album_art();
-            if (cover_path.has_value()) {
-              playlists[playlist_id].cover_file_path = utf8_to_utf32(cover_path.value().string());
-              playlists[playlist_id].image = track_file.get_album_art();
-            }
+          auto& playlist = playlists[playlist_id];
+          if (playlist.image.empty() && track_file.fetch_album_art()) {
+            playlist.cover_file_path = utf8_to_utf32(track_file.album_art_path.value().string());
+            playlist.image = std::move(track_file.album_art_64x64);
           }
         } else {
         }
@@ -276,7 +275,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
   if (cover_file_path.has_value()) {
     for (size_t playlist_id : album_ids_visited) {
       auto& playlist = playlists[playlist_id];
-      if (playlist.image.empty()) { io::add_cover_file(playlist, *cover_file_path); }
+      if (playlist.image.empty()) { playlist.fetch_cover_art(cover_file_path.value()); }
     }
   }
 }
@@ -489,7 +488,7 @@ void db::set_playlist_image(size_t playlist_id, std::string_view image_path) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
   playlist.image.clear();
-  io::add_cover_file(playlist, image_path);
+  playlist.fetch_cover_art(image_path);
 }
 
 void db::reset_playlist_image(size_t playlist_id) {

@@ -49,6 +49,7 @@ endif()
 include_directories(SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/mpeg/id3v2
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/mpeg/id3v2/frames
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/ogg
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/flac
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/mp4
@@ -109,6 +110,7 @@ set(SOURCES
     ./src/core/player.cpp
     ./src/core/mpris.cpp
     ./src/core/io.cpp
+    ./src/core/track_file.cpp
     ./src/ui_generic/texture.cpp
     ./src/ui_generic/texture_atlas.cpp
     ./src/ui_generic/shader.cpp
