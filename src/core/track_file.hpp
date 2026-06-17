@@ -16,8 +16,8 @@ class TrackFile final {
     TrackFile(const std::filesystem::path& path, bool fetch_album_art);
     bool fetch_album_art(TagLib::FileRef* ref = nullptr);
 
-    TrackFile(TrackFile&& other) noexcept;
-    TrackFile& operator=(TrackFile&& other) noexcept;
+    TrackFile(TrackFile&& other) = delete;
+    TrackFile& operator=(TrackFile&& other) = delete;
     TrackFile(const TrackFile&) = delete;
     TrackFile& operator=(const TrackFile&) = delete;
 
