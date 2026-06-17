@@ -6,7 +6,7 @@
 #include "opengl_includes.hpp"
 
 Texture::Texture(std::string file_name) {
-  std::string file_path = "./assets/" + file_name;
+  std::string file_path = "./assets/" + std::move(file_name);
   texture = Texture::load_texture(file_path);
   sampler = Texture::create_sampler();
 }
@@ -22,7 +22,7 @@ u32 Texture::load_texture(std::string file_path) {
   stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
   if (!data) {
-    out::log_critical("failed to load texture {}", file_path);
+    out::log_critical("load_texture({}): {}", file_path, stbi_failure_reason());
     exit(1);
   }
 

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <optional>
 #include <vector>
+#include "common/logger.hpp"
 #include "common/serialize.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
@@ -63,6 +64,10 @@ void db::Playlist::sort_by_track_number() {
 bool db::Playlist::fetch_cover_art(const fs::path& path) {
   i32 width, height, channels;
   stbi_uc* img = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+  if (img == NULL) {
+    out::debug_error("Playlist::fetch_cover_art({}): {}", path.string(), stbi_failure_reason());
+    return false;
+  }
   art_64x64 = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
   auto path_art = TrackFile::save_album_art(img, width, height, channels);
   stbi_image_free(img);
