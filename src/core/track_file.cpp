@@ -35,20 +35,6 @@ std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef&);
 
 static Random rng{};
 
-TrackFile::TrackFile(TrackFile&& other) noexcept
-  : track(std::move(other.track)), art_64x64(std::move(other.art_64x64)), album_name(std::move(other.album_name)),
-    album_artist(std::move(other.album_artist)) {}
-
-TrackFile& TrackFile::operator=(TrackFile&& other) noexcept {
-  if (this != &other) {
-    track = std::move(other.track);
-    art_64x64 = std::move(other.art_64x64);
-    album_name = std::move(other.album_name);
-    album_artist = std::move(other.album_artist);
-  }
-  return *this;
-}
-
 TrackFile::TrackFile(const fs::path& path, bool fetch_album_art) {
   this->path = path;
   ScopeTimer timer("TrackFile " + std::string(path));
