@@ -487,7 +487,6 @@ size_t db::add_track_to_playlist(size_t playlist_id, Track& track) {
 void db::set_playlist_image(size_t playlist_id, std::string_view image_path) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
-  playlist.art_64x64.clear();
   playlist.fetch_cover_art(image_path);
 }
 
@@ -495,6 +494,7 @@ void db::reset_playlist_image(size_t playlist_id) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
   playlist.art_64x64.clear();
+  playlist.art_file_path.clear();
 }
 
 void db::rename_playlist(size_t playlist_id, std::u32string_view new_name) {

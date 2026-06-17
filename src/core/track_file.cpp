@@ -36,8 +36,8 @@ std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef&);
 static Random rng{};
 
 TrackFile::TrackFile(TrackFile&& other) noexcept
-  : track(std::move(other.track)), art_64x64(std::move(other.art_64x64)),
-    album_name(std::move(other.album_name)), album_artist(std::move(other.album_artist)) {}
+  : track(std::move(other.track)), art_64x64(std::move(other.art_64x64)), album_name(std::move(other.album_name)),
+    album_artist(std::move(other.album_artist)) {}
 
 TrackFile& TrackFile::operator=(TrackFile&& other) noexcept {
   if (this != &other) {
@@ -160,6 +160,10 @@ std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef& ref) 
 std::optional<fs::path> TrackFile::save_album_art(const u8* data, size_t size) {
   int width, height, channels;
   u8* img = stbi_load_from_memory(data, size, &width, &height, &channels, STBI_rgb_alpha);
+  if (img == NULL) {
+    out::debug_error("TrackFile::save_album_art(): {}", stbi_failure_reason());
+    return std::nullopt;
+  }
   auto res = TrackFile::save_album_art(img, width, height, channels);
   stbi_image_free(img);
   return res;
@@ -216,6 +220,10 @@ std::vector<u8> TrackFile::resize_album_art_to_64x64(const u8* data, size_t size
 
   int width, height, channels;
   auto img = stbi_load_from_memory(data, size, &width, &height, &channels, STBI_rgb_alpha);
+  if (img == NULL) {
+    out::debug_error("TrackFile::resize_album_art_to_64x64(): {}", stbi_failure_reason());
+    return {};
+  }
   auto res = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
   stbi_image_free(img);
   return res;
