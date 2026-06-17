@@ -240,12 +240,12 @@ void interface::init() {
         db::set_playlist_image(playlist_id, path_str);
         std::string playlist_id_str = std::to_string(playlist_id);
         ui->get_texture_atlas().remove_texture(playlist_id_str);
-        ui->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().image, 64, 64);
+        ui->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64, 64);
         panel_albums->recreate();
       }
     });
 
-    if (!db::playlist_by_id(playlist_id)->get().image.empty()) {
+    if (!db::playlist_by_id(playlist_id)->get().art_64x64.empty()) {
       popover_labels.emplace_back("Reset image");
       popover_actions.emplace_back([playlist_id]() {
         db::reset_playlist_image(playlist_id);
@@ -355,7 +355,7 @@ void interface::init() {
   }
 }
 
-void interface::process_input() {
+void interface::input() {
   while (auto cmd = mpris::command_pop()) {
     switch (cmd->type) {
     case mpris::CommandType::PLAY: player::resume(); break;
@@ -396,7 +396,7 @@ void interface::process_input() {
   }
 
   handle_dropped_files();
-  ui->process_input();
+  ui->input();
 }
 
 void interface::update(vec2i window_size) {
@@ -460,7 +460,7 @@ static void add_playlist_art_to_texture_atlas(size_t collection_id) {
     if (ui->get_texture_atlas().has_texture(playlist_id_str, 1)) {
       ui->get_texture_atlas().remove_texture(playlist_id_str);
     }
-    ui->get_texture_atlas().add_texture(playlist_id_str, playlist.image, 64, 64);
+    ui->get_texture_atlas().add_texture(playlist_id_str, playlist.art_64x64, 64, 64);
     if (count++ >= 1023) { break; }
   }
   ui->get_texture_atlas().save_to_file("atlas.png");

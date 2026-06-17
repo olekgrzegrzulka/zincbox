@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -18,10 +19,11 @@ namespace db {
       std::u32string name;
       std::u32string album_path;
       std::u32string author;
-      std::vector<uint8_t> image;
+      std::vector<u8> art_64x64;
       PlaylistType type;
       bool tombstone = false;
       std::vector<size_t> track_ids;
+      std::u32string art_file_path;
 
     public:
       Playlist(std::ifstream&);
@@ -36,6 +38,7 @@ namespace db {
       void sort_by_track_number();
       void set_tombstone(bool t) { tombstone = t; }
       bool is_tombstone() const { return tombstone; }
+      bool fetch_cover_art(const std::filesystem::path&);
 
       std::optional<size_t> next_track_id(size_t track_id) const;
       std::optional<size_t> prev_track_id(size_t track_id) const;

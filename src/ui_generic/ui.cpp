@@ -20,8 +20,7 @@ static constexpr char shader_vert[] = {
 #embed "../shaders/ui.vert"
   , 0};
 
-UI::UI(i32 window_width_, i32 window_height_)
-  : shader{shader_vert, shader_frag}{
+UI::UI(i32 window_width_, i32 window_height_) : shader{shader_vert, shader_frag} {
   window_width = window_width_;
   window_height = window_height_;
   if (FT_Init_FreeType(&freetype_lib)) {
@@ -35,7 +34,7 @@ UI::UI(i32 window_width_, i32 window_height_)
   // font_face = FontFace(freetype_lib, "./assets/arial/ARIAL.TTF", 15);
 }
 
-void UI::process_input() {
+void UI::input() {
   std::erase_if(widgets, [](auto&& w) { return w->get_marked_for_deletion(); });
 
   for (auto&& widget : widgets_to_add) {
@@ -43,14 +42,14 @@ void UI::process_input() {
   }
   widgets_to_add.clear();
 
-  for (auto&& widget : widgets) {
-    if (!widget->get_is_updated()) { continue; }
-    if (widget->get_is_drawn_on_top()) { widget->input(); }
+  for (auto&& widget = widgets.rbegin(); widget != widgets.rend(); widget += 1) {
+    if (!widget->get()->get_is_updated()) { continue; }
+    if (widget->get()->get_is_drawn_on_top()) { widget->get()->input(); }
   }
 
-  for (auto&& widget : widgets) {
-    if (!widget->get_is_updated()) { continue; }
-    if (!widget->get_is_drawn_on_top()) { widget->input(); }
+  for (auto&& widget = widgets.rbegin(); widget != widgets.rend(); widget += 1) {
+    if (!widget->get()->get_is_updated()) { continue; }
+    if (!widget->get()->get_is_drawn_on_top()) { widget->get()->input(); }
   }
 }
 

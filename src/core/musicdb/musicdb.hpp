@@ -50,7 +50,7 @@ namespace db {
   bool add_track_id_to_playlist(size_t playlist_id, size_t track_id);
   bool remove_track_id_from_playlist(size_t playlist_id, size_t track_id);
   bool remove_track_index_from_playlist(size_t playlist_id, size_t track_index);
-  size_t add_track_to_playlist(size_t playlist_id, Track);
+  size_t add_track_to_playlist(size_t playlist_id, Track&);
   void set_playlist_image(size_t playlist_id, std::string_view image_path);
   void reset_playlist_image(size_t playlist_id);
   void rename_playlist(size_t playlist_id, std::u32string_view new_name);

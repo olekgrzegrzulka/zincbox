@@ -102,10 +102,10 @@ bool play_track() {
   mpris::notify_volume(volume);
   if (!track.title.empty() && !track.artist.empty()) {
     mpris::notify_track_change(utf32_to_utf8(track.title), utf32_to_utf8(track.artist), utf32_to_utf8(playlist.name),
-                               track.length_seconds * 1000);
+                               track.length_seconds * 1000, utf32_to_utf8(playlist.art_file_path));
   } else {
-    mpris::notify_track_change(std::filesystem::path(utf32_to_utf8(track.path)).filename().string(), "",
-                               utf32_to_utf8(playlist.name), track.length_seconds * 1000);
+    mpris::notify_track_change(utf32_to_utf8(track.pretty_name()), "", utf32_to_utf8(playlist.name),
+                               track.length_seconds * 1000, utf32_to_utf8(playlist.art_file_path));
   }
 
   db::set_track_playback_error(playing->track_id, false);
