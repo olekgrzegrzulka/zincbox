@@ -21,12 +21,20 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
 
   button_play_tooltip = &add_child<ToolTip>("Play", ToolTipPosition::BELOW, 8);
   button_play_next_tooltip = &add_child<ToolTip>("Play next", ToolTipPosition::BELOW, 8);
+  button_sort_tooltip = &add_child<ToolTip>("Sort by", ToolTipPosition::BELOW, 8);
+  button_more_tooltip = &add_child<ToolTip>("More options", ToolTipPosition::BELOW, 8);
   button_play_tooltip->set_is_drawn(false);
   button_play_next_tooltip->set_is_drawn(false);
+  button_sort_tooltip->set_is_drawn(false);
+  button_more_tooltip->set_is_drawn(false);
   button_play_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
   button_play_tooltip->set_anchor(Anchor::TOP_LEFT);
   button_play_next_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
   button_play_next_tooltip->set_anchor(Anchor::TOP_LEFT);
+  button_sort_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  button_sort_tooltip->set_anchor(Anchor::TOP_LEFT);
+  button_more_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  button_more_tooltip->set_anchor(Anchor::TOP_LEFT);
 }
 
 void PanelTracks::draw() { Sprite::draw(); }
@@ -74,6 +82,8 @@ void PanelTracks::update() {
 
   bool button_play_tooltip_visible = false;
   bool button_play_next_tooltip_visible = false;
+  bool button_sort_tooltip_visible = false;
+  bool button_more_tooltip_visible = false;
   for (auto& v : visible_album_widgets) {
     if (v->button_play->is_mouse_hovering()) {
       button_play_tooltip_visible = true;
@@ -87,10 +97,24 @@ void PanelTracks::update() {
       button_play_next_tooltip->set_x(button_play_next_tooltip->get_x() - button_play_next_tooltip->get_width() / 2);
       button_play_next_tooltip->set_y(button_play_next_tooltip->get_y() + 26);
     }
+    if (v->button_sort->is_mouse_hovering()) {
+      button_sort_tooltip_visible = true;
+      button_sort_tooltip->set_pos(v->button_sort->get_position() - get_position());
+      button_sort_tooltip->set_x(button_sort_tooltip->get_x() - button_sort_tooltip->get_width() / 2);
+      button_sort_tooltip->set_y(button_sort_tooltip->get_y() + 26);
+    }
+    if (v->button_more->is_mouse_hovering()) {
+      button_more_tooltip_visible = true;
+      button_more_tooltip->set_pos(v->button_more->get_position() - get_position());
+      button_more_tooltip->set_x(button_more_tooltip->get_x() - button_more_tooltip->get_width() / 2);
+      button_more_tooltip->set_y(button_more_tooltip->get_y() + 26);
+    }
   }
 
   button_play_tooltip->set_is_drawn(button_play_tooltip_visible);
   button_play_next_tooltip->set_is_drawn(button_play_next_tooltip_visible);
+  button_sort_tooltip->set_is_drawn(button_sort_tooltip_visible);
+  button_more_tooltip->set_is_drawn(button_more_tooltip_visible);
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);
@@ -179,6 +203,18 @@ void PanelTracks::create_playlist(size_t playlist_id, i32 album_start_px) {
 
   if (!collection_id.has_value()) { return; }
   auto& w = add_child<WidgetAlbum>(collection_id.value(), playlist_id, on_track_lmb, on_track_rmb);
+  auto* button_more = w.button_more;
+  auto* button_sort = w.button_sort;
+  w.button_more->on_press([this, playlist_id, button_more]() {
+    if (on_playlist_more_options_invoked && collection_id.has_value()) {
+      on_playlist_more_options_invoked(collection_id.value(), playlist_id, button_more);
+    }
+  });
+  w.button_sort->on_press([this, playlist_id, button_sort]() {
+    if (on_playlist_sort_button_pressed && collection_id.has_value()) {
+      on_playlist_sort_button_pressed(collection_id.value(), playlist_id, button_sort);
+    }
+  });
   w.set_y(actual_y);
   w.passed_visibility_test = true;
   visible_album_widgets.emplace_back(&w);

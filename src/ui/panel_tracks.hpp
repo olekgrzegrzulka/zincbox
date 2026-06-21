@@ -39,6 +39,9 @@ class PanelTracks : public Sprite {
                        WidgetTrack* widget)>
       on_track_rmb{};
 
+    std::function<void(size_t collection_id, size_t playlist_id, Widget*)> on_playlist_more_options_invoked{};
+    std::function<void(size_t collection_id, size_t playlist_id, Widget*)> on_playlist_sort_button_pressed{};
+
   protected:
     std::optional<size_t> collection_id{};
     double scroll_px{};
@@ -49,6 +52,8 @@ class PanelTracks : public Sprite {
     ScrollBar* scrollbar{};
     ToolTip* button_play_tooltip{};
     ToolTip* button_play_next_tooltip{};
+    ToolTip* button_sort_tooltip{};
+    ToolTip* button_more_tooltip{};
     std::vector<std::pair<i32, size_t>> album_scroll_px;
     std::vector<WidgetAlbum*> visible_album_widgets;
 };
