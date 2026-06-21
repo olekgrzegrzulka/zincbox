@@ -91,7 +91,54 @@ bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, 
   return true;
 }
 
-void TextureAtlas::add_texture_alias(std::string id, std::string to) { aliases[id] = to; }
+bool TextureAtlas::add_texture_row(std::span<const std::string> ids, std::string path) {
+  for (const auto& id : ids) {
+    if (textures.contains(id)) { return false; }
+  }
+
+  i32 width, height, channels;
+  stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+  if (!data) {
+    out::log_critical("failed to load texture {}", path);
+    exit(1);
+  }
+
+  bool res = add_texture_row(ids, data, width, height);
+  stbi_image_free(data);
+  return res;
+}
+
+bool TextureAtlas::add_texture_row(std::span<const std::string> ids, const u8* data, i32 width, i32 height) {
+  for (const auto& id : ids) {
+    if (textures.contains(id)) { return false; }
+  }
+
+  if (!data) {
+    out::debug_warning("failed to load texture row from data");
+    return false;
+  }
+
+  auto at = paste_texture((stbi_uc*)data, width, height);
+  i32 frag_width = width / (i32)ids.size();
+
+  for (size_t i = 0; i < ids.size(); i += 1) {
+    TextureAtlasData uv;
+    i32 frag_x = at.x + (i32)i * frag_width;
+
+    uv.start = {frag_x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
+    uv.end = {(frag_x + frag_width) / (float)atlas_size_px + half_pixel(),
+              (at.y + height) / (float)atlas_size_px + half_pixel()};
+    uv.width = frag_width;
+    uv.height = height;
+
+    textures[ids[i]] = uv;
+  }
+
+  return true;
+}
+
+void TextureAtlas::add_texture_alias(std::string id, std::string to) { aliases[std::move(id)] = std::move(to); }
 
 bool TextureAtlas::remove_texture(std::string_view id) {
   bool textures_contains_id = textures.contains(id);

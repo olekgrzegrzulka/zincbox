@@ -63,8 +63,8 @@ void load_resources() {
 
   for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
     mz_zip_archive_file_stat file_stat;
-    if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) continue;
-    if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) continue;
+    if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
+    if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
 
     std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
     mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
@@ -187,10 +187,10 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   auto& atlas = ui.get_texture_atlas();
 
   auto atlas_add_texture = [&load_theme_from_resources, &theme_path,
-                            &atlas](std::string id, std::vector<std::string> filenames = {}) -> bool {
+                            &atlas](const std::string& id, std::vector<std::string> filenames = {}) -> bool {
     if (filenames.size() == 0) { filenames = {id}; }
     if (!load_theme_from_resources) {
-      for (std::string filename : filenames) {
+      for (const std::string& filename : filenames) {
         if (fs::is_regular_file((theme_path / (filename + ".png")))) {
           atlas.add_texture(id, (theme_path / (filename + ".png")).c_str());
           return true;
@@ -203,7 +203,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
 
     out::debug_warning("theme has no {}.png, loading from default theme", filenames[0]);
     load_resources();
-    for (std::string filename : filenames) {
+    for (const std::string& filename : filenames) {
       auto it = resources.find(filename + ".png");
       if (it == resources.end()) {
         it = resources.find(filename + ".PNG");
@@ -220,14 +220,54 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     return false;
   };
 
-  auto add_custom_button = [&atlas_add_texture](std::string name) {
-    atlas_add_texture(name + "_disabled", {name + "_disabled", name, "button_disabled"});
-    atlas_add_texture(name + "_hovered", {name + "_hovered", name, "button_hovered"});
-    atlas_add_texture(name + "_idle", {name + "_idle", name, "button_idle"});
-    atlas_add_texture(name + "_pressed", {name + "_pressed", name, "button_pressed"});
+  auto atlas_add_texture_row = [&load_theme_from_resources, &theme_path,
+                                &atlas](std::span<const std::string> ids,
+                                        std::span<const std::string> filenames = {}) -> bool {
+    if (filenames.empty()) { return false; }
+
+    if (!load_theme_from_resources) {
+      for (const std::string& filename : filenames) {
+        if (fs::is_regular_file((theme_path / (filename + ".png")))) {
+          atlas.add_texture_row(ids, (theme_path / (filename + ".png")).string());
+          return true;
+        } else if (fs::is_regular_file((theme_path / (filename + ".PNG")))) {
+          atlas.add_texture_row(ids, (theme_path / (filename + ".PNG")).string());
+          return true;
+        }
+      }
+    }
+
+    out::debug_warning("theme has no {}.png, loading from default theme", filenames[0]);
+    load_resources();
+    for (const std::string& filename : filenames) {
+      auto it = resources.find(filename + ".png");
+      if (it == resources.end()) {
+        it = resources.find(filename + ".PNG");
+        if (it == resources.end()) { continue; }
+      }
+
+      i32 w, h, channels;
+      u8* img = stbi_load_from_memory(it->second.data(), it->second.size(), &w, &h, &channels, STBI_rgb_alpha);
+      if (!img) { continue; }
+
+      atlas.add_texture_row(ids, img, w, h);
+      stbi_image_free(img);
+      return true;
+    }
+    return false;
   };
 
-  auto add_custom_slider = [&atlas_add_texture](std::string name) {
+  auto add_custom_button = [&atlas_add_texture, &atlas_add_texture_row](const std::string& name) {
+    std::array<std::string, 4> ids = {name + "_idle", name + "_hovered", name + "_pressed", name + "_disabled"};
+    if (!atlas_add_texture_row(ids, {name, "button"})) {
+      atlas_add_texture(name + "_disabled", {name + "_disabled", name, "button_disabled"});
+      atlas_add_texture(name + "_hovered", {name + "_hovered", name, "button_hovered"});
+      atlas_add_texture(name + "_idle", {name + "_idle", name, "button_idle"});
+      atlas_add_texture(name + "_pressed", {name + "_pressed", name, "button_pressed"});
+    }
+  };
+
+  auto add_custom_slider = [&atlas_add_texture](const std::string& name) {
     atlas_add_texture(name + "_thumb_idle", {name + "_thumb_idle", name + "_thumb", "slider_thumb_idle"});
     atlas_add_texture(name + "_thumb_hovered", {name + "_thumb_hovered", name + "_thumb", "slider_thumb_hovered"});
     atlas_add_texture(name + "_thumb_pressed", {name + "_thumb_pressed", name + "_thumb", "slider_thumb_pressed"});
@@ -235,15 +275,12 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     atlas_add_texture(name + "_track_active", {name + "_track_active", name + "_track", "slider_track_active"});
   };
 
-  auto add_custom_panel = [&atlas_add_texture](std::string name) {
+  auto add_custom_panel = [&atlas_add_texture](const std::string& name) {
     atlas_add_texture("panel_" + name, {"panel_" + name, "panel"});
   };
 
   // ui
-  atlas_add_texture("button_disabled");
-  atlas_add_texture("button_hovered");
-  atlas_add_texture("button_idle");
-  atlas_add_texture("button_pressed");
+  atlas_add_texture_row({"button_idle", "button_hovered", "button_pressed", "button_disabled"}, {"button"});
   atlas_add_texture("combo_box_button_contract");
   atlas_add_texture("combo_box_button_expand");
   atlas_add_texture("combo_box");
@@ -290,14 +327,10 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   atlas_add_texture("track_bg_playing");
   atlas_add_texture("track_hovered");
   atlas_add_texture("playlist_hovered");
-  atlas_add_texture("tab_active_disabled");
-  atlas_add_texture("tab_active_hovered");
-  atlas_add_texture("tab_active_idle");
-  atlas_add_texture("tab_active_pressed");
-  atlas_add_texture("tab_inactive_disabled");
-  atlas_add_texture("tab_inactive_hovered");
-  atlas_add_texture("tab_inactive_idle");
-  atlas_add_texture("tab_inactive_pressed");
+  atlas_add_texture_row({"tab_active_idle", "tab_active_hovered", "tab_active_pressed", "tab_active_disabled"},
+                        {"tab_active"});
+  atlas_add_texture_row({"tab_inactive_idle", "tab_inactive_hovered", "tab_inactive_pressed", "tab_inactive_disabled"},
+                        {"tab_inactive"});
   atlas_add_texture("popover_panel");
   atlas_add_texture("popover_arrow");
   atlas_add_texture("popover_arrow_inverted");
@@ -313,17 +346,12 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
   atlas_add_texture("stop", {"icons/stop"});
   atlas_add_texture("next", {"icons/next"});
   atlas_add_texture("prev", {"icons/prev"});
-  atlas_add_texture("repeat", {"icons/repeat"});
-  atlas_add_texture("repeat_off", {"icons/repeat_off"});
-  atlas_add_texture("repeat_album", {"icons/repeat_album"});
-  atlas_add_texture("repeat_track", {"icons/repeat_track"});
-  atlas_add_texture("shuffle", {"icons/shuffle"});
-  atlas_add_texture("shuffle_off", {"icons/shuffle_off"});
+  atlas_add_texture_row({"repeat_off", "repeat", "repeat_album", "repeat_track"}, {"icons/repeat"});
+  atlas_add_texture_row({"shuffle_off", "shuffle"}, {"icons/shuffle"});
   atlas_add_texture("settings", {"icons/settings"});
   atlas_add_texture("search", {"icons/search"});
-  atlas_add_texture("clear_search_idle", {"icons/clear_search_idle"});
-  atlas_add_texture("clear_search_hovered", {"icons/clear_search_hovered"});
-  atlas_add_texture("clear_search_pressed", {"icons/clear_search_pressed"});
+  atlas_add_texture_row({"clear_search_idle", "clear_search_hovered", "clear_search_pressed", "clear_search_disabled"},
+                        {"icons/clear_search"});
   atlas_add_texture("sort_by", {"icons/sort_by"});
   atlas_add_texture("button_add_playlist", {"icons/button_add_playlist"});
   atlas_add_texture("cover_unknown");
