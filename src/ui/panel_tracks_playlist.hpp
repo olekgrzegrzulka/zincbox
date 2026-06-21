@@ -4,7 +4,6 @@
 #include "panel_tracks_track.hpp"
 #include "theme.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/tooltip.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
@@ -71,9 +70,12 @@ class WidgetAlbum : public Widget {
       auto& buttons = header.add_child<Widget>();
       buttons.set_anchor(Anchor::RIGHT);
       buttons.set_parent_anchor(Anchor::RIGHT);
-      buttons.set_layout("rtl m:8 s:6");
+      buttons.set_layout("rtl m:8 s:6 fit");
+      button_more = &buttons.add_child<ZincboxButton>("inline_more");
       button_play_next = &buttons.add_child<ZincboxButton>("inline_play_next");
       button_play = &buttons.add_child<ZincboxButton>("inline_play");
+      button_sort = &buttons.add_child<ZincboxButton>("inline_sort");
+
       button_play_next->on_press([this, collection_id]() { player::play_playlist(collection_id, playlist_id, false); });
       button_play->on_press([this, collection_id]() { player::play_playlist(collection_id, playlist_id, true); });
 
@@ -117,6 +119,8 @@ class WidgetAlbum : public Widget {
 
     bool passed_visibility_test = false;
     size_t playlist_id;
+    Button* button_sort{};
     Button* button_play{};
     Button* button_play_next{};
+    Button* button_more{};
 };

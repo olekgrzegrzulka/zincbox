@@ -68,6 +68,8 @@ static void show_popover_track_actions(size_t collection_id, size_t playlist_id,
                                        bool remove_from_playlist_option = false);
 static void show_popover_collection_actions(size_t collection_id, Widget* widget);
 static void show_popover_queue_element_actions(size_t queue_index, Widget* widget);
+static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bool play_actions = true);
+static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget);
 
 class ShortcutInterceptor : public Widget {
   public:
@@ -200,96 +202,20 @@ void interface::init() {
     show_popover_track_actions(collection_id, playlist_id, track_id, playlist_track_index, widget, true);
   };
 
-  panel_albums->on_playlist_lmb = [&](size_t playlist_id, Widget*) { panel_tracks->scroll_to_playlist(playlist_id); };
+  panel_tracks->on_playlist_sort_button_pressed = [](size_t, size_t playlist_id, Widget* w) {
+    show_popover_playlist_sort_options(playlist_id, w);
+  };
 
-  panel_albums->on_playlist_rmb = [&](size_t playlist_id, Widget* widget) {
-    std::vector<std::string> popover_labels;
-    std::vector<std::function<void()>> popover_actions;
+  panel_tracks->on_playlist_more_options_invoked = [](size_t, size_t playlist_id, Widget* w) {
+    show_popover_playlist_actions(playlist_id, w, false);
+  };
 
-    popover_labels.emplace_back("Play");
-    popover_actions.emplace_back([playlist_id]() {
-      if (panel_albums->get_collection_id().has_value()) {
-        player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, true);
-      }
-    });
+  panel_albums->on_playlist_lmb = [&](size_t playlist_id, Widget*) -> void {
+    panel_tracks->scroll_to_playlist(playlist_id);
+  };
 
-    popover_labels.emplace_back("Play next");
-    popover_actions.emplace_back([playlist_id]() {
-      if (panel_albums->get_collection_id().has_value()) {
-        if (player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false)) {
-          notifications->push(U"\'" + db::playlist_by_id(playlist_id)->get().name + U"\' will be playing next");
-        }
-      }
-    });
-
-    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
-      popover_labels.emplace_back("Rename");
-      popover_actions.emplace_back([playlist_id]() { show_popup_rename_playlist(playlist_id); });
-    }
-
-    popover_labels.emplace_back("Pick image file");
-    popover_actions.emplace_back([playlist_id]() {
-      NFD::UniquePathN out_path_n;
-
-      nfdfilteritem_t filter_item[1] = {{"Image files", "png,jpg,jpeg"}};
-      auto result = NFD::OpenDialog(out_path_n, filter_item, 1);
-
-      if (result == NFD_OKAY) {
-        nfdnchar_t* path = out_path_n.get();
-        std::string path_str(path);
-        db::set_playlist_image(playlist_id, path_str);
-        std::string playlist_id_str = std::to_string(playlist_id);
-        ui->get_texture_atlas().remove_texture(playlist_id_str);
-        ui->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64, 64);
-        panel_albums->recreate();
-      }
-    });
-
-    if (!db::playlist_by_id(playlist_id)->get().art_64x64.empty()) {
-      popover_labels.emplace_back("Reset image");
-      popover_actions.emplace_back([playlist_id]() {
-        db::reset_playlist_image(playlist_id);
-        std::string playlist_id_str = std::to_string(playlist_id);
-        ui->get_texture_atlas().remove_texture(playlist_id_str);
-        ui->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
-        panel_albums->recreate();
-      });
-    }
-
-    if (db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album) {
-      popover_labels.emplace_back("Show directory");
-      popover_actions.emplace_back([playlist_id]() {
-        auto& playlist = db::playlist_by_id(playlist_id)->get();
-        if (playlist.get_tracks_count() > 0) {
-          auto& track = db::track_by_id(playlist.get_track_ids()[0])->get();
-          fs::path path(track.path);
-          std::string dir_str = path.parent_path().string();
-#ifdef _WIN32
-          std::string command = "explorer \"" + dir_str + "\"";
-#elif __APPLE__
-          std::string command = "open \"" + dir_str + "\"";
-#else
-          std::string command = "xdg-open \"" + dir_str + "\"";
-#endif
-          std::system(command.c_str());
-        }
-      });
-    }
-
-    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
-      popover_labels.emplace_back("Remove");
-      popover_actions.emplace_back([playlist_id]() { show_popup_delete_playlist(playlist_id); });
-    }
-
-    vec2i at = widget->get_position(Anchor::CENTER);
-    popover_descriptor d{
-      .id = "playlist_actions",
-      .at = at,
-      .distance = 16,
-      .button_labels = popover_labels,
-      .button_actions = popover_actions,
-    };
-    popup_controller->create_popover(d);
+  panel_albums->on_playlist_rmb = [&](size_t playlist_id, Widget* w) -> void {
+    show_popover_playlist_actions(playlist_id, w);
   };
 
   panel_albums->on_button_sort_by_pressed = [](Widget* w) {
@@ -836,3 +762,110 @@ static void show_popover_queue_element_actions(size_t queue_index, Widget* widge
   };
   popup_controller->create_popover(d);
 };
+
+static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bool play_actions) {
+  std::vector<std::string> popover_labels;
+  std::vector<std::function<void()>> popover_actions;
+
+  if (play_actions) {
+    popover_labels.emplace_back("Play");
+    popover_actions.emplace_back([playlist_id]() {
+      if (panel_albums->get_collection_id().has_value()) {
+        player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, true);
+      }
+    });
+
+    popover_labels.emplace_back("Play next");
+    popover_actions.emplace_back([playlist_id]() {
+      if (panel_albums->get_collection_id().has_value()) {
+        if (player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false)) {
+          notifications->push(U"\'" + db::playlist_by_id(playlist_id)->get().name + U"\' will be playing next");
+        }
+      }
+    });
+  }
+
+  if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
+    popover_labels.emplace_back("Rename");
+    popover_actions.emplace_back([playlist_id]() { show_popup_rename_playlist(playlist_id); });
+  }
+
+  popover_labels.emplace_back("Pick image file");
+  popover_actions.emplace_back([playlist_id]() {
+    NFD::UniquePathN out_path_n;
+
+    nfdfilteritem_t filter_item[1] = {{"Image files", "png,jpg,jpeg"}};
+    auto result = NFD::OpenDialog(out_path_n, filter_item, 1);
+
+    if (result == NFD_OKAY) {
+      nfdnchar_t* path = out_path_n.get();
+      std::string path_str(path);
+      db::set_playlist_image(playlist_id, path_str);
+      std::string playlist_id_str = std::to_string(playlist_id);
+      ui->get_texture_atlas().remove_texture(playlist_id_str);
+      ui->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64, 64);
+      panel_albums->recreate();
+    }
+  });
+
+  if (!db::playlist_by_id(playlist_id)->get().art_64x64.empty()) {
+    popover_labels.emplace_back("Reset image");
+    popover_actions.emplace_back([playlist_id]() {
+      db::reset_playlist_image(playlist_id);
+      std::string playlist_id_str = std::to_string(playlist_id);
+      ui->get_texture_atlas().remove_texture(playlist_id_str);
+      ui->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
+      panel_albums->recreate();
+    });
+  }
+
+  if (db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album) {
+    popover_labels.emplace_back("Show directory");
+    popover_actions.emplace_back([playlist_id]() {
+      auto& playlist = db::playlist_by_id(playlist_id)->get();
+      if (playlist.get_tracks_count() > 0) {
+        auto& track = db::track_by_id(playlist.get_track_ids()[0])->get();
+        fs::path path(track.path);
+        std::string dir_str = path.parent_path().string();
+#ifdef _WIN32
+        std::string command = "explorer \"" + dir_str + "\"";
+#elif __APPLE__
+        std::string command = "open \"" + dir_str + "\"";
+#else
+        std::string command = "xdg-open \"" + dir_str + "\"";
+#endif
+        std::system(command.c_str());
+      }
+    });
+  }
+
+  if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
+    popover_labels.emplace_back("Remove");
+    popover_actions.emplace_back([playlist_id]() { show_popup_delete_playlist(playlist_id); });
+  }
+
+  vec2i at = widget->get_position(Anchor::CENTER);
+  popover_descriptor d{
+    .id = "playlist_actions",
+    .at = at,
+    .distance = 16,
+    .button_labels = popover_labels,
+    .button_actions = popover_actions,
+  };
+  popup_controller->create_popover(d);
+}
+
+static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget) {
+  std::vector<std::string> popover_labels = {"Artist (A-Z)", "Artist (Z-A)", "Album name (A-Z)", "Album name (Z-A)"};
+  std::vector<std::function<void()>> popover_actions = {[]() {}, []() {}, []() {}, []() {}};
+
+  vec2i at = widget->get_position(Anchor::CENTER);
+  popover_descriptor d{
+    .id = "playlist_sort",
+    .at = at,
+    .distance = 16,
+    .button_labels = popover_labels,
+    .button_actions = popover_actions,
+  };
+  popup_controller->create_popover(d);
+}
