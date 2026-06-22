@@ -856,8 +856,34 @@ static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bo
 }
 
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget) {
-  std::vector<std::string> popover_labels = {"Artist (A-Z)", "Artist (Z-A)", "Album name (A-Z)", "Album name (Z-A)"};
-  std::vector<std::function<void()>> popover_actions = {[]() {}, []() {}, []() {}, []() {}};
+
+  std::vector<std::string> popover_labels = {"Artist (A-Z)", "Artist (Z-A)", "Title (A-Z)", "Title (Z-A)"};
+  std::vector<std::function<void()>> popover_actions = {
+    [playlist_id]() -> void {
+      db::sort_playlist_by_artist_asc(playlist_id);
+      panel_albums->recreate();
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    },
+    [playlist_id]() -> void {
+      db::sort_playlist_by_artist_desc(playlist_id);
+      panel_albums->recreate();
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    },
+    [playlist_id]() -> void {
+      db::sort_playlist_by_name_asc(playlist_id);
+      panel_albums->recreate();
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    },
+    [playlist_id]() -> void {
+      db::sort_playlist_by_name_desc(playlist_id);
+      panel_albums->recreate();
+      panel_tracks->clear();
+      panel_tracks->recreate(active_collection_id);
+    },
+  };
 
   vec2i at = widget->get_position(Anchor::CENTER);
   popover_descriptor d{

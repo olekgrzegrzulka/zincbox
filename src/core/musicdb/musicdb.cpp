@@ -529,6 +529,31 @@ void db::rename_playlist(size_t playlist_id, std::u32string_view new_name) {
   playlist.name = new_name;
 }
 
+void db::sort_playlist_by_track_number(size_t playlist_id) {
+  if (playlist_id >= playlists.size()) { return; }
+  playlists[playlist_id].sort_by_track_number();
+}
+
+void db::sort_playlist_by_artist_asc(size_t playlist_id) {
+  if (playlist_id >= playlists.size()) { return; }
+  playlists[playlist_id].sort_by_artist_asc();
+}
+
+void db::sort_playlist_by_artist_desc(size_t playlist_id) {
+  if (playlist_id >= playlists.size()) { return; }
+  playlists[playlist_id].sort_by_artist_desc();
+}
+
+void db::sort_playlist_by_name_asc(size_t playlist_id) {
+  if (playlist_id >= playlists.size()) { return; }
+  playlists[playlist_id].sort_by_name_asc();
+}
+
+void db::sort_playlist_by_name_desc(size_t playlist_id) {
+  if (playlist_id >= playlists.size()) { return; }
+  playlists[playlist_id].sort_by_name_desc();
+}
+
 std::optional<std::reference_wrapper<const Track>> db::track_by_id(size_t id) {
   if (id >= tracks.size()) { return std::nullopt; }
   return tracks[id];
