@@ -36,6 +36,10 @@ namespace db {
       bool remove_track_by_id(size_t);
       bool remove_track_by_index(size_t);
       void sort_by_track_number();
+      void sort_by_artist_asc();
+      void sort_by_artist_desc();
+      void sort_by_name_asc();
+      void sort_by_name_desc();
       void set_tombstone(bool t) { tombstone = t; }
       bool is_tombstone() const { return tombstone; }
       bool fetch_cover_art(const std::filesystem::path&);
