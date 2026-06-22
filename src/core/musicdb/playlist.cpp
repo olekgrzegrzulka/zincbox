@@ -14,14 +14,7 @@ db::Playlist::Playlist(std::ifstream& is) {
   read_str(is, name);
   read_str(is, author);
 
-  size_t image_size = 0;
-  read_bin(is, image_size);
-  art_64x64.resize(image_size);
-  for (size_t i = 0; i < image_size; i += 1) {
-    u8 value;
-    read_bin(is, value);
-    art_64x64[i] = value;
-  }
+  read_blob(is, art_64x64);
   read_bin(is, type);
   size_t track_ids_size = 0;
   read_bin(is, track_ids_size);
@@ -148,10 +141,7 @@ std::optional<size_t> db::Playlist::find_track_index(size_t track_id) const {
 void db::Playlist::serialize(std::ostream& os) const {
   write_str(os, name);
   write_str(os, author);
-  write_bin(os, art_64x64.size());
-  for (auto a : art_64x64) {
-    write_bin(os, a);
-  }
+  write_blob(os, art_64x64);
   write_bin(os, type);
   write_bin(os, track_ids.size());
   for (size_t track_id : track_ids) {
