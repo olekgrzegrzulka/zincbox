@@ -229,7 +229,7 @@ size_t db::add_collection(std::u32string_view name) {
 }
 
 size_t db::add_playlist_to_collection(size_t collection_id, Playlist playlist) {
-  playlists.emplace_back(playlist);
+  playlists.emplace_back(std::move(playlist));
   auto& collection = collections[collection_id];
   collection.add_playlist(playlists.size() - 1);
   return playlists.size() - 1;
@@ -280,6 +280,38 @@ void visit_directory(size_t collection_id, std::string_view path) {
   }
 }
 
+void setup_albums(size_t collection_id) {
+  if (collection_id >= collections.size()) { return; }
+  auto& collection = collections[collection_id];
+
+  for (size_t playlist_id : collection.playlist_ids) {
+    auto& playlist = playlists[playlist_id];
+
+    // sort
+    if (playlist.type == db::PlaylistType::Album) { playlist.sort_by_track_number(); }
+
+    // mark tracks not found during rescan as tombstone
+    for (size_t track_id : playlist.get_track_ids()) {
+      auto& track = tracks[track_id];
+      track.set_tombstone(track.is_not_found_during_rescan());
+    }
+
+    // determine artist if not in metadata
+    if (playlist.author.empty()) {
+      std::unordered_map<std::u32string_view, i32> artist_counts;
+      for (size_t track_id : playlist.get_track_ids()) {
+        auto& track = tracks[track_id];
+        artist_counts[track.artist] += 1;
+      }
+
+      auto max_elem = std::max_element(artist_counts.begin(), artist_counts.end(),
+                                       [](const auto& a, const auto& b) { return a.second < b.second; });
+
+      if (max_elem->second >= 0.5 * playlist.get_tracks_count()) { playlist.author = max_elem->first; }
+    }
+  }
+}
+
 bool db::add_path_to_collection(size_t collection_id, std::string_view path) {
   ScopeTimer timer("add_path_to_collection");
 
@@ -289,10 +321,7 @@ bool db::add_path_to_collection(size_t collection_id, std::string_view path) {
 
   visit_directory(collection_id, path);
 
-  for (size_t playlist_id : collection.playlist_ids) {
-    auto& playlist = playlists[playlist_id];
-    if (playlist.type == PlaylistType::Album) { playlist.sort_by_track_number(); }
-  }
+  setup_albums(collection_id);
 
   return true;
 }
@@ -328,14 +357,7 @@ void db::rescan_collection(size_t collection_id) {
     add_path_to_collection(collection_id, path);
   }
 
-  // mark tracks not found during rescan as tombstone
-  for (size_t playlist_id : collection.playlist_ids) {
-    auto& playlist = playlists[playlist_id];
-    for (size_t track_id : playlist.get_track_ids()) {
-      auto& track = tracks[track_id];
-      track.set_tombstone(track.is_not_found_during_rescan());
-    }
-  }
+  setup_albums(collection_id);
 }
 
 void db::rename_collection(size_t collection_id, std::u32string_view new_name) {
@@ -384,7 +406,11 @@ size_t db::get_album_id(size_t collection_id, std::u32string album_name, std::u3
   std::vector<size_t> potential_playlist_ids = playlist_ids_by_name(album_name);
   for (size_t playlist_id : potential_playlist_ids) {
     auto& playlist = playlists[playlist_id];
-    if (collection.has_playlist(playlist_id) && playlist.author == album_artist) { return playlist_id; }
+    if (collection.has_playlist(playlist_id)) {
+      // FIXME: we can't use album_artist to check if albums match because it's often blank on tracks
+      // we fill it in later by checking the most common artist across the album's tracks
+      if (album_artist.empty() || playlist.author == album_artist) { return playlist_id; }
+    }
   }
 
   // create a new playlist if none was found
