@@ -41,25 +41,29 @@ namespace out {
     detail::print_log(LogLevel::CRITICAL, "critical", fmt::format(fmt, std::forward<Args>(args)...));
   }
 
-  template <typename... Args> void debug_info(fmt::format_string<Args...> fmt, Args&&... args) {
+  template <typename... Args>
+  void debug_info([[maybe_unused]] fmt::format_string<Args...> fmt, [[maybe_unused]] Args&&... args) {
 #ifndef NDEBUG
     detail::debug_log(LogLevel::INFO, fmt::format(fmt, std::forward<Args>(args)...), 1);
 #endif
   }
 
-  template <typename... Args> void debug_warning(fmt::format_string<Args...> fmt, Args&&... args) {
+  template <typename... Args>
+  void debug_warning([[maybe_unused]] fmt::format_string<Args...> fmt, [[maybe_unused]] Args&&... args) {
 #ifndef NDEBUG
     detail::debug_log(LogLevel::WARNING, fmt::format(fmt, std::forward<Args>(args)...), 1);
 #endif
   }
 
-  template <typename... Args> void debug_error(fmt::format_string<Args...> fmt, Args&&... args) {
+  template <typename... Args>
+  void debug_error([[maybe_unused]] fmt::format_string<Args...> fmt, [[maybe_unused]] Args&&... args) {
 #ifndef NDEBUG
     detail::debug_log(LogLevel::ERROR, fmt::format(fmt, std::forward<Args>(args)...), 1);
 #endif
   }
 
-  template <typename... Args> void debug_critical(fmt::format_string<Args...> fmt, Args&&... args) {
+  template <typename... Args>
+  void debug_critical([[maybe_unused]] fmt::format_string<Args...> fmt, [[maybe_unused]] Args&&... args) {
 #ifndef NDEBUG
     detail::debug_log(LogLevel::CRITICAL, fmt::format(fmt, std::forward<Args>(args)...), 1);
 #endif
