@@ -17,6 +17,7 @@
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
+#include "core/musicdb/types.hpp"
 #include "core/track_file.hpp"
 #include "musicdb.hpp"
 #include "playlist.hpp"
@@ -77,7 +78,7 @@ void db::serialize(std::ofstream& os) {
     }
   }
 
-  std::vector<size_t> old_track_id_to_new_track_id(tracks.size(), tracks.size());
+  std::vector<size_t> old_track_id_to_new_track_id(tracks.size(), INVALID_ID);
   size_t nontombstoned_tracks_count = 0;
   for (size_t old_track_id = 0; old_track_id < tracks.size(); old_track_id += 1) {
     if (!tracks[old_track_id].is_tombstone()) {
@@ -86,7 +87,7 @@ void db::serialize(std::ofstream& os) {
     }
   }
 
-  std::vector<size_t> old_playlist_id_to_new_playlist_id(playlists.size(), playlists.size());
+  std::vector<size_t> old_playlist_id_to_new_playlist_id(playlists.size(), INVALID_ID);
   size_t nontombstoned_playlists_count = 0;
   for (size_t old_playlist_id = 0; old_playlist_id < playlists.size(); old_playlist_id += 1) {
     if (!playlists[old_playlist_id].is_tombstone()) {

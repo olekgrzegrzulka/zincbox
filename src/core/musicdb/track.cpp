@@ -38,8 +38,10 @@ db::Track::Track(std::ifstream& is) {
 
 void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old_playlist_id_to_new_playlist_id) const {
   auto origin = db::INVALID_ID;
-  if (old_playlist_id_to_new_playlist_id.has_value()) {
+  if (old_playlist_id_to_new_playlist_id.has_value() && originating_album_id != db::INVALID_ID) {
     origin = old_playlist_id_to_new_playlist_id.value()[originating_album_id];
+  } else {
+    origin = INVALID_ID;
   }
   write_bin(os, origin);
   write_bin(os, track_number);
