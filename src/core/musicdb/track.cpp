@@ -60,6 +60,20 @@ std::string db::Track::to_string() const {
          (is_tombstone() ? " (tombstone)" : "");
 }
 
+jt::Json db::Track::to_json() const {
+  jt::Json json;
+  json["trackNumber"] = track_number;
+  json["title"] = utf32_to_utf8(title);
+  json["artist"] = utf32_to_utf8(artist);
+  json["albumArtist"] = utf32_to_utf8(album_artist);
+  json["genre"] = utf32_to_utf8(genre);
+  json["year"] = year;
+  json["bitrate"] = bitrate;
+  json["lengthSeconds"] = length_seconds;
+  json["path"] = utf32_to_utf8(path);
+  return json;
+}
+
 std::u32string db::Track::pretty_name() const {
   if (!title.empty()) {
     if (!artist.empty()) {

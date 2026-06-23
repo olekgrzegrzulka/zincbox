@@ -518,11 +518,8 @@ jt::Json player::to_json() {
     auto playlist = db::playlist_by_id(elem.playlist_id);
     auto collection = db::collection_by_id(elem.collection_id);
     if (!collection.has_value() || !playlist.has_value() || !track.has_value()) { continue; }
-    queue.emplace_back(jt::Json());
+    queue.emplace_back(track->get().to_json());
     jt::Json& json_track = queue.back();
-    json_track["title"] = utf32_to_utf8(track->get().title);
-    json_track["artist"] = utf32_to_utf8(track->get().artist);
-    json_track["trackNumber"] = track->get().track_number;
     json_track["playlist"] = utf32_to_utf8(playlist->get().name);
     json_track["collection"] = utf32_to_utf8(collection->get().name);
   }
