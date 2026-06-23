@@ -1,0 +1,9 @@
+/*.o
+/*.a
+/fuzz
+/*.ok
+/*.elf
+/*.dbg
+/*_test
+/.aarch64
+/build

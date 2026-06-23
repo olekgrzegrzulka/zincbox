@@ -89,7 +89,7 @@ fs::path io::get_themes_path() {
 
 fs::path io::get_db_path() { return get_user_data_path() / "zincbox.db"; }
 
-fs::path io::get_cfg_path() { return get_user_data_path() / "zincbox.cfg"; }
+fs::path io::get_cfg_path() { return get_user_data_path() / "zincbox.json"; }
 
 fs::path io::get_cover_cache_path() {
   fs::path path = get_user_data_path() / "cover_cache";

@@ -3,6 +3,7 @@
 #include <vector>
 #include "common/signal.hpp"
 #include "common/types.hpp"
+#include "lib/json.cpp/json.h"
 
 namespace player {
   enum class RepeatMode {
@@ -51,13 +52,16 @@ namespace player {
   std::optional<playing_t> get_playing();
   const std::vector<player::playing_t>& get_playing_queue();
   std::optional<size_t> get_playing_index();
-  void set_playing_index(size_t);
+  void set_playing_index(std::optional<size_t>);
 
   ShuffleMode get_shuffle_mode();
   void set_shuffle_mode(ShuffleMode);
 
   RepeatMode get_repeat_mode();
   void set_repeat_mode(RepeatMode);
+
+  jt::Json to_json();
+  void from_json(const jt::Json&);
 
   extern const Signal<> signal_on_track_changed;
   extern const Signal<bool /* track_appended_to_back */> signal_on_queue_changed;
