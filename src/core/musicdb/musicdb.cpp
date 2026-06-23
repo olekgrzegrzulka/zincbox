@@ -567,6 +567,17 @@ std::unordered_set<size_t> db::track_by_title(std::u32string_view title) {
   return it->second;
 }
 
+std::unordered_set<size_t> db::track_by_artist_title(std::u32string_view artist, std::u32string_view title) {
+  // ensure(tracks.size() == title_to_track_ids.size());
+  auto it = title_to_track_ids.find(std::u32string(title));
+  if (it == title_to_track_ids.end()) { return {}; }
+  std::unordered_set<size_t> res;
+  for (auto& track_id : it->second) {
+    if (tracks[track_id].artist == artist) { res.emplace(track_id); }
+  }
+  return res;
+}
+
 std::optional<size_t> db::track_by_path(std::u32string_view path) {
   // ensure(tracks.size() == path_to_track_id.size());
   auto it = path_to_track_id.find(std::u32string(path));

@@ -63,6 +63,7 @@ namespace db {
   // track getters
   std::optional<std::reference_wrapper<const Track>> track_by_id(size_t);
   std::unordered_set<size_t> track_by_title(std::u32string_view);
+  std::unordered_set<size_t> track_by_artist_title(std::u32string_view, std::u32string_view);
   std::optional<size_t> track_by_path(std::u32string_view);
   const std::vector<Track>& all_tracks();
   size_t track_count();
