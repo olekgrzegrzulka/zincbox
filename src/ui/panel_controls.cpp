@@ -134,7 +134,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   label_track_underline->set_width(1);
   label_track_underline->set_height(1);
 
-  slot_on_track_changed = player::signal_on_track_changed.connect([this]() {
+  auto on_track_changed = [this]() -> void {
     auto playing = player::get_playing();
     if (!playing.has_value()) {
       label_track->set_text("");
@@ -149,7 +149,10 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
     label_track->update();
     label_track_underline->set_width(label_track->get_text_extents().x);
     label_track_underline->set_y(label_track->get_text_extents().y + 2);
-  });
+  };
+
+  slot_on_track_changed = player::signal_on_track_changed.connect(on_track_changed);
+  on_track_changed();
 
   seekbar->on_drag_ended([](float, float ms) {
     if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) { player::seek_ms(ms); }
