@@ -2,11 +2,13 @@
 #include <algorithm>
 #include <optional>
 #include <vector>
+#include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/random.hpp"
 #include "common/utf.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/types.hpp"
 #include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};
@@ -484,7 +486,7 @@ std::optional<player::playing_t> player::get_playing() {
 const std::vector<player::playing_t>& player::get_playing_queue() { return playing_queue; }
 std::optional<size_t> player::get_playing_index() { return playing_index; }
 
-void player::set_playing_index(size_t i) {
+void player::set_playing_index(std::optional<size_t> i) {
   if (i >= playing_queue.size()) { return; }
   playing_index = i;
   play_track();
@@ -495,3 +497,116 @@ void player::set_shuffle_mode(ShuffleMode s) { shuffle_mode = s; }
 
 player::RepeatMode player::get_repeat_mode() { return repeat_mode; }
 void player::set_repeat_mode(RepeatMode r) { repeat_mode = r; }
+
+jt::Json player::to_json() {
+  auto st = ScopeTimer("player::to_json");
+  jt::Json json;
+  json.setObject();
+  json["repeat_mode"] = (i32)player::get_repeat_mode();
+  json["shuffle_mode"] = (i32)player::get_shuffle_mode();
+  json["volume"] = player::get_volume();
+  json["timestamp"] = player::get_current_time_ms();
+  if (player::get_playing_index().has_value()) {
+    json["queue_index"] = player::get_playing_index().value_or(-1);
+  } else {
+    json["queue_index"] = -1;
+  }
+  json["queue"].setArray();
+  auto& queue = json["queue"].getArray();
+  for (auto& elem : get_playing_queue()) {
+    auto track = db::track_by_id(elem.track_id);
+    auto playlist = db::playlist_by_id(elem.playlist_id);
+    auto collection = db::collection_by_id(elem.collection_id);
+    if (!collection.has_value() || !playlist.has_value() || !track.has_value()) { continue; }
+    queue.emplace_back(jt::Json());
+    jt::Json& json_track = queue.back();
+    json_track["title"] = utf32_to_utf8(track->get().title);
+    json_track["artist"] = utf32_to_utf8(track->get().artist);
+    json_track["trackNumber"] = track->get().track_number;
+    json_track["playlist"] = utf32_to_utf8(playlist->get().name);
+    json_track["collection"] = utf32_to_utf8(collection->get().name);
+  }
+  return json;
+}
+
+void player::from_json(const jt::Json& json) {
+  auto st = ScopeTimer("player::from_json");
+  if (!json.isObject()) { return; }
+  i32 rep = (json.contains("repeat_mode") && json["repeat_mode"].isNumber()) ? json["repeat_mode"].getNumber() : 0;
+  rep = std::clamp(rep, 0, (i32)player::RepeatMode::REPEAT_MODE_SIZE - 1);
+  player::set_repeat_mode((player::RepeatMode)rep);
+  i32 shuf = (json.contains("shuffle_mode") && json["shuffle_mode"].isNumber()) ? json["shuffle_mode"].getNumber() : 0;
+  shuf = std::clamp(shuf, 0, (i32)player::ShuffleMode::SHUFFLE_MODE_SIZE - 1);
+  player::set_shuffle_mode((player::ShuffleMode)shuf);
+  float vol = (json.contains("volume") && json["volume"].isNumber()) ? json["volume"].getNumber() : 0;
+  player::set_volume(vol);
+
+  std::optional<size_t> queue_pos = (json.contains("queue_index") && json["queue_index"].isNumber())
+                                      ? std::make_optional(json["queue_index"].getNumber())
+                                      : std::nullopt;
+
+  if (json.contains("queue") && json["queue"].isArray()) {
+    auto& queue = json["queue"].getArray();
+    for (auto& q : queue) {
+      if (!q.contains("artist") || !q["artist"].isString()) { continue; }
+      if (!q.contains("title") || !q["title"].isString()) { continue; }
+      if (!q.contains("collection") || !q["collection"].isString()) { continue; }
+      if (!q.contains("playlist") || !q["playlist"].isString()) { continue; }
+      std::string playlist_name = q["playlist"].getString();
+      std::string collection_name = q["collection"].getString();
+      auto matches =
+        db::track_by_artist_title(utf8_to_utf32(q["artist"].getString()), utf8_to_utf32(q["title"].getString()));
+
+      auto no_track_matched = [&]() -> void {
+        if (queue_pos == player::get_playing_queue().size()) { queue_pos = std::nullopt; }
+        if (queue_pos < player::get_playing_queue().size()) {
+          if (queue_pos > 0) {
+            queue_pos = queue_pos.value() - 1;
+          } else {
+            queue_pos = std::nullopt;
+          }
+        }
+      };
+
+      if (matches.size() == 0 && queue_pos.has_value()) {
+        no_track_matched();
+        continue;
+      }
+
+      if (matches.size() > 1) {
+        out::debug_warning("player::from_json(): matched multiple tracks for '{} - {}'", q["artist"].getString(),
+                           q["title"].getString());
+      }
+      bool found = false;
+      if (matches.size() > 0) {
+        for (db::collection_id_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
+          if (found) { break; }
+          auto& collection = db::collection_by_id(collection_id)->get();
+          if (utf32_to_utf8(collection.name) != collection_name) { continue; }
+          for (auto& playlist_id : collection.playlist_ids) {
+            if (found) { break; }
+            auto& playlist = db::playlist_by_id(playlist_id)->get();
+            if (utf32_to_utf8(playlist.name) != playlist_name) { continue; }
+            for (auto& track_id : playlist.track_ids) {
+              if (matches.contains(track_id)) {
+                player::enqueue({.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id},
+                                playing_queue.size());
+                found = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!found) { no_track_matched(); }
+      }
+    }
+
+    player::set_playing_index(queue_pos);
+    i32 prog = (json.contains("timestamp") && json["timestamp"].isNumber()) ? json["timestamp"].getNumber() : 0;
+    player::seek_ms(prog);
+    player::pause();
+    player::signal_on_queue_changed.emit(false);
+    player::signal_on_track_changed.emit();
+  }
+}

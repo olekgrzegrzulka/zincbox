@@ -27,6 +27,7 @@
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
+#include "lib/json.cpp/json.h"
 #include "ui/interface.hpp"
 
 const char* get_opengl_error_string(GLenum err) {
@@ -73,15 +74,7 @@ int main() {
   NFD::Init();
   mpris::init();
   player::init();
-  config_load_from_file(io::get_cfg_path());
-  i32 repeat_mode = config_get_i32("repeat_mode").value_or(0);
-  repeat_mode = std::clamp(repeat_mode, 0, (i32)player::RepeatMode::REPEAT_MODE_SIZE - 1);
-  player::set_repeat_mode((player::RepeatMode)repeat_mode);
-  i32 shuffle_mode = config_get_i32("shuffle_mode").value_or(0);
-  shuffle_mode = std::clamp(shuffle_mode, 0, (i32)player::ShuffleMode::SHUFFLE_MODE_SIZE - 1);
-  player::set_shuffle_mode((player::ShuffleMode)shuffle_mode);
-  float volume = std::clamp(config_get_float("volume").value_or(0.5f), 0.0f, 1.0f);
-  player::set_volume(volume);
+  config::load_from_file();
 
   out::debug_info("deserialize start");
   if (std::filesystem::exists(io::get_db_path())) {
@@ -91,6 +84,8 @@ int main() {
     db::create_empty_db();
   }
   out::debug_info("deserialize end");
+
+  if (config::json().contains("player")) { player::from_json(config::json()["player"]); }
 
   // libdecor causes lag when resizing the window on Wayland
   // but it's needed for GNOME - so disable only if not needed
@@ -103,8 +98,8 @@ int main() {
     exit(1);
   }
   vec2i window_size = {
-    std::clamp(config_get_i32("window_width").value_or(800), 480, 1920 * 4),
-    std::clamp(config_get_i32("window_height").value_or(600), 320, 1080 * 4),
+    std::clamp(config::get_i32("window_width").value_or(800), 480, 1920 * 4),
+    std::clamp(config::get_i32("window_height").value_or(600), 320, 1080 * 4),
   };
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "zincbox", NULL, NULL);
@@ -159,10 +154,10 @@ int main() {
   }
 
   i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
-  config_set_i32("window_maximized", maximized);
+  config::set_i32("window_maximized", maximized);
   if (!maximized) {
-    config_set_i32("window_width", window_size.x);
-    config_set_i32("window_height", window_size.y);
+    config::set_i32("window_width", window_size.x);
+    config::set_i32("window_height", window_size.y);
   }
 
   {
@@ -171,10 +166,8 @@ int main() {
     db::serialize(s);
   }
 
-  config_set_i32("repeat_mode", (i32)player::get_repeat_mode());
-  config_set_i32("shuffle_mode", (i32)player::get_shuffle_mode());
-  config_set_float("volume", player::get_volume());
-  config_save_to_file(io::get_cfg_path());
+  config::json()["player"] = player::to_json();
+  config::save_to_file();
   interface::deinit();
   player::deinit();
   mpris::deinit();

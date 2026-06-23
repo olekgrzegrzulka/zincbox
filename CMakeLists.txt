@@ -39,6 +39,9 @@ set(GLM_BUILD_TESTS OFF)
 set(SDBUSCPP_BUILD_DOCS OFF)
 set(BUILD_SHARED_LIBS OFF)
 
+# json.cpp
+set(JSON_CPP_BUILD_TESTS OFF)
+
 if(NOT WIN32)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(SYSTEMD REQUIRED libsystemd)
@@ -93,6 +96,7 @@ add_subdirectory(lib/stb_image SYSTEM)
 add_subdirectory(lib/glad SYSTEM)
 add_subdirectory(lib/miniz SYSTEM)
 add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
+add_subdirectory(lib/json.cpp SYSTEM)
 
 # add_subdirectory(lib/miniaudio SYSTEM)
 
@@ -200,4 +204,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glad)
 target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
+target_link_libraries(${PROJECT_NAME} PRIVATE json)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)
