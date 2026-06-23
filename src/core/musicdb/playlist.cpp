@@ -8,6 +8,7 @@
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/track_file.hpp"
+#include "lib/json.cpp/json.h"
 #include "lib/stb_image/stb_image.h"
 
 db::Playlist::Playlist(std::ifstream& is) {
@@ -160,4 +161,16 @@ void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_tr
     write_bin(os, old_track_id_to_new_track_id[track_id]);
   }
   write_str(os, art_file_path);
+}
+
+jt::Json db::Playlist::to_json() const {
+  auto json = jt::Json();
+  json["tracks"].setArray();
+  auto& json_tracks = json["tracks"].getArray();
+  json["name"] = utf32_to_utf8(name);
+  for (size_t track_id : track_ids) {
+    auto& track = db::track_by_id(track_id)->get();
+    json_tracks.emplace_back(track.to_json());
+  }
+  return json;
 }

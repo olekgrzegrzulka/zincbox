@@ -790,6 +790,25 @@ static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bo
     popover_actions.emplace_back([playlist_id]() { show_popup_rename_playlist(playlist_id); });
   }
 
+  if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album) {
+    popover_labels.emplace_back("Save as JSON");
+    popover_actions.emplace_back([playlist_id]() {
+      auto& playlist = db::playlist_by_id(playlist_id)->get();
+      auto json = playlist.to_json();
+      NFD::UniquePathN out_path_n;
+      nfdfilteritem_t filter_item[1] = {{"JSON files", "json"}};
+      auto result = NFD::SaveDialog(out_path_n, filter_item, 1);
+      if (result == NFD_OKAY) {
+        nfdnchar_t* path = out_path_n.get();
+        std::string path_str(path);
+        std::ofstream out(path_str);
+        out << json.toStringPretty();
+        out.flush();
+        out.close();
+      }
+    });
+  }
+
   popover_labels.emplace_back("Pick image file");
   popover_actions.emplace_back([playlist_id]() {
     NFD::UniquePathN out_path_n;

@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 #include "common/types.hpp"
+#include "lib/json.cpp/json.h"
 
 namespace db {
   enum class PlaylistType : u8 {
@@ -54,5 +55,6 @@ namespace db {
 
       void serialize(std::ostream&) const;
       void serialize(std::ostream&, const std::vector<size_t>& old_track_id_to_new_track_id) const;
+      jt::Json to_json() const;
   };
 } // namespace db
