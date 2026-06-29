@@ -5,12 +5,7 @@
 #include "sprite.hpp"
 #include "ui.hpp"
 
-enum class ToolTipPosition {
-  LEFT,
-  RIGHT,
-  ABOVE,
-  BELOW,
-};
+enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW };
 
 class ToolTip : public Sprite {
   public:

@@ -228,8 +228,11 @@ void Widget::set_layout(std::string_view def) {
         return;
       }
 
-      if (token[0] == 'm') l.margin = static_cast<i32>(val);
-      else l.spacing = static_cast<i32>(val);
+      if (token[0] == 'm') {
+        l.margin = static_cast<i32>(val);
+      } else {
+        l.spacing = static_cast<i32>(val);
+      }
     } else if (token == "ltr" || token == "left_to_right" || token == "h" || token == "hor" || token == "horizontal") {
       l.direction = LayoutDirection::LEFT_TO_RIGHT;
     } else if (token == "rtl" || token == "right_to_left") {

@@ -1,5 +1,4 @@
 #include <string>
-#include <string_view>
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "ui/popup.hpp"
@@ -8,7 +7,7 @@
 #include "ui_generic/widget.hpp"
 
 Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
-  : Sprite(ui_, "panel_popup"), controller(controller_), on_close(on_close_) {
+  : Sprite(ui_, "panel_popup"), controller(controller_), on_close(std::move(on_close_)) {
   set_is_drawn_on_top(true);
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);

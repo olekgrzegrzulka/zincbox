@@ -16,7 +16,7 @@ class PopupSearch : public Popup {
 
   public:
     PopupSearch(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
-      : Popup(ui_, controller_, on_close_) {
+      : Popup(ui_, controller_, std::move(on_close_)) {
       playlist_ids.reserve(MAX_PLAYLISTS);
       found_tracks.reserve(MAX_TRACKS);
 

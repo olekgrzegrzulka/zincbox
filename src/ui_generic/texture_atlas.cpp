@@ -17,8 +17,8 @@ TextureAtlas::TextureAtlas(i32 atlas_size_px_, i32 margin_px_, i32 grid_size_px_
   atlas_size_px = atlas_size_px_;
   margin_px = margin_px_;
   grid_size_px = grid_size_px_;
-  image.resize(4 * atlas_size_px * atlas_size_px);
-  occupied_grid_space.resize((atlas_size_px / grid_size_px) * (atlas_size_px / grid_size_px), false);
+  image.resize((u64)4 * atlas_size_px * atlas_size_px);
+  occupied_grid_space.resize((u64)(atlas_size_px / grid_size_px) * (u64)(atlas_size_px / grid_size_px), false);
 }
 
 bool TextureAtlas::add_texture(std::string_view id, std::string path) {

@@ -7,7 +7,7 @@
 #include "opengl_includes.hpp"
 #include "shader.hpp"
 
-Shader::Shader(std::string file_name) {
+Shader::Shader(const std::string& file_name) {
   vertex_shader = compile_vertex_shader(read_shader_file(file_name + ".vert"));
   fragment_shader = compile_fragment_shader(read_shader_file(file_name + ".frag"));
   shader_program = create_shader_program();
@@ -63,52 +63,52 @@ Shader::~Shader() {
 
 void Shader::use() const { glUseProgram(shader_program); }
 
-void Shader::set_uniform_u32(std::string name, u32 value) const {
+void Shader::set_uniform_u32(const std::string& name, u32 value) const {
   auto location = get_uniform_location(name);
   glUniform1ui(location, value);
 }
 
-void Shader::set_uniform_u32(std::string name, u32 value1, u32 value2) const {
+void Shader::set_uniform_u32(const std::string& name, u32 value1, u32 value2) const {
   auto location = get_uniform_location(name);
   glUniform2ui(location, value1, value2);
 }
 
-void Shader::set_uniform_u32(std::string name, u32 value1, u32 value2, u32 value3) const {
+void Shader::set_uniform_u32(const std::string& name, u32 value1, u32 value2, u32 value3) const {
   auto location = get_uniform_location(name);
   glUniform3ui(location, value1, value2, value3);
 }
 
-void Shader::set_uniform_i32(std::string name, i32 value) const {
+void Shader::set_uniform_i32(const std::string& name, i32 value) const {
   auto location = get_uniform_location(name);
   glUniform1i(location, value);
 }
 
-void Shader::set_uniform_i32(std::string name, i32 value1, i32 value2) const {
+void Shader::set_uniform_i32(const std::string& name, i32 value1, i32 value2) const {
   auto location = get_uniform_location(name);
   glUniform2i(location, value1, value2);
 }
 
-void Shader::set_uniform_i32(std::string name, i32 value1, i32 value2, i32 value3) const {
+void Shader::set_uniform_i32(const std::string& name, i32 value1, i32 value2, i32 value3) const {
   auto location = get_uniform_location(name);
   glUniform3i(location, value1, value2, value3);
 }
 
-void Shader::set_uniform_float(std::string name, float value) const {
+void Shader::set_uniform_float(const std::string& name, float value) const {
   auto location = get_uniform_location(name);
   glUniform1f(location, value);
 }
 
-void Shader::set_uniform_float(std::string name, float value1, float value2) const {
+void Shader::set_uniform_float(const std::string& name, float value1, float value2) const {
   auto location = get_uniform_location(name);
   glUniform2f(location, value1, value2);
 }
 
-void Shader::set_uniform_float(std::string name, float value1, float value2, float value3) const {
+void Shader::set_uniform_float(const std::string& name, float value1, float value2, float value3) const {
   auto location = get_uniform_location(name);
   glUniform3f(location, value1, value2, value3);
 }
 
-void Shader::set_uniform_mat4(std::string name, glm::mat4 value) const {
+void Shader::set_uniform_mat4(const std::string& name, glm::mat4 value) const {
   auto location = get_uniform_location(name);
   glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
@@ -136,7 +136,7 @@ std::string Shader::read_shader_file(std::string file_name) const {
   return file_string.str();
 }
 
-u32 Shader::compile_shader(std::string source_, i32 type) const {
+u32 Shader::compile_shader(const std::string& source_, i32 type) const {
   u32 shader;
   shader = glCreateShader(type);
   const char* source = source_.c_str();
@@ -186,9 +186,11 @@ u32 Shader::compile_shader(const char* source, i32 type) const {
   return shader;
 }
 
-u32 Shader::compile_vertex_shader(std::string source) const { return compile_shader(source, GL_VERTEX_SHADER); }
+u32 Shader::compile_vertex_shader(const std::string& source) const { return compile_shader(source, GL_VERTEX_SHADER); }
 
-u32 Shader::compile_fragment_shader(std::string source) const { return compile_shader(source, GL_FRAGMENT_SHADER); }
+u32 Shader::compile_fragment_shader(const std::string& source) const {
+  return compile_shader(source, GL_FRAGMENT_SHADER);
+}
 
 u32 Shader::create_shader_program() const {
   u32 shader_program_ = glCreateProgram();

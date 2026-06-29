@@ -37,7 +37,7 @@ class Sprite : public Widget {
 
   public:
     Sprite(UI& ui_);
-    Sprite(UI& ui_, std::string id_) : Widget(ui_) { set_texture(id_, true); }
+    Sprite(UI& ui_, const std::string& id_) : Widget(ui_) { set_texture(id_, true); }
     Sprite(UI& ui_, i32 width_, i32 height_);
 
     ~Sprite() override;
@@ -52,7 +52,7 @@ class Sprite : public Widget {
 
     virtual TextureAtlas& get_texture_atlas();
 
-    void set_texture(std::string id, bool resize_to_texture_size = true);
+    void set_texture(const std::string& id, bool resize_to_texture_size = true);
 
     void set_shader(const Shader& shader_) {
       shader = std::reference_wrapper{shader_};

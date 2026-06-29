@@ -16,8 +16,8 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-SpriteAlbumCover::SpriteAlbumCover(UI& ui_, std::string id, vec2i cover_size_) : Sprite(ui_) {
-  set_texture(std::move(id));
+SpriteAlbumCover::SpriteAlbumCover(UI& ui_, const std::string& id, vec2i cover_size_) : Sprite(ui_) {
+  set_texture(id);
   set_size(cover_size_);
   set_nine_slice_margin(0.0f);
 }
@@ -289,7 +289,7 @@ void PanelAlbums::event(Input::InputEventMouseScroll& e) {
 }
 
 float PanelAlbums::get_scroll_px() const {
-  if (!props.is_scrollable) return 0.0f;
+  if (!props.is_scrollable) { return 0.0f; }
   return target_scroll_px;
 }
 

@@ -137,11 +137,7 @@ namespace Input {
     KEY_SIZE = KEY_LAST + 1
   };
 
-  enum class KeyAction : u8 {
-    PRESS,
-    RELEASE,
-    REPEAT,
-  };
+  enum class KeyAction : u8 { PRESS, RELEASE, REPEAT };
 
   enum class MouseButton : u8 {
     MOUSE_BUTTON_LEFT,
@@ -155,10 +151,7 @@ namespace Input {
     MOUSE_BUTTON_SIZE,
   };
 
-  enum class MouseAction : u8 {
-    PRESS,
-    RELEASE,
-  };
+  enum class MouseAction : u8 { PRESS, RELEASE };
 
   enum class Cursor : u8 {
     ARROW,

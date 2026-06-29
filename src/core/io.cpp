@@ -1,5 +1,4 @@
 #include "io.hpp"
-#include <cstdio>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -15,16 +14,10 @@
 #include <taglib/toolkit/tfilestream.h>
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
-#include "common/debug.hpp"
 #include "common/logger.hpp"
-#include "common/random.hpp"
-#include "common/utf.hpp"
-#include "core/musicdb/playlist.hpp"
-#include "core/musicdb/track.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_resize2.h"
 #include "lib/stb_image/stb_image_write.h"
-#include "mpeg/id3v2/id3v2tag.h"
 
 namespace fs = std::filesystem;
 

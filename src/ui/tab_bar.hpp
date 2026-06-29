@@ -51,8 +51,8 @@ class TabBar : public Sprite {
         std::function<void(Tab*)> on_right_click{};
     };
 
-    void add_tab(tab_info info, bool select = false);
-    void add_tab(tab_info info, size_t at, bool select = false);
+    void add_tab(const tab_info& info, bool select = false);
+    void add_tab(const tab_info& info, size_t at, bool select = false);
     void open_tab(i32 id);
     void close_tab(i32 id);
     void close_all_tabs();
