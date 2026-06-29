@@ -71,10 +71,10 @@ void set_window_title(GLFWwindow* window) {
 }
 
 int main() {
+  config::load_from_file();
   NFD::Init();
   mpris::init();
   player::init();
-  config::load_from_file();
 
   out::debug_info("deserialize start");
   if (std::filesystem::exists(io::get_db_path())) {
@@ -132,6 +132,7 @@ int main() {
 
   Input::init(window);
   interface::init();
+  if (config::json().contains("ui")) { interface::from_json(config::json()["ui"]); }
 
   while (!glfwWindowShouldClose(window)) {
     using namespace std::chrono;
@@ -167,6 +168,7 @@ int main() {
   }
 
   config::json()["player"] = player::to_json();
+  config::json()["ui"] = interface::to_json();
   config::save_to_file();
   interface::deinit();
   player::deinit();

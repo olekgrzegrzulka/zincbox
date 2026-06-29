@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include "common/config.hpp"
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
@@ -15,6 +16,7 @@
 #include "core/player.hpp"
 #include "interface.hpp"
 #include "interface_notifications.hpp"
+#include "lib/json.cpp/json.h"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
 #include "panel_queue.hpp"
@@ -38,6 +40,7 @@
 static std::optional<size_t> active_collection_id;
 static std::vector<float> tracks_scroll_positions;
 static std::vector<float> playlists_scroll_positions;
+static std::vector<std::u32string> tabs_order;
 
 static std::unique_ptr<UI> ui;
 static class ShortcutInterceptor* shortcut_interceptor{};
@@ -70,6 +73,17 @@ static void show_popover_collection_actions(size_t collection_id, Widget* widget
 static void show_popover_queue_element_actions(size_t queue_index, Widget* widget);
 static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bool play_actions = true);
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget);
+
+static void recreate_panel_top(bool order = true) {
+  if (order) {
+    tabs_order.clear();
+    for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
+      tabs_order.push_back(tab->get_label().get_text());
+    }
+  }
+  panel_top->recreate(active_collection_id);
+  panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
+}
 
 class ShortcutInterceptor : public Widget {
   public:
@@ -175,7 +189,7 @@ void interface::init() {
           db::add_path_to_collection(collection_id, path.get());
         }
         add_playlist_art_to_texture_atlas(collection_id);
-        panel_top->recreate(active_collection_id);
+        recreate_panel_top();
         notifications->push(U"Added collection \'" + utf8_to_utf32(collection_name) + U"\'");
       }
     }
@@ -271,13 +285,13 @@ void interface::init() {
     panel_tracks->clear();
     panel_tracks->recreate(active_collection_id);
     panel_albums->props.collection_id = 0;
-    panel_top->recreate(0);
+    recreate_panel_top(false);
   } else {
     active_collection_id = std::nullopt;
     panel_tracks->clear();
     panel_tracks->recreate(active_collection_id);
     panel_albums->props.collection_id = std::nullopt;
-    panel_top->recreate(std::nullopt);
+    recreate_panel_top(false);
   }
 }
 
@@ -367,6 +381,72 @@ void interface::deinit() { ui = nullptr; }
 
 PopupController* interface::get_popup_controller() { return popup_controller; }
 
+jt::Json interface::to_json() {
+  tabs_order.clear();
+  for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
+    tabs_order.push_back(tab->get_label().get_text());
+  }
+
+  auto json = jt::Json();
+  std::vector<jt::Json> tabs_order_utf8;
+  tabs_order_utf8.reserve(tabs_order.size());
+  for (const auto& tab : tabs_order) {
+    tabs_order_utf8.emplace_back(utf32_to_utf8(tab));
+  }
+  json["tabs_order"].setArray();
+  json["tabs_order"].getArray().clear();
+  json["tabs_order"].getArray() = tabs_order_utf8;
+
+  const Tab* selected_tab = panel_top->get_tab_bar()->get_selected_tab();
+  if (selected_tab) {
+    json["selected_tab"] = utf32_to_utf8(selected_tab->get_label().get_text());
+    if (active_collection_id) {
+      json["tracks_scroll_offset"] = panel_tracks->get_scroll_px();
+      json["playlists_scroll_offset"] = panel_albums->get_scroll_px();
+      json["collection_id"] = active_collection_id.value();
+    }
+  }
+
+  return json;
+}
+
+void interface::from_json(const jt::Json& json) {
+  // tabs order
+  if (json.contains("tabs_order") && json["tabs_order"].isArray()) {
+    auto& json_tabs_order = json["tabs_order"].getArray();
+    tabs_order.clear();
+    for (const auto& tab : json_tabs_order) {
+      if (tab.isString()) { tabs_order.emplace_back(utf8_to_utf32(tab.getString())); }
+    }
+  }
+
+  // selected tab
+  if (json.contains("selected_tab") && json["selected_tab"].isString()) {
+    std::string selected_tab = json["selected_tab"].getString();
+    for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
+      if (utf32_to_utf8(tab->get_label().get_text()) == selected_tab) {
+        panel_top->get_tab_bar()->open_tab(tab->id);
+        break;
+      }
+    }
+  }
+
+  // collection id
+  bool has_collection_id = json.contains("collection_id") && json["collection_id"].isNumber();
+  auto collection_id = has_collection_id ? json["collection_id"].getNumber() : 0;
+  active_collection_id = collection_id;
+
+  // tracks scroll offset
+  if (json.contains("tracks_scroll_offset") && json["tracks_scroll_offset"].isNumber()) {
+    panel_tracks->set_scroll_px(json["tracks_scroll_offset"].getNumber());
+  }
+
+  // playlists scroll offset
+  if (json.contains("playlists_scroll_offset") && json["playlists_scroll_offset"].isNumber()) {
+    panel_albums->set_scroll_px(json["playlists_scroll_offset"].getNumber());
+  }
+}
+
 static void init_atlas() {
   auto& atlas = ui->get_texture_atlas();
 
@@ -401,7 +481,7 @@ static void create_collection(std::vector<std::string> directories) {
     db::add_path_to_collection(collection_id, path.string());
   }
   add_playlist_art_to_texture_atlas(collection_id);
-  panel_top->recreate(active_collection_id);
+  recreate_panel_top();
 }
 
 static void create_multiple_collections(const std::vector<std::string>& directories) {
@@ -412,7 +492,7 @@ static void create_multiple_collections(const std::vector<std::string>& director
     db::add_path_to_collection(collection_id, path.string());
     add_playlist_art_to_texture_atlas(collection_id);
   }
-  panel_top->recreate(active_collection_id);
+  recreate_panel_top();
 }
 
 static void handle_dropped_files() {
@@ -441,11 +521,11 @@ static void delete_collection(size_t collection_id) {
 
   if (db::collection_by_id(*active_collection_id)->get().is_tombstone() || !active_collection_id.has_value()) {
     active_collection_id = std::nullopt;
-    panel_top->recreate(active_collection_id);
+    recreate_panel_top();
     panel_albums->props.collection_id = active_collection_id;
     panel_tracks->recreate(active_collection_id);
   } else {
-    panel_top->recreate(active_collection_id);
+    recreate_panel_top();
     panel_albums->props.collection_id = active_collection_id;
     panel_tracks->recreate(active_collection_id);
   }
@@ -461,6 +541,7 @@ static void delete_playlist(size_t playlist_id) {
 
 static void show_collection(size_t collection_id) {
   if (collection_id == active_collection_id) { return; }
+  if (collection_id >= db::collection_count()) { return; }
 
   if (tracks_scroll_positions.size() <= collection_id) { tracks_scroll_positions.resize(collection_id + 1, 0.0f); }
   if (playlists_scroll_positions.size() <= collection_id) {
@@ -535,7 +616,7 @@ static void show_popup_rename_collection(size_t collection_id) {
     std::u32string new_name = popup->text_input->label.get_text();
     if (new_name.empty()) { return; }
     db::rename_collection(collection_id, new_name);
-    panel_top->recreate(active_collection_id);
+    recreate_panel_top();
   };
 }
 
