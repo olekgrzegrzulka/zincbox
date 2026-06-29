@@ -61,6 +61,7 @@ class Button : public Sprite {
     }
 
     Label& get_label() { return label; }
+    const Label& get_label() const { return label; }
 
     virtual void update() override;
 

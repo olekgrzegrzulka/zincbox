@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "common/input.hpp"
 #include "ui/theme.hpp"
@@ -12,7 +13,7 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-Tab::Tab(UI& ui_) : Button(ui_), label(add_child<Label>()) {
+Tab::Tab(UI& ui_) : Button(ui_) {
   label.set_anchor(Anchor::CENTER);
   label.set_parent_anchor(Anchor::CENTER);
   label.set_label_anchor(Anchor::CENTER);
@@ -83,6 +84,10 @@ void Tab::update() {
   t = std::clamp(t + 0.2f, 0.0f, 1.0f);
   set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
   Button::update();
+
+  static const rgba text_color = theme::get_prop("text_color").as_rgba();
+  static const rgba text_color_muted = theme::get_prop("text_color_muted").as_rgba();
+  get_label().set_text_color(active ? text_color : text_color_muted);
 }
 
 void Tab::event(Input::InputEventMouseButton& ev) {
@@ -118,7 +123,7 @@ void TabBar::add_tab(tab_info info, size_t at, bool select) {
   at = std::min(at, tabs.size());
   Tab* t = &tab_container->add_child<Tab>();
   t->set_height(height);
-  t->label.set_text(info.label);
+  t->get_label().set_text(info.label);
   t->padding = info.padding;
   t->is_draggable = info.is_draggable;
   t->on_drag_start = [this](i32 id) { on_tab_drag_start(id); };
@@ -128,6 +133,13 @@ void TabBar::add_tab(tab_info info, size_t at, bool select) {
     if ((i32)tab->index == dragged_tab_index && mouse_drag_delta > 10) { return; }
 
     update_tab_textures(tab->index);
+
+    for (Tab* t : tabs) {
+      t->active = false;
+    }
+
+    tab->active = true;
+
     if (info.on_open) { info.on_open(); }
     if (on_tab_pressed) { on_tab_pressed(info.id); }
   };
@@ -232,6 +244,25 @@ void TabBar::update_tab_textures(i32 id) {
   }
   selected_tab_index = id;
   if (tab_valid(selected_tab_index)) { tabs[selected_tab_index]->set_texture_active(); }
+}
+
+void TabBar::sort_tabs_by_label(std::span<const std::u32string> labels) {
+  std::unordered_map<std::u32string, i32> label_priority;
+  for (size_t i = 0; i < labels.size(); i += 1) {
+    label_priority[labels[i]] = i;
+  }
+
+  std::sort(tabs.begin(), tabs.end(), [&](Tab* a, Tab* b) -> bool {
+    auto it_lhs = label_priority.find(a->get_label().get_text());
+    auto it_rhs = label_priority.find(b->get_label().get_text());
+    if (it_lhs == label_priority.end()) { return false; }
+    if (it_rhs == label_priority.end()) { return false; }
+    return it_lhs->second < it_rhs->second;
+  });
+
+  for (size_t i = 0; i < tabs.size(); i += 1) {
+    tabs[i]->index = i;
+  }
 }
 
 void TabBar::on_tab_drag_start(i32 id) {

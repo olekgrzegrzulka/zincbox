@@ -22,7 +22,7 @@ class Tab : public Button {
     void event(Input::InputEventMouseButton& ev) override;
 
   public:
-    Label& label;
+    bool active = false;
     bool is_draggable = true;
     i32 padding = 0;
     size_t index = 0;
@@ -58,6 +58,9 @@ class TabBar : public Sprite {
     void close_all_tabs();
     void update() override;
     void update_tab_textures(i32 id);
+    const std::vector<Tab*>& get_tabs() const { return tabs; }
+    void sort_tabs_by_label(std::span<const std::u32string>);
+    const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
 
   protected:
     void on_tab_drag_start(i32 id);

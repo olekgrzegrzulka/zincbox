@@ -18,9 +18,10 @@ class PanelTop : public Sprite {
     std::function<void(size_t collection_id)> on_collection_opened{};
     std::function<void()> on_queue_view_opened{};
     std::function<void(size_t collection_id, Widget*)> on_show_collection_actions_popover{};
+    TabBar* get_tab_bar() { return tab_bar; }
 
   protected:
-    TabBar* tab_bar;
+    TabBar* tab_bar{};
     Button* button_left{};
     Button* button_right{};
     Button* button_settings{};
