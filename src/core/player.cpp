@@ -1,6 +1,7 @@
 #include "player.hpp"
 #include <algorithm>
 #include <optional>
+#include <unordered_set>
 #include <vector>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
@@ -549,13 +550,16 @@ void player::from_json(const jt::Json& json) {
       if (!q.contains("title") || !q["title"].isString()) { continue; }
       if (!q.contains("collection") || !q["collection"].isString()) { continue; }
       if (!q.contains("playlist") || !q["playlist"].isString()) { continue; }
+      if (!q.contains("path") || !q["path"].isString()) { continue; }
       std::string playlist_name = q["playlist"].getString();
       std::string collection_name = q["collection"].getString();
-      auto matches =
-        db::track_by_artist_title(utf8_to_utf32(q["artist"].getString()), utf8_to_utf32(q["title"].getString()));
+      std::string artist_name = q["artist"].getString();
+      std::string title_name = q["title"].getString();
+      std::string path = q["path"].getString();
 
       auto no_track_matched = [&]() -> void {
-        if (queue_pos == player::get_playing_queue().size()) { queue_pos = std::nullopt; }
+        if (!queue_pos.has_value()) { return; }
+        if (queue_pos >= player::get_playing_queue().size()) { queue_pos = std::nullopt; }
         if (queue_pos < player::get_playing_queue().size()) {
           if (queue_pos > 0) {
             queue_pos = queue_pos.value() - 1;
@@ -564,6 +568,13 @@ void player::from_json(const jt::Json& json) {
           }
         }
       };
+
+      std::unordered_set<db::track_id_t> matches;
+      if (!artist_name.empty() && !title_name.empty()) {
+        matches = db::track_by_artist_title(utf8_to_utf32(artist_name), utf8_to_utf32(title_name));
+      } else if (auto track_id_by_path = db::track_by_path(utf8_to_utf32(path)); track_id_by_path.has_value()) {
+        matches = {track_id_by_path.value()};
+      }
 
       if (matches.size() == 0 && queue_pos.has_value()) {
         no_track_matched();
