@@ -51,7 +51,13 @@ void db::Playlist::sort_by_track_number() {
   std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
-    return std::tie(lhs.track_number) < std::tie(rhs.track_number);
+    if (lhs.track_number != rhs.track_number) {
+      return lhs.track_number < rhs.track_number;
+    } else if (!lhs.artist.empty() && !rhs.artist.empty() && !lhs.title.empty() && !rhs.title.empty()) {
+      return std::tie(lhs.artist, lhs.title) < std::tie(rhs.artist, rhs.title);
+    } else {
+      return lhs.pretty_name() < rhs.pretty_name();
+    }
   });
 }
 
