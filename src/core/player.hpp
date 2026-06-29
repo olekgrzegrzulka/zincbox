@@ -6,18 +6,9 @@
 #include "lib/json.cpp/json.h"
 
 namespace player {
-  enum class RepeatMode {
-    OFF,
-    TRACK,
-    ALBUM,
-    REPEAT_MODE_SIZE,
-  };
+  enum class RepeatMode : u8 { OFF, TRACK, ALBUM, REPEAT_MODE_SIZE };
 
-  enum class ShuffleMode {
-    OFF,
-    ON,
-    SHUFFLE_MODE_SIZE,
-  };
+  enum class ShuffleMode : u8 { OFF, ON, SHUFFLE_MODE_SIZE };
 
   struct playing_t {
       size_t collection_id{};

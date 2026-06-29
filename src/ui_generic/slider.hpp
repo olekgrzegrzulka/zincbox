@@ -7,15 +7,9 @@
 
 class UI;
 
-enum class SliderOrientation {
-  HORIZONTAL,
-  VERTICAL,
-};
+enum class SliderOrientation : u8 { HORIZONTAL, VERTICAL };
 
-enum class ThumbConstraint {
-  INSIDE_TRACK,
-  FULL_RANGE,
-};
+enum class ThumbConstraint : u8 { INSIDE_TRACK, FULL_RANGE };
 
 class Slider : public Widget {
   protected:
@@ -57,8 +51,8 @@ class Slider : public Widget {
   public:
     Slider(UI& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
 
-    void on_value_changed(std::function<void(float, float)> a) { lambda_value_changed = a; }
-    void on_drag_ended(std::function<void(float, float)> a) { lambda_drag_end = a; }
+    void on_value_changed(std::function<void(float, float)> lambda) { lambda_value_changed = std::move(lambda); }
+    void on_drag_ended(std::function<void(float, float)> lambda) { lambda_drag_end = std::move(lambda); }
     bool is_being_dragged() { return is_dragged; }
 
     void update() override;

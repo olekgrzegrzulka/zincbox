@@ -5,8 +5,8 @@
 #include "lib/stb_image/stb_image.h"
 #include "opengl_includes.hpp"
 
-Texture::Texture(std::string file_name) {
-  std::string file_path = "./assets/" + std::move(file_name);
+Texture::Texture(const std::string& file_name) {
+  std::string file_path = "./assets/" + file_name;
   texture = Texture::load_texture(file_path);
   sampler = Texture::create_sampler();
 }
@@ -17,7 +17,7 @@ void Texture::bind(u32 slot) const {
   glBindSampler(slot, sampler);
 }
 
-u32 Texture::load_texture(std::string file_path) {
+u32 Texture::load_texture(const std::string& file_path) {
   int width, height, channels;
   stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 

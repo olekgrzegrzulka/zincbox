@@ -62,7 +62,7 @@ void db::Playlist::sort_by_track_number() {
 }
 
 void db::Playlist::sort_by_artist_asc() {
-  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) {
+  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
     return std::tie(lhs.artist, lhs.title) < std::tie(rhs.artist, rhs.title);
@@ -70,7 +70,7 @@ void db::Playlist::sort_by_artist_asc() {
 }
 
 void db::Playlist::sort_by_artist_desc() {
-  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) {
+  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
     return std::tie(lhs.artist, lhs.title) > std::tie(rhs.artist, rhs.title);
@@ -78,7 +78,7 @@ void db::Playlist::sort_by_artist_desc() {
 }
 
 void db::Playlist::sort_by_name_asc() {
-  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) {
+  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
     return std::tie(lhs.title, lhs.artist) < std::tie(rhs.title, rhs.artist);
@@ -86,7 +86,7 @@ void db::Playlist::sort_by_name_asc() {
 }
 
 void db::Playlist::sort_by_name_desc() {
-  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) {
+  std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
     return std::tie(lhs.title, lhs.artist) > std::tie(rhs.title, rhs.artist);

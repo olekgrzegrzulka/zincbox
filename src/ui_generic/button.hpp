@@ -8,12 +8,7 @@
 
 class UI;
 
-enum class ButtonState {
-  IDLE,
-  HOVERED,
-  PRESSED,
-  DISABLED,
-};
+enum class ButtonState : u8 { IDLE, HOVERED, PRESSED, DISABLED };
 
 class Button : public Sprite {
   protected:
@@ -67,11 +62,11 @@ class Button : public Sprite {
 
     virtual void draw() override { Sprite::draw(); }
 
-    void on_press(std::function<void()> lambda_press_) { lambda_press = lambda_press_; }
+    void on_press(std::function<void()> lambda_press_) { lambda_press = std::move(lambda_press_); }
 
-    void on_depress(std::function<void()> lambda_depress_) { lambda_depress = lambda_depress_; }
+    void on_depress(std::function<void()> lambda_depress_) { lambda_depress = std::move(lambda_depress_); }
 
-    void on_press_rmb(std::function<void()> lambda_press_rmb_) { lambda_press_rmb = lambda_press_rmb_; }
+    void on_press_rmb(std::function<void()> lambda_press_rmb_) { lambda_press_rmb = std::move(lambda_press_rmb_); }
 
     // Returns true if button's state was changed
     bool set_state(ButtonState state_) {

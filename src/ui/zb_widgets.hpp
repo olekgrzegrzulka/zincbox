@@ -5,7 +5,7 @@
 
 class ZincboxButton final : public Button {
   public:
-    ZincboxButton(UI& ui_, std::string name) : Button(ui_) {
+    ZincboxButton(UI& ui_, const std::string& name) : Button(ui_) {
       set_texture_disabled(name + "_disabled");
       set_texture_hovered(name + "_hovered");
       set_texture_idle(name + "_idle");
@@ -17,7 +17,7 @@ class ZincboxButton final : public Button {
 
 class ZincboxSlider final : public Slider {
   public:
-    ZincboxSlider(UI& ui_, std::string name) : Slider(ui_) {
+    ZincboxSlider(UI& ui_, const std::string& name) : Slider(ui_) {
       set_texture_thumb_pressed(name + "_thumb_pressed");
       set_texture_thumb_hovered(name + "_thumb_hovered");
       set_texture_thumb_idle(name + "_thumb_idle");

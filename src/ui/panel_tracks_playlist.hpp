@@ -23,8 +23,8 @@ class WidgetAlbum : public Widget {
                 decltype(on_track_rmb) on_track_rmb_)
       : Widget(ui_) {
       playlist_id = playlist_id_;
-      on_track_lmb = on_track_lmb_;
-      on_track_rmb = on_track_rmb_;
+      on_track_lmb = std::move(on_track_lmb_);
+      on_track_rmb = std::move(on_track_rmb_);
       auto playlist = db::playlist_by_id(playlist_id)->get();
 
       set_layout("ttb m:0 s:0 fit expand");

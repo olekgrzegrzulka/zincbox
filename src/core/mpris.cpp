@@ -5,7 +5,6 @@
 
 #ifndef _WIN32
 #include <map>
-#include "common/debug.hpp"
 #include <sdbus-c++/IConnection.h>
 #include <sdbus-c++/sdbus-c++.h>
 

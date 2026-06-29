@@ -13,7 +13,7 @@
 
 class SpriteAlbumCover : public Sprite {
   public:
-    SpriteAlbumCover(UI& ui_, std::string id, vec2i cover_size_);
+    SpriteAlbumCover(UI& ui_, const std::string& id, vec2i cover_size_);
 };
 
 class WidgetAlbumCover : public Button {

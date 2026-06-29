@@ -20,7 +20,8 @@ struct ScopeTimer {
     std::chrono::time_point<std::chrono::system_clock> start_time;
     double ms_threshold;
 
-    ScopeTimer(std::string _message = "", double ms_threshold_ = 0.5) : message(_message), ms_threshold(ms_threshold_) {
+    ScopeTimer(const std::string& _message = "", double ms_threshold_ = 0.5)
+      : message(_message), ms_threshold(ms_threshold_) {
       start_time = std::chrono::high_resolution_clock::now();
     }
 

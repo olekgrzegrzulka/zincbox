@@ -10,7 +10,7 @@ class TextInput : public Sprite {
     void update() override;
     void clear();
     void event(Input::InputEventKey&) override;
-    void set_on_text_changed(std::function<void()> l) { lambda_on_text_changed = l; }
+    void set_on_text_changed(std::function<void()> lambda) { lambda_on_text_changed = std::move(lambda); }
     Label& label;
     Sprite& caret;
 

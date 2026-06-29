@@ -1,5 +1,4 @@
 #include "button.hpp"
-#include "common/debug.hpp"
 #include "common/input.hpp"
 #include "ui.hpp"
 

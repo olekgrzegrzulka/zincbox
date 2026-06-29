@@ -18,7 +18,7 @@
 class PopupInput : public Popup {
   public:
     PopupInput(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
-      : Popup(ui_, controller_, on_close_) {
+      : Popup(ui_, controller_, std::move(on_close_)) {
       set_layout("ttb expand fit fill m:8 s:8");
 
       title = &add_child<Label>(U"");
@@ -57,7 +57,7 @@ class PopupConfirm : public Popup {
   public:
     PopupConfirm(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
                  std::u32string_view content_)
-      : Popup(ui_, controller_, on_close_) {
+      : Popup(ui_, controller_, std::move(on_close_)) {
       set_layout("ttb fill fit expand m:8 s:8");
 
       title = &add_child<Label>(U"");
@@ -103,7 +103,7 @@ class PopupImportFolders : public Popup {
   public:
     PopupImportFolders(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
                        std::span<std::string> dropped_directories)
-      : Popup(ui_, controller_, on_close_) {
+      : Popup(ui_, controller_, std::move(on_close_)) {
 
       set_layout("ttb expand fit fill m:8 s:8");
 
@@ -139,7 +139,7 @@ class PopupImportFolders : public Popup {
         index += 1;
       }
       // remove the last newline
-      if (!content_str.empty()) content_str.pop_back();
+      if (!content_str.empty()) { content_str.pop_back(); }
 
       content->set_text(utf8_to_utf32(content_str));
       content->update();
@@ -154,13 +154,13 @@ class PopupImportFolders : public Popup {
 
         btn_add_collections = &buttons->add_child<Button>(U"Add " + str_size + U" collections");
         btn_add_collections->on_press([this]() {
-          if (on_add_collections_pressed) on_add_collections_pressed(dirs);
+          if (on_add_collections_pressed) { on_add_collections_pressed(dirs); }
           close();
         });
 
         btn_merge = &buttons->add_child<Button>(U"Merge into one");
         btn_merge->on_press([this]() {
-          if (on_merge_pressed) on_merge_pressed(dirs);
+          if (on_merge_pressed) { on_merge_pressed(dirs); }
           close();
         });
       } else if (dirs.size() == 1) {
@@ -168,7 +168,7 @@ class PopupImportFolders : public Popup {
 
         btn_add_collections = &buttons->add_child<Button>(U"Add collection");
         btn_add_collections->on_press([this]() {
-          if (on_add_collections_pressed) on_add_collections_pressed(dirs);
+          if (on_add_collections_pressed) { on_add_collections_pressed(dirs); }
           close();
         });
       }
@@ -189,7 +189,7 @@ class PopupImportFolders : public Popup {
 class PopupSetSources : public Popup {
   public:
     PopupSetSources(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_, size_t collection_id_)
-      : Popup(ui_, controller_, on_close_), collection_id(collection_id_) {
+      : Popup(ui_, controller_, std::move(on_close_)), collection_id(collection_id_) {
 
       set_layout("ttb expand fit fill m:8 s:8");
 
@@ -227,7 +227,7 @@ class PopupSetSources : public Popup {
 
       btn_add_dir = &buttons->add_child<Button>(U"Add directory");
       btn_add_dir->on_press([this]() {
-        if (on_add_dir_pressed) on_add_dir_pressed();
+        if (on_add_dir_pressed) { on_add_dir_pressed(); }
         close();
       });
 
@@ -251,7 +251,7 @@ class PopupSetSources : public Popup {
           button.set_min_height(30);
           button.set_max_height(30);
           button.on_press([this, path]() {
-            if (on_remove_path_pressed) on_remove_path_pressed(path);
+            if (on_remove_path_pressed) { on_remove_path_pressed(path); }
           });
           num += 1;
         }
@@ -287,7 +287,7 @@ class PopupSetSources : public Popup {
 class PopupAddToPlaylist : public Popup {
   public:
     PopupAddToPlaylist(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_, size_t track_id_)
-      : Popup(ui_, controller_, on_close_), track_id(track_id_) {
+      : Popup(ui_, controller_, std::move(on_close_)), track_id(track_id_) {
 
       auto& track = db::track_by_id(track_id)->get();
       std::u32string pretty_track;

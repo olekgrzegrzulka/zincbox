@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <string>
+#include <string_view>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
@@ -7,7 +7,6 @@
 #include "ui/theme.hpp" // FIXME ui_generic should not depend on ui/theme.hpp
 #include "ui_generic/font_face.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/shader.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -79,7 +78,7 @@ void Label::update_mesh() {
     }
 
     auto* glyph = ui.get_font_face().find_glyph(c);
-    if (!glyph) continue;
+    if (!glyph) { continue; }
 
     current_line_width += glyph->advance.x / 64.0f;
     line_height = std::max(line_height, (float)glyph->size.y);
@@ -102,7 +101,7 @@ void Label::update_mesh() {
     }
 
     auto* glyph = ui.get_font_face().find_glyph(c);
-    if (!glyph) continue;
+    if (!glyph) { continue; }
 
     auto size_screen_uv = vec2f(glyph->size.x, glyph->size.y) / vec2f(window_width_, window_height_);
 

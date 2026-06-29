@@ -6,7 +6,6 @@
 #include "common/color.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
-#include "vertex.hpp"
 #include "widget.hpp"
 
 class UI;

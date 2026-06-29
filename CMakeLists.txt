@@ -127,7 +127,6 @@ set(SOURCES
     ./src/ui_generic/sprite.cpp
     ./src/ui_generic/widget.cpp
     ./src/ui_generic/text_input.cpp
-    ./src/ui_generic/selectbar.cpp
     ./src/ui_generic/scrollbar.cpp
     ./src/ui/interface.cpp
     ./src/ui/panel_albums.cpp

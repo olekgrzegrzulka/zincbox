@@ -117,9 +117,9 @@ TabBar::TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
   });
 }
 
-void TabBar::add_tab(tab_info info, bool select) { add_tab(info, tabs.size(), select); }
+void TabBar::add_tab(const tab_info& info, bool select) { add_tab(info, tabs.size(), select); }
 
-void TabBar::add_tab(tab_info info, size_t at, bool select) {
+void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
   at = std::min(at, tabs.size());
   Tab* t = &tab_container->add_child<Tab>();
   t->set_height(height);

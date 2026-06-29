@@ -1,9 +1,7 @@
 #include "input.hpp"
 #include <algorithm>
 #include <array>
-#include <variant>
 #include <vector>
-#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "opengl_includes.hpp"
 
@@ -21,12 +19,7 @@ namespace Input {
     static std::vector<std::string> dropped_paths{};
     static std::array<GLFWcursor*, (size_t)Cursor::CURSOR_SIZE> cursors{};
 
-    enum class ButtonState {
-      RELEASED,
-      PRESSED,
-      JUST_RELEASED,
-      JUST_PRESSED,
-    };
+    enum class ButtonState : u8 { RELEASED, PRESSED, JUST_RELEASED, JUST_PRESSED };
 
     std::array<ButtonState, (size_t)MouseButton::MOUSE_BUTTON_SIZE> mouse_states;
     std::array<ButtonState, (size_t)Key::KEY_SIZE> key_states;
