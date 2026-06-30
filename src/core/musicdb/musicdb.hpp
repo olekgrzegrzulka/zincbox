@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 #include "collection.hpp"
+#include "lib/json.cpp/json.h"
 #include "playlist.hpp"
 #include "track.hpp"
 
@@ -18,6 +19,15 @@ namespace db {
   void serialize(std::ofstream&);
   void deserialize(std::ifstream&);
   void print_collections();
+
+  struct track_info {
+      size_t collection_id;
+      size_t playlist_id;
+      size_t track_id;
+  };
+
+  // getters
+  std::optional<track_info> find_track_from_json(const jt::Json&);
 
   // collection getters
   std::optional<std::reference_wrapper<const Collection>> collection_by_id(size_t);
@@ -72,11 +82,7 @@ namespace db {
   void set_track_playback_error(size_t track_id, bool playback_error);
 
   // search
-  struct track_info {
-      size_t collection_id;
-      size_t playlist_id;
-      size_t track_id;
-  };
+
   struct playlist_info {
       size_t collection_id;
       size_t playlist_id;

@@ -546,69 +546,20 @@ void player::from_json(const jt::Json& json) {
 
   if (json.contains("queue") && json["queue"].isArray()) {
     auto& queue = json["queue"].getArray();
-    for (auto& q : queue) {
-      if (!q.contains("artist") || !q["artist"].isString()) { continue; }
-      if (!q.contains("title") || !q["title"].isString()) { continue; }
-      if (!q.contains("collection") || !q["collection"].isString()) { continue; }
-      if (!q.contains("playlist") || !q["playlist"].isString()) { continue; }
-      if (!q.contains("path") || !q["path"].isString()) { continue; }
-      std::string playlist_name = q["playlist"].getString();
-      std::string collection_name = q["collection"].getString();
-      std::string artist_name = q["artist"].getString();
-      std::string title_name = q["title"].getString();
-      std::string path = q["path"].getString();
-
-      auto no_track_matched = [&]() -> void {
-        if (!queue_pos.has_value()) { return; }
-        if (queue_pos >= player::get_playing_queue().size()) { queue_pos = std::nullopt; }
-        if (queue_pos < player::get_playing_queue().size()) {
-          if (queue_pos > 0) {
-            queue_pos = queue_pos.value() - 1;
-          } else {
-            queue_pos = std::nullopt;
-          }
+    for (auto& json_track : queue) {
+      if (!json_track.isObject()) { continue; }
+      auto track = db::find_track_from_json(json_track);
+      if (!track.has_value()) {
+        if (queue_pos.has_value()) {
+          queue_pos = (queue_pos > 0 && queue_pos < player::get_playing_queue().size())
+                        ? std::make_optional(queue_pos.value() - 1)
+                        : std::nullopt;
         }
-      };
-
-      std::unordered_set<db::track_id_t> matches;
-      if (!artist_name.empty() && !title_name.empty()) {
-        matches = db::track_by_artist_title(utf8_to_utf32(artist_name), utf8_to_utf32(title_name));
-      } else if (auto track_id_by_path = db::track_by_path(utf8_to_utf32(path)); track_id_by_path.has_value()) {
-        matches = {track_id_by_path.value()};
-      }
-
-      if (matches.size() == 0 && queue_pos.has_value()) {
-        no_track_matched();
         continue;
       }
-
-      if (matches.size() > 1) {
-        out::debug_warning("player::from_json(): matched multiple tracks for '{} - {}'", q["artist"].getString(),
-                           q["title"].getString());
-      }
-      bool found = false;
-      if (matches.size() > 0) {
-        for (db::collection_id_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
-          if (found) { break; }
-          auto& collection = db::collection_by_id(collection_id)->get();
-          if (utf32_to_utf8(collection.name()) != collection_name) { continue; }
-          for (auto& playlist_id : collection.playlist_ids()) {
-            if (found) { break; }
-            auto& playlist = db::playlist_by_id(playlist_id)->get();
-            if (utf32_to_utf8(playlist.name) != playlist_name) { continue; }
-            for (auto& track_id : playlist.track_ids) {
-              if (matches.contains(track_id)) {
-                player::enqueue({.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id},
-                                playing_queue.size());
-                found = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (!found) { no_track_matched(); }
-      }
+      player::enqueue(
+        {.collection_id = track->collection_id, .playlist_id = track->playlist_id, .track_id = track->track_id},
+        playing_queue.size());
     }
 
     player::set_playing_index(queue_pos);
