@@ -157,7 +157,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   max_scroll_px = 0;
   auto& c = db::collection_by_id(*collection_id)->get();
 
-  for (size_t album_id : c.playlist_ids) {
+  for (size_t album_id : c.playlist_ids()) {
     auto& album = db::playlist_by_id(album_id)->get();
     if (album.is_tombstone()) { continue; }
     album_scroll_px.emplace_back(max_scroll_px, album_id);

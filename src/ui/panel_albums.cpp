@@ -155,7 +155,7 @@ void PanelAlbums::recreate() {
   std::vector<size_t> playlist_ids_sorted;
   if (props.collection_id.has_value()) {
     auto c = db::collection_by_id(*props.collection_id);
-    playlist_ids_sorted = c->get().playlist_ids;
+    playlist_ids_sorted = c->get().playlist_ids();
   } else if (!props.playlist_ids.empty()) {
     playlist_ids_sorted = props.playlist_ids;
   } else {
