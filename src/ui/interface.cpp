@@ -876,11 +876,13 @@ static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bo
     popover_actions.emplace_back([playlist_id]() {
       auto& playlist = db::playlist_by_id(playlist_id)->get();
       auto json = playlist.to_json();
-      NFD::UniquePathN out_path_n;
-      nfdfilteritem_t filter_item[1] = {{"JSON files", "json"}};
-      auto result = NFD::SaveDialog(out_path_n, filter_item, 1);
+      NFD::UniquePathN outPath;
+      nfdfilteritem_t filterList[1] = {{"JSON files", "json"}};
+      auto file_name_utf8 = utf32_to_utf8(playlist.name) + ".json";
+      const nfdnchar_t* defaultName = file_name_utf8.c_str();
+      auto result = NFD::SaveDialog(outPath, filterList, 1, nullptr, defaultName);
       if (result == NFD_OKAY) {
-        nfdnchar_t* path = out_path_n.get();
+        nfdnchar_t* path = outPath.get();
         std::string path_str(path);
         std::ofstream out(path_str);
         out << json.toStringPretty();
