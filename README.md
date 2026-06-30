@@ -7,7 +7,7 @@
 
 ![Screenshot](screenshot.png)
 
-# Instructions
+# Quick guide
 
 The top panel displays your file collections, alongside dedicated 'Playlists' view for user-created playlists and 'Queue' view for active playback.
 
@@ -19,7 +19,7 @@ To access configuration such as playback settings or theme options, click the se
 
 # Building and Installation
 
-This project is built using **CMake**. Follow the instructions below to install the required dependencies for your Linux distribution and compile the source code.
+This project uses **CMake**. Follow the instructions below to install the required dependencies and compile Zincbox. You will need a compiler (**Clang** or **GCC**) and a build system (**Make** or **Ninja**) installed on your system.
 
 ## 1. Install Dependencies
 
@@ -27,7 +27,7 @@ This project is built using **CMake**. Follow the instructions below to install 
 
 ```bash
 sudo apt update
-sudo apt install build-essential clang cmake pkg-config libsystemd-dev \
+sudo apt install cmake pkg-config libsystemd-dev \
 libdbus-1-dev libx11-dev libwayland-dev libxkbcommon-dev libgl-dev \
 libasound2-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 ```
@@ -36,7 +36,7 @@ libasound2-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
 ```bash
 sudo dnf check-update
-sudo dnf install gcc-c++ clang make cmake pkgconf-pkg-config systemd-devel \
+sudo dnf install cmake pkgconf-pkg-config systemd-devel \
 dbus-devel libX11-devel wayland-devel libxkbcommon-devel mesa-libGL-devel \
 alsa-lib-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 ```
@@ -45,7 +45,7 @@ alsa-lib-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 
 ```bash
 sudo pacman -Syu
-sudo pacman -S base-devel clang cmake pkgconf systemd dbus libx11 \
+sudo pacman -S base-devel cmake pkgconf systemd dbus libx11 \
 wayland libxkbcommon mesa alsa-lib libxrandr libxinerama libxcursor libxi
 ```
 
@@ -53,7 +53,7 @@ wayland libxkbcommon mesa alsa-lib libxrandr libxinerama libxcursor libxi
 
 ```bash
 sudo zypper refresh
-sudo zypper install gcc-c++ clang make cmake pkgconf systemd-devel \
+sudo zypper install cmake pkgconf systemd-devel \
 dbus-1-devel libX11-devel wayland-devel libxkbcommon-devel Mesa-libGL-devel \
 alsa-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 ```
@@ -62,13 +62,15 @@ alsa-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
 
 Build using the provided script (`build.sh`) with optional flags:
 
-- **debug** — Build in debug mode (default)
-- **release** — Build in release mode
-- **clang** — Use Clang (default)
-- **gcc** — Use GCC
-- **asan** — Enable AddressSanitizer
-- **run** — Run the program after build
-- **clean** — Remove build directory
+| Flag      | Description                   |
+| --------- | ----------------------------- |
+| `debug`   | Build in debug mode (default) |
+| `release` | Build in release mode         |
+| `clang`   | Use Clang (default)           |
+| `gcc`     | Use GCC                       |
+| `asan`    | Build with AddressSanitizer   |
+| `run`     | Run the program after build   |
+| `clean`   | Remove the build directory    |
 
 For example
 `./build.sh release run`
@@ -79,8 +81,8 @@ Low level functions such as window management and system event handling are mana
 
 The interface utilizes a custom retained-mode GUI library, leveraging `glad` for OpenGL rendering and FreeType for text.
 
-Music discovery uses `std::filesystem` for traversal and `TagLib` for metadata, with built-in handling for moved files and updated metadata.
+Music discovery uses `std::filesystem` for traversal and `TagLib` for metadata, handling moved files and updated metadata.
 
 Playback is handled by `miniaudio`, with `sdbus-cpp` integration on Linux to enable desktop environment media controls.
 
-The built-in theme is bundled directly into the executable using C++26 `#embed` and functions as a fallback if no valid theme is found in the themes directory.
+The built-in theme is bundled into the executable using C++26 `#embed` and functions as a fallback if no valid theme is found in the themes directory.
