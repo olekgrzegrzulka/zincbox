@@ -65,7 +65,7 @@ void db::serialize(std::ofstream& os) {
   // Untombstone tracks and playlists present in some non-tombstoned playlist/album
   for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
     if (collections[collection_id].is_tombstone()) { continue; }
-    for (size_t playlist_id : collections[collection_id].playlist_ids) {
+    for (size_t playlist_id : collections[collection_id].playlist_ids()) {
 
       // Check if playlist was removed by user, and if so skip it (keep it tombstoned)
       if (playlist_ids_removed_by_user_or_empty.contains(playlist_id)) { continue; }
@@ -176,8 +176,8 @@ void db::print_collections() {
   out::println("Track count: {}", tracks.size());
   out::println("Database tree:");
   for (auto& c : collections) {
-    out::println("Collection {}", utf32_to_utf8(c.name));
-    for (auto p_id : c.playlist_ids) {
+    out::println("Collection {}", utf32_to_utf8(c.name()));
+    for (auto p_id : c.playlist_ids()) {
       auto& p = playlists[p_id];
       if (!p.tombstone) {
         out::println("\tPlaylist {} - {}", utf32_to_utf8(p.name), utf32_to_utf8(p.author));
@@ -217,7 +217,7 @@ Playlist& db::playlist_loved_tracks() {
 
 std::optional<size_t> db::collection_of_playlist(size_t playlist_id) {
   for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
-    for (size_t p : collections[collection_id].playlist_ids) {
+    for (size_t p : collections[collection_id].playlist_ids()) {
       if (playlist_id == p) { return collection_id; }
     }
   }
@@ -285,7 +285,7 @@ void setup_albums(size_t collection_id) {
   if (collection_id >= collections.size()) { return; }
   auto& collection = collections[collection_id];
 
-  for (size_t playlist_id : collection.playlist_ids) {
+  for (size_t playlist_id : collection.playlist_ids()) {
     auto& playlist = playlists[playlist_id];
 
     // sort
@@ -342,11 +342,11 @@ void db::rescan_collection(size_t collection_id) {
   }
 
   auto& collection = collections[collection_id];
-  auto collection_paths = std::move(collection.paths);
+  auto& collection_paths = collection.paths();
 
   // set flag_not_found_during_rescan for all tracks in the collection
   // this flag is set to false for tracks found during rescan (scan_directory())
-  for (size_t playlist_id : collection.playlist_ids) {
+  for (size_t playlist_id : collection.playlist_ids()) {
     auto& playlist = playlists[playlist_id];
     for (size_t track_id : playlist.get_track_ids()) {
       auto& track = tracks[track_id];
@@ -364,7 +364,7 @@ void db::rescan_collection(size_t collection_id) {
 void db::rename_collection(size_t collection_id, std::u32string_view new_name) {
   if (collection_id >= collections.size() || collection_id == 0) { return; }
   auto& collection = collections[collection_id];
-  collection.name = new_name;
+  collection.set_name(new_name);
 }
 
 std::optional<std::reference_wrapper<const Playlist>> db::playlist_by_id(size_t id) {
@@ -602,7 +602,7 @@ std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_t
   for (size_t collection_id = 0; collection_id < collections.size(); collection_id += 1) {
     auto& collection = db::collection_by_id(collection_id)->get();
     if (collection.is_tombstone()) { continue; }
-    for (size_t playlist_id : collection.playlist_ids) {
+    for (size_t playlist_id : collection.playlist_ids()) {
       auto& playlist = db::playlist_by_id(playlist_id)->get();
       if (playlist.is_tombstone()) { continue; }
 
@@ -625,7 +625,7 @@ std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_t
   auto query_sanitized = sanitize_query(search_text);
 
   std::vector<playlist_info> result;
-  for (size_t playlist_id : collections[collection_id].playlist_ids) {
+  for (size_t playlist_id : collections[collection_id].playlist_ids()) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     if (playlist.is_tombstone()) { continue; }
 
@@ -689,7 +689,7 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   std::vector<db::track_info> result;
   if (collections[collection_id].is_tombstone()) { return {}; }
 
-  for (size_t playlist_id : collections[collection_id].playlist_ids) {
+  for (size_t playlist_id : collections[collection_id].playlist_ids()) {
     if (playlists[playlist_id].is_tombstone()) { continue; }
     for (size_t track_id : playlists[playlist_id].track_ids) {
       auto& track = db::track_by_id(track_id)->get();

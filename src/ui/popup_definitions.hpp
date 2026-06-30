@@ -195,7 +195,7 @@ class PopupSetSources : public Popup {
 
       auto& collection = db::collection_by_id(collection_id)->get();
 
-      title = &add_child<Label>(U"Sources for collection \'" + collection.name + U"\'");
+      title = &add_child<Label>(U"Sources for collection \'" + std::u32string(collection.name()) + U"\'");
       title->set_height(32);
       title->set_min_height(32);
       title->set_max_height(32);
@@ -231,12 +231,12 @@ class PopupSetSources : public Popup {
         close();
       });
 
-      if (!collection.paths.empty()) {
+      if (!collection.paths().empty()) {
         left_panel->set_width(310);
         right_panel->set_width(65);
 
         i32 num = 1;
-        for (const auto& path : collection.paths) {
+        for (const auto& path : collection.paths()) {
           std::u32string str = utf8_to_utf32(std::to_string(num)) + U". " + utf8_to_utf32(path) + U"\n";
 
           auto& label = left_panel->add_child<Label>(str);

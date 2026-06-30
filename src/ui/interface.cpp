@@ -460,7 +460,7 @@ static void init_atlas() {
 static void add_playlist_art_to_texture_atlas(size_t collection_id) {
   i32 count = 0;
   if (!db::collection_by_id(collection_id).has_value()) { return; }
-  for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids) {
+  for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids()) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     std::string playlist_id_str = std::to_string(playlist_id);
     if (ui->get_texture_atlas().has_texture(playlist_id_str, 1)) {
@@ -590,7 +590,7 @@ static void show_add_to_playlist_popup(size_t track_id) {
 }
 
 static void show_popup_delete_collection(size_t collection_id) {
-  auto collection_name = db::collection_by_id(collection_id)->get().name;
+  auto collection_name = std::u32string(db::collection_by_id(collection_id)->get().name());
   std::u32string content = U"Are you sure you want to delete\nthe collection \"" + collection_name + U"\"?";
 
   auto* popup = popup_controller->show_popup<PopupConfirm>(content);
@@ -600,7 +600,7 @@ static void show_popup_delete_collection(size_t collection_id) {
 
   popup->on_ok_pressed = [collection_id]() {
     delete_collection(collection_id);
-    notifications->push(U"Deleted collection \'" + db::collection_by_id(collection_id)->get().name + U"\'");
+    notifications->push(U"Deleted collection \'" + std::u32string(db::collection_by_id(collection_id)->get().name()) + U"\'");
   };
 }
 
@@ -609,7 +609,7 @@ static void show_popup_rename_collection(size_t collection_id) {
   popup->set_size(300, 200);
   popup->title->set_text(U"Rename playlist");
   popup->btn_ok->get_label().set_text(U"Rename");
-  popup->text_input->label.set_text(db::collection_by_id(collection_id)->get().name);
+  popup->text_input->label.set_text(std::u32string(db::collection_by_id(collection_id)->get().name()));
   popup->text_input->set_focused(true);
 
   popup->on_ok_pressed = [popup, collection_id]() {

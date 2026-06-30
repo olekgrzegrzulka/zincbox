@@ -328,9 +328,10 @@ void player::next_track(i32 tries) {
       size_t rand_playlist_id = 0;
       size_t rand_track_id = 0;
       for (i32 shuffle_tries = 10; shuffle_tries > 0; shuffle_tries -= 1) {
-        rand_playlist_id = rng.pick(std::span{db::collection_by_id(playing.collection_id)->get().playlist_ids});
+        auto& playlist_ids = db::collection_by_id(playing.collection_id)->get().playlist_ids();
+        rand_playlist_id = rng.pick(std::span(playlist_ids));
         i32 collection_track_count = 0;
-        for (size_t playlist_id : db::collection_by_id(playing.collection_id)->get().playlist_ids) {
+        for (size_t playlist_id : playlist_ids) {
           collection_track_count += db::playlist_by_id(playlist_id)->get().get_tracks_count();
         }
         rand_track_id = rng.pick(std::span{db::playlist_by_id(rand_playlist_id)->get().get_track_ids()});
@@ -522,7 +523,7 @@ jt::Json player::to_json() {
     queue.emplace_back(track->get().to_json());
     jt::Json& json_track = queue.back();
     json_track["playlist"] = utf32_to_utf8(playlist->get().name);
-    json_track["collection"] = utf32_to_utf8(collection->get().name);
+    json_track["collection"] = utf32_to_utf8(collection->get().name());
   }
   return json;
 }
@@ -590,8 +591,8 @@ void player::from_json(const jt::Json& json) {
         for (db::collection_id_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
           if (found) { break; }
           auto& collection = db::collection_by_id(collection_id)->get();
-          if (utf32_to_utf8(collection.name) != collection_name) { continue; }
-          for (auto& playlist_id : collection.playlist_ids) {
+          if (utf32_to_utf8(collection.name()) != collection_name) { continue; }
+          for (auto& playlist_id : collection.playlist_ids()) {
             if (found) { break; }
             auto& playlist = db::playlist_by_id(playlist_id)->get();
             if (utf32_to_utf8(playlist.name) != playlist_name) { continue; }
