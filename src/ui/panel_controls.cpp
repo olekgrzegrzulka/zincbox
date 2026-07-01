@@ -125,11 +125,21 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
 
   tooltip_timestamp = &seekbar->add_child<ToolTip>("", ToolTipPosition::ABOVE, 4);
 
-  label_track = &panel_middle.add_child<Label>();
-  label_track->set_resize_to_text_extents(false);
+  auto& label_track_container = panel_middle.add_child<Widget>();
+  label_track_container.set_layout("ltr s:4");
+
+  love_icon = &label_track_container.add_child<Sprite>("love");
+  love_icon->set_anchor(Anchor::RIGHT);
+  love_icon->set_parent_anchor(Anchor::LEFT);
+  love_icon->set_size(12, 12);
+  love_icon->set_nine_slice_margin(0.0f);
+  love_icon->set_is_drawn(false);
+
+  label_track = &label_track_container.add_child<Label>();
+  label_track->set_resize_to_text_extents(true);
   label_track->set_label_anchor(Anchor::LEFT);
 
-  label_track_underline = &panel_middle.add_child<Sprite>("text_input_caret");
+  label_track_underline = &label_track->add_child<Sprite>("text_input_caret");
   label_track_underline->set_ignore_parents_layout(true);
   label_track_underline->set_width(1);
   label_track_underline->set_height(1);
@@ -138,6 +148,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
     auto playing = player::get_playing();
     if (!playing.has_value()) {
       label_track->set_text("");
+      love_icon->set_is_drawn(false);
     } else {
       auto& track = db::track_by_id(playing->track_id)->get();
       if (track.artist.empty() || track.title.empty()) {
@@ -145,6 +156,8 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
       } else {
         label_track->set_text(track.artist + U" - " + track.title);
       }
+      bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
+      love_icon->set_is_drawn(is_loved);
     }
     label_track->update();
     label_track_underline->set_width(label_track->get_text_extents().x);

@@ -38,6 +38,7 @@ class PanelControls : public Sprite {
     Slider* volume_bar{};
     Label* label_progress{};
     Label* label_track{};
+    Sprite* love_icon{};
     Sprite* label_track_underline{};
 
     bool label_track_underline_lmb = false;
