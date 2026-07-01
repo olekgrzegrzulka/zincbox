@@ -7,12 +7,14 @@
 #include <string>
 #include "common/config.hpp"
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
+#include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "interface.hpp"
 #include "interface_notifications.hpp"
@@ -724,6 +726,22 @@ static void show_popover_track_actions(size_t collection_id, size_t playlist_id,
     });
   }
 
+  bool is_album = db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album;
+  if (!is_album) {
+    popover_labels.emplace_back("Show in album");
+    popover_actions.emplace_back([track_id]() -> void {
+      auto& track = db::track_by_id(track_id)->get();
+      auto album_id = track.originating_album_id;
+      if (album_id != db::INVALID_ID) {
+        auto collection_id = db::collection_of_playlist(album_id);
+        if (collection_id.has_value()) {
+          show_collection(collection_id.value());
+          panel_tracks->scroll_to_track(album_id, track_id);
+        }
+      }
+    });
+  }
+
   popover_labels.emplace_back("Add to playlist...");
   popover_actions.emplace_back([track_id]() { show_add_to_playlist_popup(track_id); });
 
@@ -808,6 +826,20 @@ static void show_popover_queue_element_actions(size_t queue_index, Widget* widge
     show_collection(collection_id);
     panel_tracks->scroll_to_track(playlist_id, track_id);
   });
+  if (!is_album) {
+    popover_labels.emplace_back("Show in album");
+    popover_actions.emplace_back([track_id]() -> void {
+      auto& track = db::track_by_id(track_id)->get();
+      auto album_id = track.originating_album_id;
+      if (album_id != db::INVALID_ID) {
+        auto collection_id = db::collection_of_playlist(album_id);
+        if (collection_id.has_value()) {
+          show_collection(collection_id.value());
+          panel_tracks->scroll_to_track(album_id, track_id);
+        }
+      }
+    });
+  }
 
   if (!is_loved) {
     popover_labels.emplace_back("Love track");
