@@ -302,7 +302,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
             db::get_album_id(collection_id, track_file.album_name, track_file.album_artist, track.path);
           album_ids_visited.insert(playlist_id);
           auto track_id = db::add_track_to_playlist(playlist_id, track);
-          track.originating_album_id = playlist_id;
+          tracks[track_id].originating_album_id = playlist_id;
           tracks[track_id].set_not_found_during_rescan(false);
           auto& playlist = playlists[playlist_id];
           if (playlist.art_64x64.empty() && track_file.fetch_album_art()) {
