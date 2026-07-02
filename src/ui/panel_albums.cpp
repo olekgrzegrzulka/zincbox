@@ -8,6 +8,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "panel_albums.hpp"
 #include "theme.hpp"
+#include "tr.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
@@ -37,7 +38,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
     label_title->set_text(playlist.name);
     label_author->set_text(playlist.author);
   } else {
-    label_title->set_text("Add new playlist...");
+    label_title->set_text(tr::get("playlist.add_new_placeholder"));
   }
   label_title->set_resize_to_text_extents(false);
   label_title->set_width(total_size.x);

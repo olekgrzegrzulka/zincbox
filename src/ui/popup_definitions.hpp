@@ -6,6 +6,7 @@
 #include <vector>
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "tr.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
@@ -30,13 +31,13 @@ class PopupInput : public Popup {
       buttons->set_layout("ltr fill fit expand m:0 s:8");
       buttons->set_max_height(32);
 
-      btn_cancel = &buttons->add_child<Button>(U"Cancel");
+      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() {
         if (on_cancel_pressed) { on_cancel_pressed(); }
         close();
       });
 
-      btn_ok = &buttons->add_child<Button>(U"OK");
+      btn_ok = &buttons->add_child<Button>(tr::get("dialog.action.ok"));
       btn_ok->on_press([this]() {
         if (on_ok_pressed) { on_ok_pressed(); }
         close();
@@ -76,13 +77,13 @@ class PopupConfirm : public Popup {
       buttons->set_max_height(32);
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
-      btn_cancel = &buttons->add_child<Button>(U"Cancel");
+      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() {
         if (on_cancel_pressed) { on_cancel_pressed(); }
         close();
       });
 
-      btn_ok = &buttons->add_child<Button>(U"OK");
+      btn_ok = &buttons->add_child<Button>(tr::get("dialog.action.ok"));
       btn_ok->on_press([this]() {
         if (on_ok_pressed) { on_ok_pressed(); }
         close();
@@ -129,7 +130,7 @@ class PopupImportFolders : public Popup {
 
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
-      btn_cancel = &buttons->add_child<Button>(U"Cancel");
+      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() { close(); });
 
       std::string content_str;
@@ -149,24 +150,24 @@ class PopupImportFolders : public Popup {
       set_width(std::max(content->get_width() + 16, 400));
 
       if (dirs.size() > 1) {
-        auto str_size = utf8_to_utf32(std::to_string(dirs.size()));
-        title->set_text(U"Importing " + str_size + U" folders");
+        auto str_size = std::to_string(dirs.size());
+        title->set_text(tr::format("popup.import.title_plural", str_size));
 
-        btn_add_collections = &buttons->add_child<Button>(U"Add " + str_size + U" collections");
+        btn_add_collections = &buttons->add_child<Button>(tr::format("popup.import.action_add_collections", str_size));
         btn_add_collections->on_press([this]() {
           if (on_add_collections_pressed) { on_add_collections_pressed(dirs); }
           close();
         });
 
-        btn_merge = &buttons->add_child<Button>(U"Merge into one");
+        btn_merge = &buttons->add_child<Button>(tr::get("popup.import.action_merge"));
         btn_merge->on_press([this]() {
           if (on_merge_pressed) { on_merge_pressed(dirs); }
           close();
         });
       } else if (dirs.size() == 1) {
-        title->set_text(U"Importing 1 folder");
+        title->set_text(tr::get("popup.import.title_single"));
 
-        btn_add_collections = &buttons->add_child<Button>(U"Add collection");
+        btn_add_collections = &buttons->add_child<Button>(tr::get("popup.import.action_add_collection"));
         btn_add_collections->on_press([this]() {
           if (on_add_collections_pressed) { on_add_collections_pressed(dirs); }
           close();
@@ -195,7 +196,7 @@ class PopupSetSources : public Popup {
 
       auto& collection = db::collection_by_id(collection_id)->get();
 
-      title = &add_child<Label>(U"Sources for collection \'" + std::u32string(collection.name()) + U"\'");
+      title = &add_child<Label>(tr::format("popup.sources.title", utf32_to_utf8(collection.name())));
       title->set_height(32);
       title->set_min_height(32);
       title->set_max_height(32);
@@ -222,10 +223,10 @@ class PopupSetSources : public Popup {
       buttons->set_max_height(32);
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
-      btn_cancel = &buttons->add_child<Button>(U"Cancel");
+      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() { close(); });
 
-      btn_add_dir = &buttons->add_child<Button>(U"Add directory");
+      btn_add_dir = &buttons->add_child<Button>(tr::get("dialog.action.add_directory"));
       btn_add_dir->on_press([this]() {
         if (on_add_dir_pressed) { on_add_dir_pressed(); }
         close();
@@ -246,7 +247,7 @@ class PopupSetSources : public Popup {
           label.set_max_height(30);
           label.set_label_anchor(Anchor::CENTER_LEFT);
 
-          auto& button = right_panel->add_child<Button>(U"Remove");
+          auto& button = right_panel->add_child<Button>(tr::get("dialog.action.remove"));
           button.set_size(65, 30);
           button.set_min_height(30);
           button.set_max_height(30);
@@ -258,7 +259,7 @@ class PopupSetSources : public Popup {
       } else {
         left_panel->set_width(375);
         right_panel->set_width(0);
-        auto& label = left_panel->add_child<Label>("This collection has no sources set");
+        auto& label = left_panel->add_child<Label>(tr::get("collection.sources.none"));
         label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
       }
 
@@ -299,7 +300,7 @@ class PopupAddToPlaylist : public Popup {
 
       set_layout("ttb fill fit expand m:8 s:8");
 
-      title = &add_child<Label>(U"Add \'" + pretty_track + U"\' to a playlist");
+      title = &add_child<Label>(tr::format("popup.add_to_playlist.title", utf32_to_utf8(pretty_track)));
       title->set_height(32);
       title->set_min_height(32);
       title->set_max_height(32);
@@ -329,7 +330,7 @@ class PopupAddToPlaylist : public Popup {
 
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
-      btn_cancel = &buttons->add_child<Button>(U"Cancel");
+      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() { close(); });
 
       set_width(playlists_view->get_width() + 16);

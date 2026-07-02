@@ -6,6 +6,7 @@
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
+#include "tr.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/label.hpp"
@@ -365,9 +366,9 @@ void PanelControls::update() {
     tooltip_button_shuffle->set_is_drawn(true);
     auto s = player::get_shuffle_mode();
     if (s == player::ShuffleMode::OFF) {
-      tooltip_button_shuffle->set_text("Shuffle: Off");
+      tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.off"));
     } else if (s == player::ShuffleMode::ON) {
-      tooltip_button_shuffle->set_text("Shuffle: On");
+      tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.on"));
     }
   } else {
     tooltip_button_shuffle->set_is_drawn(false);
@@ -377,11 +378,11 @@ void PanelControls::update() {
     tooltip_button_repeat->set_is_drawn(true);
     auto r = player::get_repeat_mode();
     if (r == player::RepeatMode::OFF) {
-      tooltip_button_repeat->set_text("Repeat: Off");
+      tooltip_button_repeat->set_text(tr::get("tooltip.repeat.off"));
     } else if (r == player::RepeatMode::TRACK) {
-      tooltip_button_repeat->set_text("Repeat: Track");
+      tooltip_button_repeat->set_text(tr::get("tooltip.repeat.track"));
     } else if (r == player::RepeatMode::ALBUM) {
-      tooltip_button_repeat->set_text("Repeat: Album");
+      tooltip_button_repeat->set_text(tr::get("tooltip.repeat.album"));
     }
   } else {
     tooltip_button_repeat->set_is_drawn(false);

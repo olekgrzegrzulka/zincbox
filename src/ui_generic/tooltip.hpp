@@ -9,6 +9,21 @@ enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW };
 
 class ToolTip : public Sprite {
   public:
+    ToolTip(UI& ui_, std::u32string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
+      : Sprite(ui_, "tooltip") {
+      pos = pos_;
+      distance = distance_;
+      set_ignore_parents_layout(true);
+      set_is_drawn_on_top(true);
+      set_nine_slice_margin(4.0f);
+
+      label = &add_child<Label>(name_);
+      label->set_parent_anchor(Anchor::CENTER);
+      label->set_anchor(Anchor::CENTER);
+
+      set_size_and_position();
+    }
+
     ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
       : Sprite(ui_, "tooltip") {
       pos = pos_;
@@ -20,6 +35,13 @@ class ToolTip : public Sprite {
       label = &add_child<Label>(name_);
       label->set_parent_anchor(Anchor::CENTER);
       label->set_anchor(Anchor::CENTER);
+
+      set_size_and_position();
+    }
+
+    void set_text(const std::u32string& s) {
+      label->set_text(s);
+      label->set_size(vec2i{label->get_text_extents()});
 
       set_size_and_position();
     }

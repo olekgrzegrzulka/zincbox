@@ -2,6 +2,7 @@
 #include <string>
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "tr.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/button.hpp"
@@ -93,7 +94,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
     TabBar::tab_info{
       .id = db::collection_count(),
       .is_draggable = false,
-      .label = U"Queue",
+      .label = tr::get("tab.queue"),
       .padding = 10,
       .on_open =
         [this]() {
