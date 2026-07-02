@@ -196,6 +196,14 @@ void db::print_collections() {
   }
 }
 
+void db::set_playlists_collection_name(std::u32string_view name) {
+  if (!collections.empty()) { collections[0].set_name(name); }
+}
+
+void db::set_loved_tracks_playlist_name(std::u32string_view name) {
+  if (!playlists.empty()) { playlists[0].name = name; }
+}
+
 std::optional<db::track_info> db::find_track_from_json(const jt::Json& json) {
   bool has_artist = json.contains("artist") && json["artist"].isString();
   bool has_title = json.contains("title") && json["title"].isString();

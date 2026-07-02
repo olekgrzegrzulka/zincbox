@@ -72,6 +72,9 @@ void set_window_title(GLFWwindow* window) {
 
 int main() {
   config::load_from_file();
+  if (!config::json().contains("language") || !config::json()["language"].isString()) {
+    config::json()["language"] = "en-US";
+  }
   NFD::Init();
   mpris::init();
   player::init();

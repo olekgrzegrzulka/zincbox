@@ -4,6 +4,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "panel_tracks_playlist.hpp"
 #include "theme.hpp"
+#include "tr.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/ui.hpp"
 
@@ -19,10 +20,10 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   scrollbar->set_track_thickness(12);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
 
-  button_play_tooltip = &add_child<ToolTip>("Play", ToolTipPosition::BELOW, 8);
-  button_play_next_tooltip = &add_child<ToolTip>("Play next", ToolTipPosition::BELOW, 8);
-  button_sort_tooltip = &add_child<ToolTip>("Sort by", ToolTipPosition::BELOW, 8);
-  button_more_tooltip = &add_child<ToolTip>("More options", ToolTipPosition::BELOW, 8);
+  button_play_tooltip = &add_child<ToolTip>(tr::get("tooltip.play"), ToolTipPosition::BELOW, 8);
+  button_play_next_tooltip = &add_child<ToolTip>(tr::get("tooltip.play_next"), ToolTipPosition::BELOW, 8);
+  button_sort_tooltip = &add_child<ToolTip>(tr::get("tooltip.sort_by"), ToolTipPosition::BELOW, 8);
+  button_more_tooltip = &add_child<ToolTip>(tr::get("tooltip.more_options"), ToolTipPosition::BELOW, 8);
   button_play_tooltip->set_is_drawn(false);
   button_play_next_tooltip->set_is_drawn(false);
   button_sort_tooltip->set_is_drawn(false);

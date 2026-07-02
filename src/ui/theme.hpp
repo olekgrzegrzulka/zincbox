@@ -36,6 +36,6 @@ namespace theme {
   theme_prop get_prop(std::string_view prop);
   i32 get_button_nine_slice_margin(std::string_view name);
   std::set<std::string> get_themes();
-  void load_default_theme(UI&);
-  void load_theme(std::string_view name, UI&);
+  void load_default_theme(UI&, std::string_view language = "en-US");
+  void load_theme(std::string_view name, UI&, std::string_view language = "en-US");
 } // namespace theme

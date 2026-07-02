@@ -26,6 +26,9 @@ namespace db {
       size_t track_id;
   };
 
+  void set_playlists_collection_name(std::u32string_view);
+  void set_loved_tracks_playlist_name(std::u32string_view);
+
   // getters
   std::optional<track_info> find_track_from_json(const jt::Json&);
 

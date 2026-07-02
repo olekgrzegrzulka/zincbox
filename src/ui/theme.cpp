@@ -15,6 +15,7 @@
 #include "lib/inifile.h"
 #include "lib/miniz/miniz.h"
 #include "theme.hpp"
+#include "tr.hpp"
 #include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
 
@@ -91,9 +92,40 @@ std::set<std::string> theme::get_themes() {
   return ret;
 }
 
-void theme::load_default_theme(UI& ui) { load_theme("", ui); }
+static bool load_language_from_resource(std::string_view language) {
+  load_resources();
+  std::string resource_name = std::string("lang/") + std::string(language) + ".json";
+  auto it = resources.find(resource_name);
+  if (it == resources.end()) { return false; }
 
-void theme::load_theme(std::string_view theme_name, UI& ui) {
+  std::string content(reinterpret_cast<const char*>(it->second.data()), it->second.size());
+  return tr::load_from_string(content);
+}
+
+static bool load_language_from_theme_path(const fs::path& theme_path, std::string_view language) {
+  fs::path file_path = theme_path / "lang" / (std::string(language) + ".json");
+  if (!fs::is_regular_file(file_path)) { return false; }
+  return tr::load_from_file(file_path.string());
+}
+
+static void load_translations(std::string_view theme_name, std::string_view language) {
+  bool loaded = false;
+  if (theme_name != "") {
+    fs::path theme_path(io::get_themes_path() / theme_name);
+    loaded = load_language_from_theme_path(theme_path, language);
+  }
+
+  if (!loaded) { loaded = load_language_from_resource(language); }
+  if (!loaded && language != "en-US") { loaded = load_language_from_resource("en-US"); }
+  if (!loaded) {
+    out::log_critical("failed to load translations for language {}", std::string(language));
+    exit(1);
+  }
+}
+
+void theme::load_default_theme(UI& ui, std::string_view language) { load_theme("", ui, language); }
+
+void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view language) {
   const bool load_theme_from_resources = theme_name == "";
   if (load_theme_from_resources) { load_resources(); }
 
@@ -109,7 +141,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     }
 
     // Try to load theme.cfg, else fallback to default theme
-
     bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
     bool invalid_theme = !success || !ini.contains("theme");
     if (invalid_theme) {
@@ -181,6 +212,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui) {
     }
     properties[key] = std::move(prop);
   }
+
+  load_translations(theme_name, language);
 
   ScopeTimer timer("load_theme_atlas");
 

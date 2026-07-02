@@ -2,6 +2,7 @@
 #include "common/input.hpp"
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "tr.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/panel_tracks_track.hpp"
 #include "ui/popup_controller.hpp"
@@ -69,9 +70,9 @@ class PopupSearch : public Popup {
       buttons->set_anchor(Anchor::BOTTOM);
       buttons->set_parent_anchor(Anchor::BOTTOM);
       buttons->set_pos(8, -8);
-      button_close = &buttons->add_child<Button>(U"Close");
+      button_close = &buttons->add_child<Button>(tr::get("dialog.action.close"));
       button_close->on_press([this]() { close(); });
-      checkbox_search_all_collections = &buttons->add_child<Checkbox>(U"Search all collections");
+      checkbox_search_all_collections = &buttons->add_child<Checkbox>(tr::get("search.all_collections"));
     }
 
     void update_search_results() {
