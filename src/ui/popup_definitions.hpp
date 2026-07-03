@@ -313,6 +313,8 @@ class PopupAddToPlaylist : public Popup {
       playlists_view->set_min_height(playlists_view->get_height());
       playlists_view->set_max_height(playlists_view->get_height());
       playlists_view->props.collection_id = 0;
+      playlists_view->props.button_sort_by_visible = false;
+      playlists_view->props.button_add_playlist_visible = false;
       playlists_view->set_anchor(Anchor::CENTER);
       playlists_view->set_parent_anchor(Anchor::CENTER);
 
