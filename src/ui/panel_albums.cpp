@@ -153,6 +153,9 @@ void PanelAlbums::recreate() {
   scrollbar->set_is_updated(props.is_scrollable);
   scrollbar->set_is_drawn(props.is_scrollable);
 
+  button_sort_by->set_is_updated(props.button_sort_by_visible);
+  button_sort_by->set_is_drawn(props.button_sort_by_visible);
+
   std::vector<size_t> playlist_ids_sorted;
   if (props.collection_id.has_value()) {
     auto c = db::collection_by_id(*props.collection_id);
@@ -209,7 +212,7 @@ void PanelAlbums::recreate() {
     });
   }
 
-  if (props.collection_id.has_value() && props.collection_id == 0) {
+  if (props.collection_id.has_value() && props.collection_id == 0 && props.button_add_playlist_visible) {
     auto* album_widget =
       &albums_container->add_child<WidgetAlbumCover>(std::nullopt, cover_widget_size, cover_widget_cover_size);
     album_widgets.emplace_back(album_widget);

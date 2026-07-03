@@ -74,6 +74,8 @@ class PanelAlbums : public Sprite {
         std::vector<size_t> playlist_ids{};
         SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
         bool panel_search_visible = true;
+        bool button_sort_by_visible = true;
+        bool button_add_playlist_visible = true;
         bool is_scrollable = true;
 
         i32 cover_width = 64;

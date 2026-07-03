@@ -75,6 +75,7 @@ static void show_popover_collection_actions(size_t collection_id, Widget* widget
 static void show_popover_queue_element_actions(size_t queue_index, Widget* widget);
 static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bool play_actions = true);
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget);
+static void show_popover_create_playlist(Widget*);
 static void action_new_playlist();
 static void action_new_smart_playlist();
 static void action_new_playlist_from_json();
@@ -276,22 +277,7 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  panel_albums->on_add_playlist_button_pressed = [&](Widget* w) {
-    std::vector<std::string> popover_labels;
-    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add")));
-    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add_smart")));
-    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add_from_json")));
-    std::vector<std::function<void()>> popover_actions = {action_new_playlist, action_new_smart_playlist,
-                                                          action_new_playlist_from_json};
-    popover_descriptor d{
-      .id = "new_playlist",
-      .at = w->get_position(Anchor::CENTER),
-      .distance = 4,
-      .button_labels = popover_labels,
-      .button_actions = popover_actions,
-    };
-    popup_controller->create_popover(d);
-  };
+  panel_albums->on_add_playlist_button_pressed = [&](Widget* w) -> void { show_popover_create_playlist(w); };
 
   if (db::collection_count() > 0) {
     active_collection_id = 0;
@@ -1054,6 +1040,23 @@ static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widge
   popup_controller->create_popover(d);
 }
 
+static void show_popover_create_playlist(Widget* w) {
+  std::vector<std::string> popover_labels;
+  popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add")));
+  popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add_smart")));
+  popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add_from_json")));
+  std::vector<std::function<void()>> popover_actions = {action_new_playlist, action_new_smart_playlist,
+                                                        action_new_playlist_from_json};
+  popover_descriptor d{
+    .id = "new_playlist",
+    .at = w->get_position(Anchor::CENTER),
+    .distance = 4,
+    .button_labels = popover_labels,
+    .button_actions = popover_actions,
+  };
+  popup_controller->create_popover(d);
+}
+
 static void action_new_playlist() {
   auto* popup = popup_controller->show_popup<PopupInput>();
   popup->set_size(300, 200);
@@ -1071,9 +1074,8 @@ static void action_new_playlist() {
 
   popup->on_cancel_pressed = []() {};
 }
-static void action_new_smart_playlist() {
-  auto* popup = popup_controller->show_popup<PopupCreateSmartPlaylist>();
-}
+
+static void action_new_smart_playlist() { auto* popup = popup_controller->show_popup<PopupCreateSmartPlaylist>(); }
 
 static void action_new_playlist_from_json() {
   NFD::UniquePath result;
