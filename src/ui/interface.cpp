@@ -75,6 +75,9 @@ static void show_popover_collection_actions(size_t collection_id, Widget* widget
 static void show_popover_queue_element_actions(size_t queue_index, Widget* widget);
 static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bool play_actions = true);
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget);
+static void action_new_playlist();
+static void action_new_smart_playlist();
+static void action_new_playlist_from_json();
 
 static void recreate_panel_top(bool order = true) {
   if (order) {
@@ -273,22 +276,21 @@ void interface::init() {
     popup_controller->create_popover(d);
   };
 
-  panel_albums->on_add_playlist_button_pressed = [&](Widget*) {
-    auto* popup = popup_controller->show_popup<PopupInput>();
-    popup->set_size(300, 200);
-    popup->title->set_text(tr::get("popup.playlist.add.title"));
-    popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
-    popup->text_input->set_focused(true);
-
-    popup->on_ok_pressed = [popup]() {
-      db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
-      if (active_collection_id == 0) {
-        panel_albums->props.collection_id = 0;
-        panel_tracks->recreate(active_collection_id);
-      }
+  panel_albums->on_add_playlist_button_pressed = [&](Widget* w) {
+    std::vector<std::string> popover_labels;
+    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add")));
+    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add_smart")));
+    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.new_playlist.add_from_json")));
+    std::vector<std::function<void()>> popover_actions = {action_new_playlist, action_new_smart_playlist,
+                                                          action_new_playlist_from_json};
+    popover_descriptor d{
+      .id = "new_playlist",
+      .at = w->get_position(Anchor::CENTER),
+      .distance = 4,
+      .button_labels = popover_labels,
+      .button_actions = popover_actions,
     };
-
-    popup->on_cancel_pressed = []() {};
+    popup_controller->create_popover(d);
   };
 
   if (db::collection_count() > 0) {
@@ -593,7 +595,8 @@ static void show_add_to_playlist_popup(size_t track_id) {
     if (db::add_track_id_to_playlist(playlist_id, track_id)) {
       auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      notifications->push(tr::format("notification.added_track_to_playlist", utf32_to_utf8(track_pretty_name), utf32_to_utf8(playlist_name)));
+      notifications->push(tr::format("notification.added_track_to_playlist", utf32_to_utf8(track_pretty_name),
+                                     utf32_to_utf8(playlist_name)));
     }
     panel_tracks->clear();
     panel_tracks->recreate(active_collection_id);
@@ -667,7 +670,8 @@ static void show_popup_delete_playlist(size_t playlist_id) {
 
   popup->on_ok_pressed = [playlist_id]() {
     delete_playlist(playlist_id);
-    notifications->push(tr::format("notification.deleted_playlist", utf32_to_utf8(db::playlist_by_id(playlist_id)->get().name)));
+    notifications->push(
+      tr::format("notification.deleted_playlist", utf32_to_utf8(db::playlist_by_id(playlist_id)->get().name)));
   };
 }
 
@@ -703,7 +707,8 @@ static void show_popover_track_actions(size_t collection_id, size_t playlist_id,
     player::enqueue(player::playing_t{.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id},
                     player::get_playing_index().value_or(player::get_playing_queue().size()));
 
-    notifications->push(tr::format("notification.playing_next", utf32_to_utf8(db::track_by_id(track_id)->get().pretty_name())));
+    notifications->push(
+      tr::format("notification.playing_next", utf32_to_utf8(db::track_by_id(track_id)->get().pretty_name())));
   });
 
   if (!is_loved) {
@@ -764,14 +769,14 @@ static void show_popover_track_actions(size_t collection_id, size_t playlist_id,
         ensure(track_id == playlist.track_ids[playlist_track_index.value()]);
         if (db::remove_track_index_from_playlist(playlist_id, playlist_track_index.value())) {
           auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
-          notifications->push(
-            tr::format("notification.removed_track_from_playlist", utf32_to_utf8(track_pretty_name), utf32_to_utf8(playlist.name)));
+          notifications->push(tr::format("notification.removed_track_from_playlist", utf32_to_utf8(track_pretty_name),
+                                         utf32_to_utf8(playlist.name)));
         }
       } else {
         if (db::remove_track_id_from_playlist(playlist_id, track_id)) {
           auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
-          notifications->push(
-            tr::format("notification.removed_track_from_playlist", utf32_to_utf8(track_pretty_name), utf32_to_utf8(playlist.name)));
+          notifications->push(tr::format("notification.removed_track_from_playlist", utf32_to_utf8(track_pretty_name),
+                                         utf32_to_utf8(playlist.name)));
         }
       }
       panel_tracks->clear();
@@ -907,7 +912,8 @@ static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bo
     popover_actions.emplace_back([playlist_id]() {
       if (panel_albums->get_collection_id().has_value()) {
         if (player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false)) {
-          notifications->push(tr::format("notification.playing_next", utf32_to_utf8(db::playlist_by_id(playlist_id)->get().name)));
+          notifications->push(
+            tr::format("notification.playing_next", utf32_to_utf8(db::playlist_by_id(playlist_id)->get().name)));
         }
       }
     });
@@ -1007,7 +1013,6 @@ static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bo
 }
 
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget) {
-
   std::vector<std::string> popover_labels = {
     utf32_to_utf8(tr::get("sort.artist.name.asc")), utf32_to_utf8(tr::get("sort.artist.name.desc")),
     utf32_to_utf8(tr::get("sort.title.name.asc")), utf32_to_utf8(tr::get("sort.title.name.desc"))};
@@ -1047,4 +1052,33 @@ static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widge
     .button_actions = popover_actions,
   };
   popup_controller->create_popover(d);
+}
+
+static void action_new_playlist() {
+  auto* popup = popup_controller->show_popup<PopupInput>();
+  popup->set_size(300, 200);
+  popup->title->set_text(tr::get("popup.playlist.add.title"));
+  popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
+  popup->text_input->set_focused(true);
+
+  popup->on_ok_pressed = [popup]() {
+    db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
+    if (active_collection_id == 0) {
+      panel_albums->props.collection_id = 0;
+      panel_tracks->recreate(active_collection_id);
+    }
+  };
+
+  popup->on_cancel_pressed = []() {};
+}
+static void action_new_smart_playlist() {
+  auto* popup = popup_controller->show_popup<PopupCreateSmartPlaylist>();
+}
+
+static void action_new_playlist_from_json() {
+  NFD::UniquePath result;
+  std::string json_filter_label = utf32_to_utf8(tr::get("dialog.filter.json_files"));
+  nfdfilteritem_t filterList[1] = {{json_filter_label.c_str(), "json"}};
+  nfdresult_t res = NFD::OpenDialog(result, filterList, 1);
+  if (res == NFD_OKAY) {}
 }

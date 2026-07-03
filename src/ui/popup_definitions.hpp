@@ -346,3 +346,54 @@ class PopupAddToPlaylist : public Popup {
 
     std::function<void(size_t)> on_playlist_selected{};
 };
+
+class PopupCreateSmartPlaylist : public Popup {
+  public:
+    PopupCreateSmartPlaylist(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+      : Popup(ui_, controller_, std::move(on_close_)) {
+
+      set_layout("ttb fit expand m:8 s:12");
+      set_width(400);
+
+      title = &add_child<Label>(tr::get("popup.smart_playlist.add.title"));
+
+      Widget& container_name = add_child<Widget>();
+      container_name.set_layout("ttb fit expand m:0 s:8");
+      label_name = &container_name.add_child<Label>(tr::get("popup.smart_playlist.add.label_input"));
+      input_name = &container_name.add_child<TextInput>();
+      input_name->set_height(22);
+
+      Widget& container_artists = add_child<Widget>();
+      container_artists.set_layout("ttb fit expand m:0 s:8");
+      label_artists = &container_artists.add_child<Label>(tr::get("popup.smart_playlist.add.label_artists"));
+      input_artists = &container_artists.add_child<TextInput>();
+      input_artists->set_height(22);
+
+      buttons = &add_child<Widget>();
+      buttons->set_height(32);
+      buttons->set_min_height(32);
+      buttons->set_max_height(32);
+      buttons->set_layout("ltr fill fit expand m:0 s:8");
+      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
+      btn_cancel->on_press([this]() -> void {
+        if (on_cancel) { on_cancel(); }
+        close();
+      });
+      btn_add = &buttons->add_child<Button>(tr::get("dialog.action.add"));
+      btn_add->on_press([this]() -> void {
+        if (on_add) { on_add(); }
+        close();
+      });
+    }
+
+    Label* title{};
+    Widget* buttons{};
+    Button* btn_cancel{};
+    Button* btn_add{};
+    Label* label_artists{};
+    TextInput* input_artists{};
+    Label* label_name{};
+    TextInput* input_name{};
+    std::function<void()> on_cancel{};
+    std::function<void()> on_add{};
+};
