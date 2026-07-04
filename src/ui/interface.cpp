@@ -61,6 +61,7 @@ static void handle_dropped_files();
 static void delete_collection(size_t);
 static void delete_playlist(size_t);
 static void show_collection(size_t);
+static void show_queue();
 static void show_add_to_playlist_popup(size_t);
 static void show_popup_delete_collection(size_t);
 static void show_popup_rename_collection(size_t);
@@ -169,19 +170,7 @@ void interface::init() {
 
   panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
 
-  panel_top->on_queue_view_opened = [&]() {
-    active_collection_id = std::nullopt;
-    panel_tracks->set_is_drawn(false);
-    panel_tracks->set_is_updated(false);
-    panel_albums->set_is_drawn(false);
-    panel_albums->set_is_updated(false);
-    panel_queue->set_is_drawn(true);
-    panel_queue->set_is_updated(true);
-    panel_queue->on_queue_changed();
-    splitter->set_is_drawn(false);
-    splitter->set_is_updated(false);
-    panel_albums->props.collection_id = std::nullopt;
-  };
+  panel_top->on_queue_view_opened = [&]() { show_queue(); };
 
   panel_top->on_show_collection_actions_popover = show_popover_collection_actions;
 
@@ -402,7 +391,6 @@ jt::Json interface::to_json() {
     if (active_collection_id) {
       json["tracks_scroll_offset"] = panel_tracks->get_scroll_px();
       json["playlists_scroll_offset"] = panel_albums->get_scroll_px();
-      json["collection_id"] = active_collection_id.value();
     }
   }
 
@@ -418,22 +406,24 @@ void interface::from_json(const jt::Json& json) {
       if (tab.isString()) { tabs_order.emplace_back(utf8_to_utf32(tab.getString())); }
     }
   }
+  panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
 
   // selected tab
   if (json.contains("selected_tab") && json["selected_tab"].isString()) {
-    std::string selected_tab = json["selected_tab"].getString();
-    for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
-      if (utf32_to_utf8(tab->get_label().get_text()) == selected_tab) {
-        panel_top->get_tab_bar()->open_tab(tab->id);
-        break;
+    std::u32string selected_tab = utf8_to_utf32(json["selected_tab"].getString());
+    const Tab* tab = panel_top->get_tab_bar()->get_tab_by_label(selected_tab);
+    if (tab) {
+      panel_top->get_tab_bar()->unselect_all_tabs();
+      panel_top->get_tab_bar()->select_tab(tab->id);
+      if (tab->id < (i32)db::collection_count()) {
+        show_collection(tab->id);
+      } else {
+        show_queue();
       }
+    } else {
+      show_queue();
     }
   }
-
-  // collection id
-  bool has_collection_id = json.contains("collection_id") && json["collection_id"].isNumber();
-  auto collection_id = has_collection_id ? json["collection_id"].getNumber() : 0;
-  active_collection_id = collection_id;
 
   // tracks scroll offset
   if (json.contains("tracks_scroll_offset") && json["tracks_scroll_offset"].isNumber()) {
@@ -572,6 +562,20 @@ static void show_collection(size_t collection_id) {
 
   splitter->set_is_drawn(true);
   splitter->set_is_updated(true);
+}
+
+static void show_queue() {
+  active_collection_id = std::nullopt;
+  panel_tracks->set_is_drawn(false);
+  panel_tracks->set_is_updated(false);
+  panel_albums->set_is_drawn(false);
+  panel_albums->set_is_updated(false);
+  panel_queue->set_is_drawn(true);
+  panel_queue->set_is_updated(true);
+  panel_queue->on_queue_changed();
+  splitter->set_is_drawn(false);
+  splitter->set_is_updated(false);
+  panel_albums->props.collection_id = std::nullopt;
 }
 
 static void show_add_to_playlist_popup(size_t track_id) {

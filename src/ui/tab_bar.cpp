@@ -153,6 +153,8 @@ void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
     tabs[i]->index = i;
   }
 
+  if ((i32)at <= selected_tab_index) { selected_tab_index += 1; }
+
   if (select) {
     update_tab_textures(t->index);
     if (info.on_open) { info.on_open(); }
@@ -160,7 +162,7 @@ void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
   }
 }
 
-void TabBar::open_tab(i32 id) {
+void TabBar::select_tab(i32 id) {
   if (tab_valid(selected_tab_index) && tabs[selected_tab_index]->id == id) { return; }
   auto it = std::find_if(tabs.begin(), tabs.end(), [id](Tab* t) { return t->id == id; });
   if (it != tabs.end()) {
@@ -169,9 +171,30 @@ void TabBar::open_tab(i32 id) {
   }
 }
 
+void TabBar::unselect_all_tabs() {
+  for (Tab* t : tabs) {
+    t->active = false;
+  }
+  selected_tab_index = -1;
+}
+
 void TabBar::close_tab(i32 id) {
   auto it = std::find_if(tabs.begin(), tabs.end(), [id](Tab* t) { return t->id == id; });
-  if (it != tabs.end()) { tabs.erase(it); }
+  if (it != tabs.end()) {
+    size_t removed_index = (*it)->index;
+    (*it)->set_marked_for_deletion(true);
+    tabs.erase(it);
+
+    for (size_t i = 0; i < tabs.size(); i += 1) {
+      tabs[i]->index = i;
+    }
+
+    if (selected_tab_index == (i32)removed_index) {
+      selected_tab_index = -1;
+    } else if (selected_tab_index > (i32)removed_index) {
+      selected_tab_index -= 1;
+    }
+  }
 }
 
 void TabBar::close_all_tabs() {
@@ -179,13 +202,14 @@ void TabBar::close_all_tabs() {
     t->set_marked_for_deletion(true);
   }
   tabs.clear();
+  selected_tab_index = -1;
 }
 
 void TabBar::update() {
   if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) { dragged_tab_index = -1; }
 
   i32 mouse_x = Input::get_mouse_x() - x;
-  i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - mouse_x - x);
+  i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - Input::get_mouse_x());
 
   if (dragged_tab_index != -1 && mouse_drag_delta > 10) {
     if (dragged_tab_index + 1 < (i32)tabs.size()) {
@@ -196,7 +220,6 @@ void TabBar::update() {
       }
       sum += next->get_width();
       if (mouse_x > sum && mouse_x < sum + tabs[dragged_tab_index]->get_width()) {
-        if (selected_tab_index == dragged_tab_index) { selected_tab_index += 1; }
         if (swap_tabs(dragged_tab_index, dragged_tab_index + 1)) { dragged_tab_index += 1; }
       }
     }
@@ -207,7 +230,6 @@ void TabBar::update() {
         sum += tabs[i]->get_width();
       }
       if (mouse_x > sum && mouse_x < sum + prev->get_width()) {
-        if (selected_tab_index == dragged_tab_index) { selected_tab_index -= 1; }
         if (swap_tabs(dragged_tab_index, dragged_tab_index - 1)) { dragged_tab_index -= 1; }
       }
     }
@@ -263,6 +285,14 @@ void TabBar::sort_tabs_by_label(std::span<const std::u32string> labels) {
   for (size_t i = 0; i < tabs.size(); i += 1) {
     tabs[i]->index = i;
   }
+  selected_tab_index = -1;
+}
+
+const Tab* TabBar::get_tab_by_label(const std::u32string& label) const {
+  for (const Tab* tab : tabs) {
+    if (tab->get_label().get_text() == label) { return tab; }
+  }
+  return nullptr;
 }
 
 void TabBar::on_tab_drag_start(i32 id) {
@@ -276,10 +306,16 @@ void TabBar::on_tab_drag_start(i32 id) {
 bool TabBar::tab_valid(size_t index) const { return index < tabs.size(); }
 
 bool TabBar::swap_tabs(size_t index_a, size_t index_b) {
-  if (!tab_valid(index_a) || !tab_valid(index_a)) { return false; }
+  if (!tab_valid(index_a) || !tab_valid(index_b)) { return false; }
   if (!tabs[index_a]->is_draggable || !tabs[index_b]->is_draggable) { return false; }
 
   std::swap(tabs[index_a], tabs[index_b]);
   std::swap(tabs[index_a]->index, tabs[index_b]->index);
+
+  if (selected_tab_index == (i32)index_a) {
+    selected_tab_index = index_b;
+  } else if (selected_tab_index == (i32)index_b) {
+    selected_tab_index = index_a;
+  }
   return true;
 }
