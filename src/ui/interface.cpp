@@ -310,9 +310,22 @@ void interface::input() {
       break;
     }
 
-    case mpris::CommandType::SET:
+    case mpris::CommandType::SET: {
       // Absolute seek
       player::seek_ms(static_cast<i32>(cmd->value));
+      break;
+    }
+
+    case mpris::CommandType::LOOP:
+      switch (static_cast<mpris::LoopStatus>(cmd->value)) {
+      case mpris::LoopStatus::NONE: player::set_repeat_mode(player::RepeatMode::OFF); break;
+      case mpris::LoopStatus::TRACK: player::set_repeat_mode(player::RepeatMode::TRACK); break;
+      case mpris::LoopStatus::PLAYLIST: player::set_repeat_mode(player::RepeatMode::ALBUM); break;
+      }
+      break;
+
+    case mpris::CommandType::SHUFFLE:
+      player::set_shuffle_mode(static_cast<bool>(cmd->value) ? player::ShuffleMode::ON : player::ShuffleMode::OFF);
       break;
     }
   }

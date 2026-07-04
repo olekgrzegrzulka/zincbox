@@ -495,10 +495,20 @@ void player::set_playing_index(std::optional<size_t> i) {
 }
 
 player::ShuffleMode player::get_shuffle_mode() { return shuffle_mode; }
-void player::set_shuffle_mode(ShuffleMode s) { shuffle_mode = s; }
+
+void player::set_shuffle_mode(ShuffleMode s) {
+  if (s == shuffle_mode) { return; }
+  shuffle_mode = s;
+  mpris::notify_shuffle(s == ShuffleMode::ON);
+}
 
 player::RepeatMode player::get_repeat_mode() { return repeat_mode; }
-void player::set_repeat_mode(RepeatMode r) { repeat_mode = r; }
+
+void player::set_repeat_mode(RepeatMode r) {
+  if (r == repeat_mode) { return; }
+  repeat_mode = r;
+  mpris::notify_loop_status(static_cast<i32>(r));
+}
 
 jt::Json player::to_json() {
   auto st = ScopeTimer("player::to_json");
