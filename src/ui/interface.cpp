@@ -747,9 +747,11 @@ static void show_popover_track_actions(size_t collection_id, size_t playlist_id,
   popover_actions.emplace_back([track_id]() { show_add_to_playlist_popup(track_id); });
 
   if (remove_from_playlist_option && is_user_playlist) {
-    popover_labels.emplace_back(utf32_to_utf8(tr::get("popover.track.remove_from_playlist")));
+    auto& playlist = db::playlist_by_id(playlist_id)->get();
+    popover_labels.emplace_back(
+      utf32_to_utf8(tr::format("popover.track.remove_from_playlist", utf32_to_utf8(playlist.name))));
     popover_actions.emplace_back([track_id, playlist_id, playlist_track_index]() {
-      auto playlist = db::playlist_by_id(playlist_id)->get();
+      auto& playlist = db::playlist_by_id(playlist_id)->get();
       if (playlist_track_index.has_value()) {
         ensure(playlist.track_ids.size() > playlist_track_index.value());
         ensure(track_id == playlist.track_ids[playlist_track_index.value()]);

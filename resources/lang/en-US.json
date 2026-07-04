@@ -42,7 +42,7 @@
   "popover.track.add_to_playlist": "Add to playlist",
   "popover.track.love": "Love",
   "popover.track.play_next": "Play next",
-  "popover.track.remove_from_playlist": "Remove from playlist",
+  "popover.track.remove_from_playlist": "Remove from '{}'",
   "popover.track.show_in_album": "Show in album",
   "popover.track.show_in_playlist": "Show in playlist",
   "popover.track.unlove": "Unlove",

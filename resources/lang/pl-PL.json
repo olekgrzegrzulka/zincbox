@@ -42,7 +42,7 @@
   "popover.track.add_to_playlist": "Dodaj do playlisty",
   "popover.track.love": "Dodaj do ulubionych",
   "popover.track.play_next": "Odtwórz jako następny",
-  "popover.track.remove_from_playlist": "Usuń z playlisty",
+  "popover.track.remove_from_playlist": "Usuń z '{}'",
   "popover.track.show_in_album": "Pokaż w albumie",
   "popover.track.show_in_playlist": "Pokaż na playliście",
   "popover.track.unlove": "Usuń z ulubionych",
