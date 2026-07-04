@@ -9,6 +9,8 @@
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
+static constexpr size_t QUEUE_TAB_ID = 10000;
+
 PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   set_height(theme::get_prop("top_bar_height").as_i32(32));
 
@@ -46,6 +48,13 @@ PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   auto& button_left_img = button_left->add_child<Sprite>("left");
   button_left_img.set_anchor(Anchor::CENTER);
   button_left_img.set_parent_anchor(Anchor::CENTER);
+}
+
+const Tab* PanelTop::get_queue_tab() const {
+  for (auto& tab : tab_bar->get_tabs()) {
+    if (tab->id == QUEUE_TAB_ID) { return tab; }
+  }
+  return nullptr;
 }
 
 void PanelTop::input() {
@@ -92,7 +101,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
 
   tab_bar->add_tab(
     TabBar::tab_info{
-      .id = db::collection_count(),
+      .id = QUEUE_TAB_ID,
       .is_draggable = false,
       .label = tr::get("tab.queue"),
       .padding = 10,
@@ -127,4 +136,4 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
   }
 }
 
-void PanelTop::select(size_t selected_collection_id) { tab_bar->open_tab(selected_collection_id); }
+void PanelTop::select(size_t selected_collection_id) { tab_bar->select_tab(selected_collection_id); }

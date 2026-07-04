@@ -53,7 +53,8 @@ class TabBar : public Sprite {
 
     void add_tab(const tab_info& info, bool select = false);
     void add_tab(const tab_info& info, size_t at, bool select = false);
-    void open_tab(i32 id);
+    void select_tab(i32 id);
+    void unselect_all_tabs();
     void close_tab(i32 id);
     void close_all_tabs();
     void update() override;
@@ -61,6 +62,7 @@ class TabBar : public Sprite {
     const std::vector<Tab*>& get_tabs() const { return tabs; }
     void sort_tabs_by_label(std::span<const std::u32string>);
     const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
+    const Tab* get_tab_by_label(const std::u32string& label) const;
 
   protected:
     void on_tab_drag_start(i32 id);
