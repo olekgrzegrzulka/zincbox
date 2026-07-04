@@ -30,6 +30,8 @@ class PanelControls : public Sprite {
     Button* button_prev{};
     Button* button_shuffle{};
     Button* button_repeat{};
+    Sprite* button_repeat_img{};
+    Sprite* button_shuffle_img{};
     ToolTip* tooltip_button_shuffle{};
     ToolTip* tooltip_button_repeat{};
     ToolTip* tooltip_timestamp{};
@@ -48,6 +50,13 @@ class PanelControls : public Sprite {
     i32 tooltip_ms_prev = -1000;
     double volume_prev = -1.0;
 
+    i32 repeat_mode_prev = -1;
+    i32 shuffle_mode_prev = -1;
+
     Signal<>::slot_key slot_on_track_changed;
     bool is_playing = false;
+
+  protected:
+    void update_repeat_mode();
+    void update_shuffle_mode();
 };

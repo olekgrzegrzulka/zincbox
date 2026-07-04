@@ -19,9 +19,26 @@ static std::string title;
 static std::string artist;
 static std::string album;
 static std::string cover_path;
+static mpris::LoopStatus loop_status = mpris::LoopStatus::NONE;
+static bool shuffle = false;
 
 static const char* const player_name = "zincbox";
 static const char* const player_id = "org.mpris.MediaPlayer2.zincbox";
+
+static const char* loop_status_to_string(mpris::LoopStatus s) {
+  switch (s) {
+  case mpris::LoopStatus::TRACK: return "Track";
+  case mpris::LoopStatus::PLAYLIST: return "Playlist";
+  case mpris::LoopStatus::NONE:
+  default: return "None";
+  }
+}
+
+static mpris::LoopStatus string_to_loop_status(const std::string& val) {
+  if (val == "Track") { return mpris::LoopStatus::TRACK; }
+  if (val == "Playlist") { return mpris::LoopStatus::PLAYLIST; }
+  return mpris::LoopStatus::NONE;
+}
 
 void mpris::init() {
   auto thread = std::thread([]() {
@@ -56,6 +73,19 @@ void mpris::init() {
               {"xesam:artist", sdbus::Variant(std::vector<std::string>{artist})},
               {"xesam:album", sdbus::Variant(album)},
               {"mpris:artUrl", sdbus::Variant(std::string{cover_path})}};
+          }),
+          sdbus::registerProperty("LoopStatus")
+            .withGetter([]() { return std::string(loop_status_to_string(loop_status)); })
+            .withSetter([](const std::string& val) {
+              if (val == "None" || val == "Track" || val == "Playlist") {
+                loop_status = string_to_loop_status(val);
+                command_queue.push(Command{.type = CommandType::LOOP, .value = (i32)(loop_status)});
+              }
+            }),
+
+          sdbus::registerProperty("Shuffle").withGetter([]() { return shuffle; }).withSetter([](const bool& val) {
+            shuffle = val;
+            command_queue.push(Command{.type = CommandType::SHUFFLE, .value = val});
           }),
           sdbus::registerMethod("Quit").implementedAs([]() {}),
           sdbus::registerMethod("Next").implementedAs([]() { command_queue.push(Command{.type = CommandType::NEXT}); }),
@@ -139,6 +169,23 @@ void mpris::notify_seeked(i64 position_ms) {
     mpris_object->emitSignal("Seeked").onInterface("org.mpris.MediaPlayer2.Player").withArguments(position_ms * 1000);
   }
 }
+
+void mpris::notify_loop_status(i32 status_) {
+  if (status_ > static_cast<i32>(LoopStatus::PLAYLIST)) { return; }
+
+  loop_status = static_cast<LoopStatus>(status_);
+  if (mpris_object) {
+    mpris_object->emitPropertiesChangedSignal("org.mpris.MediaPlayer2.Player", {sdbus::PropertyName("LoopStatus")});
+  }
+}
+
+void mpris::notify_shuffle(bool state_) {
+  shuffle = state_;
+  if (mpris_object) {
+    mpris_object->emitPropertiesChangedSignal("org.mpris.MediaPlayer2.Player", {sdbus::PropertyName("Shuffle")});
+  }
+}
+
 #else
 void mpris::init() {}
 void mpris::deinit() {}

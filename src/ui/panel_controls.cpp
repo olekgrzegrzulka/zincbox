@@ -57,30 +57,18 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
 
   button_repeat = &panel_right.add_child<ZincboxButton>("repeat");
   button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32());
-  auto& button_repeat_img = button_repeat->add_child<Sprite>("repeat");
-  auto r = player::get_repeat_mode();
-  if (r == player::RepeatMode::OFF) {
-    button_repeat_img.set_texture("repeat_off");
-  } else if (r == player::RepeatMode::TRACK) {
-    button_repeat_img.set_texture("repeat_track");
-  } else if (r == player::RepeatMode::ALBUM) {
-    button_repeat_img.set_texture("repeat_album");
-  }
-  button_repeat_img.set_anchor(Anchor::CENTER);
-  button_repeat_img.set_parent_anchor(Anchor::CENTER);
+  button_repeat_img = &button_repeat->add_child<Sprite>("repeat");
+  update_repeat_mode();
+  button_repeat_img->set_anchor(Anchor::CENTER);
+  button_repeat_img->set_parent_anchor(Anchor::CENTER);
   tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
   button_shuffle = &panel_right.add_child<ZincboxButton>("shuffle");
   button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32());
-  auto& button_shuffle_img = button_shuffle->add_child<Sprite>("shuffle");
-  auto s = player::get_shuffle_mode();
-  if (s == player::ShuffleMode::OFF) {
-    button_shuffle_img.set_texture("shuffle_off");
-  } else if (s == player::ShuffleMode::ON) {
-    button_shuffle_img.set_texture("shuffle");
-  }
-  button_shuffle_img.set_anchor(Anchor::CENTER);
-  button_shuffle_img.set_parent_anchor(Anchor::CENTER);
+  button_shuffle_img = &button_shuffle->add_child<Sprite>("shuffle");
+  update_shuffle_mode();
+  button_shuffle_img->set_anchor(Anchor::CENTER);
+  button_shuffle_img->set_parent_anchor(Anchor::CENTER);
   tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
   volume_bar = &panel_right.add_child<ZincboxSlider>("volume_bar");
@@ -186,29 +174,28 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
 
   button_next->on_press([&]() { player::next_track(); });
 
-  button_repeat->on_press([&button_repeat_img]() {
+  button_repeat->on_press([this]() {
     auto repeat_mode = player::get_repeat_mode();
     if (repeat_mode == player::RepeatMode::OFF) {
       player::set_repeat_mode(player::RepeatMode::TRACK);
-      button_repeat_img.set_texture("repeat_track");
     } else if (repeat_mode == player::RepeatMode::TRACK) {
       player::set_repeat_mode(player::RepeatMode::ALBUM);
-      button_repeat_img.set_texture("repeat_album");
     } else if (repeat_mode == player::RepeatMode::ALBUM) {
       player::set_repeat_mode(player::RepeatMode::OFF);
-      button_repeat_img.set_texture("repeat_off");
     }
+
+    update_repeat_mode();
   });
 
-  button_shuffle->on_press([&button_shuffle_img]() {
+  button_shuffle->on_press([this]() {
     auto shuffle_mode = player::get_shuffle_mode();
     if (shuffle_mode == player::ShuffleMode::OFF) {
       player::set_shuffle_mode(player::ShuffleMode::ON);
-      button_shuffle_img.set_texture("shuffle");
     } else if (shuffle_mode == player::ShuffleMode::ON) {
       player::set_shuffle_mode(player::ShuffleMode::OFF);
-      button_shuffle_img.set_texture("shuffle_off");
     }
+
+    update_shuffle_mode();
   });
 }
 
@@ -388,5 +375,35 @@ void PanelControls::update() {
     tooltip_button_repeat->set_is_drawn(false);
   }
 
+  if (repeat_mode_prev != (i32)player::get_repeat_mode()) {
+    update_repeat_mode();
+    repeat_mode_prev = (i32)player::get_repeat_mode();
+  }
+
+  if (shuffle_mode_prev != (i32)player::get_shuffle_mode()) {
+    update_shuffle_mode();
+    shuffle_mode_prev = (i32)player::get_shuffle_mode();
+  }
+
   Sprite::update();
+}
+
+void PanelControls::update_repeat_mode() {
+  auto repeat_mode = player::get_repeat_mode();
+  if (repeat_mode == player::RepeatMode::OFF) {
+    button_repeat_img->set_texture("repeat_off");
+  } else if (repeat_mode == player::RepeatMode::TRACK) {
+    button_repeat_img->set_texture("repeat_track");
+  } else if (repeat_mode == player::RepeatMode::ALBUM) {
+    button_repeat_img->set_texture("repeat_album");
+  }
+}
+
+void PanelControls::update_shuffle_mode() {
+  auto shuffle_mode = player::get_shuffle_mode();
+  if (shuffle_mode == player::ShuffleMode::OFF) {
+    button_shuffle_img->set_texture("shuffle_off");
+  } else if (shuffle_mode == player::ShuffleMode::ON) {
+    button_shuffle_img->set_texture("shuffle");
+  }
 }
