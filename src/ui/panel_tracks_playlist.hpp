@@ -36,48 +36,34 @@ class WidgetAlbum : public Widget {
       auto& header = header_container.add_child<Sprite>("panel_playlist_header");
       header.set_anchor(Anchor::CENTER);
       header.set_parent_anchor(Anchor::CENTER);
-      // header.set_layout("ltr m:8 s:8");
+      header.set_layout("rtl s:8 fit fill");
       header.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() - 20);
       header.set_nine_slice_margin(8.0f);
       header.set_y(6);
 
-      auto& labels = header.add_child<Widget>();
-      labels.set_anchor(Anchor::LEFT);
-      labels.set_parent_anchor(Anchor::LEFT);
-
-      auto& label_author = labels.add_child<Label>();
-      label_author.set_text(playlist.author);
-      // hack to get text extents to update :(
-      label_author.mark_dirty();
-      label_author.update();
-      label_author.set_text_color(theme::get_prop("tracklist_header_author_color").as_rgba());
-      label_author.set_anchor(Anchor::LEFT);
-      label_author.set_parent_anchor(Anchor::LEFT);
-      label_author.set_label_anchor(Anchor::LEFT);
-      label_author.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
-      label_author.set_x(8);
-      if (playlist.author.empty()) { label_author.set_is_drawn(false); }
-
-      auto& label_name = labels.add_child<Label>();
-      label_name.set_text(playlist.name);
-      label_name.set_text_color(theme::get_prop("tracklist_header_name_color").as_rgba());
-      label_name.set_anchor(Anchor::LEFT);
-      label_name.set_parent_anchor(Anchor::LEFT);
-      label_name.set_label_anchor(Anchor::LEFT);
-      label_name.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
-      label_name.set_x(label_author.get_is_drawn() ? label_author.get_width() + 14 : 8);
-
       auto& buttons = header.add_child<Widget>();
-      buttons.set_anchor(Anchor::RIGHT);
-      buttons.set_parent_anchor(Anchor::RIGHT);
       buttons.set_layout("rtl m:8 s:6 fit");
       button_more = &buttons.add_child<ZincboxButton>("inline_more");
       button_play_next = &buttons.add_child<ZincboxButton>("inline_play_next");
       button_play = &buttons.add_child<ZincboxButton>("inline_play");
       button_sort = &buttons.add_child<ZincboxButton>("inline_sort");
-
+      buttons.set_max_width(8 * 2 + button_more->get_width() * 4 + 6 * 3);
       button_play_next->on_press([this, collection_id]() { player::play_playlist(collection_id, playlist_id, false); });
       button_play->on_press([this, collection_id]() { player::play_playlist(collection_id, playlist_id, true); });
+
+      auto& labels = header.add_child<Widget>();
+      labels.set_layout("ltr m:8 s:6");
+      labels.set_clip_children(true);
+      auto& label_author = labels.add_child<Label>();
+      label_author.set_text(playlist.author);
+      label_author.set_text_color(theme::get_prop("tracklist_header_author_color").as_rgba());
+      if (playlist.author.empty()) { label_author.set_is_drawn(false); }
+      auto& label_name = labels.add_child<Label>();
+      label_name.set_text(playlist.name);
+      label_name.set_text_color(theme::get_prop("tracklist_header_name_color").as_rgba());
+
+      label_author.update();
+      label_name.update();
 
       bool even = true;
       size_t playlist_track_index = 0;
