@@ -1,3 +1,4 @@
+#include <csignal>
 #define STBI_ASSERT(x) ensure(x);
 #define STBIW_ASSERT(x) ensure(x);
 #define STBIR_ASSERT(x) ensure(x);
@@ -70,7 +71,17 @@ void set_window_title(GLFWwindow* window) {
   glfwSetWindowTitle(window, window_title.c_str());
 }
 
+std::atomic<bool> stop_flag = false;
+
+extern "C" void handle_sigint(int signal_number) {
+  if (signal_number == SIGINT) { stop_flag.store(true); }
+}
+
 int main() {
+  if (std::signal(SIGINT, handle_sigint) == SIG_ERR) {
+    out::log_critical("failed to set up signal handler for SIGINT");
+    exit(1);
+  }
   config::load_from_file();
   if (!config::json().contains("language") || !config::json()["language"].isString()) {
     config::json()["language"] = "en-US";
@@ -137,7 +148,7 @@ int main() {
   interface::init();
   if (config::json().contains("ui")) { interface::from_json(config::json()["ui"]); }
 
-  while (!glfwWindowShouldClose(window)) {
+  while (!stop_flag) {
     using namespace std::chrono;
     auto t1 = high_resolution_clock::now();
     glfwPollEvents();
@@ -155,6 +166,7 @@ int main() {
     long delta_us = duration_cast<microseconds>(t2 - t1).count();
     long sleep_us = std::max(1000.0, 16666.0 - delta_us);
     if (!vsync) { std::this_thread::sleep_for(microseconds(sleep_us)); }
+    if (glfwWindowShouldClose(window)) { stop_flag = true; }
   }
 
   i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
