@@ -3,6 +3,7 @@
 #include <cmath>
 #include <functional>
 #include <numbers>
+#include <string_view>
 #include "button.hpp"
 #include "common/input.hpp"
 #include "common/logger.hpp"
@@ -143,6 +144,22 @@ class ComboBox : public Sprite {
 
     std::u32string get_selected_item() const { return label_item.get_text(); }
 
+    i32 get_selected_index() const { return selected_index; }
+
+    void select_item_by_label(std::u32string_view label) {
+      for (i32 i = 0; i < (i32)item_labels.size(); ++i) {
+        if (item_labels[i] == label) {
+          on_item_pressed(i);
+          break;
+        }
+      }
+    }
+
+    void select_item_by_index(i32 index) {
+      if (index < 0 || index >= (i32)item_labels.size()) { return; }
+      on_item_pressed(index);
+    }
+
   protected:
     void on_button_pressed() {
       dropdown_state = DropDownState::APPEARING;
@@ -159,8 +176,10 @@ class ComboBox : public Sprite {
     void on_item_pressed(i32 i) {
       if (Input::get_mouse_y() <= get_position(Anchor::BOTTOM_CENTER).y) { return; }
       i32 label_i = (i32)scroll_progress + i;
+      selected_index = i;
       label_item.set_text(item_labels[label_i]);
       out::debug_warning("should call button.press()");
+      button.set_is_switched(true);
 
       if (lambda_select) { lambda_select(label_i); }
     }
@@ -170,6 +189,7 @@ class ComboBox : public Sprite {
     Sprite& button_icon;
     Sprite& dropdown_bg;
     Label& label_item;
+    i32 selected_index = -1;
 
     std::function<void(i32)> lambda_select = nullptr;
 

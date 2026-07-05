@@ -39,6 +39,11 @@ class Checkbox : public Widget {
 
     bool is_checked() const { return sprite_check->get_is_drawn(); }
 
+    void set_checked(bool checked) {
+      sprite_check->set_is_drawn(checked);
+      button->set_is_switched(checked);
+    }
+
     void update() override {
       i32 inside_width = sprite_check->get_width() + 6 + label->get_width();
       i32 x_ = (width - inside_width) / 2;
