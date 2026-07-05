@@ -7,6 +7,7 @@
 #include "common/logger.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/settings.hpp"
 #include "tr.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
@@ -452,10 +453,16 @@ class PopupSettings : public Popup {
       buttons.set_layout("ltr fill fit expand m:8 s:8");
       buttons.set_height(48);
       auto& btn_cancel = buttons.add_child<Button>(tr::get("dialog.action.cancel"));
-      btn_cancel.on_press([this]() -> void { close(); });
+      btn_cancel.on_press([this]() -> void {
+        if (on_cancel) { on_cancel(); }
+        close();
+      });
 
       auto& btn_save = buttons.add_child<Button>(tr::get("dialog.action.save"));
-      btn_save.on_press([this]() -> void { close(); });
+      btn_save.on_press([this]() -> void {
+        if (on_save) { on_save(); }
+        close();
+      });
 
       content.set_layout("ltr expand fill m:8 s:12");
 
@@ -517,20 +524,21 @@ class PopupSettings : public Popup {
       covers_source_label.set_height(16);
       covers_source_label.set_text_color(text_color_muted);
 
-      auto& covers_source_combo = page_general.add_child<ComboBox>();
-      covers_source_combo.add_item(tr::get("settings.playback.source_album"));
-      covers_source_combo.add_item(tr::get("settings.playback.source_playlist"));
+      covers_source_combo = &page_general.add_child<ComboBox>();
+      covers_source_combo->add_item(tr::get("settings.playback.source_album"));
+      covers_source_combo->add_item(tr::get("settings.playback.source_playlist"));
+      ;
 
       auto& volume_bar_scroll_step_label = page_general.add_child<Label>(tr::get("settings.playback.volume_step"));
       volume_bar_scroll_step_label.set_resize_to_text_extents(false);
       volume_bar_scroll_step_label.set_height(16);
       volume_bar_scroll_step_label.set_text_color(text_color_muted);
 
-      auto& volume_bar_scroll_step_slider = page_general.add_child<Slider>();
-      volume_bar_scroll_step_slider.set_min_value(1);
-      volume_bar_scroll_step_slider.set_max_value(10);
-      volume_bar_scroll_step_slider.set_value(5);
-      volume_bar_scroll_step_slider.on_value_changed([](float, float value) { out::log_info("{}", value); });
+      volume_bar_scroll_step_slider = &page_general.add_child<Slider>();
+      volume_bar_scroll_step_slider->set_min_value(1);
+      volume_bar_scroll_step_slider->set_max_value(10);
+      volume_bar_scroll_step_slider->set_value(5);
+      volume_bar_scroll_step_slider->on_value_changed([](float, float value) { out::log_info("{}", value); });
 
       // -----------------------------------------------
       //                    INTERFACE
@@ -540,47 +548,46 @@ class PopupSettings : public Popup {
       theme_label.set_height(16);
       theme_label.set_text_color(text_color_muted);
 
-      auto& theme_combo = page_interface.add_child<ComboBox>();
+      theme_combo = &page_interface.add_child<ComboBox>();
       for (auto& theme : theme::get_themes()) {
-        theme_combo.add_item(utf8_to_utf32(theme));
+        theme_combo->add_item(utf8_to_utf32(theme));
       }
 
-      theme_combo.on_item_selected(
-        [&theme_combo](i32) { out::log_info("theme_combo: {}", utf32_to_utf8(theme_combo.get_selected_item())); });
+      theme_combo->on_item_selected(
+        [this](i32) { out::log_info("theme_combo: {}", utf32_to_utf8(theme_combo->get_selected_item())); });
 
       auto& language_label = page_interface.add_child<Label>(tr::get("settings.interface.language_label"));
       language_label.set_resize_to_text_extents(false);
       language_label.set_height(16);
       language_label.set_text_color(text_color_muted);
 
-      auto& language_combo = page_interface.add_child<ComboBox>();
+      language_combo = &page_interface.add_child<ComboBox>();
       for (auto& language : theme::get_languages()) {
-        language_combo.add_item(utf8_to_utf32(language));
+        language_combo->add_item(utf8_to_utf32(language));
       }
 
-      language_combo.on_item_selected([&language_combo](i32) {
-        out::log_info("language_combo: {}", utf32_to_utf8(language_combo.get_selected_item()));
-      });
+      language_combo->on_item_selected(
+        [this](i32) { out::log_info("language_combo: {}", utf32_to_utf8(language_combo->get_selected_item())); });
 
       auto& interface_scale_label = page_interface.add_child<Label>(tr::get("settings.interface.interface_scale"));
       interface_scale_label.set_resize_to_text_extents(false);
       interface_scale_label.set_height(16);
       interface_scale_label.set_text_color(text_color_muted);
-      auto& interface_scale_spinner = page_interface.add_child<Spinner>();
-      interface_scale_spinner.set_postfix(U"%");
-      interface_scale_spinner.set_min_value(50);
-      interface_scale_spinner.set_max_value(200);
-      interface_scale_spinner.set_value(100);
+      interface_scale_spinner = &page_interface.add_child<Spinner>();
+      interface_scale_spinner->set_postfix(U"%");
+      interface_scale_spinner->set_min_value(50);
+      interface_scale_spinner->set_max_value(200);
+      interface_scale_spinner->set_value(100);
 
       auto& font_size_label = page_interface.add_child<Label>(tr::get("settings.interface.font_size"));
       font_size_label.set_resize_to_text_extents(false);
       font_size_label.set_height(16);
       font_size_label.set_text_color(text_color_muted);
-      auto& font_size_spinner = page_interface.add_child<Spinner>();
-      font_size_spinner.set_postfix(U"px");
-      font_size_spinner.set_min_value(8);
-      font_size_spinner.set_max_value(32);
-      font_size_spinner.set_value(12);
+      font_size_spinner = &page_interface.add_child<Spinner>();
+      font_size_spinner->set_postfix(U"px");
+      font_size_spinner->set_min_value(8);
+      font_size_spinner->set_max_value(32);
+      font_size_spinner->set_value(12);
 
       // -----------------------------------------------
       //                    PLAYBACK
@@ -589,12 +596,50 @@ class PopupSettings : public Popup {
       shuffle_title.set_resize_to_text_extents(false);
       shuffle_title.set_height(16);
       shuffle_title.set_text_color(text_color_muted);
-      auto& checkbox_shuffle_allow_same_album =
-        page_playback.add_child<Checkbox>(tr::get("settings.playback.allow_same_album"));
-      checkbox_shuffle_allow_same_album.set_height(16);
+      checkbox_shuffle_allow_same_album =
+        &page_playback.add_child<Checkbox>(tr::get("settings.playback.allow_same_album"));
+      checkbox_shuffle_allow_same_album->set_height(16);
 
-      auto& checkbox_shuffle_allow_same_artist =
-        page_playback.add_child<Checkbox>(tr::get("settings.playback.allow_same_artist"));
-      checkbox_shuffle_allow_same_artist.set_height(16);
+      checkbox_shuffle_allow_same_artist =
+        &page_playback.add_child<Checkbox>(tr::get("settings.playback.allow_same_artist"));
+      checkbox_shuffle_allow_same_artist->set_height(16);
     }
+
+    void load_settings(const settings& settings) {
+      covers_source_combo->select_item_by_index(static_cast<i32>(settings.cover_preference));
+      volume_bar_scroll_step_slider->set_value(settings.volume_step);
+      theme_combo->select_item_by_label(utf8_to_utf32(settings.theme));
+      language_combo->select_item_by_label(utf8_to_utf32(settings.language));
+      interface_scale_spinner->set_value(settings.interface_scale);
+      font_size_spinner->set_value(settings.font_size);
+      checkbox_shuffle_allow_same_album->set_checked(settings.shuffle_allow_same_album);
+      checkbox_shuffle_allow_same_artist->set_checked(settings.shuffle_allow_same_artist);
+    }
+
+    settings get_settings() const {
+      settings s;
+      s.cover_preference = static_cast<settings::CoverPreference>(covers_source_combo->get_selected_index());
+      s.volume_step = volume_bar_scroll_step_slider->get_value();
+      s.theme = utf32_to_utf8(theme_combo->get_selected_item());
+      s.language = utf32_to_utf8(language_combo->get_selected_item());
+      s.interface_scale = interface_scale_spinner->get_value();
+      s.font_size = font_size_spinner->get_value();
+      s.shuffle_allow_same_album = checkbox_shuffle_allow_same_album->is_checked();
+      s.shuffle_allow_same_artist = checkbox_shuffle_allow_same_artist->is_checked();
+      return s;
+    }
+
+  public:
+    std::function<void()> on_save{};
+    std::function<void()> on_cancel{};
+
+  protected:
+    ComboBox* covers_source_combo{};
+    Slider* volume_bar_scroll_step_slider{};
+    ComboBox* theme_combo{};
+    ComboBox* language_combo{};
+    Spinner* interface_scale_spinner{};
+    Spinner* font_size_spinner{};
+    Checkbox* checkbox_shuffle_allow_same_album{};
+    Checkbox* checkbox_shuffle_allow_same_artist{};
 };

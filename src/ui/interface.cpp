@@ -205,7 +205,26 @@ void interface::init() {
                                                utf32_to_utf8(tr::get("hamburger.about")),
                                                utf32_to_utf8(tr::get("hamburger.quit"))};
     std::vector<std::function<void()>> popover_actions = {
-      []() { popup_controller->show_popup<PopupSettings>(); },
+      []() {
+        auto* popup = popup_controller->show_popup<PopupSettings>();
+        popup->load_settings(settings::get());
+        popup->on_save = [popup]() {
+          auto new_settings = popup->get_settings();
+
+          bool must_reload = new_settings.must_reload(settings::get());
+          settings::get() = new_settings;
+
+          if (must_reload || true) {
+            auto* popup_close = popup_controller->show_popup<PopupConfirm>(tr::get("popup.reload_required.content"));
+            popup_close->title->set_text(tr::get("popup.reload_required.title"));
+            popup_close->content->update();
+            popup_close->set_width(popup_close->content->get_width() + 32);
+            popup_close->btn_ok->get_label().set_text(tr::get("dialog.action.reload"));
+            popup_close->btn_cancel->get_label().set_text(tr::get("dialog.action.cancel"));
+            popup_close->on_ok_pressed = []() { std::raise(SIGINT); };
+          }
+        };
+      },
       []() { popup_controller->show_popup<PopupAbout>(); },
       []() { std::raise(SIGINT); },
     };

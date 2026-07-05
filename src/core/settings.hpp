@@ -5,6 +5,16 @@
 #include "lib/json.cpp/json.h"
 
 struct settings {
+  public:
+    settings() = default;
+    settings(const settings&) = default;
+    settings& operator=(const settings&) = default;
+
+    static settings& get() {
+      static settings instance;
+      return instance;
+    }
+
     bool operator==(const settings&) const = default;
     bool must_reload(const settings& prev) const {
       return (theme != prev.theme || language != prev.language || interface_scale != prev.interface_scale ||
