@@ -85,9 +85,8 @@ int main() {
   }
 
   config::load_from_file();
-  settings settings;
   if (config::json().contains("settings") && config::json()["settings"].isObject()) {
-    settings.from_json(config::json()["settings"]);
+    settings::get().from_json(config::json()["settings"]);
   }
 
   NFD::Init();
@@ -188,7 +187,7 @@ int main() {
 
   config::json()["player"] = player::to_json();
   config::json()["ui"] = interface::to_json();
-  config::json()["settings"] = settings.to_json();
+  config::json()["settings"] = settings::get().to_json();
   config::save_to_file();
   interface::deinit();
   player::deinit();
