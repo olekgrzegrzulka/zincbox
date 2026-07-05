@@ -5,6 +5,7 @@
 #include <string>
 #include "button.hpp"
 #include "common/input.hpp"
+#include "common/utf.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
 #include "text_input.hpp"
@@ -14,7 +15,7 @@ class Spinner : public TextInput {
   public:
     Spinner(UI& ui_)
       : TextInput(ui_), button_label(add_child<Sprite>()), button_increase(add_child<Button>()),
-        button_decrease(add_child<Button>()) {
+        button_decrease(add_child<Button>()), label_postfix(add_child<Label>()) {
 
       button_label.set_texture("spinner_buttons");
       button_label.set_x(-6);
@@ -42,9 +43,14 @@ class Spinner : public TextInput {
       // });
 
       label.set_text(std::to_string(value));
+      set_on_text_changed([this]() { on_text_changed(); });
+
+      label_postfix.set_anchor(Anchor::LEFT);
+      label_postfix.set_parent_anchor(Anchor::LEFT);
+      label_postfix.set_label_anchor(Anchor::LEFT);
     }
 
-    void on_text_changed() override {
+    void on_text_changed() {
       i32 new_value = 0;
       auto str = label.get_text();
 
@@ -54,16 +60,16 @@ class Spinner : public TextInput {
         return;
       }
 
-      if (str.ends_with('-')) {
-        if (str.starts_with('-')) {
+      if (str.ends_with(U'-')) {
+        if (str.starts_with(U'-')) {
           str.erase(0, 1);
         } else {
-          str = '-' + str;
+          str = U'-' + str;
         }
       }
 
       try {
-        new_value = std::stoi(str);
+        new_value = std::stoi(utf32_to_utf8(str));
       } catch (std::invalid_argument) { new_value = value; } catch (std::out_of_range) {
         if (str.starts_with('-')) {
           new_value = std::numeric_limits<i32>::min();
@@ -136,18 +142,22 @@ class Spinner : public TextInput {
           buttons_first_echo = true;
         }
       }
+
+      label_postfix.set_x(label.get_x() + label.get_text_extents().x + 1);
     }
 
   protected:
     Sprite& button_label;
     Button& button_increase;
     Button& button_decrease;
+    Label& label_postfix;
 
     std::function<void()> lambda_value_changed = nullptr;
 
     i32 value = 0;
     i32 min_value = 0;
     i32 max_value = 100;
+    std::u32string postfix = U"";
     i32 button_step = 1;
 
     static constexpr i32 buttons_echo_length_initial = 40;
@@ -160,6 +170,10 @@ class Spinner : public TextInput {
     WIDGET_DEF_GETTER(min_value);
     WIDGET_DEF_GETTER(max_value);
     WIDGET_DEF_GETTER(button_step);
+    void set_postfix(const std::u32string& postfix_) {
+      if (postfix != postfix_) { postfix = postfix_; }
+      label_postfix.set_text(postfix);
+    }
 
     void set_value(i32 value_) {
       i32 new_value = std::clamp(value_, min_value, max_value);
@@ -171,7 +185,9 @@ class Spinner : public TextInput {
       on_text_changed();
     }
 
-    void on_value_changed(std::function<void()> lambda_value_changed_) { lambda_value_changed = lambda_value_changed_; }
+    void on_value_changed(std::function<void()> lambda_value_changed_) {
+      lambda_value_changed = std::move(lambda_value_changed_);
+    }
 
     void set_min_value(i32 min_value_) {
       if (min_value_ == max_value) { return; }

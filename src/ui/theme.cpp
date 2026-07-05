@@ -356,6 +356,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_panel("tabbar");
   add_custom_panel("top");
   add_custom_panel("tracks");
+  add_custom_panel("combo");
   add_custom_slider("seekbar");
   atlas_add_texture("track_bg1");
   atlas_add_texture("track_bg2");

@@ -5,8 +5,8 @@
 #include <numbers>
 #include "button.hpp"
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "label.hpp"
-#include "panel.hpp"
 #include "sprite.hpp"
 #include "widget.hpp"
 
@@ -15,11 +15,6 @@ class ComboBoxItem : public Button {
     ComboBoxItem(UI& ui_) : Button(ui_), label(add_child<Label>()) {
       set_parent_anchor(Anchor::TOP_CENTER);
       set_anchor(Anchor::TOP_CENTER);
-      set_texture("button_idle");
-      set_texture_idle("button_idle");
-      set_texture_hovered("button_hovered");
-      set_texture_pressed("button_pressed");
-      set_texture_disabled("button_disabled");
       set_nine_slice_margin(2);
 
       label.set_parent_anchor(Anchor::CENTER_LEFT);
@@ -36,7 +31,7 @@ class ComboBox : public Sprite {
   public:
     ComboBox(UI& ui_)
       : Sprite(ui_), button(add_child<Button>()), button_icon(add_child<Sprite>()),
-        dropdown_bg(add_child<Panel>(Panel::Rectangular)), label_item(add_child<Label>()) {
+        dropdown_bg(add_child<Sprite>("panel_combo")), label_item(add_child<Label>()) {
       set_size(64, 24);
       set_texture("combo_box", false);
       set_nine_slice_margin(2);
@@ -142,11 +137,11 @@ class ComboBox : public Sprite {
 
     void draw() override { Sprite::draw(); }
 
-    void on_item_selected(std::function<void(i32)> lambda_select_) { lambda_select = lambda_select_; }
+    void on_item_selected(std::function<void(i32)> lambda_select_) { lambda_select = std::move(lambda_select_); }
 
-    void add_item(std::string label) { item_labels.emplace_back(label); }
+    void add_item(std::u32string label) { item_labels.emplace_back(std::move(label)); }
 
-    std::string get_selected_item() const { return label_item.get_text(); }
+    std::u32string get_selected_item() const { return label_item.get_text(); }
 
   protected:
     void on_button_pressed() {
@@ -165,7 +160,7 @@ class ComboBox : public Sprite {
       if (Input::get_mouse_y() <= get_position(Anchor::BOTTOM_CENTER).y) { return; }
       i32 label_i = (i32)scroll_progress + i;
       label_item.set_text(item_labels[label_i]);
-      button.press();
+      out::debug_warning("should call button.press()");
 
       if (lambda_select) { lambda_select(label_i); }
     }
@@ -173,7 +168,7 @@ class ComboBox : public Sprite {
   protected:
     Button& button;
     Sprite& button_icon;
-    Panel& dropdown_bg;
+    Sprite& dropdown_bg;
     Label& label_item;
 
     std::function<void(i32)> lambda_select = nullptr;
@@ -182,7 +177,7 @@ class ComboBox : public Sprite {
     i32 dropdown_padding = 1;
     static constexpr i32 dropdown_max_length = 10;
 
-    enum class DropDownState { HIDDEN, APPEARING, DISAPPEARING, VISIBLE };
+    enum class DropDownState : u8 { HIDDEN, APPEARING, DISAPPEARING, VISIBLE };
     DropDownState dropdown_state = ComboBox::DropDownState::HIDDEN;
     float dropdown_animation_progress = 0.0;
     float target_scroll_progress = 0.0;
@@ -190,7 +185,7 @@ class ComboBox : public Sprite {
 
     std::array<ComboBoxItem*, dropdown_max_length + 1>
       item_widgets; // +1 to accomodate for partially visible extra item
-    std::vector<std::string> item_labels;
+    std::vector<std::u32string> item_labels;
 
   public:
     WIDGET_DEF_SETTER_DIRTY(item_height);
