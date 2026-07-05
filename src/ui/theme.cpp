@@ -34,6 +34,7 @@ static std::unordered_map<std::string, theme::theme_prop, StringHash, std::equal
 static std::unordered_set<std::string, StringHash, std::equal_to<>> props_not_found;
 static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> resources;
 static std::string resources_ttf_path;
+static std::set<std::string> languages;
 
 theme::theme_prop theme::get_prop(std::string_view prop) {
   if (auto it = properties.find(prop); it != properties.end()) { return it->second; }
@@ -70,11 +71,12 @@ void load_resources() {
     std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
     mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
 
-    if (resources_ttf_path.empty() && std::string(file_stat.m_filename).ends_with(".ttf")) {
-      resources_ttf_path = file_stat.m_filename;
-    }
+    std::string filename(file_stat.m_filename);
 
-    resources[file_stat.m_filename] = std::move(buffer);
+    if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
+    if (filename.starts_with("lang/") && filename.ends_with(".json")) { languages.insert(file_stat.m_filename); }
+
+    resources[std::move(filename)] = std::move(buffer);
   }
   mz_zip_reader_end(&zip_archive);
 }
@@ -90,6 +92,11 @@ std::set<std::string> theme::get_themes() {
   }
 
   return ret;
+}
+
+std::set<std::string> theme::get_languages() {
+  load_resources();
+  return languages;
 }
 
 static bool load_language_from_resource(std::string_view language) {
