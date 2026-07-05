@@ -1,3 +1,4 @@
+#include <csignal>
 #include <cstddef>
 #include <cstdio>
 #include <filesystem>
@@ -197,6 +198,28 @@ void interface::init() {
         notifications->push(tr::format("notification.added_collection", collection_name));
       }
     }
+  };
+
+  panel_top->on_settings_button_pressed = [&](Widget* w) {
+    std::vector<std::string> popover_labels = {utf32_to_utf8(tr::get("hamburger.settings")),
+                                               utf32_to_utf8(tr::get("hamburger.about")),
+                                               utf32_to_utf8(tr::get("hamburger.quit"))};
+    std::vector<std::function<void()>> popover_actions = {
+      []() { popup_controller->show_popup<PopupSettings>(); },
+      []() { popup_controller->show_popup<PopupAbout>(); },
+      []() { std::raise(SIGINT); },
+    };
+
+    vec2i at = w->get_position(Anchor::CENTER);
+    popover_descriptor d{
+      .id = "playlist_track_actions",
+      .at = at,
+      .distance = 4,
+      .button_labels = popover_labels,
+      .button_actions = popover_actions,
+      .show_arrow = false,
+    };
+    popup_controller->create_popover(d);
   };
 
   panel_tracks->on_track_lmb = [&](size_t collection_id, size_t playlist_id, size_t track_id,

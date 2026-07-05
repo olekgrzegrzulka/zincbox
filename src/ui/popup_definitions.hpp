@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "common/logger.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "tr.hpp"
@@ -11,7 +12,10 @@
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/checkbox.hpp"
+#include "ui_generic/combo_box.hpp"
 #include "ui_generic/label.hpp"
+#include "ui_generic/spinner.hpp"
 #include "ui_generic/text_input.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -398,4 +402,199 @@ class PopupCreateSmartPlaylist : public Popup {
     TextInput* input_name{};
     std::function<void()> on_cancel{};
     std::function<void()> on_add{};
+};
+
+class PopupAbout : public Popup {
+  public:
+    PopupAbout(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+      : Popup(ui_, controller_, std::move(on_close_)) {
+      set_layout("ttb fit expand m:8 s:12");
+      set_width(450);
+
+      auto& title = add_child<Label>(tr::get("popup.about.title"));
+      title.set_height(32);
+      title.set_resize_to_text_extents(false);
+      auto& content =
+        add_child<Label>(tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
+      content.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+
+      auto& buttons = add_child<Widget>();
+      buttons.set_layout("ltr fill fit expand m:0 s:8");
+      buttons.set_height(32);
+      auto& btn_ok = buttons.add_child<Button>(tr::get("dialog.action.ok"));
+      btn_ok.on_press([this]() -> void { close(); });
+    }
+};
+
+class PopupSettings : public Popup {
+  public:
+    PopupSettings(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+      : Popup(ui_, controller_, std::move(on_close_)) {
+
+      set_size(600, 400);
+
+      auto& buttons = add_child<Widget>();
+      buttons.set_anchor(Anchor::BOTTOM);
+      buttons.set_parent_anchor(Anchor::BOTTOM);
+      buttons.set_width(width);
+      auto& content = add_child<Widget>();
+      content.set_anchor(Anchor::CENTER);
+      content.set_parent_anchor(Anchor::CENTER);
+      content.set_width(width);
+      auto& title = add_child<Label>(tr::get("settings.title"));
+      title.set_resize_to_text_extents(false);
+      title.set_height(32);
+      title.set_anchor(Anchor::TOP);
+      title.set_parent_anchor(Anchor::TOP);
+      title.set_width(width);
+      content.set_height(height - (buttons.get_height() + title.get_height()));
+
+      buttons.set_layout("ltr fill fit expand m:8 s:8");
+      buttons.set_height(48);
+      auto& btn_cancel = buttons.add_child<Button>(tr::get("dialog.action.cancel"));
+      btn_cancel.on_press([this]() -> void { close(); });
+
+      auto& btn_save = buttons.add_child<Button>(tr::get("dialog.action.save"));
+      btn_save.on_press([this]() -> void { close(); });
+
+      content.set_layout("ltr expand fill m:8 s:12");
+
+      auto& sidebar = content.add_child<Widget>();
+      sidebar.set_layout("ttb expand m:0 s:0");
+      sidebar.set_max_width(120);
+
+      auto& page_general = content.add_child<Widget>();
+      page_general.set_layout("ttb expand m:8 s:8");
+
+      auto& page_playback = content.add_child<Widget>();
+      page_playback.set_layout("ttb expand m:8 s:8");
+      page_playback.set_is_drawn(false);
+      page_playback.set_is_updated(false);
+
+      auto& page_interface = content.add_child<Widget>();
+      page_interface.set_layout("ttb expand m:8 s:8");
+      page_interface.set_is_drawn(false);
+      page_interface.set_is_updated(false);
+
+      auto& btn_page_general = sidebar.add_child<Button>(tr::get("settings.category.general"));
+      auto& btn_page_playback = sidebar.add_child<Button>(tr::get("settings.category.playback"));
+      auto& btn_page_interface = sidebar.add_child<Button>(tr::get("settings.category.interface"));
+
+      btn_page_general.on_press([&page_general, &page_interface, &page_playback]() {
+        page_general.set_is_drawn(true);
+        page_general.set_is_updated(true);
+        page_interface.set_is_drawn(false);
+        page_interface.set_is_updated(false);
+        page_playback.set_is_drawn(false);
+        page_playback.set_is_updated(false);
+      });
+
+      btn_page_playback.on_press([&page_general, &page_interface, &page_playback]() {
+        page_general.set_is_drawn(false);
+        page_general.set_is_updated(false);
+        page_interface.set_is_drawn(false);
+        page_interface.set_is_updated(false);
+        page_playback.set_is_drawn(true);
+        page_playback.set_is_updated(true);
+      });
+
+      btn_page_interface.on_press([&page_general, &page_interface, &page_playback]() {
+        page_general.set_is_drawn(false);
+        page_general.set_is_updated(false);
+        page_interface.set_is_drawn(true);
+        page_interface.set_is_updated(true);
+        page_playback.set_is_drawn(false);
+        page_playback.set_is_updated(false);
+      });
+
+      rgba text_color_muted = theme::get_prop("text_color_muted").as_rgba();
+
+      // -----------------------------------------------
+      //                     GENERAL
+      // -----------------------------------------------
+      auto& covers_source_label = page_general.add_child<Label>(tr::get("settings.playback.source_label"));
+      covers_source_label.set_resize_to_text_extents(false);
+      covers_source_label.set_height(16);
+      covers_source_label.set_text_color(text_color_muted);
+
+      auto& covers_source_combo = page_general.add_child<ComboBox>();
+      covers_source_combo.add_item(tr::get("settings.playback.source_album"));
+      covers_source_combo.add_item(tr::get("settings.playback.source_playlist"));
+
+      auto& volume_bar_scroll_step_label = page_general.add_child<Label>(tr::get("settings.playback.volume_step"));
+      volume_bar_scroll_step_label.set_resize_to_text_extents(false);
+      volume_bar_scroll_step_label.set_height(16);
+      volume_bar_scroll_step_label.set_text_color(text_color_muted);
+
+      auto& volume_bar_scroll_step_slider = page_general.add_child<Slider>();
+      volume_bar_scroll_step_slider.set_min_value(1);
+      volume_bar_scroll_step_slider.set_max_value(10);
+      volume_bar_scroll_step_slider.set_value(5);
+      volume_bar_scroll_step_slider.on_value_changed([](float, float value) { out::log_info("{}", value); });
+
+      // -----------------------------------------------
+      //                    INTERFACE
+      // -----------------------------------------------
+      auto& theme_label = page_interface.add_child<Label>(tr::get("settings.interface.theme_label"));
+      theme_label.set_resize_to_text_extents(false);
+      theme_label.set_height(16);
+      theme_label.set_text_color(text_color_muted);
+
+      auto& theme_combo = page_interface.add_child<ComboBox>();
+      for (auto& theme : theme::get_themes()) {
+        theme_combo.add_item(utf8_to_utf32(theme));
+      }
+
+      theme_combo.on_item_selected(
+        [&theme_combo](i32) { out::log_info("theme_combo: {}", utf32_to_utf8(theme_combo.get_selected_item())); });
+
+      auto& language_label = page_interface.add_child<Label>(tr::get("settings.interface.language_label"));
+      language_label.set_resize_to_text_extents(false);
+      language_label.set_height(16);
+      language_label.set_text_color(text_color_muted);
+
+      auto& language_combo = page_interface.add_child<ComboBox>();
+      for (auto& language : theme::get_languages()) {
+        language_combo.add_item(utf8_to_utf32(language));
+      }
+
+      language_combo.on_item_selected([&language_combo](i32) {
+        out::log_info("language_combo: {}", utf32_to_utf8(language_combo.get_selected_item()));
+      });
+
+      auto& interface_scale_label = page_interface.add_child<Label>(tr::get("settings.interface.interface_scale"));
+      interface_scale_label.set_resize_to_text_extents(false);
+      interface_scale_label.set_height(16);
+      interface_scale_label.set_text_color(text_color_muted);
+      auto& interface_scale_spinner = page_interface.add_child<Spinner>();
+      interface_scale_spinner.set_postfix(U"%");
+      interface_scale_spinner.set_min_value(50);
+      interface_scale_spinner.set_max_value(200);
+      interface_scale_spinner.set_value(100);
+
+      auto& font_size_label = page_interface.add_child<Label>(tr::get("settings.interface.font_size"));
+      font_size_label.set_resize_to_text_extents(false);
+      font_size_label.set_height(16);
+      font_size_label.set_text_color(text_color_muted);
+      auto& font_size_spinner = page_interface.add_child<Spinner>();
+      font_size_spinner.set_postfix(U"px");
+      font_size_spinner.set_min_value(8);
+      font_size_spinner.set_max_value(32);
+      font_size_spinner.set_value(12);
+
+      // -----------------------------------------------
+      //                    PLAYBACK
+      // -----------------------------------------------
+      auto& shuffle_title = page_playback.add_child<Label>(tr::get("settings.playback.shuffle"));
+      shuffle_title.set_resize_to_text_extents(false);
+      shuffle_title.set_height(16);
+      shuffle_title.set_text_color(text_color_muted);
+      auto& checkbox_shuffle_allow_same_album =
+        page_playback.add_child<Checkbox>(tr::get("settings.playback.allow_same_album"));
+      checkbox_shuffle_allow_same_album.set_height(16);
+
+      auto& checkbox_shuffle_allow_same_artist =
+        page_playback.add_child<Checkbox>(tr::get("settings.playback.allow_same_artist"));
+      checkbox_shuffle_allow_same_artist.set_height(16);
+    }
 };
