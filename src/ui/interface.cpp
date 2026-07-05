@@ -113,8 +113,10 @@ class ShortcutInterceptor : public Widget {
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
-  std::string language = config::json().contains("language") && config::json()["language"].isString()
-                           ? config::json()["language"].getString()
+  std::string language = config::json().contains("settings") && config::json()["settings"].contains("interface") &&
+                             config::json()["settings"]["interface"].contains("language") &&
+                             config::json()["settings"]["interface"]["language"].isString()
+                           ? config::json()["settings"]["interface"]["language"].getString()
                            : "en-US";
   theme::load_theme("default", *ui.get(), language);
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));

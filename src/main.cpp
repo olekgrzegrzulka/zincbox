@@ -1,4 +1,5 @@
 #include <csignal>
+#include "core/settings.hpp"
 #define STBI_ASSERT(x) ensure(x);
 #define STBIW_ASSERT(x) ensure(x);
 #define STBIR_ASSERT(x) ensure(x);
@@ -82,10 +83,13 @@ int main() {
     out::log_critical("failed to set up signal handler for SIGINT");
     exit(1);
   }
+
   config::load_from_file();
-  if (!config::json().contains("language") || !config::json()["language"].isString()) {
-    config::json()["language"] = "en-US";
+  settings settings;
+  if (config::json().contains("settings") && config::json()["settings"].isObject()) {
+    settings.from_json(config::json()["settings"]);
   }
+
   NFD::Init();
   mpris::init();
   player::init();
@@ -184,6 +188,7 @@ int main() {
 
   config::json()["player"] = player::to_json();
   config::json()["ui"] = interface::to_json();
+  config::json()["settings"] = settings.to_json();
   config::save_to_file();
   interface::deinit();
   player::deinit();
