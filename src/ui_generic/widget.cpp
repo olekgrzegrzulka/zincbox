@@ -40,6 +40,10 @@ void Widget::input() {
 }
 void Widget::update() {
   std::erase_if(children, [](auto&& child) { return child->get_marked_for_deletion(); });
+  for (auto&& c : children_to_add) {
+    children.emplace_back(std::move(c));
+  }
+  children_to_add.clear();
 #ifdef WIDGET_DRAW_DEBUG_RECT
   if (!is_debug_rect) {
     if (!debug_rect) {

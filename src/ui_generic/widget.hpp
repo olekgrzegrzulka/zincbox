@@ -108,6 +108,7 @@ namespace Input {
 class Widget {
   protected:
     UI& ui;
+    std::vector<std::unique_ptr<Widget>> children_to_add;
     std::string name;
     i32 x = 0;
     i32 y = 0;
@@ -253,8 +254,8 @@ class Widget {
   public:
     template <class T, class... Args> T& add_child(Args&&... args) {
       static_assert(std::is_base_of_v<Widget, T>);
-      children.emplace_back(std::make_unique<T>(ui, std::forward<Args>(args)...));
-      T& widget = static_cast<T&>(*children.back().get());
+      children_to_add.emplace_back(std::make_unique<T>(ui, std::forward<Args>(args)...));
+      T& widget = static_cast<T&>(*children_to_add.back().get());
       widget.parent = this;
       return widget;
     }
