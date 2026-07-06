@@ -394,7 +394,8 @@ void interface::update(vec2i window_size) {
   i32 height = window_size.y - panel_top->get_height() - panel_controls->get_height();
   panel_top->set_width(window_size.x);
 
-  if (!popup_controller->is_popup_open() && (splitter->is_mouse_hovering() || splitter->get_is_dragged())) {
+  if (!popup_controller->is_popup_open() && (splitter->is_mouse_hovering() || splitter->get_is_dragged()) &&
+      splitter->get_is_drawn()) {
     Input::set_cursor(Input::Cursor::RESIZE_HORIZONTAL);
   } else {
     Input::set_cursor(Input::Cursor::ARROW);
