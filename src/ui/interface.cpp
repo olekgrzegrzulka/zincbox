@@ -1137,6 +1137,7 @@ static void action_new_playlist() {
     db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
     if (active_collection_id == 0) {
       panel_albums->props.collection_id = 0;
+      panel_albums->recreate();
       panel_tracks->recreate(active_collection_id);
     }
   };
