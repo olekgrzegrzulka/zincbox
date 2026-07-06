@@ -71,7 +71,10 @@ class PopupSearch : public Popup {
       buttons->set_parent_anchor(Anchor::BOTTOM);
       buttons->set_pos(8, -8);
       button_close = &buttons->add_child<Button>(tr::get("dialog.action.close"));
-      button_close->on_press([this]() { close(); });
+      button_close->on_press([this]() {
+        if (on_closed) { on_closed(); }
+        close();
+      });
       checkbox_search_all_collections = &buttons->add_child<Checkbox>(tr::get("search.all_collections"));
     }
 
@@ -179,6 +182,7 @@ class PopupSearch : public Popup {
 
     void event(Input::InputEventKey& e) override {
       if (e.key == Input::Key::KEY_ESCAPE && e.action == Input::KeyAction::RELEASE) {
+        if (on_closed) { on_closed(); }
         close();
         e.handled = true;
       }
@@ -196,6 +200,7 @@ class PopupSearch : public Popup {
     std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb{};
     std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_lmb{};
     std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_rmb{};
+    std::function<void()> on_closed{};
 
   protected:
     TextInput* search_bar{};

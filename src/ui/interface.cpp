@@ -44,6 +44,7 @@ static std::optional<size_t> active_collection_id;
 static std::vector<float> tracks_scroll_positions;
 static std::vector<float> playlists_scroll_positions;
 static std::vector<std::u32string> tabs_order;
+static bool search_popup_visible = false;
 
 static std::unique_ptr<UI> ui;
 static class ShortcutInterceptor* shortcut_interceptor{};
@@ -128,12 +129,14 @@ void interface::init() {
   shortcut_interceptor = &ui->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = []() {
     auto* p = popup_controller->show_popup<PopupSearch>();
+    search_popup_visible = true;
     p->on_playlist_lmb = [p](size_t playlist_id, Widget*) {
       auto collection_id = db::collection_of_playlist(playlist_id);
       if (collection_id.has_value()) {
         show_collection(collection_id.value());
         panel_tracks->scroll_to_playlist(playlist_id);
         p->close();
+        p->on_closed();
       }
     };
 
@@ -141,8 +144,11 @@ void interface::init() {
       show_collection(collection_id);
       panel_tracks->scroll_to_track(playlist_id, track_id);
       p->close();
+      p->on_closed();
     };
+    p->on_closed = []() { search_popup_visible = false; };
   };
+
   popup_controller = &ui->add_widget<PopupController>();
   popup_controller->set_is_drawn_on_top(true);
   notifications = &ui->add_widget<InterfaceNotifications>();
