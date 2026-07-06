@@ -137,7 +137,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
     auto playing = player::get_playing();
     if (!playing.has_value()) {
       label_track->set_text("");
-      love_icon->set_is_drawn(false);
+      update_love_state(false);
     } else {
       auto& track = db::track_by_id(playing->track_id)->get();
       if (track.artist.empty() || track.title.empty()) {
@@ -146,7 +146,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
         label_track->set_text(track.artist + U" - " + track.title);
       }
       bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
-      love_icon->set_is_drawn(is_loved);
+      update_love_state(is_loved);
     }
     label_track->update();
     label_track_underline->set_width(label_track->get_text_extents().x);
@@ -407,3 +407,5 @@ void PanelControls::update_shuffle_mode() {
     button_shuffle_img->set_texture("shuffle");
   }
 }
+
+void PanelControls::update_love_state(bool is_loved) { love_icon->set_is_drawn(is_loved); }
