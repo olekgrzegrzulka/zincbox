@@ -17,6 +17,7 @@ class PanelControls : public Sprite {
     void event(Input::InputEventMouseButton&) override;
     void event(Input::InputEventKey&) override;
     void update() override;
+    void update_love_state(bool);
 
   public:
     std::function<void(Widget*)> on_playing_track_lmb{};
