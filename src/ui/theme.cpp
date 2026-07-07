@@ -307,12 +307,11 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     }
   };
 
-  auto add_custom_slider = [&atlas_add_texture](const std::string& name) {
-    atlas_add_texture(name + "_thumb_idle", {name + "_thumb_idle", name + "_thumb", "slider_thumb_idle"});
-    atlas_add_texture(name + "_thumb_hovered", {name + "_thumb_hovered", name + "_thumb", "slider_thumb_hovered"});
-    atlas_add_texture(name + "_thumb_pressed", {name + "_thumb_pressed", name + "_thumb", "slider_thumb_pressed"});
-    atlas_add_texture(name + "_track_inactive", {name + "_track_inactive", name + "_track", "slider_track_inactive"});
-    atlas_add_texture(name + "_track_active", {name + "_track_active", name + "_track", "slider_track_active"});
+  auto add_custom_slider = [&atlas_add_texture_row](const std::string& name) {
+    std::array<std::string, 3> thumb_ids = {name + "_thumb_idle", name + "_thumb_hovered", name + "_thumb_pressed"};
+    std::array<std::string, 2> track_ids = {name + "_track_inactive", name + "_track_active"};
+    atlas_add_texture_row(thumb_ids, {name + "_thumb", "slider_thumb"});
+    atlas_add_texture_row(track_ids, {name + "_track", "slider_track"});
   };
 
   auto add_custom_panel = [&atlas_add_texture](const std::string& name) {
