@@ -39,33 +39,27 @@ void PopupController::create_popover(const popover_descriptor& d) {
   if (popovers.contains(d.id)) { return; }
 
   i32 space_needed = 8 + (4 + 24) * d.button_labels.size() + 12;
-  bool bottom = ui.get_window_height() - d.at.y >= space_needed;
+  bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 
-  auto& popover = add_child<Popover>();
+  auto& popover = add_child<Popover>(arrow_on_top);
   popovers[d.id] = &popover;
 
   popover.set_is_drawn_on_top(true);
   popover.set_nine_slice_margin(8.0f);
-  popover.set_anchor(bottom ? Anchor::TOP : Anchor::BOTTOM);
+  popover.set_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
   popover.set_layout("ttb fit expand fill m:4 s:0");
-  if (bottom) {
+  if (arrow_on_top) {
     popover.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
   } else {
     popover.get_layout().direction = LayoutDirection::BOTTOM_TO_TOP;
   }
 
   popover.set_width(50);
-
-  auto* arrow = &popover.add_child<Sprite>(bottom ? "popover_arrow" : "popover_arrow_inverted");
-  arrow->set_ignore_parents_layout(true);
-  arrow->set_parent_anchor(bottom ? Anchor::TOP : Anchor::BOTTOM);
-  arrow->set_anchor(bottom ? Anchor::BOTTOM : Anchor::TOP);
-  arrow->set_y(bottom ? 1 : -1);
-  arrow->set_is_drawn(d.show_arrow);
-  if (bottom) {
-    popover.set_pos(d.at.x, d.at.y + (d.distance + arrow->get_height()));
+  popover.arrow->set_is_drawn(d.show_arrow);
+  if (arrow_on_top) {
+    popover.set_pos(d.at.x, d.at.y + (d.distance + popover.arrow->get_height()));
   } else {
-    popover.set_pos(d.at.x, d.at.y - (d.distance + arrow->get_height()));
+    popover.set_pos(d.at.x, d.at.y - (d.distance + popover.arrow->get_height()));
   }
   std::vector<Button*> buttons;
   for (auto& sv : d.button_labels) {

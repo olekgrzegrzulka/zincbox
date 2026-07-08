@@ -40,15 +40,25 @@ void Popup::event(Input::InputEventMouseButton& e) {
 
   if (!e.handled) { Sprite::event(e); }
 }
-Popover::Popover(UI& ui_) : Sprite(ui_, "popover_panel") {}
+Popover::Popover(UI& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
+  arrow = &add_child<Sprite>(arrow_on_top ? "popover_arrow" : "popover_arrow_inverted");
+  arrow->set_ignore_parents_layout(true);
+  arrow->set_parent_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
+  arrow->set_anchor(arrow_on_top ? Anchor::BOTTOM : Anchor::TOP);
+  arrow->set_y(arrow_on_top ? 1 : -1);
+}
 
 void Popover::update() {
   i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
   i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
   i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
   i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
-  set_x(get_x() + off_screen_left - off_screen_right);
-  set_y(get_y() + off_screen_top - off_screen_bottom);
+  i32 push_x = off_screen_left - off_screen_right;
+  i32 push_y = off_screen_top - off_screen_bottom;
+  arrow_offset = std::clamp(arrow_offset - push_x, -width / 2 + 8, width / 2 - 8);
+  arrow->set_x(arrow_offset);
+  set_x(get_x() + push_x);
+  set_y(get_y() + push_y);
 
   Sprite::update();
 }
