@@ -99,18 +99,21 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
     if (this->on_add_collection_button_pressed) { this->on_add_collection_button_pressed(tab_bar); }
   };
 
-  tab_bar->add_tab(
-    TabBar::tab_info{
-      .id = QUEUE_TAB_ID,
-      .is_draggable = false,
-      .label = tr::get("tab.queue"),
-      .padding = 10,
-      .on_open =
-        [this]() {
-          if (on_queue_view_opened) { on_queue_view_opened(); }
-        },
-    },
-    0, false);
+  tab_bar->add_tab(TabBar::tab_info{
+                     .id = QUEUE_TAB_ID,
+                     .is_draggable = false,
+                     .label = tr::get("tab.queue"),
+                     .padding = 10,
+                     .on_open =
+                       [this]() {
+                         if (on_queue_view_opened) { on_queue_view_opened(); }
+                       },
+                     .on_right_click =
+                       [this](Tab* t) {
+                         if (this->on_queue_rmb) { this->on_queue_rmb(t); }
+                       },
+                   },
+                   0, false);
 
   for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
     auto& collection = db::collection_by_id(collection_id)->get();

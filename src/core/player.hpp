@@ -26,6 +26,7 @@ namespace player {
   bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
   void enqueue(playing_t, size_t at);
   void remove_from_queue(size_t at);
+  void clear_queue();
   void resume();
   void pause();
   void stop();

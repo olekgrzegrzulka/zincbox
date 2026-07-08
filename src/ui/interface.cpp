@@ -79,6 +79,7 @@ static void show_popover_queue_element_actions(size_t queue_index, Widget* widge
 static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bool play_actions = true);
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget);
 static void show_popover_create_playlist(Widget*);
+static void show_popover_queue_actions(Widget*);
 static void action_new_playlist();
 static void action_new_smart_playlist();
 static void action_new_playlist_from_json();
@@ -182,6 +183,8 @@ void interface::init() {
   panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
 
   panel_top->on_queue_view_opened = [&]() { show_queue(); };
+
+  panel_top->on_queue_rmb = show_popover_queue_actions;
 
   panel_top->on_show_collection_actions_popover = show_popover_collection_actions;
 
@@ -622,6 +625,7 @@ static void show_collection(size_t collection_id) {
   panel_albums->set_is_updated(true);
   panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
   panel_albums->props.collection_id = active_collection_id;
+  panel_albums->recreate();
 
   panel_queue->set_is_drawn(false);
   panel_queue->set_is_updated(false);
@@ -1095,6 +1099,48 @@ static void show_popover_create_playlist(Widget* w) {
                                                         action_new_playlist_from_json};
   popover_descriptor d{
     .id = "new_playlist",
+    .at = w->get_position(Anchor::CENTER),
+    .distance = 4,
+    .button_labels = popover_labels,
+    .button_actions = popover_actions,
+  };
+  popup_controller->create_popover(d);
+}
+
+static void show_popover_queue_actions(Widget* w) {
+  std::vector<std::string> popover_labels = {utf32_to_utf8(tr::get("popover.queue.clear")),
+                                             utf32_to_utf8(tr::get("popover.queue.save_as_playlist"))};
+  std::vector<std::function<void()>> popover_actions = {
+    []() -> void {
+      player::clear_queue();
+      panel_queue->on_queue_changed();
+    },
+    []() -> void {
+      auto* popup = popup_controller->show_popup<PopupInput>();
+      popup->set_size(300, 200);
+      popup->title->set_text(tr::get("popup.playlist.create_from_queue.title"));
+      popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
+      popup->text_input->set_focused(true);
+
+      popup->on_ok_pressed = [popup]() {
+        auto playlist_id = db::add_playlist_to_collection(
+          0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
+        for (const auto& play : player::get_playing_queue()) {
+          db::add_track_id_to_playlist(playlist_id, play.track_id);
+        }
+        if (active_collection_id == 0) {
+          panel_albums->props.collection_id = 0;
+          panel_albums->recreate();
+          panel_tracks->recreate(active_collection_id);
+        }
+        notifications->push(
+          tr::format("notification.saved_queue_as_playlist", utf32_to_utf8(popup->text_input->label.get_text())));
+      };
+
+      popup->on_cancel_pressed = []() {};
+    }};
+  popover_descriptor d{
+    .id = "queue_actions",
     .at = w->get_position(Anchor::CENTER),
     .distance = 4,
     .button_labels = popover_labels,
