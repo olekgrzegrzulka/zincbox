@@ -208,6 +208,13 @@ void player::remove_from_queue(size_t at) {
   if (current_track_removed) { play_track(); }
 }
 
+void player::clear_queue() {
+  playing_queue.clear();
+  playing_index = std::nullopt;
+  signal_on_queue_changed.emit(false);
+  stop();
+}
+
 void player::resume() {
   ma_sound_start(&sound);
   mpris::notify_playback_status_playing();
