@@ -242,12 +242,12 @@ void interface::init() {
 
     vec2i at = w->get_position(Anchor::CENTER);
     popover_descriptor d{
-      .id = "playlist_track_actions",
+      .id = "hamburger_menu",
       .at = at,
-      .distance = 4,
+      .distance = 10,
       .button_labels = popover_labels,
       .button_actions = popover_actions,
-      .show_arrow = false,
+      .show_arrow = true,
     };
     popup_controller->create_popover(d);
   };
@@ -1100,7 +1100,7 @@ static void show_popover_create_playlist(Widget* w) {
   popover_descriptor d{
     .id = "new_playlist",
     .at = w->get_position(Anchor::CENTER),
-    .distance = 4,
+    .distance = 16,
     .button_labels = popover_labels,
     .button_actions = popover_actions,
   };
@@ -1142,7 +1142,7 @@ static void show_popover_queue_actions(Widget* w) {
   popover_descriptor d{
     .id = "queue_actions",
     .at = w->get_position(Anchor::CENTER),
-    .distance = 4,
+    .distance = 10,
     .button_labels = popover_labels,
     .button_actions = popover_actions,
   };

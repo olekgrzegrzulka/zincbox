@@ -41,10 +41,11 @@ class Popup : public Sprite {
 
 class Popover : public Sprite {
   public:
-    Popover(UI& ui_);
+    Popover(UI& ui_, bool arrow_on_top);
     void update() override;
     void draw() override;
 
-  protected:
-    vec2i popover_pos;
+  public:
+    Sprite* arrow{};
+    i32 arrow_offset = 0;
 };
