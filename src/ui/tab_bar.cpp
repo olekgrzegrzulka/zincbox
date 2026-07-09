@@ -212,24 +212,24 @@ void TabBar::update() {
   i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - Input::get_mouse_x());
 
   if (dragged_tab_index != -1 && mouse_drag_delta > 10) {
-    if (dragged_tab_index + 1 < (i32)tabs.size()) {
+    if (dragged_tab_index < (i32)tabs.size() - 1) {
       Tab* next = tabs[dragged_tab_index + 1];
       i32 sum = 0;
       for (i32 i = 0; i < dragged_tab_index; i += 1) {
         sum += tabs[i]->get_width();
       }
       sum += next->get_width();
-      if (mouse_x > sum && mouse_x < sum + tabs[dragged_tab_index]->get_width()) {
+      if (mouse_x > sum) {
         if (swap_tabs(dragged_tab_index, dragged_tab_index + 1)) { dragged_tab_index += 1; }
       }
     }
-    if (dragged_tab_index - 1 >= 0) {
+    if (dragged_tab_index > 0) {
       Tab* prev = tabs[dragged_tab_index - 1];
       i32 sum = 0;
       for (i32 i = 0; i < dragged_tab_index - 1; i += 1) {
         sum += tabs[i]->get_width();
       }
-      if (mouse_x > sum && mouse_x < sum + prev->get_width()) {
+      if (mouse_x < sum + prev->get_width()) {
         if (swap_tabs(dragged_tab_index, dragged_tab_index - 1)) { dragged_tab_index -= 1; }
       }
     }
