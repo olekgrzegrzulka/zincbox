@@ -8,6 +8,7 @@
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/checkbox.hpp"
+#include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/text_input.hpp"
 #include "ui_generic/widget.hpp"
@@ -50,14 +51,37 @@ class PopupSearch : public Popup {
       scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
       scrollable_content = &search_results->add_child<Widget>();
+      scrollable_content->set_clip_children(true);
 
-      albums_container = &scrollable_content->add_child<PanelAlbums>();
-      albums_container->props.playlist_ids = {};
-      albums_container->props.panel_search_visible = false;
-      albums_container->props.is_scrollable = false;
-      albums_container->props.cover_width = 48;
-      albums_container->props.cover_min_horizontal_spacing = 12;
-      albums_container->props.cover_min_vertical_spacing = 32;
+      label_playlists = &scrollable_content->add_child<Label>(tr::get("search.results_albums_playlists"));
+      label_playlists->set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      label_playlists->set_resize_to_text_extents(false);
+      label_playlists->set_x(8);
+      label_playlists->set_height(32);
+      label_playlists->set_is_drawn(false);
+
+      playlists_container = &scrollable_content->add_child<PanelAlbums>();
+      playlists_container->props.playlist_ids = {};
+      playlists_container->props.panel_search_visible = false;
+      playlists_container->props.is_scrollable = false;
+      playlists_container->props.cover_width = 48;
+      playlists_container->props.cover_min_horizontal_spacing = 12;
+      playlists_container->props.cover_min_vertical_spacing = 44;
+
+      label_no_results = &scrollable_content->add_child<Label>(tr::get("search.no_results"));
+      label_no_results->set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      label_no_results->set_resize_to_text_extents(false);
+      label_no_results->set_label_anchor(Anchor::CENTER);
+      label_no_results->set_parent_anchor(Anchor::CENTER);
+      label_no_results->set_anchor(Anchor::CENTER);
+      label_no_results->set_is_drawn(false);
+
+      label_tracks = &scrollable_content->add_child<Label>(tr::get("search.results_tracks"));
+      label_tracks->set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      label_tracks->set_resize_to_text_extents(false);
+      label_tracks->set_x(8);
+      label_tracks->set_height(32);
+      label_tracks->set_is_drawn(false);
 
       tracks_container = &scrollable_content->add_child<Widget>();
       tracks_container->set_layout("ttb fill fit expand");
@@ -86,8 +110,8 @@ class PopupSearch : public Popup {
       playlist_ids.clear();
       found_tracks.clear();
       if (new_search_text.empty()) {
-        albums_container->props.playlist_ids = {};
-        albums_container->set_height(0);
+        playlists_container->props.playlist_ids = {};
+        playlists_container->set_height(0);
         for (auto&& t : tracks_container->get_children()) {
           t->set_marked_for_deletion(true);
         }
@@ -96,6 +120,9 @@ class PopupSearch : public Popup {
         scrollbar->set_scroll_offset(0);
         scroll_px = 0.1;
         target_scroll_px = 0.0;
+        label_playlists->set_is_drawn(false);
+        label_tracks->set_is_drawn(false);
+        label_no_results->set_is_drawn(true);
         return;
       }
       if (checkbox_search_all_collections->is_checked()) {
@@ -112,18 +139,19 @@ class PopupSearch : public Popup {
         found_tracks = db::search_tracks(search_text, collection_id, MAX_TRACKS);
       }
 
-      albums_container->props.playlist_ids = playlist_ids;
-      albums_container->on_playlist_lmb = [this](size_t playlist_id, Widget* w) {
+      playlists_container->props.playlist_ids = playlist_ids;
+      playlists_container->on_playlist_lmb = [this](size_t playlist_id, Widget* w) -> void {
         if (on_playlist_lmb) { on_playlist_lmb(playlist_id, w); }
       };
-      albums_container->on_playlist_rmb = [this](size_t playlist_id, Widget* w) {
+      playlists_container->on_playlist_rmb = [this](size_t playlist_id, Widget* w) -> void {
         if (on_playlist_rmb) { on_playlist_rmb(playlist_id, w); }
       };
       if (playlist_ids.size() > 0) {
-        albums_container->set_height((((48 + 12) * playlist_ids.size()) / albums_container->get_width() + 1) *
-                                     (48 + 32));
+        playlists_container->set_height(playlists_container->get_content_size().y);
+        label_playlists->set_is_drawn(true);
       } else {
-        albums_container->set_height(0);
+        playlists_container->set_height(0);
+        label_playlists->set_is_drawn(false);
       }
 
       for (auto&& t : tracks_container->get_children()) {
@@ -145,8 +173,14 @@ class PopupSearch : public Popup {
         i += 1;
       }
 
+      label_tracks->set_is_drawn(found_tracks.size() > 0);
+      label_no_results->set_is_drawn(playlist_ids.size() == 0 && found_tracks.size() == 0);
+
       i32 track_total_height = found_tracks.size() * track_height;
-      i32 content_size = albums_container->get_height() + track_total_height;
+      i32 content_size = playlists_container->get_height() + track_total_height;
+      if (label_playlists->get_is_drawn()) { content_size += label_playlists->get_height(); }
+      if (label_tracks->get_is_drawn()) { content_size += label_tracks->get_height(); }
+
       i32 page_size = scrollable_content->get_height();
       scrollbar->set_content_size(content_size);
       scrollbar->set_page_size(page_size);
@@ -162,8 +196,14 @@ class PopupSearch : public Popup {
       if (scroll_px != target_scroll_px) {
         double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
         scroll_px = std::lerp(scroll_px, target_scroll_px, t);
-        albums_container->set_y(-scroll_px);
-        tracks_container->set_y(-scroll_px + albums_container->get_height());
+
+        i32 y_sum = 0;
+        for (Widget* w : std::array<Widget*, 4>{label_playlists, playlists_container, label_tracks, tracks_container}) {
+          if (!w->get_is_drawn()) { continue; }
+          w->set_y(-std::floor(scroll_px) + y_sum);
+          y_sum += w->get_height();
+        }
+
         ui.mark_dirty_recursive(scrollable_content);
       }
 
@@ -174,7 +214,7 @@ class PopupSearch : public Popup {
 
       buttons->set_width(get_width() - 16);
 
-      albums_container->set_width(scrollable_content->get_width());
+      playlists_container->set_width(scrollable_content->get_width());
       tracks_container->set_width(scrollable_content->get_width());
 
       Popup::update();
@@ -207,11 +247,14 @@ class PopupSearch : public Popup {
     Widget* search_results{};
     Widget* scrollable_content{};
     ScrollBar* scrollbar{};
-    PanelAlbums* albums_container{};
+    PanelAlbums* playlists_container{};
     Widget* tracks_container{};
     Widget* buttons{};
     Button* button_close{};
     Checkbox* checkbox_search_all_collections{};
+    Label* label_playlists{};
+    Label* label_tracks{};
+    Label* label_no_results{};
 
     size_t collection_id{};
     std::u32string search_text{};
