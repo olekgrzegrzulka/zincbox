@@ -21,6 +21,9 @@ void Popup::update() {
     new_pos.x = std::clamp(new_pos.x, (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2);
     new_pos.y = std::clamp(new_pos.y, (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2);
     set_pos(new_pos);
+    Input::set_cursor(Input::Cursor::HAND);
+  } else {
+    Input::reset_cursor();
   }
   Sprite::update();
 }
