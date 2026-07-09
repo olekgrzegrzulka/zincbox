@@ -13,6 +13,7 @@
 #include <fstream>
 #include <optional>
 #include <ostream>
+#include <stacktrace>
 #include <thread>
 #include <GLFW/glfw3.h>
 #include <glm/ext/vector_float2.hpp>
@@ -74,14 +75,41 @@ void set_window_title(GLFWwindow* window) {
 
 std::atomic<bool> stop_flag = false;
 
-extern "C" void handle_sigint(int signal_number) {
-  if (signal_number == SIGINT) { stop_flag.store(true); }
+extern "C" void handle_sigint(int signal) {
+  if (signal == SIGINT) { stop_flag.store(true); }
+}
+
+extern "C" void handle_segfault(int) {
+  out::log_critical("=== SEGMENTATION FAULT START ===");
+  out::log_critical("stack trace (most recent call first):");
+
+  std::string formatted_trace;
+  int frame_num = 0;
+
+  for (const auto& entry : std::stacktrace::current(1)) {
+    std::string desc = entry.description();
+    std::string file = entry.source_file();
+
+    if (desc.empty()) { desc = "<unresolved symbol>"; }
+    if (file.empty()) { file = "<unknown file>"; }
+
+    formatted_trace += std::format("  #{:<2} {} \n      at {}:{}\n", frame_num++, desc, file, entry.source_line());
+  }
+
+  out::log_critical("\n{}", formatted_trace);
+  out::log_critical("===  SEGMENTATION FAULT END  ===");
+  std::exit(1);
 }
 
 int main() {
   if (std::signal(SIGINT, handle_sigint) == SIG_ERR) {
     out::log_critical("failed to set up signal handler for SIGINT");
-    exit(1);
+    std::exit(1);
+  }
+
+  if (std::signal(SIGSEGV, handle_segfault) == SIG_ERR) {
+    out::log_critical("failed to set up signal handler for SIGSEGV");
+    std::exit(1);
   }
 
   config::load_from_file();
