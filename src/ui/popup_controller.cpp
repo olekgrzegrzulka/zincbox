@@ -11,40 +11,36 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-PopupController::PopupController(UI& ui_) : Widget(ui_), ui(ui_), dimmer(add_child<Dimmer>()) {
-  popups = &add_child<Widget>();
-  dimmer.on_pressed = [this]() { on_dimmer_pressed(); };
-  dimmer.on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };
-  dimmer.on_escape_pressed = [this]() { on_dimmer_escape_pressed(); };
+void PopupController::on_popup_closed(Popup* popup) {
+  close_all_popovers();
+  popup->set_marked_for_deletion(true);
+  auto it = std::find(popups.begin(), popups.end(), popup);
+  if (it != popups.end()) { popups.erase(it); }
 }
 
-void PopupController::on_dimmer_pressed() {
-  for (auto [_, p] : popovers) {
-    p->set_marked_for_deletion(true);
-  }
-  popovers.clear();
+PopupController::PopupController(UI& ui_) : Widget(ui_), ui(ui_) {
+  dimmer = &add_child<Dimmer>();
+  dimmer->on_pressed = [this]() { on_dimmer_pressed(); };
+  dimmer->on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };
+  dimmer->on_escape_pressed = [this]() { on_dimmer_escape_pressed(); };
 }
+
+void PopupController::on_dimmer_pressed() { close_all_popovers(); }
 
 void PopupController::on_dimmer_enter_pressed() {}
 
-void PopupController::on_dimmer_escape_pressed() {
-  for (auto [_, p] : popovers) {
-    p->set_marked_for_deletion(true);
-  }
-  popovers.clear();
-}
+void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 
 void PopupController::create_popover(const popover_descriptor& d) {
   ensure(d.button_labels.size() >= d.button_actions.size());
-  if (popovers.contains(d.id)) { return; }
 
   i32 space_needed = 8 + (4 + 24) * d.button_labels.size() + 12;
   bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 
   auto& popover = add_child<Popover>(arrow_on_top);
-  popovers[d.id] = &popover;
+  popovers.emplace(d.id, &popover);
 
-  popover.set_is_drawn_on_top(true);
+  // popover.set_is_drawn_on_top(true);
   popover.set_nine_slice_margin(8.0f);
   popover.set_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
   popover.set_layout("ttb fit expand fill m:4 s:0");
@@ -82,7 +78,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
   for (auto& l : d.button_actions) {
     auto lambda = [this, l, popover_id, &popover]() {
       if (l) { l(); }
-      if (popovers.contains(popover_id)) { popovers[popover_id] = nullptr; }
+      popovers.erase(popover_id);
       popover.set_marked_for_deletion(true);
     };
     buttons[button_i]->on_press(lambda);
@@ -90,37 +86,39 @@ void PopupController::create_popover(const popover_descriptor& d) {
   }
 };
 
-bool PopupController::is_popup_open() const { return popups->get_children().size() > 0; }
+bool PopupController::is_popup_open() const { return popups.size() > 0; }
 
 void PopupController::close_all_popups() {
-  for (auto [popup_id, popup] : popovers) {
-    popup->set_marked_for_deletion(true);
+  for (auto [_, popover] : popovers) {
+    popover->set_marked_for_deletion(true);
   }
   popovers.clear();
 
-  for (auto& popup : popups->get_children()) {
+  for (auto popup : popups) {
     popup->set_marked_for_deletion(true);
   }
+  popups.clear();
+}
+
+void PopupController::close_all_popovers() {
+  for (auto [_, popover] : popovers) {
+    popover->set_marked_for_deletion(true);
+  }
+  popovers.clear();
 }
 
 void PopupController::input() {
-  popups->input();
-  for (auto& [_, w] : popovers) {
-    if (!w) { continue; }
-    w->input();
+  if (children.size() >= 2) {
+    children.back()->input();
+    dimmer->input();
   }
-
-  std::erase_if(popovers, [](const auto& item) { return item.second == nullptr; });
-
-  if (dimmer.get_is_updated()) { dimmer.input(); }
 }
 
 void PopupController::update() {
   set_size(ui.get_window_size());
-  popups->set_size(ui.get_window_size());
-  bool dimmer_block_events = popovers.size() + popups->get_children().size() > 0;
-  bool dimmer_visible = popups->get_children().size() > 0;
-  dimmer.set_is_active(dimmer_block_events);
-  dimmer.set_is_drawn(dimmer_visible);
+  bool dimmer_block_events = (popovers.size() + popups.size()) > 0;
+  bool dimmer_visible = popups.size() > 0;
+  dimmer->set_is_active(dimmer_block_events);
+  dimmer->set_is_drawn(dimmer_visible);
   Widget::update();
 }
