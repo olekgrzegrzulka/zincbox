@@ -361,5 +361,6 @@ namespace Input {
 
   const std::vector<std::string>& get_dropped_paths() { return detail::dropped_paths; }
 
+  void reset_cursor() { glfwSetCursor(detail::glfw_window, NULL); }
   void set_cursor(Input::Cursor cursor) { glfwSetCursor(detail::glfw_window, detail::cursors[(size_t)cursor]); }
 }; // namespace Input

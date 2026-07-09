@@ -248,5 +248,6 @@ namespace Input {
 
   const std::vector<std::string>& get_dropped_paths();
 
+  void reset_cursor();
   void set_cursor(Input::Cursor cursor);
 }; // namespace Input

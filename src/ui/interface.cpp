@@ -419,7 +419,7 @@ void interface::update(vec2i window_size) {
       splitter->get_is_drawn()) {
     Input::set_cursor(Input::Cursor::RESIZE_HORIZONTAL);
   } else {
-    Input::set_cursor(Input::Cursor::ARROW);
+    Input::reset_cursor();
   }
 
   if (panel_queue->get_is_drawn()) {
