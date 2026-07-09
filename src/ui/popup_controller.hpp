@@ -77,17 +77,20 @@ class PopupController : public Widget {
     template <typename T, typename... Args>
       requires std::is_base_of_v<Popup, T>
     T* show_popup(Args&&... args) {
-      auto& popup =
-        popups->add_child<T>(*this, [&](Popup* p) { p->set_marked_for_deletion(true); }, std::forward<Args>(args)...);
+      close_all_popovers();
+      auto& popup = add_child<T>(*this, [this](Popup* p) { on_popup_closed(p); }, std::forward<Args>(args)...);
+      popups.emplace_back(&popup);
       return &popup;
     };
 
     bool is_popup_open() const;
     void close_all_popups();
+    void close_all_popovers();
 
   protected:
+    void on_popup_closed(Popup* popup);
     UI& ui;
-    Dimmer& dimmer;
-    Widget* popups;
-    std::unordered_map<std::string, Widget*> popovers;
+    Dimmer* dimmer{};
+    std::vector<Widget*> popups{};
+    std::unordered_map<std::string, Widget*> popovers{};
 };
