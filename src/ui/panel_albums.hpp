@@ -26,7 +26,7 @@ class WidgetAlbumCover : public Button {
   public:
     const std::optional<size_t> playlist_id = 0;
 
-  protected:
+  public:
     Sprite* hover{};
     bool is_hovered = false;
     Label* label_title{};
@@ -50,6 +50,7 @@ class PanelAlbums : public Sprite {
     void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);
+    vec2i get_content_size() const;
     std::optional<size_t> get_collection_id() const { return props.collection_id; }
 
   protected:
@@ -58,6 +59,7 @@ class PanelAlbums : public Sprite {
   protected:
     double scroll_px = 0.0;
     double target_scroll_px = 0.0;
+    i32 content_height = 0;
 
     std::vector<WidgetAlbumCover*> album_widgets;
     ScrollBar* scrollbar{};
@@ -73,6 +75,7 @@ class PanelAlbums : public Sprite {
         std::optional<size_t> collection_id{};
         std::vector<size_t> playlist_ids{};
         SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
+        bool group = false;
         bool panel_search_visible = true;
         bool button_sort_by_visible = true;
         bool button_add_playlist_visible = true;

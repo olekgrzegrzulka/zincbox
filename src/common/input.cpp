@@ -220,6 +220,10 @@ namespace Input {
     return detail::key_states[(size_t)button] == detail::ButtonState::JUST_RELEASED;
   }
 
+  bool ctrl_pressed() { return key_pressed(Key::KEY_LEFT_CONTROL) || key_pressed(Key::KEY_RIGHT_CONTROL); }
+
+  bool shift_pressed() { return key_pressed(Key::KEY_LEFT_SHIFT) || key_pressed(Key::KEY_RIGHT_SHIFT); }
+
   vec2f get_mouse_scroll() { return detail::accumulated_scroll; }
 
   vec2i get_mouse_delta() { return {detail::mouse_x - detail::last_mouse_x, detail::mouse_y - detail::last_mouse_y}; }

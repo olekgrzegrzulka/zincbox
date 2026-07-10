@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 #include "collection.hpp"
+#include "core/musicdb/types.hpp"
 #include "lib/json.cpp/json.h"
 #include "playlist.hpp"
 #include "track.hpp"
@@ -21,9 +22,11 @@ namespace db {
   void print_collections();
 
   struct track_info {
-      size_t collection_id;
-      size_t playlist_id;
-      size_t track_id;
+      size_t collection_id = INVALID_ID;
+      size_t playlist_id = INVALID_ID;
+      size_t track_id = INVALID_ID;
+
+      auto operator<=>(const track_info&) const = default;
   };
 
   void set_playlists_collection_name(std::u32string_view);

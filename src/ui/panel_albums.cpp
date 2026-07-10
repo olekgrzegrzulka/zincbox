@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "common/input.hpp"
 #include "common/search_utils.hpp"
@@ -243,6 +244,9 @@ void PanelAlbums::reflow() {
 
   if (album_covers_in_one_row <= 0) { return; }
 
+  std::optional<std::u32string_view> prev_artist;
+  std::optional<char32_t> prev_name_first_letter;
+
   i32 column = 0;
   i32 cover_y = 0;
   for (auto& album_widget : album_widgets) {
@@ -250,21 +254,35 @@ void PanelAlbums::reflow() {
     album_widget->set_pos(x_, cover_y);
 
     column += 1;
-    if (column >= album_covers_in_one_row) {
+    bool new_row = column >= album_covers_in_one_row;
+    bool group_by_author = props.group && (props.sort_by == SortBy::AUTHOR_AZ || props.sort_by == SortBy::AUTHOR_ZA);
+    if (group_by_author && prev_artist && album_widget->label_author->get_text() != *prev_artist) { new_row = true; }
+
+    std::optional<char32_t> name_first_letter;
+    if (!album_widget->label_title->get_text().empty()) {
+      name_first_letter = transform_to_base_char(album_widget->label_title->get_text()[0]);
+      bool group_by_name = props.group && (props.sort_by == SortBy::NAME_AZ || props.sort_by == SortBy::NAME_ZA);
+      if (group_by_name && prev_name_first_letter && *name_first_letter != *prev_name_first_letter) { new_row = true; }
+    }
+
+    if (new_row) {
       column = 0;
       cover_y += cover_total_height;
     }
+
+    prev_artist = album_widget->label_author->get_text();
+    prev_name_first_letter = name_first_letter;
   }
 
   // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) /
   // album_covers_in_one_row;
-  i32 content_size = cover_y + cover_total_height + (8 + panel_search->get_height());
-  scrollbar->set_content_size(content_size);
+  content_height = cover_y + cover_total_height + (8 + panel_search->get_height());
+  scrollbar->set_content_size(content_height);
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
   scrollbar->set_height(height);
-  scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_size - height)));
-  albums_container->set_height(content_size);
+  scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_height - height)));
+  albums_container->set_height(content_height);
 }
 
 void PanelAlbums::update() {
@@ -302,3 +320,5 @@ void PanelAlbums::set_scroll_px(float px) {
   target_scroll_px = px;
   scrollbar->set_scroll_offset(px);
 }
+
+vec2i PanelAlbums::get_content_size() const { return {width, content_height}; }

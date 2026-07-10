@@ -4,7 +4,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "tr.hpp"
 #include "ui/panel_albums.hpp"
-#include "ui/panel_tracks_track.hpp"
+#include "ui/widget_track.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/checkbox.hpp"
@@ -161,7 +161,8 @@ class PopupSearch : public Popup {
       i32 i = 1;
       i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
       for (db::track_info& t : found_tracks) {
-        auto* w = &tracks_container->add_child<WidgetTrack>(t.track_id, i, i % 2 == 0);
+        auto* w = &tracks_container->add_child<WidgetTrack>();
+        w->track_id(t.track_id).track_number(i);
         w->set_min_height(track_height);
         w->set_max_height(track_height);
         w->on_press([this, t, w]() {

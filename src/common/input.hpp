@@ -239,6 +239,8 @@ namespace Input {
   bool key_pressed(Input::Key);
   bool key_just_pressed(Input::Key);
   bool key_just_released(Input::Key);
+  bool ctrl_pressed();
+  bool shift_pressed();
 
   vec2i get_window_size();
 
