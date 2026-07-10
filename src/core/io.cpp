@@ -35,6 +35,17 @@ bool io::is_music_file(const fs::path& path) {
           ext == ".wav" || ext == ".WAV");
 }
 
+void io::open_folder_in_file_manager(const fs::path& path) {
+#ifdef _WIN32
+  std::string command = "explorer \"" + path.string() + "\"";
+#elif __APPLE__
+  std::string command = "open \"" + path.string() + "\"";
+#else
+  std::string command = "xdg-open \"" + path.string() + "\"";
+#endif
+  std::system(command.c_str());
+}
+
 fs::path io::get_user_data_path() {
   if (user_data_path.has_value()) { return user_data_path.value(); }
 
