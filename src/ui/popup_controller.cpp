@@ -1,9 +1,7 @@
-#include <cstddef>
 #include <functional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include "common/debug.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
@@ -32,9 +30,7 @@ void PopupController::on_dimmer_enter_pressed() {}
 void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 
 void PopupController::create_popover(const popover_descriptor& d) {
-  ensure(d.button_labels.size() >= d.button_actions.size());
-
-  i32 space_needed = 8 + (4 + 24) * d.button_labels.size() + 12;
+  i32 space_needed = 8 + (4 + 24) * d.buttons.size() + 12;
   bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 
   auto& popover = add_child<Popover>(arrow_on_top);
@@ -58,8 +54,9 @@ void PopupController::create_popover(const popover_descriptor& d) {
     popover.set_pos(d.at.x, d.at.y - (d.distance + popover.arrow->get_height()));
   }
   std::vector<Button*> buttons;
-  for (auto& sv : d.button_labels) {
-    auto& btn = popover.add_child<Button>(std::string(sv));
+  std::string popover_id = d.id;
+  for (auto& [label, action] : d.buttons) {
+    auto& btn = popover.add_child<Button>(label);
     buttons.emplace_back(&btn);
     btn.set_nine_slice_margin(8.0f);
     btn.set_texture_idle("button_popover_idle");
@@ -71,18 +68,13 @@ void PopupController::create_popover(const popover_descriptor& d) {
     btn.set_max_height(22);
     btn.set_height(22);
     popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 30));
-  }
 
-  size_t button_i = 0;
-  std::string popover_id = d.id;
-  for (auto& l : d.button_actions) {
-    auto lambda = [this, l, popover_id, &popover]() {
-      if (l) { l(); }
+    auto lambda = [this, action, popover_id, &popover]() -> void {
+      if (action) { action(); }
       popovers.erase(popover_id);
       popover.set_marked_for_deletion(true);
     };
-    buttons[button_i]->on_press(lambda);
-    button_i += 1;
+    btn.on_press(lambda);
   }
 };
 

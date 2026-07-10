@@ -15,6 +15,8 @@ namespace io {
   bool is_cover_file(const fs::path&);
   bool is_music_file(const fs::path&);
 
+  void open_folder_in_file_manager(const fs::path&);
+
   fs::path get_user_data_path();
   fs::path get_themes_path();
   fs::path get_db_path();
