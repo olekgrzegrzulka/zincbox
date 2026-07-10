@@ -367,6 +367,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("track_bg1");
   atlas_add_texture("track_bg2");
   atlas_add_texture("track_bg_playing");
+  atlas_add_texture("track_bg_selected1");
+  atlas_add_texture("track_bg_selected2");
   atlas_add_texture("track_hovered");
   atlas_add_texture("playlist_hovered");
   atlas_add_texture_row({"tab_active_idle", "tab_active_hovered", "tab_active_pressed", "tab_active_disabled"},

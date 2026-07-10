@@ -29,7 +29,7 @@
 #include "splitter.hpp"
 #include "theme.hpp"
 #include "tr.hpp"
-#include "ui/panel_tracks_track.hpp"
+#include "ui/widget_track.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_definitions.hpp"
 #include "ui/popup_search.hpp"

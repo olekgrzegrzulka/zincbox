@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include "core/player.hpp"
-#include "panel_tracks_track.hpp"
+#include "widget_track.hpp"
 #include "theme.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/ui.hpp"
@@ -58,7 +58,8 @@ void PanelQueue::on_queue_appended_to_back() {
   if (queue_size == 0) { return; }
   i32 queue_i = queue_size - 1;
   player::playing_t p = player::get_playing_queue()[queue_i];
-  auto* track = &add_child<WidgetTrack>(p.track_id, queue_i + 1, queue_i % 2 == 0);
+  auto* track = &add_child<WidgetTrack>();
+  track->track_id(p.track_id).track_number(queue_i + 1);
   queue_tracks.emplace_back(track);
 
   track->on_press([this, queue_i, track]() {
@@ -78,7 +79,7 @@ void PanelQueue::on_queue_changed_at(size_t queue_i) {
   if (player::get_playing_queue().size() <= queue_i) { return; }
   if (queue_tracks.size() <= queue_i) { return; }
   auto p = player::get_playing_queue()[queue_i];
-  queue_tracks[queue_i]->setup(p.track_id, queue_i + 1, queue_i % 2 == 0);
+  queue_tracks[queue_i]->track_id(p.track_id);
 }
 
 void PanelQueue::on_queue_changed() {
@@ -88,7 +89,8 @@ void PanelQueue::on_queue_changed() {
   for (player::playing_t p : player::get_playing_queue()) {
     queue_i += 1;
 
-    auto* track = &add_child<WidgetTrack>(p.track_id, queue_i + 1, queue_i % 2 == 0);
+    auto* track = &add_child<WidgetTrack>();
+    track->track_id(p.track_id).track_number(queue_i + 1);
     queue_tracks.emplace_back(track);
 
     track->on_press([this, queue_i, track]() {
