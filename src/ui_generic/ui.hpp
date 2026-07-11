@@ -47,6 +47,7 @@ class UI final {
     const FontFace& get_font_face() const { return font_face; }
     const Shader& get_shader() const { return shader; }
     TextureAtlas& get_texture_atlas() { return texture_atlas; }
+    std::span<Widget*> get_hovered_widgets() { return hovered_widgets; }
 
     void mark_dirty_recursive(Widget* w) {
       w->mark_dirty();
@@ -65,6 +66,7 @@ class UI final {
     glm::mat4 matrix;
     std::vector<std::unique_ptr<Widget>> widgets;
     std::vector<std::unique_ptr<Widget>> widgets_to_add;
+    std::vector<Widget*> hovered_widgets;
     FT_Library freetype_lib;
     Shader shader;
     FontFace font_face;

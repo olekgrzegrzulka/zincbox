@@ -7,6 +7,7 @@
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/types.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
@@ -18,11 +19,27 @@ class PanelTracksSelection {
   public:
     bool has(db::track_info s) const { return selection_set.contains(s); }
     void insert(db::track_info s) {
-      if (selection_set.emplace(s).second) { selection_vector.emplace_back(s); }
+
+      if (selection_set.emplace(s).second) {
+        if (selection_vector.empty()) {
+          common_playlist_id = s.playlist_id;
+        } else if (common_playlist_id != s.playlist_id) {
+          common_playlist_id = std::nullopt;
+        }
+        selection_vector.emplace_back(s);
+      }
     }
     void erase(db::track_info s) {
       if (selection_set.erase(s)) {
         std::erase_if(selection_vector, [&s](db::track_info s_) -> bool { return s == s_; });
+      }
+      common_playlist_id =
+        selection_vector.empty() ? std::nullopt : std::make_optional(selection_vector[0].playlist_id);
+      for (auto& s2 : selection_vector) {
+        if (s2.playlist_id != common_playlist_id) {
+          common_playlist_id = std::nullopt;
+          break;
+        }
       }
     }
 
@@ -31,6 +48,7 @@ class PanelTracksSelection {
     void clear() {
       selection_set.clear();
       selection_vector.clear();
+      common_playlist_id = std::nullopt;
     }
 
     std::optional<db::track_info> back() const {
@@ -40,7 +58,12 @@ class PanelTracksSelection {
 
     const std::vector<db::track_info>& get() const { return selection_vector; }
 
+    std::optional<db::playlist_id_t> get_common_playlist_id() const { return common_playlist_id; }
+
+    size_t size() const { return selection_vector.size(); }
+
   private:
+    std::optional<db::playlist_id_t> common_playlist_id{};
     std::set<db::track_info> selection_set; // FIXME unordered_set
     std::vector<db::track_info> selection_vector;
 };
@@ -61,7 +84,11 @@ class PanelTracks final : public Sprite {
     void clear();
     float get_scroll_px() const;
     void set_scroll_px(float px);
-    const PanelTracksSelection& selection() { return m_selection; }
+    const PanelTracksSelection& selection() const { return m_selection; }
+    void clear_selection() {
+      m_selection.clear();
+      selection_modified = true;
+    }
 
   protected:
     PanelTracksSelection m_selection;

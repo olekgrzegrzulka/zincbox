@@ -5,7 +5,7 @@
 #include "sprite.hpp"
 #include "ui.hpp"
 
-enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW };
+enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW, MANUAL };
 
 class ToolTip : public Sprite {
   public:
@@ -35,20 +35,21 @@ class ToolTip : public Sprite {
       label = &add_child<Label>(name_);
       label->set_parent_anchor(Anchor::CENTER);
       label->set_anchor(Anchor::CENTER);
+      label->update();
 
       set_size_and_position();
     }
 
     void set_text(const std::u32string& s) {
       label->set_text(s);
-      label->set_size(vec2i{label->get_text_extents()});
+      label->update();
 
       set_size_and_position();
     }
 
     void set_text(const std::string& s) {
       label->set_text(s);
-      label->set_size(vec2i{label->get_text_extents()});
+      label->update();
 
       set_size_and_position();
     }
