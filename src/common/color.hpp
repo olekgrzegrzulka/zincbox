@@ -27,6 +27,11 @@ struct rgba {
     u8 a{};
 
     auto operator<=>(const rgba& rhs) const = default;
+
+    rgba operator*(double n) const {
+      return rgba{std::clamp<i32>((i32)r * n, 0, 255), std::clamp<i32>((i32)g * n, 0, 255),
+                  std::clamp<i32>((i32)b * n, 0, 255), std::clamp<i32>((i32)a * n, 0, 255)};
+    }
 };
 
 namespace color_utils {

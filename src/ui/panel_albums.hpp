@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "common/input.hpp"
+#include "common/signal.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/sprite.hpp"
@@ -19,20 +20,28 @@ class SpriteAlbumCover : public Sprite {
 class WidgetAlbumCover : public Button {
   public:
     WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_);
+    ~WidgetAlbumCover();
     void draw() override;
     void update() override;
     void event(Input::InputEventMouseMove& ev) override;
 
-  public:
-    const std::optional<size_t> playlist_id = 0;
+  protected:
+    void update_highlight_status_from_player();
 
   public:
+    const std::optional<size_t> playlist_id = 0;
     Sprite* hover{};
+    Sprite* sprite_playing{};
     bool is_hovered = false;
     Label* label_title{};
     Label* label_author{};
     vec2i total_size{};
     vec2i cover_size{};
+
+  protected:
+    Signal<>::slot_key slot_on_track_changed;
+    rgba label_title_text_color{};
+    rgba label_author_text_color{};
 };
 
 class PanelAlbums : public Sprite {

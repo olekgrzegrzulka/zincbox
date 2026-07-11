@@ -7,6 +7,7 @@
 #include "common/input.hpp"
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/player.hpp"
 #include "panel_albums.hpp"
 #include "theme.hpp"
 #include "tr.hpp"
@@ -24,8 +25,22 @@ SpriteAlbumCover::SpriteAlbumCover(UI& ui_, const std::string& id, vec2i cover_s
   set_nine_slice_margin(0.0f);
 }
 
+void WidgetAlbumCover::update_highlight_status_from_player() {
+  bool playing = player::get_playing().has_value() && playlist_id == player::get_playing()->playlist_id;
+  sprite_playing->set_is_drawn(playing);
+  if (playing) {
+    label_title->set_text_color(label_title_text_color * 1.5);
+    label_author->set_text_color(label_author_text_color * 1.5);
+  } else {
+    label_title->set_text_color(label_title_text_color);
+    label_author->set_text_color(label_author_text_color);
+  }
+}
+
 WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_)
   : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
+  label_title_text_color = theme::get_prop("playlist_title_text_color").as_rgba({255, 255, 255, 255});
+  label_author_text_color = theme::get_prop("playlist_author_text_color").as_rgba({255, 255, 255, 255});
   set_clip_children(true);
   set_size(total_size.x, total_size.y);
   auto& sprite_cover = add_child<SpriteAlbumCover>(
@@ -54,7 +69,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   label_author->set_label_anchor(Anchor::TOP_LEFT);
   label_author->set_anchor(Anchor::TOP_LEFT);
   label_author->set_parent_anchor(Anchor::TOP_LEFT);
-  label_author->set_text_color(theme::get_prop("playlist_author_text_color").as_rgba(rgba{255, 255, 255, 255}));
+  label_author->set_text_color(theme::get_prop("playlist_author_text_color").as_rgba());
   label_author->set_y(cover_size.y + 8 + 16);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
@@ -62,7 +77,19 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   hover->set_ignore_parents_layout(true);
   hover->set_size(cover_size.x, cover_size.y);
   hover->set_is_drawn(false);
+
+  sprite_playing = &sprite_cover.add_child<Sprite>("playlist_playing");
+  sprite_playing->set_nine_slice_margin(0.0f);
+  sprite_playing->set_ignore_parents_layout(true);
+  sprite_playing->set_size(cover_size.x, cover_size.y);
+  sprite_playing->set_is_drawn(false);
+
+  slot_on_track_changed =
+    player::signal_on_track_changed.connect([this]() -> void { update_highlight_status_from_player(); });
+  update_highlight_status_from_player();
 }
+
+WidgetAlbumCover::~WidgetAlbumCover() { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
 void WidgetAlbumCover::draw() {
   // Button::draw();

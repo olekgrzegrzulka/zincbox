@@ -399,5 +399,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("sort_by", {"icons/sort_by"});
   atlas_add_texture("button_add_playlist", {"icons/button_add_playlist"});
   atlas_add_texture("cover_unknown");
+  atlas_add_texture("playlist_playing");
   atlas.set_fallback_texture("cover_unknown");
 }
