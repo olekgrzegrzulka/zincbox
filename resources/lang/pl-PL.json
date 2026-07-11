@@ -111,6 +111,7 @@
   "tooltip.drag.add_to_playlist_plural": "Dodaj {} utwory(-ów) do '{}'",
   "tooltip.drag.add_to_queue": "Dodaj 1 utwór do kolejki",
   "tooltip.drag.add_to_queue_plural": "Dodaj {} utwory(-ów) do kolejki",
+  "tooltip.drag.create_playlist": "Utwórz playlistę",
   "tooltip.drag.not_allowed": "Nie można tutaj upuścić",
   "tooltip.drag.reorder": "Przenieś 1 utwór",
   "tooltip.drag.reorder_plural": "Przenieś {} utwory(-ów)",

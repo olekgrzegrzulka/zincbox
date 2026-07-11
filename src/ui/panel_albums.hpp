@@ -19,11 +19,13 @@ class SpriteAlbumCover : public Sprite {
 
 class WidgetAlbumCover : public Button {
   public:
-    WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_);
+    WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_,
+                     bool is_add_button_ = false);
     ~WidgetAlbumCover();
     void draw() override;
     void update() override;
     void event(Input::InputEventMouseMove& ev) override;
+    bool is_add_button() const { return m_is_add_button; }
 
   protected:
     void update_highlight_status_from_player();
@@ -39,6 +41,7 @@ class WidgetAlbumCover : public Button {
     vec2i cover_size{};
 
   protected:
+    bool m_is_add_button = false;
     Signal<>::slot_key slot_on_track_changed;
     rgba label_title_text_color{};
     rgba label_author_text_color{};

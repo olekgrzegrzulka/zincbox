@@ -37,14 +37,23 @@ void WidgetAlbumCover::update_highlight_status_from_player() {
   }
 }
 
-WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_)
+WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_,
+                                   bool is_add_button_)
   : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
+  m_is_add_button = is_add_button_;
   label_title_text_color = theme::get_prop("playlist_title_text_color").as_rgba({255, 255, 255, 255});
   label_author_text_color = theme::get_prop("playlist_author_text_color").as_rgba({255, 255, 255, 255});
   set_clip_children(true);
   set_size(total_size.x, total_size.y);
-  auto& sprite_cover = add_child<SpriteAlbumCover>(
-    playlist_id.has_value() ? std::to_string(playlist_id.value()) : "button_add_playlist", cover_size_);
+  std::string sprite_cover_id;
+  if (playlist_id.has_value()) {
+    sprite_cover_id = std::to_string(playlist_id.value());
+  } else if (m_is_add_button) {
+    sprite_cover_id = "button_add_playlist";
+  } else {
+    sprite_cover_id = "cover_unknown";
+  }
+  auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_cover_id, cover_size_);
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>();
@@ -53,7 +62,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
     auto& playlist = db::playlist_by_id(playlist_id.value())->get();
     label_title->set_text(playlist.name);
     label_author->set_text(playlist.author);
-  } else {
+  } else if (m_is_add_button) {
     label_title->set_text(tr::get("playlist.add_new_placeholder"));
   }
   label_title->set_resize_to_text_extents(false);
@@ -242,7 +251,7 @@ void PanelAlbums::recreate() {
 
   if (props.collection_id.has_value() && props.collection_id == 0 && props.button_add_playlist_visible) {
     auto* album_widget =
-      &albums_container->add_child<WidgetAlbumCover>(std::nullopt, cover_widget_size, cover_widget_cover_size);
+      &albums_container->add_child<WidgetAlbumCover>(std::nullopt, cover_widget_size, cover_widget_cover_size, true);
     album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, album_widget]() {

@@ -94,7 +94,7 @@ static void show_popover_playlist_actions(size_t playlist_id, Widget* widget, bo
 static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widget);
 static void show_popover_create_playlist(Widget*);
 static void show_popover_queue_actions(Widget*);
-static void show_popup_new_playlist();
+static void show_popup_new_playlist(std::function<void(std::optional<db::playlist_id_t>)> callback_close = nullptr);
 static void show_popup_new_smart_playlist();
 static void show_dialog_new_playlist_from_json();
 static void add_track_to_playlist(db::playlist_id_t, db::track_id_t);
@@ -599,10 +599,36 @@ static void handle_drag_and_drop() {
     }
   };
 
+  auto handle_drag_create_playlist = [&](bool drag_ended) -> bool {
+    if (!selection_drag.has_value()) { return false; }
+
+    if (drag_ended) {
+      std::vector<db::track_id_t> track_ids;
+      track_ids.reserve(selection_drag.value().size());
+
+      for (auto& ti : selection_drag.value().get()) {
+        track_ids.emplace_back(ti.track_id);
+      }
+
+      show_popup_new_playlist([track_ids](std::optional<db::playlist_id_t> playlist_id) -> void {
+        if (playlist_id.has_value()) { add_tracks_to_playlist(playlist_id.value(), track_ids); }
+      });
+
+      return true;
+    } else {
+      tooltip_drag->set_text(tr::get("tooltip.drag.create_playlist"));
+      return true;
+    }
+  };
+
   auto handle_drag_playlist_cover = [&](WidgetAlbumCover* hovered_playlist_cover, bool drag_ended) -> bool {
     if (!hovered_playlist_cover) { return false; }
-    if (!hovered_playlist_cover->playlist_id.has_value()) { return false; }
-    return handle_drag_playlist(hovered_playlist_cover->playlist_id.value(), drag_ended);
+    if (hovered_playlist_cover->is_add_button()) {
+      return handle_drag_create_playlist(drag_ended);
+    } else {
+      if (!hovered_playlist_cover->playlist_id.has_value()) { return false; }
+      return handle_drag_playlist(hovered_playlist_cover->playlist_id.value(), drag_ended);
+    }
   };
 
   auto handle_drag_playlist_header = [&](WidgetPlaylistHeader* hovered_playlist_header, bool drag_ended) -> bool {
@@ -1294,7 +1320,7 @@ static void show_popover_playlist_sort_options(size_t playlist_id, Widget* widge
 
 static void show_popover_create_playlist(Widget* w) {
   decltype(popover_descriptor::buttons) buttons;
-  buttons.emplace_back((tr::get("popover.new_playlist.add")), show_popup_new_playlist);
+  buttons.emplace_back((tr::get("popover.new_playlist.add")), []() { show_popup_new_playlist(); });
   buttons.emplace_back((tr::get("popover.new_playlist.add_smart")), show_popup_new_smart_playlist);
   buttons.emplace_back((tr::get("popover.new_playlist.add_from_json")), show_dialog_new_playlist_from_json);
 
@@ -1351,23 +1377,27 @@ static void show_popover_queue_actions(Widget* w) {
   popup_controller->create_popover(d);
 }
 
-static void show_popup_new_playlist() {
+static void show_popup_new_playlist(std::function<void(std::optional<db::playlist_id_t>)> callback_close) {
   auto* popup = popup_controller->show_popup<PopupInput>();
   popup->set_size(300, 200);
   popup->title->set_text(tr::get("popup.playlist.add.title"));
   popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
   popup->text_input->set_focused(true);
 
-  popup->on_ok_pressed = [popup]() {
-    db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
+  popup->on_ok_pressed = [popup, callback_close]() {
+    auto playlist_id =
+      db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), U"", db::PlaylistType::User});
     if (active_collection_id == 0) {
       panel_albums->props.collection_id = 0;
       panel_albums->recreate();
       panel_tracks->recreate(active_collection_id);
     }
+    if (callback_close) { callback_close(playlist_id); }
   };
 
-  popup->on_cancel_pressed = []() {};
+  popup->on_cancel_pressed = [callback_close]() {
+    if (callback_close) { callback_close(std::nullopt); }
+  };
 }
 
 static void show_popup_new_smart_playlist() { auto* popup = popup_controller->show_popup<PopupCreateSmartPlaylist>(); }

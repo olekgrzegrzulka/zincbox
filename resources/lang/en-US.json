@@ -111,6 +111,7 @@
   "tooltip.drag.add_to_playlist_plural": "Add {} tracks to '{}'",
   "tooltip.drag.add_to_queue": "Add 1 track to queue",
   "tooltip.drag.add_to_queue_plural": "Add {} tracks to queue",
+  "tooltip.drag.create_playlist": "Create playlist",
   "tooltip.drag.not_allowed": "Cannot drop here",
   "tooltip.drag.reorder": "Move 1 track",
   "tooltip.drag.reorder_plural": "Move {} tracks",
