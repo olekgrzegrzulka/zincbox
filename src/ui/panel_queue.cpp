@@ -2,10 +2,10 @@
 #include <algorithm>
 #include <cmath>
 #include "core/player.hpp"
-#include "widget_track.hpp"
 #include "theme.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/ui.hpp"
+#include "widget_track.hpp"
 
 PanelQueue::PanelQueue(UI& ui_) : Sprite(ui_, "panel_queue") {
   set_clip_children(true);
@@ -43,6 +43,7 @@ void PanelQueue::draw() { Sprite::draw(); }
 
 void PanelQueue::on_view_changed() {
   i32 i = -1;
+  ui.mark_dirty_recursive(this); // FIXME without this the view flickers when scrolling down
   for (auto* track : queue_tracks) {
     i += 1;
 
@@ -59,7 +60,11 @@ void PanelQueue::on_queue_appended_to_back() {
   i32 queue_i = queue_size - 1;
   player::playing_t p = player::get_playing_queue()[queue_i];
   auto* track = &add_child<WidgetTrack>();
-  track->track_id(p.track_id).track_number(queue_i + 1);
+  track->collection_id(p.collection_id)
+    .playlist_id(p.playlist_id)
+    .track_id(p.track_id)
+    .track_number(queue_i + 1)
+    .autohighlight(false);
   queue_tracks.emplace_back(track);
 
   track->on_press([this, queue_i, track]() {
@@ -79,7 +84,12 @@ void PanelQueue::on_queue_changed_at(size_t queue_i) {
   if (player::get_playing_queue().size() <= queue_i) { return; }
   if (queue_tracks.size() <= queue_i) { return; }
   auto p = player::get_playing_queue()[queue_i];
-  queue_tracks[queue_i]->track_id(p.track_id);
+  queue_tracks[queue_i]
+    ->collection_id(p.collection_id)
+    .playlist_id(p.playlist_id)
+    .track_id(p.track_id)
+    .track_number(queue_i + 1)
+    .autohighlight(false);
 }
 
 void PanelQueue::on_queue_changed() {
@@ -90,7 +100,11 @@ void PanelQueue::on_queue_changed() {
     queue_i += 1;
 
     auto* track = &add_child<WidgetTrack>();
-    track->track_id(p.track_id).track_number(queue_i + 1);
+    track->collection_id(p.collection_id)
+      .playlist_id(p.playlist_id)
+      .track_id(p.track_id)
+      .track_number(queue_i + 1)
+      .autohighlight(false);
     queue_tracks.emplace_back(track);
 
     track->on_press([this, queue_i, track]() {

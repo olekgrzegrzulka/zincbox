@@ -20,6 +20,7 @@ class WidgetTrack final : public Button {
     }
 
     void update_highlight_status_from_player() {
+      if (!m_autohighlight) { return; }
       set_highlighted(player::get_playing().has_value() && m_track_id == player::get_playing()->track_id &&
                       m_playlist_id == player::get_playing()->playlist_id &&
                       m_collection_id == player::get_playing()->collection_id);
@@ -243,6 +244,14 @@ class WidgetTrack final : public Button {
       return *this;
     }
 
+    WidgetTrack& autohighlight(bool value) {
+      if (m_autohighlight != value) {
+        m_autohighlight = value;
+        m_changed = true;
+      }
+      return *this;
+    }
+
     size_t track_id() const { return m_track_id; }
     size_t playlist_id() const { return m_playlist_id; }
     size_t collection_id() const { return m_collection_id; }
@@ -259,6 +268,7 @@ class WidgetTrack final : public Button {
     size_t m_collection_id = db::INVALID_ID;
     size_t m_track_number = 0;
     bool m_is_selected = false;
+    bool m_autohighlight = true;
     bool m_changed = true;
     Signal<>::slot_key slot_on_track_changed;
     Label* label_track_number{};
