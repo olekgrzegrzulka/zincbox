@@ -49,7 +49,7 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
 
 PanelTracks::~PanelTracks() {}
 
-void PanelTracks::create_element(std::pair<element, Widget*>& e, i32 track_number) {
+void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_number) {
   auto& [element, widget] = e;
   if (widget) { return; }
 
@@ -58,7 +58,7 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, i32 track_numbe
     w->collection_id(element.track_info.collection_id)
       .playlist_id(element.track_info.playlist_id)
       .track_id(element.track_info.track_id)
-      .track_number(track_number);
+      .track_number(track_number + 1);
 
     w->set_ignore_parents_layout(true);
     w->set_is_drawn(false);
@@ -233,7 +233,7 @@ void PanelTracks::update() {
       selection_modified) {
     static constexpr i32 MARGIN = 100;
     i32 current_element_top_y = 0;
-    i32 track_number = 1;
+    i32 track_number = 0;
     for (size_t i = 0; i < elements.size(); i += 1) {
       i32 current_element_bottom_y = current_element_top_y + elements[i].first.height();
       bool element_visible =
@@ -255,7 +255,7 @@ void PanelTracks::update() {
 
       current_element_top_y += elements[i].first.height();
       track_number += 1;
-      if (elements[i].first.type == ElementType::HEADER) { track_number = 1; }
+      if (elements[i].first.type == ElementType::HEADER) { track_number = 0; }
       ui.mark_dirty_recursive(elements_container); // FIXME without this the view flickers when scrolling down
     }
     old_scroll_px = scroll_px;
