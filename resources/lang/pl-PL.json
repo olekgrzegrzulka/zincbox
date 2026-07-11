@@ -64,6 +64,7 @@
   "popup.about.content": "zincbox - Wszechstronny odtwarzacz muzyczny\nWersja {} (skompilowano {})\nPo więcej informacji odwiedź {}",
   "popup.about.title": "O programie",
   "popup.add_to_playlist.title": "Dodaj do playlisty: '{}'",
+  "popup.add_to_playlist.title_plural": "Dodaj utwory do playlisty",
   "popup.import.action_add_collection": "Dodaj kolekcję",
   "popup.import.action_add_collections": "Dodaj {} kolekcji(-e)",
   "popup.import.action_merge": "Scal",

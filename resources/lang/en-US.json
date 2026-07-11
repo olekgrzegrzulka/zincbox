@@ -64,6 +64,7 @@
   "popup.about.content": "zincbox - A versatile music player\nVersion {} (compiled {})\nFor more informations visit: {}",
   "popup.about.title": "About",
   "popup.add_to_playlist.title": "Add to playlist: '{}'",
+  "popup.add_to_playlist.title_plural": "Add tracks to playlist",
   "popup.import.action_add_collection": "Add collection",
   "popup.import.action_add_collections": "Add {} collections",
   "popup.import.action_merge": "Merge",
