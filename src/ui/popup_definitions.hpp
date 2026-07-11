@@ -292,20 +292,27 @@ class PopupSetSources : public Popup {
 
 class PopupAddToPlaylist : public Popup {
   public:
-    PopupAddToPlaylist(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_, size_t track_id_)
+    PopupAddToPlaylist(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
+                       std::optional<size_t> track_id_)
       : Popup(ui_, controller_, std::move(on_close_)), track_id(track_id_) {
 
-      auto& track = db::track_by_id(track_id)->get();
       std::u32string pretty_track;
-      if (track.artist.empty() || track.title.empty()) {
-        pretty_track = utf8_to_utf32(std::filesystem::path{track.path}.filename().string());
-      } else {
-        pretty_track = track.artist + U" - " + track.title;
+      if (track_id.has_value() && db::track_by_id(track_id.value()).has_value()) {
+        auto& track = db::track_by_id(track_id.value())->get();
+        if (track.artist.empty() || track.title.empty()) {
+          pretty_track = utf8_to_utf32(std::filesystem::path{track.path}.filename().string());
+        } else {
+          pretty_track = track.artist + U" - " + track.title;
+        }
       }
 
       set_layout("ttb fill fit expand m:8 s:8");
 
-      title = &add_child<Label>(tr::format("popup.add_to_playlist.title", utf32_to_utf8(pretty_track)));
+      if (!pretty_track.empty()) {
+        title = &add_child<Label>(tr::format("popup.add_to_playlist.title", utf32_to_utf8(pretty_track)));
+      } else {
+        title = &add_child<Label>(tr::format("popup.add_to_playlist.title_plural"));
+      }
       title->set_height(32);
       title->set_min_height(32);
       title->set_max_height(32);
@@ -344,7 +351,7 @@ class PopupAddToPlaylist : public Popup {
       set_height(playlists_view->get_height() + 100);
     }
 
-    size_t track_id;
+    std::optional<size_t> track_id;
     Label* title{};
     Label* content{};
     PanelAlbums* playlists_view{};

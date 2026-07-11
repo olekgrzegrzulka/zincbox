@@ -12,6 +12,7 @@ class Label;
 
 struct popover_descriptor {
     std::string id;
+    std::u32string title;
     vec2i at;
     i32 distance;
     std::vector<std::pair<std::u32string, std::function<void()>>> buttons;

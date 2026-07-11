@@ -55,6 +55,19 @@ void PopupController::create_popover(const popover_descriptor& d) {
   }
   std::vector<Button*> buttons;
   std::string popover_id = d.id;
+
+  if (!d.title.empty()) {
+    auto& label = popover.add_child<Label>(d.title);
+    label.update();
+    popover.set_width(std::max(popover.get_width(), label.get_width() + 30));
+    label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+    label.set_label_anchor(Anchor::TOP);
+    label.set_resize_to_text_extents(false);
+    label.set_min_height(20);
+    label.set_max_height(20);
+    label.set_height(20);
+  }
+
   for (auto& [label, action] : d.buttons) {
     auto& btn = popover.add_child<Button>(label);
     buttons.emplace_back(&btn);
