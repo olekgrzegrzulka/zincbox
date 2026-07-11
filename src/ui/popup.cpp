@@ -23,6 +23,8 @@ void Popup::update() {
     set_pos(new_pos);
     Input::set_cursor(Input::Cursor::HAND);
   } else {
+    set_x(std::clamp(get_x(), (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2));
+    set_y(std::clamp(get_y(), (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2));
     Input::reset_cursor();
   }
   Sprite::update();
