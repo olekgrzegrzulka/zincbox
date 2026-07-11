@@ -4,6 +4,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include "common/input.hpp"
 #include "common/types.hpp"
 #include "freetype/freetype.h"
 #include "label.hpp"
@@ -34,8 +35,28 @@ UI::UI(i32 window_width_, i32 window_height_) : shader{shader_vert, shader_frag}
   // font_face = FontFace(freetype_lib, "./assets/arial/ARIAL.TTF", 15);
 }
 
+static void update_hovered_widgets_recursive(Widget* widget, std::vector<Widget*>& hovered_widgets) {
+  vec2i mouse_pos = Input::get_mouse_pos();
+  vec2i widget_top_left = widget->get_position(Anchor::TOP_LEFT);
+  vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
+  bool test_x = mouse_pos.x >= widget_top_left.x && mouse_pos.x < widget_bottom_right.x;
+  bool test_y = mouse_pos.y >= widget_top_left.y && mouse_pos.y < widget_bottom_right.y;
+  if (test_x && test_y) {
+
+    hovered_widgets.emplace_back(widget);
+    for (auto&& child : widget->get_children()) {
+      update_hovered_widgets_recursive(child.get(), hovered_widgets);
+    }
+  }
+}
+
 void UI::input() {
   std::erase_if(widgets, [](auto&& w) { return w->get_marked_for_deletion(); });
+
+  hovered_widgets.clear();
+  for (auto&& widget : widgets) {
+    update_hovered_widgets_recursive(widget.get(), hovered_widgets);
+  }
 
   for (auto&& widget : widgets_to_add) {
     widgets.emplace_back(std::move(widget));
