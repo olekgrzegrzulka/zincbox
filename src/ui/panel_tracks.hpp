@@ -113,7 +113,7 @@ class PanelTracks final : public Sprite {
           return 0;
         }
     };
-    void create_element(std::pair<element, Widget*>&, i32 track_number = 0);
+    void create_element(std::pair<element, Widget*>&, size_t track_number);
     std::vector<std::pair<element, Widget*>> elements;
     Widget* elements_container{};
 };
