@@ -53,6 +53,9 @@ static bool search_popup_visible = false;
 static std::optional<PanelTracksSelection> selection_drag;
 static vec2i selection_drag_start{};
 static bool selection_drag_started = false;
+static i32 selection_drag_tab_id = -1;
+static i32 selection_drag_tab_timer = 0;
+static constexpr i32 SELECTION_DRAG_TAB_TIMER = 15;
 
 static std::unique_ptr<UI> ui;
 static class ShortcutInterceptor* shortcut_interceptor{};
@@ -636,13 +639,31 @@ static void handle_drag_and_drop() {
     return handle_drag_playlist(hovered_playlist_header->playlist_id, drag_ended);
   };
 
+  auto handle_drag_tab = [&](Tab* hovered_tab, bool /* drag_ended */) -> bool {
+    if (!hovered_tab) { return false; }
+    if (selection_drag_tab_timer < SELECTION_DRAG_TAB_TIMER) {
+      selection_drag_tab_timer += 1;
+    } else {
+      panel_top->select(hovered_tab->id);
+    }
+    return true;
+  };
+
   WidgetAlbumCover* hovered_playlist_cover = nullptr;
   WidgetTrack* hovered_track = nullptr;
   WidgetPlaylistHeader* hovered_playlist_header = nullptr;
+  Tab* hovered_tab = nullptr;
   for (Widget* hovered_widget : ui->get_hovered_widgets()) {
     if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
     if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
     if (hovered_playlist_header = dynamic_cast<WidgetPlaylistHeader*>(hovered_widget); hovered_playlist_header) {
+      break;
+    }
+    if (hovered_tab = dynamic_cast<Tab*>(hovered_widget); hovered_tab) {
+      if (selection_drag_tab_id != hovered_tab->id) {
+        selection_drag_tab_id = hovered_tab->id;
+        selection_drag_tab_timer = 0;
+      }
       break;
     }
   }
@@ -659,7 +680,8 @@ static void handle_drag_and_drop() {
     tooltip_drag->set_pos(Input::get_mouse_pos() + vec2i{0, 10});
 
     if ((hovered_playlist_cover && handle_drag_playlist_cover(hovered_playlist_cover, false)) ||
-        (hovered_playlist_header && handle_drag_playlist_header(hovered_playlist_header, false))) {
+        (hovered_playlist_header && handle_drag_playlist_header(hovered_playlist_header, false)) ||
+        (hovered_tab && handle_drag_tab(hovered_tab, false))) {
     } else {
       if (selection_drag->size() > 1) {
         tooltip_drag->set_text(tr::format("tooltip.drag.tracks", selection_drag->size()));
@@ -673,7 +695,7 @@ static void handle_drag_and_drop() {
 
   if (lmb_just_released && valid_selection) {
     if (handle_drag_playlist_cover(hovered_playlist_cover, true) ||
-        handle_drag_playlist_header(hovered_playlist_header, true)) {
+        handle_drag_playlist_header(hovered_playlist_header, true) || handle_drag_tab(hovered_tab, true)) {
       panel_tracks->clear_selection();
     }
   }
@@ -681,6 +703,8 @@ static void handle_drag_and_drop() {
   if (lmb_just_released) {
     selection_drag = std::nullopt;
     selection_drag_started = false;
+    selection_drag_tab_id = -1;
+    selection_drag_tab_timer = 0;
   }
 }
 
