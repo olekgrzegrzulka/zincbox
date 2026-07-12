@@ -41,9 +41,9 @@ static void update_hovered_widgets_recursive(Widget* widget, std::vector<Widget*
   vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
   bool test_x = mouse_pos.x >= widget_top_left.x && mouse_pos.x < widget_bottom_right.x;
   bool test_y = mouse_pos.y >= widget_top_left.y && mouse_pos.y < widget_bottom_right.y;
-  if (test_x && test_y) {
+  if (widget->get_is_updated() && widget->get_is_drawn() && test_x && test_y) {
 
-    hovered_widgets.emplace_back(widget);
+    if (widget->get_is_self_drawn()) { hovered_widgets.emplace_back(widget); }
     for (auto&& child : widget->get_children()) {
       update_hovered_widgets_recursive(child.get(), hovered_widgets);
     }
