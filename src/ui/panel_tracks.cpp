@@ -63,7 +63,8 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_nu
     w->collection_id(element.track_info.collection_id)
       .playlist_id(element.track_info.playlist_id)
       .track_id(element.track_info.track_id)
-      .track_number(track_number + 1);
+      .track_number(track_number + 1)
+      .highlight_mode(track_highlight_mode);
 
     w->set_ignore_parents_layout(true);
     w->set_is_drawn(false);
@@ -106,8 +107,7 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_nu
           }
         }
       } else if (on_track_lmb) {
-        on_track_lmb(element.track_info.collection_id, element.track_info.playlist_id, element.track_info.track_id,
-                     track_number, w);
+        on_track_lmb(element.track_info, track_number, w);
 
         if (!m_selection.empty()) {
           m_selection.clear();
@@ -120,8 +120,7 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_nu
       if (m_selection.has(w->track_info()) && on_selection_rmb) {
         on_selection_rmb(w);
       } else if (on_track_rmb) {
-        on_track_rmb(element.track_info.collection_id, element.track_info.playlist_id, element.track_info.track_id,
-                     track_number, w);
+        on_track_rmb(element.track_info, track_number, w);
       }
     });
 
@@ -318,6 +317,7 @@ void PanelTracks::clear() {
   max_scroll_px = 0;
   just_recreated = true;
   m_selection.clear();
+  scrollbar->set_content_size(0);
 }
 
 float PanelTracks::get_scroll_px() const { return target_scroll_px; }
@@ -352,4 +352,35 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   }
 
   scrollbar->set_content_size(max_scroll_px);
+}
+
+void PanelTracks::recreate(std::span<const db::track_info> tracks) {
+  clear();
+  collection_id = std::nullopt;
+
+  for (auto& ti : tracks) {
+    element element_track = {.type = ElementType::TRACK, .track_info = ti};
+    max_scroll_px += element_track.height();
+    elements.emplace_back(element_track, nullptr);
+  }
+
+  scrollbar->set_content_size(max_scroll_px);
+}
+
+void PanelTracks::insert_track(size_t index, db::track_info ti) {
+  index = std::min(index, elements.size());
+  element element_track = {.type = ElementType::TRACK, .track_info = ti};
+  elements.insert(elements.begin() + index, {element_track, nullptr});
+  just_recreated = true;
+  m_selection.clear();
+}
+
+void PanelTracks::insert_track(db::track_info ti) { insert_track(elements.size(), ti); }
+
+void PanelTracks::set_track(size_t index, db::track_info ti) {
+  if (index >= elements.size()) { return; }
+  element element_track = {.type = ElementType::TRACK, .track_info = ti};
+  elements[index] = {element_track, nullptr};
+  just_recreated = true;
+  m_selection.clear();
 }

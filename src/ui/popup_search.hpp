@@ -4,9 +4,9 @@
 #include "core/musicdb/musicdb.hpp"
 #include "tr.hpp"
 #include "ui/panel_albums.hpp"
-#include "ui/widget_track.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
+#include "ui/widget_track.hpp"
 #include "ui_generic/checkbox.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
@@ -160,16 +160,16 @@ class PopupSearch : public Popup {
 
       i32 i = 1;
       i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
-      for (db::track_info& t : found_tracks) {
+      for (db::track_info& ti : found_tracks) {
         auto* w = &tracks_container->add_child<WidgetTrack>();
-        w->track_id(t.track_id).track_number(i);
+        w->track_id(ti.track_id).track_number(i);
         w->set_min_height(track_height);
         w->set_max_height(track_height);
-        w->on_press([this, t, w]() {
-          if (on_track_lmb) { on_track_lmb(t.collection_id, t.playlist_id, t.track_id, w); }
+        w->on_press([this, ti, w]() {
+          if (on_track_lmb) { on_track_lmb(ti, w); }
         });
-        w->on_press_rmb([this, t, w]() {
-          if (on_track_rmb) { on_track_rmb(t.collection_id, t.playlist_id, t.track_id, w); }
+        w->on_press_rmb([this, ti, w]() {
+          if (on_track_rmb) { on_track_rmb(ti, w); }
         });
         i += 1;
       }
@@ -239,8 +239,8 @@ class PopupSearch : public Popup {
   public:
     std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb{};
     std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_lmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, Widget*)> on_track_rmb{};
+    std::function<void(db::track_info, Widget*)> on_track_lmb{};
+    std::function<void(db::track_info, Widget*)> on_track_rmb{};
     std::function<void()> on_closed{};
 
   protected:

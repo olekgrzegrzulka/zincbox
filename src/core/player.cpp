@@ -19,7 +19,7 @@ static ma_sound sound{};
 static ma_device device{};
 
 static i32 total_duration_ms{};
-static std::vector<player::playing_t> playing_queue{};
+static std::vector<db::track_info> playing_queue{};
 static std::optional<size_t> playing_index{};
 static float volume = 0.5f;
 static player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
@@ -119,7 +119,7 @@ void player::update() {
   if (is_at_end() && get_playing().has_value()) { next_track(); }
 }
 
-bool player::play(playing_t play, bool clear_queue) {
+bool player::play(db::track_info play, bool clear_queue) {
   if (clear_queue || playing_queue.size() == 0) {
     playing_queue = {play};
     playing_index = 0;
@@ -148,7 +148,7 @@ bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_
   if (clear_queue) {
     playing_queue.clear();
     for (size_t track_id : track_ids) {
-      playing_queue.emplace_back(player::playing_t{
+      playing_queue.emplace_back(db::track_info{
         .collection_id = collection_id,
         .playlist_id = playlist_id,
         .track_id = track_id,
@@ -160,7 +160,7 @@ bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_
     size_t insert_at = playing_index.has_value() ? playing_index.value() + 1 : playing_queue.size();
     for (size_t i = 0; i < track_ids.size(); i += 1) {
       auto track_id = track_ids[i];
-      player::playing_t play{
+      db::track_info play{
         .collection_id = collection_id,
         .playlist_id = playlist_id,
         .track_id = track_id,
@@ -175,7 +175,7 @@ bool player::play_playlist(size_t collection_id, size_t playlist_id, bool clear_
   }
 }
 
-void player::enqueue(playing_t play, size_t at) {
+void player::enqueue(db::track_info play, size_t at) {
   if (at >= playing_queue.size()) {
     playing_queue.emplace_back(play);
     signal_on_queue_changed.emit(true);
@@ -282,7 +282,7 @@ void player::next_track(i32 tries) {
     auto next_track_id = playlist->get().next_track_id(playing.track_id);
     if (next_track_id.has_value()) {
       bool result = play(
-        player::playing_t{
+        db::track_info{
           .collection_id = playing.collection_id,
           .playlist_id = playing.playlist_id,
           .track_id = next_track_id.value(),
@@ -299,7 +299,7 @@ void player::next_track(i32 tries) {
         if (!next_playlist.has_value()) { return; }
         if (next_playlist->get().get_tracks_count() == 0) { return; }
         bool result = play(
-          player::playing_t{
+          db::track_info{
             .collection_id = playing.collection_id,
             .playlist_id = next_playlist_id.value(),
             .track_id = next_playlist->get().get_track_ids()[0],
@@ -316,7 +316,7 @@ void player::next_track(i32 tries) {
         return;
       }
       bool result = play(
-        player::playing_t{
+        db::track_info{
           .collection_id = playing.collection_id,
           .playlist_id = playing.playlist_id,
           .track_id = playlist->get().get_track_ids()[0],
@@ -350,7 +350,7 @@ void player::next_track(i32 tries) {
       }
 
       bool result = play(
-        player::playing_t{
+        db::track_info{
           .collection_id = playing.collection_id,
           .playlist_id = rand_playlist_id,
           .track_id = rand_track_id,
@@ -372,7 +372,7 @@ void player::next_track(i32 tries) {
         }
       }
       bool result = play(
-        player::playing_t{
+        db::track_info{
           .collection_id = playing.collection_id,
           .playlist_id = playing.playlist_id,
           .track_id = rand_track_id,
@@ -400,7 +400,7 @@ void player::next_track(i32 tries) {
 void player::prev_track(i32 tries) {
   if (tries <= 0) { return; }
   if (!playing_index.has_value()) { return; }
-  std::optional<player::playing_t> play_prev;
+  std::optional<db::track_info> play_prev;
 
   if (repeat_mode == RepeatMode::TRACK) {
     seek_ms(0);
@@ -423,7 +423,7 @@ void player::prev_track(i32 tries) {
   auto prev_track_id = playlist.prev_track_id(playing_queue[playing_index.value()].track_id);
 
   if (prev_track_id.has_value()) {
-    play_prev = player::playing_t{
+    play_prev = db::track_info{
       .collection_id = playing.collection_id,
       .playlist_id = playing.playlist_id,
       .track_id = prev_track_id.value(),
@@ -439,7 +439,7 @@ void player::prev_track(i32 tries) {
         return;
       }
 
-      play_prev = player::playing_t{
+      play_prev = db::track_info{
         .collection_id = playing.collection_id,
         .playlist_id = prev_playlist_id.value(),
         .track_id = prev_playlist->get().get_track_ids()[prev_playlist->get().get_tracks_count() - 1],
@@ -454,7 +454,7 @@ void player::prev_track(i32 tries) {
       out::debug_warn("player::play: empty playlist");
       return;
     }
-    play_prev = player::playing_t{
+    play_prev = db::track_info{
       .collection_id = playing.collection_id,
       .playlist_id = playing.playlist_id,
       .track_id = playlist.get_track_ids()[playlist.get_tracks_count() - 1],
@@ -487,12 +487,12 @@ bool player::is_playing() { return ma_sound_is_playing(&sound); }
 
 bool player::is_at_end() { return ma_sound_at_end(&sound); }
 
-std::optional<player::playing_t> player::get_playing() {
+std::optional<db::track_info> player::get_playing() {
   if (!playing_index.has_value()) { return std::nullopt; }
   return playing_queue[playing_index.value()];
 }
 
-const std::vector<player::playing_t>& player::get_playing_queue() { return playing_queue; }
+const std::vector<db::track_info>& player::get_playing_queue() { return playing_queue; }
 std::optional<size_t> player::get_playing_index() { return playing_index; }
 
 void player::set_playing_index(std::optional<size_t> i) {

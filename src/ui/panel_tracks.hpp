@@ -6,11 +6,11 @@
 #include <glm/common.hpp>
 #include "common/input.hpp"
 #include "common/types.hpp"
-#include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
+#include "ui_generic/widget.hpp"
 
 class ScrollBar;
 
@@ -68,41 +68,48 @@ class PanelTracksSelection {
 };
 
 class PanelTracks final : public Sprite {
+    using Sprite::event;
+
   public:
     enum class InsertCursorPos : u8 { BELOW, ABOVE };
     PanelTracks(UI& ui_);
     ~PanelTracks();
 
-    void draw() override;
-    void recreate(std::optional<size_t> collection_id_);
-    void scroll_to_playlist(size_t playlist_id);
-    void scroll_to_track(size_t playlist_id, size_t track_id);
-    void update() override;
-    using Sprite::event;
     void event(Input::InputEventMouseScroll&) override;
     void event(Input::InputEventMouseButton&) override;
+    void update() override;
+    void draw() override;
+
+    void recreate(std::optional<size_t> collection_id_);
+    void recreate(std::span<const db::track_info> tracks);
+    void insert_track(size_t, db::track_info);
+    void insert_track(db::track_info);
+    void set_track(size_t, db::track_info);
+    
     void clear();
-    float get_scroll_px() const;
+
+    void scroll_to_playlist(size_t playlist_id);
+    void scroll_to_track(size_t playlist_id, size_t track_id);
     void set_scroll_px(float px);
+    float get_scroll_px() const;
+
     const PanelTracksSelection& selection() const { return m_selection; }
     void clear_selection() {
       m_selection.clear();
       selection_modified = true;
     }
+
     void set_insert_cursor_track_info(std::optional<db::track_info> value) { insert_cursor_track_info = value; }
     void set_insert_cursor_pos(InsertCursorPos value) { insert_cursor_pos = value; }
+    void set_track_highlight_mode(WidgetTrack::TrackHighlightMode value) { track_highlight_mode = value; }
 
   protected:
+    WidgetTrack::TrackHighlightMode track_highlight_mode = WidgetTrack::TrackHighlightMode::TRACK_INFO;
     PanelTracksSelection m_selection;
 
   public:
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index,
-                       WidgetTrack*)>
-      on_track_lmb{};
-    std::function<void(size_t collection_id, size_t playlist_id, size_t track_id, size_t playlist_track_index,
-                       WidgetTrack*)>
-      on_track_rmb{};
-
+    std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)> on_track_lmb{};
+    std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)> on_track_rmb{};
     std::function<void(WidgetTrack*)> on_selection_rmb{};
 
     std::function<void(size_t collection_id, size_t playlist_id, Widget*)> on_playlist_more_options_invoked{};
