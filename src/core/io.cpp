@@ -63,11 +63,11 @@ fs::path io::get_user_data_path() {
 
   if (!fs::exists(fs::path(path))) {
     if (!fs::create_directories(fs::path(path))) {
-      out::log_critical("failed to create user data directory");
+      out::critical("failed to create user data directory");
       exit(1);
     }
   } else if (!fs::is_directory(fs::path(path))) {
-    out::log_critical("user data directory exists but is not a directory");
+    out::critical("user data directory exists but is not a directory");
     exit(1);
   }
 
@@ -80,11 +80,11 @@ fs::path io::get_themes_path() {
 
   if (!fs::exists(fs::path(path))) {
     if (!fs::create_directories(fs::path(path))) {
-      out::log_critical("failed to create themes directory");
+      out::critical("failed to create themes directory");
       exit(1);
     }
   } else if (!fs::is_directory(fs::path(path))) {
-    out::log_critical("themes directory exists but is not a directory");
+    out::critical("themes directory exists but is not a directory");
     exit(1);
   }
 
@@ -100,11 +100,11 @@ fs::path io::get_cover_cache_path() {
 
   if (!fs::exists(fs::path(path))) {
     if (!fs::create_directories(fs::path(path))) {
-      out::log_critical("failed to create cover_cache directory");
+      out::critical("failed to create cover_cache directory");
       exit(1);
     }
   } else if (!fs::is_directory(fs::path(path))) {
-    out::log_critical("cover_cache directory exists but is not a directory");
+    out::critical("cover_cache directory exists but is not a directory");
     exit(1);
   }
 

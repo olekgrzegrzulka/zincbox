@@ -33,7 +33,7 @@ void player::init() {
 
   ma_result result = ma_device_init(NULL, &device_config, &device);
   if (result != MA_SUCCESS) {
-    out::log_critical("couldn't initialize player, error {}", (i32)result);
+    out::critical("couldn't initialize player, error {}", (i32)result);
     return;
   }
 
@@ -41,7 +41,7 @@ void player::init() {
 
   result = ma_engine_init(NULL, &engine);
   if (result != MA_SUCCESS) {
-    out::log_critical("couldn't initialize player, error {}", (i32)result);
+    out::critical("couldn't initialize player, error {}", (i32)result);
     return;
   }
 }
@@ -68,7 +68,7 @@ bool play_track() {
   result =
     ma_sound_init_from_file(&engine, utf32_to_utf8(track.path).c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
   if (result != MA_SUCCESS) {
-    out::log_warning("player::play: ma_sound_init_from_file returned {} for {}", (i32)result,
+    out::warn("player::play: ma_sound_init_from_file returned {} for {}", (i32)result,
                      utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
@@ -77,7 +77,7 @@ bool play_track() {
   float ret;
   result = ma_sound_get_length_in_seconds(&sound, &ret);
   if (result != MA_SUCCESS) {
-    out::log_warning("player::play: ma_sound_get_length_in_seconds returned {} for {}", (i32)result,
+    out::warn("player::play: ma_sound_get_length_in_seconds returned {} for {}", (i32)result,
                      utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
@@ -86,7 +86,7 @@ bool play_track() {
 
   result = ma_sound_start(&sound);
   if (result != MA_SUCCESS) {
-    out::log_warning("player::play: ma_sound_start returned {} for {}", (i32)result, utf32_to_utf8(track.path));
+    out::warn("player::play: ma_sound_start returned {} for {}", (i32)result, utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -94,7 +94,7 @@ bool play_track() {
   result = ma_engine_start(&engine);
   if (result != MA_SUCCESS) {
     ma_sound_stop(&sound);
-    out::log_warning("player::play: ma_engine_start returned {} for {}", (i32)result, utf32_to_utf8(track.path));
+    out::warn("player::play: ma_engine_start returned {} for {}", (i32)result, utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -312,7 +312,7 @@ void player::next_track(i32 tries) {
       }
     } else if (repeat_mode == RepeatMode::ALBUM) {
       if (playlist->get().get_tracks_count() == 0) {
-        out::debug_warning("player::play: empty playlist");
+        out::debug_warn("player::play: empty playlist");
         return;
       }
       bool result = play(
@@ -327,7 +327,7 @@ void player::next_track(i32 tries) {
         return;
       }
     } else {
-      out::debug_warning("player::play: unknown RepeatMode enum value");
+      out::debug_warn("player::play: unknown RepeatMode enum value");
       return;
     }
   } else if (shuffle_mode == ShuffleMode::ON) {
@@ -383,11 +383,11 @@ void player::next_track(i32 tries) {
         return;
       }
     } else {
-      out::debug_warning("player::play: unknown RepeatMode enum value");
+      out::debug_warn("player::play: unknown RepeatMode enum value");
     }
 
   } else {
-    out::debug_warning("player::play: unknown ShuffleMode/RepeatMode enum value");
+    out::debug_warn("player::play: unknown ShuffleMode/RepeatMode enum value");
     return;
   }
 
@@ -435,7 +435,7 @@ void player::prev_track(i32 tries) {
       if (!prev_playlist.has_value()) { return; }
 
       if (prev_playlist->get().get_tracks_count() == 0) {
-        out::debug_warning("player::play: empty playlist");
+        out::debug_warn("player::play: empty playlist");
         return;
       }
 
@@ -451,7 +451,7 @@ void player::prev_track(i32 tries) {
     }
   } else if (repeat_mode == RepeatMode::ALBUM) {
     if (playlist.get_tracks_count() == 0) {
-      out::debug_warning("player::play: empty playlist");
+      out::debug_warn("player::play: empty playlist");
       return;
     }
     play_prev = player::playing_t{
@@ -460,7 +460,7 @@ void player::prev_track(i32 tries) {
       .track_id = playlist.get_track_ids()[playlist.get_tracks_count() - 1],
     };
   } else {
-    out::debug_warning("player::play: unknown RepeatMode enum value");
+    out::debug_warn("player::play: unknown RepeatMode enum value");
     return;
   }
 

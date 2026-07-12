@@ -178,7 +178,7 @@ class ComboBox : public Sprite {
       i32 label_i = (i32)scroll_progress + i;
       selected_index = i;
       label_item.set_text(item_labels[label_i]);
-      out::debug_warning("should call button.press()");
+      out::debug_warn("should call button.press()");
       button.set_is_switched(true);
 
       if (lambda_select) { lambda_select(label_i); }

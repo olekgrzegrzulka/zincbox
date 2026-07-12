@@ -1,4 +1,5 @@
 #include "common/logger.hpp"
+#include <cstdio>
 #include <stacktrace>
 #include <unordered_set>
 #include <fmt/color.h>
@@ -16,49 +17,57 @@ void out::remove_file_from_blacklist(const std::string& filename) { filtered_fil
 
 void out::detail::print_log(LogLevel level, std::string_view tag, std::string_view message) {
   auto tag_color = fmt::terminal_color::white;
+  FILE* stream = stdout;
   switch (level) {
   case INFO: tag_color = fmt::terminal_color::green; break;
   case WARNING: tag_color = fmt::terminal_color::yellow; break;
-  case ERROR:
-  case CRITICAL: tag_color = fmt::terminal_color::red; break;
+  case ERROR: [[fallthrough]];
+  case CRITICAL:
+    stream = stderr;
+    tag_color = fmt::terminal_color::red;
+    break;
   }
 
-  fmt::print(fmt::emphasis::bold | fg(tag_color), "[{}] ", tag);
+  fmt::print(stream, fmt::emphasis::bold | fg(tag_color), "[{}] ", tag);
   if (level == CRITICAL) {
-    fmt::print(fg(fmt::terminal_color::bright_red), "{}\n", message);
+    fmt::print(stream, fg(fmt::terminal_color::bright_red), "{}\n", message);
   } else {
-    fmt::print("{}\n", message);
+    fmt::print(stream, "{}\n", message);
   }
 }
 
-void out::detail::debug_log(LogLevel level, std::string_view message, size_t skip) {
+void out::detail::debug_log(LogLevel level, std::string_view message, size_t /* skip */) {
   auto stack_current = std::stacktrace::current();
   std::string filename = "?";
   u32 line_number = 0;
 
-  skip += 1;
-
-  if (skip < stack_current.size()) {
-    auto source_file = stack_current[skip].source_file();
-    auto last_slash = source_file.find_last_of('/');
+  for (const auto& frame : stack_current) {
+    auto source_file = frame.source_file();
+    if (source_file.empty() || source_file.ends_with("logger.cpp") || source_file.ends_with("logger.hpp")) { continue; }
+    auto last_slash = source_file.find_last_of("/\\");
     filename = source_file.substr(last_slash == std::string::npos ? 0 : last_slash + 1);
-    line_number = stack_current[skip].source_line();
+    line_number = frame.source_line();
+    break;
   }
 
   if (filtered_files.contains(filename)) { return; }
 
   auto tag_color = fmt::terminal_color::white;
+  FILE* stream = stdout;
   switch (level) {
   case INFO: tag_color = fmt::terminal_color::green; break;
   case WARNING: tag_color = fmt::terminal_color::yellow; break;
   case ERROR:
-  case CRITICAL: tag_color = fmt::terminal_color::red; break;
+  case CRITICAL:
+    stream = stderr;
+    tag_color = fmt::terminal_color::red;
+    break;
   }
 
-  fmt::print(fmt::emphasis::bold | fg(tag_color), "[{}:{}] ", filename, line_number);
+  fmt::print(stream, fmt::emphasis::bold | fg(tag_color), "[{}:{}] ", filename, line_number);
   if (level == CRITICAL) {
-    fmt::print(fg(fmt::terminal_color::bright_red), "{}\n", message);
+    fmt::print(stream, fg(fmt::terminal_color::bright_red), "{}\n", message);
   } else {
-    fmt::print("{}\n", message);
+    fmt::print(stream, "{}\n", message);
   }
 }

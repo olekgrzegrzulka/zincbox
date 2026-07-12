@@ -19,7 +19,7 @@ void Button::update() {
 void Button::set_texture_idle(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
   if (!val.has_value()) {
-    out::debug_warning("atlas texture not found: {}", id);
+    out::debug_warn("atlas texture not found: {}", id);
     return;
   }
   uv_start_idle = val->get().start;
@@ -34,7 +34,7 @@ void Button::set_texture_idle(std::string id) {
 void Button::set_texture_hovered(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
   if (!val.has_value()) {
-    out::debug_warning("atlas texture not found: {}", id);
+    out::debug_warn("atlas texture not found: {}", id);
     return;
   }
   uv_start_hovered = val->get().start;
@@ -49,7 +49,7 @@ void Button::set_texture_hovered(std::string id) {
 void Button::set_texture_pressed(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
   if (!val.has_value()) {
-    out::debug_warning("atlas texture not found: {}", id);
+    out::debug_warn("atlas texture not found: {}", id);
     return;
   }
   uv_start_pressed = val->get().start;
@@ -64,7 +64,7 @@ void Button::set_texture_pressed(std::string id) {
 void Button::set_texture_disabled(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
   if (!val.has_value()) {
-    out::debug_warning("atlas texture not found: {}", id);
+    out::debug_warn("atlas texture not found: {}", id);
     return;
   }
   uv_start_disabled = val->get().start;

@@ -41,7 +41,7 @@ theme::theme_prop theme::get_prop(std::string_view prop) {
   if (!props_not_found.contains(prop)) {
     std::string prop_str(prop);
     props_not_found.emplace(prop_str);
-    out::debug_warning("theme has no property {}", prop_str);
+    out::debug_warn("theme has no property {}", prop_str);
   }
   return theme_prop{std::monostate()};
 }
@@ -59,7 +59,7 @@ void load_resources() {
   resources_ttf_path.clear();
 
   if (!mz_zip_reader_init_mem(&zip_archive, resources_zip, sizeof(resources_zip), 0)) {
-    out::log_critical("failed to load resources from memory");
+    out::critical("failed to load resources from memory");
     exit(1);
   }
 
@@ -125,7 +125,7 @@ static void load_translations(std::string_view theme_name, std::string_view lang
   if (!loaded) { loaded = load_language_from_resource(language); }
   if (!loaded && language != "en-US") { loaded = load_language_from_resource("en-US"); }
   if (!loaded) {
-    out::log_critical("failed to load translations for language {}", std::string(language));
+    out::critical("failed to load translations for language {}", std::string(language));
     exit(1);
   }
 }
@@ -142,7 +142,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   if (!load_theme_from_resources) {
     // Check if the theme exists in the themes directory
     if (!fs::is_directory(theme_path)) {
-      out::log_warning("no theme found at {}", std::string{theme_path});
+      out::warn("no theme found at {}", std::string{theme_path});
       load_theme("", ui);
       return;
     }
@@ -151,7 +151,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
     bool invalid_theme = !success || !ini.contains("theme");
     if (invalid_theme) {
-      out::log_warning("failed to load theme {} invalid or missing theme.cfg", theme_name);
+      out::warn("failed to load theme {} invalid or missing theme.cfg", theme_name);
       load_theme("", ui);
       return;
     }
@@ -167,26 +167,26 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     if (font_path != "") {
       ui.set_font_face(font_path, 14);
     } else {
-      out::log_warning("no ttf file found in {}", std::string{theme_name});
+      out::warn("no ttf file found in {}", std::string{theme_name});
       load_theme("", ui);
       return;
     }
   } else {
     load_resources();
     if (!resources.contains("theme.cfg")) {
-      out::log_critical("theme.cfg not found");
+      out::critical("theme.cfg not found");
       exit(1);
     }
     std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()),
                               resources["theme.cfg"].size());
     ini.from_string(str_theme_cfg);
     if (!ini.contains("theme")) {
-      out::log_critical("failed to parse theme.cfg");
+      out::critical("failed to parse theme.cfg");
       exit(1);
     }
 
     if (resources_ttf_path.empty()) {
-      out::log_critical("no ttf file found in default theme");
+      out::critical("no ttf file found in default theme");
       exit(1);
     }
     ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
@@ -241,7 +241,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       }
     }
 
-    out::debug_warning("theme has no {}.png, loading from default theme", filenames[0]);
+    out::debug_warn("theme has no {}.png, loading from default theme", filenames[0]);
     load_resources();
     for (const std::string& filename : filenames) {
       auto it = resources.find(filename + ".png");
@@ -277,7 +277,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       }
     }
 
-    out::debug_warning("theme has no {}.png, loading from default theme", filenames[0]);
+    out::debug_warn("theme has no {}.png, loading from default theme", filenames[0]);
     load_resources();
     for (const std::string& filename : filenames) {
       auto it = resources.find(filename + ".png");
@@ -325,13 +325,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("combo_box");
   atlas_add_texture("dim");
   atlas_add_texture("red");
-  atlas_add_texture("selectbar_bg");
-  atlas_add_texture("selectbar_selected");
-  atlas_add_texture("slider_thumb_hovered");
-  atlas_add_texture("slider_thumb_idle");
-  atlas_add_texture("slider_thumb_pressed");
-  atlas_add_texture("slider_track_inactive");
-  atlas_add_texture("slider_track_active");
+  add_custom_slider("slider");
   add_custom_slider("scrollbar");
   add_custom_slider("volume_bar");
   atlas_add_texture("spinner_buttons");

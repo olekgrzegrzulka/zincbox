@@ -13,7 +13,6 @@
 #include "ui_generic/tooltip.hpp"
 
 class ScrollBar;
-class WidgetPlaylistHeader;
 
 class PanelTracksSelection {
   public:
