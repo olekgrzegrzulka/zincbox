@@ -70,6 +70,7 @@ class PanelTracksSelection {
 
 class PanelTracks final : public Sprite {
   public:
+    enum class InsertCursorPos : u8 { BELOW, ABOVE };
     PanelTracks(UI& ui_);
     ~PanelTracks();
 
@@ -89,6 +90,8 @@ class PanelTracks final : public Sprite {
       m_selection.clear();
       selection_modified = true;
     }
+    void set_insert_cursor_track_info(std::optional<db::track_info> value) { insert_cursor_track_info = value; }
+    void set_insert_cursor_pos(InsertCursorPos value) { insert_cursor_pos = value; }
 
   protected:
     PanelTracksSelection m_selection;
@@ -116,6 +119,9 @@ class PanelTracks final : public Sprite {
     bool just_recreated = false;
     bool selection_modified = false;
     ScrollBar* scrollbar{};
+    Sprite* insert_cursor{};
+    InsertCursorPos insert_cursor_pos = InsertCursorPos::BELOW;
+    std::optional<db::track_info> insert_cursor_track_info{};
     ToolTip* button_play_tooltip{};
     ToolTip* button_play_next_tooltip{};
     ToolTip* button_sort_tooltip{};

@@ -11,6 +11,7 @@
 #include "tr.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/scrollbar.hpp"
+#include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 #include "widget_playlist_header.hpp"
@@ -45,6 +46,10 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   button_more_tooltip->set_anchor(Anchor::TOP_LEFT);
 
   elements_container = &add_child<Widget>();
+
+  insert_cursor = &add_child<Sprite>("insert_cursor");
+  insert_cursor->set_height(2);
+  insert_cursor->set_is_drawn(false);
 }
 
 PanelTracks::~PanelTracks() {}
@@ -185,8 +190,21 @@ void PanelTracks::update() {
 
   std::optional<size_t> tooltip_visible_index;
 
+  bool draw_insert_cursor = false;
+
   for (auto&& widget : elements_container->get_children()) {
     WidgetPlaylistHeader* widget_header = dynamic_cast<WidgetPlaylistHeader*>(widget.get());
+    WidgetTrack* widget_track = dynamic_cast<WidgetTrack*>(widget.get());
+
+    if (!draw_insert_cursor && widget_track && widget_track->track_info() == insert_cursor_track_info) {
+      draw_insert_cursor = true;
+      if (insert_cursor_pos == InsertCursorPos::ABOVE) {
+        insert_cursor->set_y(widget_track->get_y());
+      } else if (insert_cursor_pos == InsertCursorPos::BELOW) {
+        insert_cursor->set_y(widget_track->get_y() + widget_track->get_height());
+      }
+    }
+
     if (!widget_header) { continue; }
 
     if (widget_header->button_play->is_mouse_hovering()) {
@@ -219,6 +237,8 @@ void PanelTracks::update() {
     }
   }
 
+  insert_cursor->set_is_drawn(draw_insert_cursor);
+
   button_play_tooltip->set_is_drawn(tooltip_visible_index == 0);
   button_play_next_tooltip->set_is_drawn(tooltip_visible_index == 1);
   button_sort_tooltip->set_is_drawn(tooltip_visible_index == 2);
@@ -231,6 +251,10 @@ void PanelTracks::update() {
   scrollbar->set_height(height);
   if ((i32)scroll_px != (i32)old_scroll_px || vec2i{width, height} != old_size || just_recreated ||
       selection_modified) {
+
+    insert_cursor->set_x(elements_container->get_x());
+    insert_cursor->set_width(elements_container->get_width());
+
     static constexpr i32 MARGIN = 100;
     i32 current_element_top_y = 0;
     i32 track_number = 0;

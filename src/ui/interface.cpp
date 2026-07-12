@@ -9,6 +9,7 @@
 #include <string_view>
 #include "common/config.hpp"
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
@@ -565,27 +566,32 @@ static void handle_dropped_files() {
 }
 
 static void handle_drag_and_drop() {
+  bool lmb_just_pressed = Input::mouse_just_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
+  bool lmb_pressed = Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
+  bool lmb_just_released = Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT);
+  bool lmb = lmb_just_pressed || lmb_pressed || lmb_just_released;
+
   WidgetAlbumCover* hovered_playlist_cover = nullptr;
   WidgetTrack* hovered_track = nullptr;
   WidgetPlaylistHeader* hovered_playlist_header = nullptr;
   Tab* hovered_tab = nullptr;
-  for (Widget* hovered_widget : ui->get_hovered_widgets()) {
-    if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
-    if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
-    if (hovered_playlist_header = dynamic_cast<WidgetPlaylistHeader*>(hovered_widget); hovered_playlist_header) {
-      break;
-    }
-    if (hovered_tab = dynamic_cast<Tab*>(hovered_widget); hovered_tab) {
-      if (selection_drag_tab_id != hovered_tab->id) {
-        selection_drag_tab_id = hovered_tab->id;
-        selection_drag_tab_timer = 0;
+  if (lmb) {
+    for (Widget* hovered_widget : ui->get_hovered_widgets()) {
+      if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
+      if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
+      if (hovered_playlist_header = dynamic_cast<WidgetPlaylistHeader*>(hovered_widget); hovered_playlist_header) {
+        break;
       }
-      break;
+      if (hovered_tab = dynamic_cast<Tab*>(hovered_widget); hovered_tab) {
+        if (selection_drag_tab_id != hovered_tab->id) {
+          selection_drag_tab_id = hovered_tab->id;
+          selection_drag_tab_timer = 0;
+        }
+        break;
+      }
     }
   }
 
-  bool lmb_just_pressed = Input::mouse_just_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
-  bool lmb_just_released = Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT);
   if (!popup_controller->is_popup_open() && lmb_just_pressed) {
     if (!panel_tracks->selection().empty()) {
       selection_drag_start = Input::get_mouse_pos();
@@ -615,7 +621,7 @@ static void handle_drag_and_drop() {
     } else {
       if (playlist->get().type != db::PlaylistType::User) {
         tooltip_drag->set_text(tr::get("tooltip.drag.not_allowed"));
-        return false;
+        return true;
       }
       if (selection_drag->size() > 1) {
         tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist_plural", selection_drag->size(),
@@ -664,6 +670,9 @@ static void handle_drag_and_drop() {
     return handle_drag_playlist(hovered_playlist_header->playlist_id, drag_ended);
   };
 
+  panel_tracks->set_insert_cursor_track_info(std::nullopt);
+  // panel_queue->set_insert_cursor_track_info(std::nullopt);
+
   auto handle_drag_tab = [&](Tab* hovered_tab, bool /* drag_ended */) -> bool {
     if (!hovered_tab) { return false; }
     if (selection_drag_tab_timer < SELECTION_DRAG_TAB_TIMER) {
@@ -671,10 +680,28 @@ static void handle_drag_and_drop() {
     } else {
       panel_top->select(hovered_tab->id);
     }
-    return true;
+    return false;
   };
 
-
+  auto handle_drag_track = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+    if (!hovered_track) { return false; }
+    if (!drag_ended) {
+      out::debug_warning("DRAG c_id: {}, p_id: {}, t_id: {}, no: {}", hovered_track->collection_id(),
+                         hovered_track->playlist_id(), hovered_track->track_id(), hovered_track->track_number());
+      if (panel_queue->get_is_drawn()) {
+        // panel_queue->set_insert_cursor(hovered_track->track_number());
+      } else if (active_collection_id.has_value()) {
+        panel_tracks->set_insert_cursor_track_info(hovered_track->track_info());
+        bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+        panel_tracks->set_insert_cursor_pos(above ? PanelTracks::InsertCursorPos::ABOVE
+                                                  : PanelTracks::InsertCursorPos::BELOW);
+      }
+      tooltip_drag->set_text(U"...");
+      return true;
+    } else {
+      return true;
+    }
+  };
 
   if (vec2i diff = selection_drag_start - Input::get_mouse_pos();
       selection_drag.has_value() && (std::abs(diff.x) > 4 || std::abs(diff.y) > 4)) {
@@ -689,6 +716,7 @@ static void handle_drag_and_drop() {
 
     if ((hovered_playlist_cover && handle_drag_playlist_cover(hovered_playlist_cover, false)) ||
         (hovered_playlist_header && handle_drag_playlist_header(hovered_playlist_header, false)) ||
+        (hovered_track && handle_drag_track(hovered_track, false)) ||
         (hovered_tab && handle_drag_tab(hovered_tab, false))) {
     } else {
       if (selection_drag->size() > 1) {
@@ -700,10 +728,10 @@ static void handle_drag_and_drop() {
   } else {
     tooltip_drag->set_is_drawn(false);
   }
-
   if (lmb_just_released && valid_selection) {
     if (handle_drag_playlist_cover(hovered_playlist_cover, true) ||
-        handle_drag_playlist_header(hovered_playlist_header, true) || handle_drag_tab(hovered_tab, true)) {
+        handle_drag_playlist_header(hovered_playlist_header, true) || handle_drag_track(hovered_track, true) ||
+        handle_drag_tab(hovered_tab, true)) {
       panel_tracks->clear_selection();
     }
   }
