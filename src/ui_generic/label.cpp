@@ -62,18 +62,18 @@ void Label::update_mesh() {
   vertices.clear();
   text_extents = {};
 
-  float line_height = 0.0f;
+  float font_line_height = ui.get_font_face().get_line_height();
+  float font_ascender = ui.get_font_face().get_ascender();
+
   float current_line_width = 0.0f;
   const float line_spacing = 4.0f;
-
-  // static std::u32string<std::codecvt_utf8<char32_t>, char32_t> converter;
-  // auto text_utf32 = converter.from_bytes(text);
+  i32 lines_count = 1;
 
   for (auto c : text) {
     if (c == '\n') {
       text_extents.x = std::max(text_extents.x, current_line_width);
-      text_extents.y += line_height + line_spacing;
       current_line_width = 0.0f;
+      lines_count += 1;
       continue;
     }
 
@@ -81,22 +81,21 @@ void Label::update_mesh() {
     if (!glyph) { continue; }
 
     current_line_width += glyph->advance.x / 64.0f;
-    line_height = std::max(line_height, (float)glyph->size.y);
   }
 
   text_extents.x = std::max(text_extents.x, current_line_width);
-  text_extents.y += line_height;
+  text_extents.y = (font_line_height * lines_count) + (line_spacing * (lines_count - 1));
 
   vec2f start_pos = get_position();
   start_pos += vec2i((anchor_to_uv(label_anchor)) * (vec2f(width, height) - text_extents));
 
   vec2f pen = start_pos;
-  pen.y += line_height;
+  pen.y += font_ascender;
 
   for (auto c : text) {
     if (c == '\n') {
       pen.x = start_pos.x;
-      pen.y += line_height + line_spacing;
+      pen.y += font_line_height + line_spacing;
       continue;
     }
 

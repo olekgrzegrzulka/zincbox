@@ -150,7 +150,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
     }
     label_track->update();
     label_track_underline->set_width(label_track->get_text_extents().x);
-    label_track_underline->set_y(label_track->get_text_extents().y + 2);
+    label_track_underline->set_y(label_track->get_text_extents().y);
   };
 
   slot_on_track_changed = player::signal_on_track_changed.connect(on_track_changed);
