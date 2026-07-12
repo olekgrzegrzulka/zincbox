@@ -17,7 +17,7 @@
 
 FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_height) {
   if (FT_New_Face(freetype_lib, path.c_str(), 0, &freetype_face)) {
-    out::log_critical("failed to load font at {}", path);
+    out::critical("failed to load font at {}", path);
     exit(1);
   }
 
@@ -25,7 +25,7 @@ FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_
                   try_creating_glyph_data(1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
-    out::log_critical("failed to create font texture atlas of font at {}", path);
+    out::critical("failed to create font texture atlas of font at {}", path);
     exit(1);
   }
   glCreateSamplers(1, &sampler);
@@ -39,7 +39,7 @@ FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_
 
 FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height) {
   if (FT_New_Memory_Face(freetype_lib, static_cast<const FT_Byte*>(data), data_size, 0, &freetype_face)) {
-    out::log_critical("failed to load font");
+    out::critical("failed to load font");
     exit(1);
   }
 
@@ -47,7 +47,7 @@ FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 p
                   try_creating_glyph_data(1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
-    out::log_critical("failed to create font texture atlas of font");
+    out::critical("failed to create font texture atlas of font");
     exit(1);
   }
   glCreateSamplers(1, &sampler);

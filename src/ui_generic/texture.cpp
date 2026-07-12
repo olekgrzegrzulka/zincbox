@@ -22,7 +22,7 @@ u32 Texture::load_texture(const std::string& file_path) {
   stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
   if (!data) {
-    out::log_critical("load_texture({}): {}", file_path, stbi_failure_reason());
+    out::critical("load_texture({}): {}", file_path, stbi_failure_reason());
     exit(1);
   }
 

@@ -115,7 +115,7 @@ void mpris::init() {
 
       connection->enterEventLoop();
 
-    } catch (const sdbus::Error& e) { out::log_error("d-bus error: {} - {} ", e.getName(), e.getMessage()); }
+    } catch (const sdbus::Error& e) { out::error("d-bus error: {} - {} ", e.getName(), e.getMessage()); }
   });
   thread.detach();
 }

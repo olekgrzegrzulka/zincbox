@@ -545,7 +545,7 @@ class PopupSettings : public Popup {
       volume_bar_scroll_step_slider->set_min_value(1);
       volume_bar_scroll_step_slider->set_max_value(10);
       volume_bar_scroll_step_slider->set_value(5);
-      volume_bar_scroll_step_slider->on_value_changed([](float, float value) { out::log_info("{}", value); });
+      volume_bar_scroll_step_slider->on_value_changed([](float, float value) { out::info("{}", value); });
 
       // -----------------------------------------------
       //                    INTERFACE
@@ -561,7 +561,7 @@ class PopupSettings : public Popup {
       }
 
       theme_combo->on_item_selected(
-        [this](i32) { out::log_info("theme_combo: {}", utf32_to_utf8(theme_combo->get_selected_item())); });
+        [this](i32) { out::info("theme_combo: {}", utf32_to_utf8(theme_combo->get_selected_item())); });
 
       auto& language_label = page_interface.add_child<Label>(tr::get("settings.interface.language_label"));
       language_label.set_resize_to_text_extents(false);
@@ -574,7 +574,7 @@ class PopupSettings : public Popup {
       }
 
       language_combo->on_item_selected(
-        [this](i32) { out::log_info("language_combo: {}", utf32_to_utf8(language_combo->get_selected_item())); });
+        [this](i32) { out::info("language_combo: {}", utf32_to_utf8(language_combo->get_selected_item())); });
 
       auto& interface_scale_label = page_interface.add_child<Label>(tr::get("settings.interface.interface_scale"));
       interface_scale_label.set_resize_to_text_extents(false);

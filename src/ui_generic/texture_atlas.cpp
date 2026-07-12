@@ -28,7 +28,7 @@ bool TextureAtlas::add_texture(std::string_view id, std::string path) {
   stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
   if (!data) {
-    out::log_critical("failed to load texture {}", path);
+    out::critical("failed to load texture {}", path);
     exit(1);
   }
 
@@ -51,7 +51,7 @@ bool TextureAtlas::add_texture(std::string_view id, const std::vector<u8>& data_
   if (textures.contains(id)) { return false; }
   stbi_uc* data = (stbi_uc*)data_.data();
   if (!data) {
-    out::debug_warning("failed to load texture from data");
+    out::debug_warn("failed to load texture from data");
     return false;
   }
 
@@ -74,7 +74,7 @@ bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, 
   if (textures.contains(id)) { return false; }
   stbi_uc* data = (stbi_uc*)data_;
   if (!data) {
-    out::debug_warning("failed to load texture from data");
+    out::debug_warn("failed to load texture from data");
     return false;
   }
 
@@ -100,7 +100,7 @@ bool TextureAtlas::add_texture_row(std::span<const std::string> ids, std::string
   stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
   if (!data) {
-    out::log_critical("failed to load texture {}", path);
+    out::critical("failed to load texture {}", path);
     exit(1);
   }
 
@@ -115,7 +115,7 @@ bool TextureAtlas::add_texture_row(std::span<const std::string> ids, const u8* d
   }
 
   if (!data) {
-    out::debug_warning("failed to load texture row from data");
+    out::debug_warn("failed to load texture row from data");
     return false;
   }
 
@@ -182,7 +182,7 @@ void TextureAtlas::save_to_file(std::string filename) {
     if (status == 1) {
       out::debug_info("Saved texture atlas to {}", filename);
     } else {
-      out::debug_warning("Couldn't save texture atlas to {}", filename);
+      out::debug_warn("Couldn't save texture atlas to {}", filename);
     }
   });
   th.detach();
@@ -265,7 +265,7 @@ std::optional<std::pair<i32, i32>> TextureAtlas::find_space_for_texture(i32 widt
       if (!fail) { return std::make_pair(square_x * grid_size_px, square_y * grid_size_px); }
     }
   }
-  out::debug_warning("find_space_for_texture, no space found for texture of size {}px by {}px", width, height);
+  out::debug_warn("find_space_for_texture, no space found for texture of size {}px by {}px", width, height);
   return std::nullopt;
 }
 

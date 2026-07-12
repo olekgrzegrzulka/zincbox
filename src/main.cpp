@@ -80,8 +80,8 @@ extern "C" void handle_sigint(int signal) {
 }
 
 extern "C" void handle_segfault(int) {
-  out::log_critical("=== SEGMENTATION FAULT START ===");
-  out::log_critical("stack trace (most recent call first):");
+  out::critical("=== SEGMENTATION FAULT START ===");
+  out::critical("stack trace (most recent call first):");
 
   std::string formatted_trace;
   int frame_num = 0;
@@ -96,19 +96,19 @@ extern "C" void handle_segfault(int) {
     formatted_trace += std::format("  #{:<2} {} \n      at {}:{}\n", frame_num++, desc, file, entry.source_line());
   }
 
-  out::log_critical("\n{}", formatted_trace);
-  out::log_critical("===  SEGMENTATION FAULT END  ===");
+  out::critical("\n{}", formatted_trace);
+  out::critical("===  SEGMENTATION FAULT END  ===");
   std::exit(1);
 }
 
 int main() {
   if (std::signal(SIGINT, handle_sigint) == SIG_ERR) {
-    out::log_critical("failed to set up signal handler for SIGINT");
+    out::critical("failed to set up signal handler for SIGINT");
     std::exit(1);
   }
 
   if (std::signal(SIGSEGV, handle_segfault) == SIG_ERR) {
-    out::log_critical("failed to set up signal handler for SIGSEGV");
+    out::critical("failed to set up signal handler for SIGSEGV");
     std::exit(1);
   }
 
@@ -116,6 +116,9 @@ int main() {
   if (config::json().contains("settings") && config::json()["settings"].isObject()) {
     settings::get().from_json(config::json()["settings"]);
   }
+
+  auto lambda = []() { out::debug_critical(2137); };
+  lambda();
 
   NFD::Init();
   mpris::init();
@@ -135,21 +138,26 @@ int main() {
   // libdecor causes lag when resizing the window on Wayland
   // but it's needed for GNOME - so disable only if not needed
   const char* xdg_current_desktop = std::getenv("XDG_CURRENT_DESKTOP");
-  if (std::strstr(xdg_current_desktop, "KDE") != nullptr || std::strstr(xdg_current_desktop, "GNOME") == nullptr) {
-    glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR);
-  }
+  bool is_kde = std::strstr(xdg_current_desktop, "KDE") != nullptr;
+  if (is_kde) { glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); }
   if (!glfwInit()) {
-    out::log_critical("failed to initialize GLFW");
+    out::critical("failed to initialize GLFW");
     exit(1);
   }
+  i32 w = (config::json().contains("window_width") && config::json()["window_width"].isNumber())
+            ? config::json()["window_width"].getNumber()
+            : 800;
+  i32 h = (config::json().contains("window_height") && config::json()["window_height"].isNumber())
+            ? config::json()["window_height"].getNumber()
+            : 600;
   vec2i window_size = {
-    std::clamp(config::get_i32("window_width").value_or(800), 480, 1920 * 4),
-    std::clamp(config::get_i32("window_height").value_or(600), 320, 1080 * 4),
+    std::clamp(w, 480, 1920 * 4),
+    std::clamp(h, 320, 1080 * 4),
   };
   glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
   GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "zincbox", NULL, NULL);
   if (!window) {
-    out::log_critical("failed to create window");
+    out::critical("failed to create window");
     exit(1);
   }
   glfwMakeContextCurrent(window);
@@ -164,7 +172,7 @@ int main() {
   glfwGetWindowSize(window, &window_size.x, &window_size.y);
   int o = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
   if (o == 0) {
-    out::log_critical("failed to load glad");
+    out::critical("failed to load glad");
     exit(1);
   }
   // FIXME: glfwSwapBuffers hangs with  glfwSwapInterval(1), resulting in app not working
@@ -201,10 +209,10 @@ int main() {
   }
 
   i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
-  config::set_i32("window_maximized", maximized);
+  config::json()["window_maximized"] = maximized;
   if (!maximized) {
-    config::set_i32("window_width", window_size.x);
-    config::set_i32("window_height", window_size.y);
+    config::json()["window_width"] = window_size.x;
+    config::json()["window_height"] = window_size.y;
   }
 
   {

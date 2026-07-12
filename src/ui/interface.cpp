@@ -427,8 +427,6 @@ void interface::draw() { ui->draw(); }
 
 void interface::deinit() { ui = nullptr; }
 
-PopupController* interface::get_popup_controller() { return popup_controller; }
-
 jt::Json interface::to_json() {
   tabs_order.clear();
   for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
@@ -686,8 +684,6 @@ static void handle_drag_and_drop() {
   auto handle_drag_track = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
     if (!hovered_track) { return false; }
     if (!drag_ended) {
-      out::debug_warning("DRAG c_id: {}, p_id: {}, t_id: {}, no: {}", hovered_track->collection_id(),
-                         hovered_track->playlist_id(), hovered_track->track_id(), hovered_track->track_number());
       if (panel_queue->get_is_drawn()) {
         // panel_queue->set_insert_cursor(hovered_track->track_number());
       } else if (active_collection_id.has_value()) {

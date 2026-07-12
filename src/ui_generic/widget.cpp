@@ -219,7 +219,7 @@ void Widget::set_layout(std::string_view def) {
       l.fill = true;
     } else if (token.rfind("m:", 0) == 0 || token.rfind("s:", 0) == 0) {
       if (token.length() <= 2) {
-        out::debug_warning("invalid layout string, missing value for field: {}", token);
+        out::debug_warn("invalid layout string, missing value for field: {}", token);
         return;
       }
 
@@ -228,7 +228,7 @@ void Widget::set_layout(std::string_view def) {
       long val = std::strtol(num_start, &end_ptr, 10);
 
       if (num_start == end_ptr || *end_ptr != '\0') {
-        out::debug_warning("invalid layout string, bad integer value: {}", token);
+        out::debug_warn("invalid layout string, bad integer value: {}", token);
         return;
       }
 
@@ -246,7 +246,7 @@ void Widget::set_layout(std::string_view def) {
     } else if (token == "btt" || token == "bottom_to_top") {
       l.direction = LayoutDirection::BOTTOM_TO_TOP;
     } else {
-      out::debug_warning("invalid layout string, bad layout keyword: {}", token);
+      out::debug_warn("invalid layout string, bad layout keyword: {}", token);
       return;
     }
   }

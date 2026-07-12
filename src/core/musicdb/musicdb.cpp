@@ -124,13 +124,13 @@ void db::deserialize(std::ifstream& is) {
   size_t db_magic{};
   read_bin(is, db_magic);
   if (db_magic != DB_MAGIC) {
-    out::log_critical("Database corrupted");
+    out::critical("Database corrupted");
     exit(1);
   }
   size_t db_version{};
   read_bin(is, db_version);
   if (db_version != DB_VERSION) {
-    out::log_critical("Database version number mismatch! Migration currently not supported");
+    out::critical("Database version number mismatch! Migration currently not supported");
     exit(1);
   }
 
@@ -226,7 +226,7 @@ std::optional<db::track_info> db::find_track_from_json(const jt::Json& json) {
   if (matches.size() == 0) { return std::nullopt; }
 
   if (matches.size() > 1) {
-    out::debug_warning("db::find_track_from_json(): matched multiple tracks for '{} - {}'", json["artist"].getString(),
+    out::debug_warn("db::find_track_from_json(): matched multiple tracks for '{} - {}'", json["artist"].getString(),
                        json["title"].getString());
   }
 
