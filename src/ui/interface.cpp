@@ -565,11 +565,36 @@ static void handle_dropped_files() {
 }
 
 static void handle_drag_and_drop() {
+  WidgetAlbumCover* hovered_playlist_cover = nullptr;
+  WidgetTrack* hovered_track = nullptr;
+  WidgetPlaylistHeader* hovered_playlist_header = nullptr;
+  Tab* hovered_tab = nullptr;
+  for (Widget* hovered_widget : ui->get_hovered_widgets()) {
+    if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
+    if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
+    if (hovered_playlist_header = dynamic_cast<WidgetPlaylistHeader*>(hovered_widget); hovered_playlist_header) {
+      break;
+    }
+    if (hovered_tab = dynamic_cast<Tab*>(hovered_widget); hovered_tab) {
+      if (selection_drag_tab_id != hovered_tab->id) {
+        selection_drag_tab_id = hovered_tab->id;
+        selection_drag_tab_timer = 0;
+      }
+      break;
+    }
+  }
+
   bool lmb_just_pressed = Input::mouse_just_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
   bool lmb_just_released = Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT);
-  if (!popup_controller->is_popup_open() && lmb_just_pressed && !panel_tracks->selection().empty()) {
-    selection_drag_start = Input::get_mouse_pos();
-    selection_drag = panel_tracks->selection();
+  if (!popup_controller->is_popup_open() && lmb_just_pressed) {
+    if (!panel_tracks->selection().empty()) {
+      selection_drag_start = Input::get_mouse_pos();
+      selection_drag = panel_tracks->selection();
+    } else if (hovered_track) {
+      selection_drag_start = Input::get_mouse_pos();
+      selection_drag = PanelTracksSelection{};
+      selection_drag->insert(hovered_track->track_info());
+    }
   }
 
   auto handle_drag_playlist = [&](db::playlist_id_t playlist_id, bool drag_ended) -> bool {
@@ -649,24 +674,7 @@ static void handle_drag_and_drop() {
     return true;
   };
 
-  WidgetAlbumCover* hovered_playlist_cover = nullptr;
-  WidgetTrack* hovered_track = nullptr;
-  WidgetPlaylistHeader* hovered_playlist_header = nullptr;
-  Tab* hovered_tab = nullptr;
-  for (Widget* hovered_widget : ui->get_hovered_widgets()) {
-    if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
-    if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
-    if (hovered_playlist_header = dynamic_cast<WidgetPlaylistHeader*>(hovered_widget); hovered_playlist_header) {
-      break;
-    }
-    if (hovered_tab = dynamic_cast<Tab*>(hovered_widget); hovered_tab) {
-      if (selection_drag_tab_id != hovered_tab->id) {
-        selection_drag_tab_id = hovered_tab->id;
-        selection_drag_tab_timer = 0;
-      }
-      break;
-    }
-  }
+
 
   if (vec2i diff = selection_drag_start - Input::get_mouse_pos();
       selection_drag.has_value() && (std::abs(diff.x) > 4 || std::abs(diff.y) > 4)) {
