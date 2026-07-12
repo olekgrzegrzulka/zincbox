@@ -31,11 +31,15 @@ class FontFace {
 
     const FontGlyph* find_glyph(u32 charcode) const;
 
-  private:
-    bool try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height);
+    float get_line_height() const { return m_line_height; }
+    float get_ascender() const { return m_ascender; }
 
   private:
-    FT_Face freetype_face;
+    bool try_creating_glyph_data(FT_Face&, i32 texture_dimensions, i32 pixel_height);
+
+  private:
+    float m_line_height = 0.0f;
+    float m_ascender = 0.0f;
     u32 texture = 0;
     u32 sampler = 0;
     std::unordered_map<u32, FontGlyph> glyph_map;

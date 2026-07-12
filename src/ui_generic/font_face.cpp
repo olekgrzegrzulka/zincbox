@@ -16,13 +16,18 @@
 // #include "stb_image_write.h"
 
 FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_height) {
+  FT_Face freetype_face;
   if (FT_New_Face(freetype_lib, path.c_str(), 0, &freetype_face)) {
     out::critical("failed to load font at {}", path);
     exit(1);
   }
 
-  bool success = (try_creating_glyph_data(256, pixel_height) || try_creating_glyph_data(512, pixel_height) ||
-                  try_creating_glyph_data(1024, pixel_height));
+  bool success = (try_creating_glyph_data(freetype_face, 256, pixel_height) ||
+                  try_creating_glyph_data(freetype_face, 512, pixel_height) ||
+                  try_creating_glyph_data(freetype_face, 1024, pixel_height));
+
+  m_line_height = freetype_face->size->metrics.height / 64.0f;
+  m_ascender = freetype_face->size->metrics.ascender / 64.0f;
 
   if (FT_Done_Face(freetype_face) || !success) {
     out::critical("failed to create font texture atlas of font at {}", path);
@@ -38,13 +43,15 @@ FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_
 }
 
 FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height) {
+  FT_Face freetype_face;
   if (FT_New_Memory_Face(freetype_lib, static_cast<const FT_Byte*>(data), data_size, 0, &freetype_face)) {
     out::critical("failed to load font");
     exit(1);
   }
 
-  bool success = (try_creating_glyph_data(256, pixel_height) || try_creating_glyph_data(512, pixel_height) ||
-                  try_creating_glyph_data(1024, pixel_height));
+  bool success = (try_creating_glyph_data(freetype_face, 256, pixel_height) ||
+                  try_creating_glyph_data(freetype_face, 512, pixel_height) ||
+                  try_creating_glyph_data(freetype_face, 1024, pixel_height));
 
   if (FT_Done_Face(freetype_face) || !success) {
     out::critical("failed to create font texture atlas of font");
@@ -87,7 +94,7 @@ const FontGlyph* FontFace::find_glyph(u32 charcode) const {
   return &it->second;
 }
 
-bool FontFace::try_creating_glyph_data(i32 texture_dimensions, i32 pixel_height) {
+bool FontFace::try_creating_glyph_data(FT_Face& freetype_face, i32 texture_dimensions, i32 pixel_height) {
   FT_Set_Pixel_Sizes(freetype_face, 0, pixel_height);
 
   i32 current_x = 0;
