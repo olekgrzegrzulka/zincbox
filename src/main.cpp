@@ -57,7 +57,7 @@ void check_opengl_errors() {
 }
 
 void set_window_title(GLFWwindow* window) {
-  static std::optional<player::playing_t> prev_playing;
+  static std::optional<db::track_info> prev_playing;
   auto playing = player::get_playing();
   if (playing == prev_playing) { return; }
   prev_playing = playing;
@@ -116,9 +116,6 @@ int main() {
   if (config::json().contains("settings") && config::json()["settings"].isObject()) {
     settings::get().from_json(config::json()["settings"]);
   }
-
-  auto lambda = []() { out::debug_critical(2137); };
-  lambda();
 
   NFD::Init();
   mpris::init();

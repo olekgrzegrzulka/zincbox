@@ -352,7 +352,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_panel("controls");
   add_custom_panel("playlist_header");
   add_custom_panel("popup");
-  add_custom_panel("queue");
   add_custom_panel("tabbar");
   add_custom_panel("top");
   add_custom_panel("tracks");

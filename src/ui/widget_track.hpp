@@ -12,6 +12,8 @@
 
 class WidgetTrack final : public Button {
   public:
+    enum class TrackHighlightMode : u8 { TRACK_INFO, QUEUE_INDEX, OFF };
+
     WidgetTrack(UI& ui_) : Button(ui_) {
       setup();
 
@@ -20,10 +22,14 @@ class WidgetTrack final : public Button {
     }
 
     void update_highlight_status_from_player() {
-      if (!m_autohighlight) { return; }
-      set_highlighted(player::get_playing().has_value() && m_track_id == player::get_playing()->track_id &&
-                      m_playlist_id == player::get_playing()->playlist_id &&
-                      m_collection_id == player::get_playing()->collection_id);
+      if (m_highlight_mode == TrackHighlightMode::QUEUE_INDEX) {
+        set_highlighted(player::get_playing_index().has_value() &&
+                        (m_track_number - 1) == player::get_playing_index().value());
+      } else if (m_highlight_mode == TrackHighlightMode::TRACK_INFO) {
+        set_highlighted(player::get_playing().has_value() && m_track_id == player::get_playing()->track_id &&
+                        m_playlist_id == player::get_playing()->playlist_id &&
+                        m_collection_id == player::get_playing()->collection_id);
+      }
     }
 
     ~WidgetTrack() override { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
@@ -244,9 +250,9 @@ class WidgetTrack final : public Button {
       return *this;
     }
 
-    WidgetTrack& autohighlight(bool value) {
-      if (m_autohighlight != value) {
-        m_autohighlight = value;
+    WidgetTrack& highlight_mode(TrackHighlightMode value) {
+      if (m_highlight_mode != value) {
+        m_highlight_mode = value;
         m_changed = true;
       }
       return *this;
@@ -268,7 +274,7 @@ class WidgetTrack final : public Button {
     size_t m_collection_id = db::INVALID_ID;
     size_t m_track_number = 0;
     bool m_is_selected = false;
-    bool m_autohighlight = true;
+    TrackHighlightMode m_highlight_mode = TrackHighlightMode::TRACK_INFO;
     bool m_changed = true;
     Signal<>::slot_key slot_on_track_changed;
     Label* label_track_number{};

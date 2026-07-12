@@ -3,6 +3,7 @@
 #include <vector>
 #include "common/signal.hpp"
 #include "common/types.hpp"
+#include "core/musicdb/types.hpp"
 #include "lib/json.cpp/json.h"
 
 namespace player {
@@ -10,21 +11,14 @@ namespace player {
 
   enum class ShuffleMode : u8 { OFF, ON, SHUFFLE_MODE_SIZE };
 
-  struct playing_t {
-      size_t collection_id{};
-      size_t playlist_id{};
-      size_t track_id{};
-      bool operator==(const playing_t&) const = default;
-  };
-
   void init();
   void deinit();
 
   void update();
 
-  bool play(playing_t, bool clear_queue = true);
+  bool play(db::track_info, bool clear_queue = true);
   bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
-  void enqueue(playing_t, size_t at);
+  void enqueue(db::track_info, size_t at);
   void remove_from_queue(size_t at);
   void clear_queue();
   void resume();
@@ -41,8 +35,8 @@ namespace player {
   i32 get_total_duration_ms();
   bool is_playing();
   bool is_at_end();
-  std::optional<playing_t> get_playing();
-  const std::vector<player::playing_t>& get_playing_queue();
+  std::optional<db::track_info> get_playing();
+  const std::vector<db::track_info>& get_playing_queue();
   std::optional<size_t> get_playing_index();
   void set_playing_index(std::optional<size_t>);
 

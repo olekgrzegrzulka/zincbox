@@ -1,45 +1,38 @@
 #pragma once
 #include <cstddef>
 #include <functional>
-#include <vector>
-#include <glm/common.hpp>
-#include "common/input.hpp"
 #include "common/signal.hpp"
-#include "common/types.hpp"
-#include "ui_generic/sprite.hpp"
+#include "core/musicdb/types.hpp"
+#include "ui/panel_tracks.hpp"
+#include "ui_generic/widget.hpp"
 
-class ScrollBar;
+class UI;
 class WidgetTrack;
 
-class PanelQueue : public Sprite {
+class PanelQueue : public Widget {
+    using Widget::event;
+
   public:
     PanelQueue(UI& ui_);
     ~PanelQueue() override;
-
+    void update() override;
     void draw() override;
-    void on_view_changed();
+
+    void recreate();
+    void clear();
+    const PanelTracksSelection& selection() const { return panel_tracks->selection(); }
+    void clear_selection() { panel_tracks->clear_selection(); }
+
     void on_queue_appended_to_back();
     void on_queue_changed();
     void on_queue_changed_at(size_t);
-    void update() override;
-    using Sprite::event;
-    void event(Input::InputEventMouseScroll&) override;
-    void clear();
 
   public:
-    std::function<void(size_t queue_index, Widget* widget)> on_queue_element_lmb{};
-    std::function<void(size_t queue_index, Widget* widget)> on_queue_element_rmb{};
+    void on_track_lmb(const std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)>&);
+    void on_track_rmb(const std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)>&);
+    void on_selection_rmb(const std::function<void(WidgetTrack*)>&);
 
   protected:
-    double scroll_px{};
-    double target_scroll_px{};
-    double old_scroll_px{};
-    i32 old_width{};
-    i32 max_scroll_px{};
-    ScrollBar* scrollbar{};
-    std::vector<std::pair<i32, size_t>> album_scroll_px;
-    std::vector<WidgetTrack*> queue_tracks;
-
-    Signal<>::slot_key slot_on_track_changed;
+    PanelTracks* panel_tracks{};
     Signal<>::slot_key slot_on_queue_changed;
 };
