@@ -61,6 +61,7 @@ static std::unique_ptr<UI> ui;
 static class ShortcutInterceptor* shortcut_interceptor{};
 static PopupController* popup_controller{};
 static InterfaceNotifications* notifications{};
+static Sprite* bg{};
 static PanelTop* panel_top{};
 static PanelTracks* panel_tracks{};
 static PanelQueue* panel_queue{};
@@ -160,16 +161,25 @@ void interface::init() {
   popup_controller = &ui->add_widget<PopupController>();
   popup_controller->set_is_drawn_on_top(true);
   notifications = &ui->add_widget<InterfaceNotifications>();
+  bg = &ui->add_widget<Sprite>("panel_albums");
   panel_top = &ui->add_widget<PanelTop>();
   panel_tracks = &ui->add_widget<PanelTracks>();
   panel_queue = &ui->add_widget<PanelQueue>();
-  panel_queue->set_is_drawn(false);
   splitter = &ui->add_widget<Splitter>();
   tooltip_drag = &ui->add_widget<ToolTip>(U"", ToolTipPosition::MANUAL);
   tooltip_drag->set_is_drawn(false);
   tooltip_drag->set_anchor(Anchor::TOP);
   panel_albums = &ui->add_widget<PanelAlbums>();
   panel_controls = &ui->add_widget<PanelControls>();
+
+  panel_queue->set_is_updated(false);
+  panel_queue->set_is_drawn(false);
+  panel_tracks->set_is_updated(false);
+  panel_tracks->set_is_drawn(false);
+  panel_albums->set_is_updated(false);
+  panel_albums->set_is_drawn(false);
+  splitter->set_is_updated(false);
+  splitter->set_is_drawn(false);
 
   panel_controls->on_playing_track_lmb = [](Widget*) -> void {
     auto playing = player::get_playing();
@@ -309,19 +319,7 @@ void interface::init() {
 
   panel_albums->on_add_playlist_button_pressed = [&](Widget* w) -> void { show_popover_create_playlist(w); };
 
-  if (db::collection_count() > 0) {
-    active_collection_id = 0;
-    panel_tracks->clear();
-    panel_tracks->recreate(active_collection_id);
-    panel_albums->props.collection_id = 0;
-    recreate_panel_top(false);
-  } else {
-    active_collection_id = std::nullopt;
-    panel_tracks->clear();
-    panel_tracks->recreate(active_collection_id);
-    panel_albums->props.collection_id = std::nullopt;
-    recreate_panel_top(false);
-  }
+  recreate_panel_top(false);
 }
 
 void interface::input() {
@@ -392,6 +390,8 @@ void interface::update(vec2i window_size) {
   } else {
     Input::reset_cursor();
   }
+
+  bg->set_size(window_size);
 
   if (panel_queue->get_is_drawn()) {
     panel_queue->set_y(panel_top->get_height());
@@ -820,6 +820,7 @@ static void show_queue() {
   splitter->set_is_updated(false);
   panel_albums->props.collection_id = std::nullopt;
   panel_queue->recreate();
+  panel_top->select(panel_top->get_queue_tab()->id);
 }
 
 static void show_add_to_playlist_popup(db::track_id_t track_id) {
