@@ -28,8 +28,8 @@ class PanelQueue : public Widget {
     void on_queue_changed_at(size_t);
 
   public:
-    void on_track_lmb(const std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)>&);
-    void on_track_rmb(const std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)>&);
+    void on_track_lmb(const std::function<void(db::track_info, WidgetTrack*)>&);
+    void on_track_rmb(const std::function<void(db::track_info, WidgetTrack*)>&);
     void on_selection_rmb(const std::function<void(WidgetTrack*)>&);
 
   protected:

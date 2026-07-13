@@ -264,7 +264,10 @@ class WidgetTrack final : public Button {
     size_t track_number() const { return m_track_number; }
     size_t is_selected() const { return m_is_selected; }
     db::track_info track_info() const {
-      return db::track_info{.collection_id = m_collection_id, .playlist_id = m_playlist_id, .track_id = m_track_id};
+      return db::track_info{.collection_id = m_collection_id,
+                            .playlist_id = m_playlist_id,
+                            .track_id = m_track_id,
+                            .index = m_track_number - 1};
     }
 
   protected:

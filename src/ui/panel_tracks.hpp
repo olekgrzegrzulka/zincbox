@@ -108,8 +108,8 @@ class PanelTracks final : public Sprite {
     PanelTracksSelection m_selection;
 
   public:
-    std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)> on_track_lmb{};
-    std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)> on_track_rmb{};
+    std::function<void(db::track_info, WidgetTrack*)> on_track_lmb{};
+    std::function<void(db::track_info, WidgetTrack*)> on_track_rmb{};
     std::function<void(WidgetTrack*)> on_selection_rmb{};
 
     std::function<void(size_t collection_id, size_t playlist_id, Widget*)> on_playlist_more_options_invoked{};
@@ -152,7 +152,7 @@ class PanelTracks final : public Sprite {
           return 0;
         }
     };
-    void create_element(std::pair<element, Widget*>&, size_t track_number);
+    void create_element(std::pair<element, Widget*>&);
     std::vector<std::pair<element, Widget*>> elements;
     Widget* elements_container{};
 };

@@ -54,8 +54,9 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
 
 PanelTracks::~PanelTracks() {}
 
-void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_number) {
+void PanelTracks::create_element(std::pair<element, Widget*>& e) {
   auto& [element, widget] = e;
+  size_t track_number = element.track_info.index;
   if (widget) { return; }
 
   if (element.type == ElementType::TRACK) {
@@ -69,7 +70,7 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_nu
     w->set_ignore_parents_layout(true);
     w->set_is_drawn(false);
     widget = w;
-    w->on_press([this, element, track_number, w]() -> void {
+    w->on_press([this, element, w]() -> void {
       bool ctrl = Input::ctrl_pressed() && !Input::shift_pressed();
       bool shift = !Input::ctrl_pressed() && Input::shift_pressed();
       if (ctrl) {
@@ -107,8 +108,7 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_nu
           }
         }
       } else if (on_track_lmb) {
-        on_track_lmb(element.track_info, track_number, w);
-
+        on_track_lmb(element.track_info, w);
         if (!m_selection.empty()) {
           m_selection.clear();
           selection_modified = true;
@@ -116,11 +116,11 @@ void PanelTracks::create_element(std::pair<element, Widget*>& e, size_t track_nu
       }
     });
 
-    w->on_press_rmb([this, element, track_number, w]() -> void {
+    w->on_press_rmb([this, element, w]() -> void {
       if (m_selection.has(w->track_info()) && on_selection_rmb) {
         on_selection_rmb(w);
       } else if (on_track_rmb) {
-        on_track_rmb(element.track_info, track_number, w);
+        on_track_rmb(element.track_info, w);
       }
     });
 
@@ -262,7 +262,8 @@ void PanelTracks::update() {
       bool element_visible =
         current_element_top_y + MARGIN >= scroll_px && current_element_bottom_y - MARGIN <= scroll_px + height;
       if (element_visible) {
-        create_element(elements[i], track_number);
+        elements[i].first.track_info.index = track_number;
+        create_element(elements[i]);
         elements[i].second->set_width(elements_container->get_width());
         elements[i].second->set_y(current_element_top_y - scroll_px);
         if (elements[i].first.type == ElementType::HEADER) { ui.mark_dirty_recursive(elements[i].second); }
@@ -371,6 +372,8 @@ void PanelTracks::insert_track(size_t index, db::track_info ti) {
   index = std::min(index, elements.size());
   element element_track = {.type = ElementType::TRACK, .track_info = ti};
   elements.insert(elements.begin() + index, {element_track, nullptr});
+  max_scroll_px += element_track.height();
+  scrollbar->set_content_size(max_scroll_px);
   just_recreated = true;
   m_selection.clear();
 }
@@ -379,8 +382,11 @@ void PanelTracks::insert_track(db::track_info ti) { insert_track(elements.size()
 
 void PanelTracks::set_track(size_t index, db::track_info ti) {
   if (index >= elements.size()) { return; }
+  i32 prev_height = elements[index].first.height();
   element element_track = {.type = ElementType::TRACK, .track_info = ti};
   elements[index] = {element_track, nullptr};
+  max_scroll_px += (element_track.height() - prev_height);
+  scrollbar->set_content_size(max_scroll_px);
   just_recreated = true;
   m_selection.clear();
 }
