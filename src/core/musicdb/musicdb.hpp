@@ -4,6 +4,7 @@
 #include <fstream>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
@@ -56,8 +57,10 @@ namespace db {
   // playlist setters
   void mark_playlist_as_tombstone(playlist_id_t);
   bool add_track_id_to_playlist(playlist_id_t, track_id_t);
+  bool add_track_ids_to_playlist(playlist_id_t, size_t at, std::span<const size_t> track_ids);
   bool remove_track_id_from_playlist(playlist_id_t, track_id_t);
   bool remove_track_index_from_playlist(playlist_id_t, size_t track_index);
+  bool remove_track_indices_from_playlist(playlist_id_t, std::span<const size_t> indices);
   track_id_t add_track_to_playlist(playlist_id_t, Track&);
   void set_playlist_image(playlist_id_t, std::string_view image_path);
   void reset_playlist_image(playlist_id_t);

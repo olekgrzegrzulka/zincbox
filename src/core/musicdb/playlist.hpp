@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -34,8 +35,10 @@ namespace db {
         type = type_;
       }
       bool add_track(size_t);
+      void insert_tracks(size_t at, std::span<const size_t>);
       bool remove_track_by_id(size_t);
       bool remove_track_by_index(size_t);
+      void remove_tracks_by_indices(std::span<const size_t>);
       void sort_by_track_number();
       void sort_by_artist_asc();
       void sort_by_artist_desc();

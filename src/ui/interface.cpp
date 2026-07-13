@@ -52,6 +52,7 @@ static std::vector<std::u32string> tabs_order;
 static bool search_popup_visible = false;
 
 static std::optional<PanelTracksSelection> selection_drag;
+static std::vector<db::track_info> selection_drag_sorted_top_to_bottom;
 static bool selection_drag_is_from_queue = false;
 static vec2i selection_drag_start{};
 static bool selection_drag_started = false;
@@ -612,23 +613,6 @@ static void handle_drag_and_drop() {
       }
     }
   }
-  auto selection_sorted_top_to_bottom = [&]() -> std::vector<db::track_info> {
-    if (!selection_drag.has_value()) { return {}; }
-    std::span<const PanelTracks::Item> items;
-    if (panel_queue->get_is_drawn()) {
-      items = panel_queue->get_items();
-    } else if (panel_tracks->get_is_drawn()) {
-      items = panel_tracks->get_items();
-    } else {
-      return {};
-    }
-
-    std::vector<db::track_info> ret;
-    for (auto& item : items) {
-      if (selection_drag->has(item.track_info)) { ret.emplace_back(item.track_info); }
-    }
-    return ret;
-  };
 
   auto handle_drag_playlist = [&](db::playlist_id_t playlist_id, bool drag_ended) -> bool {
     auto playlist = db::playlist_by_id(playlist_id);
@@ -711,13 +695,17 @@ static void handle_drag_and_drop() {
   };
 
   auto handle_drag_track_queue = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+    if (!selection_drag.has_value()) { return false; }
     if (!hovered_track) { return false; }
+    auto playlist = db::playlist_by_id(hovered_track->playlist_id());
+    if (!playlist.has_value()) { return false; }
     bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
     if (!drag_ended) {
       auto insert_cursor_pos = above ? PanelTracks::InsertCursorPos::ABOVE : PanelTracks::InsertCursorPos::BELOW;
       panel_queue->set_insert_cursor_track_info(hovered_track->track_info());
       panel_queue->set_insert_cursor_pos(insert_cursor_pos);
-      if (selection_drag_is_from_queue) {
+      bool move = selection_drag_is_from_queue;
+      if (move) {
         if (selection_drag->size() > 1) {
           tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", selection_drag->size()));
         } else {
@@ -732,43 +720,84 @@ static void handle_drag_and_drop() {
       }
       return true;
     } else {
-      size_t i = hovered_track->track_info().index;
-      if (!above) { i += 1; }
-      out::warn("dragged {} tracks onto queue at {}", selection_drag->size(), i);
+      bool move = selection_drag_is_from_queue;
+      size_t target_index = hovered_track->track_info().index;
+      if (!above) { target_index += 1; }
+      if (move) {
+        std::vector<size_t> indices_to_remove;
+        indices_to_remove.reserve(selection_drag_sorted_top_to_bottom.size());
+        size_t adjusted_target_index = target_index;
+        for (const auto& item : selection_drag_sorted_top_to_bottom) {
+          indices_to_remove.emplace_back(item.index);
+          if (item.index < target_index) { adjusted_target_index -= 1; }
+        }
+        player::remove_from_queue(indices_to_remove);
+        player::add_to_queue(selection_drag_sorted_top_to_bottom, adjusted_target_index);
+      } else {
+        player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
+      }
+      panel_queue->on_queue_changed();
       return true;
     }
   };
 
   auto handle_drag_track_tracklist = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
-    if (!hovered_track) { return false; }
     if (!selection_drag.has_value()) { return false; }
+    if (!hovered_track) { return false; }
+    auto target_playlist_id = hovered_track->playlist_id();
+    auto playlist = db::playlist_by_id(target_playlist_id);
+    if (!playlist.has_value()) { return false; }
+    size_t i = hovered_track->track_info().index;
     bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
-    if (!drag_ended) {
+    bool move = !selection_drag_is_from_queue && selection_drag->get_common_playlist_id() == target_playlist_id;
+    if (drag_ended) {
+      if (playlist->get().type != db::PlaylistType::User) { return false; }
+      if (!above) { i += 1; }
+      std::vector<db::track_id_t> track_ids;
+      track_ids.reserve(selection_drag_sorted_top_to_bottom.size());
+      std::vector<size_t> indices_to_remove;
+      if (move) { indices_to_remove.reserve(selection_drag_sorted_top_to_bottom.size()); }
+      for (const auto& item : selection_drag_sorted_top_to_bottom) {
+        track_ids.emplace_back(item.track_id);
+        if (move) {
+          indices_to_remove.emplace_back(item.index);
+          if (item.index < i) { i -= 1; }
+        }
+      }
+      if (move) {
+        db::remove_track_indices_from_playlist(target_playlist_id, indices_to_remove);
+        db::add_track_ids_to_playlist(target_playlist_id, i, track_ids);
+      } else {
+        db::add_track_ids_to_playlist(target_playlist_id, i, track_ids);
+      }
+      if (active_collection_id.has_value()) {
+        panel_tracks->clear();
+        panel_tracks->recreate(active_collection_id);
+      }
+      return true;
+    } else {
       auto insert_cursor_pos = above ? PanelTracks::InsertCursorPos::ABOVE : PanelTracks::InsertCursorPos::BELOW;
       panel_tracks->set_insert_cursor_track_info(hovered_track->track_info());
       panel_tracks->set_insert_cursor_pos(insert_cursor_pos);
-
-      if (hovered_track->playlist_id() == selection_drag->get_common_playlist_id()) {
+      if (playlist->get().type != db::PlaylistType::User) {
+        tooltip_drag->set_text(tr::get("tooltip.drag.not_allowed"));
+      } else if (move) {
         if (selection_drag->size() > 1) {
           tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", selection_drag->size()));
         } else {
           tooltip_drag->set_text(tr::get("tooltip.drag.reorder"));
         }
       } else {
-        if (selection_drag->size() > 1) {
-          auto playlist = db::playlist_by_id(hovered_track->playlist_id());
-          if (!playlist.has_value()) { return false; }
-          tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist_plural", selection_drag->size(),
-                                            utf32_to_utf8(playlist->get().name)));
-        } else {
-          tooltip_drag->set_text(tr::get("tooltip.drag.add_to_playlist"));
+        if (playlist.has_value()) {
+          auto playlist_name = utf32_to_utf8(playlist->get().name);
+          if (selection_drag->size() > 1) {
+            tooltip_drag->set_text(
+              tr::format("tooltip.drag.add_to_playlist_plural", selection_drag->size(), playlist_name));
+          } else {
+            tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist", playlist_name));
+          }
         }
       }
-      return true;
-    } else {
-      size_t i = hovered_track->track_info().index;
-      if (!above) { i += 1; }
-      out::warn("dragged {} tracks onto tracklist at {}", selection_drag->size(), i);
       return true;
     }
   };
@@ -785,6 +814,16 @@ static void handle_drag_and_drop() {
 
   if (lmb_just_pressed && hovered_track && selection_drag && selection_drag->has(hovered_track->track_info())) {
     selection_drag_started = true;
+    selection_drag_sorted_top_to_bottom.clear();
+    if (panel_queue->get_is_drawn()) {
+      for (auto& item : panel_queue->get_items()) {
+        if (selection_drag->has(item.track_info)) { selection_drag_sorted_top_to_bottom.emplace_back(item.track_info); }
+      }
+    } else if (panel_tracks->get_is_drawn()) {
+      for (auto& item : panel_tracks->get_items()) {
+        if (selection_drag->has(item.track_info)) { selection_drag_sorted_top_to_bottom.emplace_back(item.track_info); }
+      }
+    }
   }
 
   vec2i diff = selection_drag_start - Input::get_mouse_pos();
@@ -814,6 +853,8 @@ static void handle_drag_and_drop() {
         handle_drag_playlist_header(hovered_playlist_header, true) || handle_drag_track(hovered_track, true) ||
         handle_drag_tab(hovered_tab, true)) {
       panel_tracks->clear_selection();
+      panel_queue->clear_selection();
+      selection_drag_sorted_top_to_bottom.clear();
     }
   }
 

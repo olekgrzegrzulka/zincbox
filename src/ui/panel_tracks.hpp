@@ -128,6 +128,7 @@ class PanelTracks final : public Sprite {
     void insert_track(size_t, db::track_info);
     void insert_track(db::track_info);
     void set_track(size_t, db::track_info);
+    void remove_item(size_t index);
 
     void clear();
 

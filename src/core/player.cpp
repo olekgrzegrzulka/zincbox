@@ -190,6 +190,25 @@ void player::enqueue(db::track_info play, size_t at) {
   }
 }
 
+void player::add_to_queue(std::span<const db::track_info> tracks, size_t at) {
+  if (tracks.empty()) { return; }
+
+  bool appended = (at >= playing_queue.size());
+  size_t insert_pos = appended ? playing_queue.size() : at;
+
+  playing_queue.insert(playing_queue.begin() + insert_pos, tracks.begin(), tracks.end());
+  signal_on_queue_changed.emit(appended);
+
+  if (playing_index.has_value() && playing_index.value() >= insert_pos) {
+    playing_index = playing_index.value() + tracks.size();
+  }
+
+  if (!playing_index.has_value()) {
+    playing_index = insert_pos;
+    play_track();
+  }
+}
+
 void player::remove_from_queue(size_t at) {
   bool current_track_removed = at == playing_index;
   if (at >= playing_queue.size()) { return; }
@@ -205,6 +224,31 @@ void player::remove_from_queue(size_t at) {
   } else if (playing_index.has_value()) {
     playing_index = std::min(playing_index.value(), playing_queue.size() - 1);
   }
+  if (current_track_removed) { play_track(); }
+}
+
+void player::remove_from_queue(std::span<const size_t> indices) {
+  if (indices.empty() || playing_queue.empty()) { return; }
+
+  std::vector<size_t> sorted_indices(indices.begin(), indices.end());
+  std::sort(sorted_indices.begin(), sorted_indices.end(), std::greater<size_t>());
+  sorted_indices.erase(std::unique(sorted_indices.begin(), sorted_indices.end()), sorted_indices.end());
+
+  bool current_track_removed = false;
+
+  for (size_t at : sorted_indices) {
+    if (at >= playing_queue.size()) { continue; }
+    if (playing_index.has_value() && at == playing_index.value()) { current_track_removed = true; }
+    playing_queue.erase(playing_queue.begin() + at);
+    if (playing_index.has_value() && playing_index.value() > at) { playing_index = playing_index.value() - 1; }
+  }
+
+  if (playing_queue.empty()) {
+    playing_index = std::nullopt;
+  } else if (playing_index.has_value()) {
+    playing_index = std::min(playing_index.value(), playing_queue.size() - 1);
+  }
+
   if (current_track_removed) { play_track(); }
 }
 
