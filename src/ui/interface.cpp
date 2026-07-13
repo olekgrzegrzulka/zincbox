@@ -92,7 +92,7 @@ static void show_popover_track_actions(db::track_info ti, Widget*, bool remove_f
 static void show_popover_tracklist_selection_actions(WidgetTrack*,
                                                      const std::function<void()>& callback_close = nullptr);
 static void show_popover_collection_actions(db::collection_id_t, Widget*);
-static void show_popover_queue_element_actions(db::track_info, WidgetTrack*);
+static void show_popover_queue_item_actions(db::track_info, WidgetTrack*);
 static void show_popover_playlist_actions(db::playlist_id_t, Widget*, bool play_actions = true,
                                           const std::function<void()>& callback_close = nullptr);
 static void show_popover_playlist_sort_options(db::playlist_id_t, Widget*);
@@ -262,7 +262,7 @@ void interface::init() {
 
   panel_queue->on_track_lmb([&](db::track_info ti, WidgetTrack*) -> void { player::set_playing_index(ti.index); });
 
-  panel_queue->on_track_rmb(show_popover_queue_element_actions);
+  panel_queue->on_track_rmb(show_popover_queue_item_actions);
   panel_queue->on_selection_rmb([](WidgetTrack*) -> void { out::debug_info("panel_queue->on_selection_rmb"); });
 
   panel_tracks->on_track_rmb = [](db::track_info ti, WidgetTrack* widget) {
@@ -612,6 +612,23 @@ static void handle_drag_and_drop() {
       }
     }
   }
+  auto selection_sorted_top_to_bottom = [&]() -> std::vector<db::track_info> {
+    if (!selection_drag.has_value()) { return {}; }
+    std::span<const PanelTracks::Item> items;
+    if (panel_queue->get_is_drawn()) {
+      items = panel_queue->get_items();
+    } else if (panel_tracks->get_is_drawn()) {
+      items = panel_tracks->get_items();
+    } else {
+      return {};
+    }
+
+    std::vector<db::track_info> ret;
+    for (auto& item : items) {
+      if (selection_drag->has(item.track_info)) { ret.emplace_back(item.track_info); }
+    }
+    return ret;
+  };
 
   auto handle_drag_playlist = [&](db::playlist_id_t playlist_id, bool drag_ended) -> bool {
     auto playlist = db::playlist_by_id(playlist_id);
@@ -1225,7 +1242,7 @@ static void show_popover_collection_actions(db::collection_id_t collection_id, W
   popup_controller->create_popover(d);
 };
 
-static void show_popover_queue_element_actions(db::track_info ti, WidgetTrack* widget) {
+static void show_popover_queue_item_actions(db::track_info ti, WidgetTrack* widget) {
   auto play = player::get_playing_queue()[ti.index];
   size_t track_id = play.track_id;
   size_t playlist_id = play.playlist_id;

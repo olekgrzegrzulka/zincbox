@@ -7,6 +7,7 @@
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
+#include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
@@ -68,9 +69,51 @@ class PanelTracksSelection {
 };
 
 class PanelTracks final : public Sprite {
+  public:
     using Sprite::event;
 
-  public:
+    enum class ItemType : u8 { TRACK, HEADER };
+    struct Item {
+        ItemType type{};
+        db::track_info track_info;
+        WidgetTrack* widget_track{};
+        WidgetPlaylistHeader* widget_header{};
+
+        bool is_track() const { return true; }
+        bool is_header() const { return false; }
+        bool has_widget() const { return widget_track || widget_header; }
+        void delete_widget() {
+          if (widget_track) {
+            widget_track->set_marked_for_deletion(true);
+            widget_track = nullptr;
+          }
+          if (widget_header) {
+            widget_header->set_marked_for_deletion(true);
+            widget_header = nullptr;
+          }
+        }
+        Widget* widget() {
+          if (widget_track) {
+            return widget_track;
+          } else if (widget_header) {
+            return widget_header;
+          } else {
+            return nullptr;
+          }
+        }
+
+        i32 height() const {
+          static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
+          static const i32 header_height = theme::get_prop("tracklist_playlist_header_height").as_i32();
+          if (type == ItemType::TRACK) {
+            return track_height;
+          } else if (type == ItemType::HEADER) {
+            return header_height;
+          }
+          return 0;
+        }
+    };
+
     enum class InsertCursorPos : u8 { BELOW, ABOVE };
     PanelTracks(UI& ui_);
     ~PanelTracks();
@@ -85,7 +128,7 @@ class PanelTracks final : public Sprite {
     void insert_track(size_t, db::track_info);
     void insert_track(db::track_info);
     void set_track(size_t, db::track_info);
-    
+
     void clear();
 
     void scroll_to_playlist(size_t playlist_id);
@@ -93,6 +136,7 @@ class PanelTracks final : public Sprite {
     void set_scroll_px(float px);
     float get_scroll_px() const;
 
+    std::span<const Item> get_items() const { return items; }
     const PanelTracksSelection& selection() const { return m_selection; }
     void clear_selection() {
       m_selection.clear();
@@ -133,26 +177,7 @@ class PanelTracks final : public Sprite {
     ToolTip* button_sort_tooltip{};
     ToolTip* button_more_tooltip{};
 
-    enum class ElementType : u8 { TRACK, HEADER };
-    struct element {
-        ElementType type{};
-        db::track_info track_info;
-
-        bool is_track() const { return true; }
-        bool is_header() const { return false; }
-
-        i32 height() const {
-          static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
-          static const i32 header_height = theme::get_prop("tracklist_playlist_header_height").as_i32();
-          if (type == ElementType::TRACK) {
-            return track_height;
-          } else if (type == ElementType::HEADER) {
-            return header_height;
-          }
-          return 0;
-        }
-    };
-    void create_element(std::pair<element, Widget*>&);
-    std::vector<std::pair<element, Widget*>> elements;
-    Widget* elements_container{};
+    void create_item_widget_if_null(Item&);
+    std::vector<Item> items;
+    Widget* items_container{};
 };

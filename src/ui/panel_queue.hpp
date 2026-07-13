@@ -32,6 +32,8 @@ class PanelQueue : public Widget {
     void on_queue_changed();
     void on_queue_changed_at(size_t);
 
+    std::span<const PanelTracks::Item> get_items() const { return panel_tracks->get_items(); }
+
   public:
     void on_track_lmb(const std::function<void(db::track_info, WidgetTrack*)>&);
     void on_track_rmb(const std::function<void(db::track_info, WidgetTrack*)>&);
