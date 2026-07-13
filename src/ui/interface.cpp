@@ -9,7 +9,6 @@
 #include <string_view>
 #include "common/config.hpp"
 #include "common/input.hpp"
-#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
@@ -88,12 +87,14 @@ static void show_popup_rename_collection(db::collection_id_t);
 static void show_popup_set_sources(db::collection_id_t);
 static void show_popup_delete_playlist(db::playlist_id_t);
 static void show_popup_rename_playlist(db::playlist_id_t);
-static void show_popover_track_actions(db::track_info ti, Widget*, bool remove_from_playlist_option,
-                                       const std::function<void()>& callback_close = nullptr);
-static void show_popover_tracklist_selection_actions(WidgetTrack*,
-                                                     const std::function<void()>& callback_close = nullptr);
+static void show_popover_tracklist_track_actions(db::track_info ti, Widget*, bool remove_from_playlist_option,
+                                                 const std::function<void()>& callback_close = nullptr);
+static void show_popover_tracklist_tracks_actions(WidgetTrack*, std::span<const db::track_info>,
+                                                  const std::function<void()>& callback_close = nullptr);
 static void show_popover_collection_actions(db::collection_id_t, Widget*);
-static void show_popover_queue_item_actions(db::track_info, WidgetTrack*);
+static void show_popover_queue_track_actions(db::track_info ti, WidgetTrack* widget);
+static void show_popover_queue_tracks_actions(WidgetTrack*, std::span<const db::track_info>,
+                                              const std::function<void()>& callback_close = nullptr);
 static void show_popover_playlist_actions(db::playlist_id_t, Widget*, bool play_actions = true,
                                           const std::function<void()>& callback_close = nullptr);
 static void show_popover_playlist_sort_options(db::playlist_id_t, Widget*);
@@ -197,7 +198,7 @@ void interface::init() {
 
   panel_controls->on_playing_track_rmb = [](Widget* w) -> void {
     auto playing = player::get_playing();
-    if (playing.has_value()) { show_popover_track_actions(playing.value(), w, false); }
+    if (playing.has_value()) { show_popover_tracklist_track_actions(playing.value(), w, false); }
   };
 
   panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
@@ -263,15 +264,15 @@ void interface::init() {
 
   panel_queue->on_track_lmb([&](db::track_info ti, WidgetTrack*) -> void { player::set_playing_index(ti.index); });
 
-  panel_queue->on_track_rmb(show_popover_queue_item_actions);
-  panel_queue->on_selection_rmb([](WidgetTrack*) -> void { out::debug_info("panel_queue->on_selection_rmb"); });
-
+  panel_queue->on_track_rmb(show_popover_queue_track_actions);
+  panel_queue->on_selection_rmb(
+    [](WidgetTrack* widget) -> void { show_popover_queue_tracks_actions(widget, panel_queue->selection().get()); });
   panel_tracks->on_track_rmb = [](db::track_info ti, WidgetTrack* widget) {
-    show_popover_track_actions(ti, widget, true);
+    show_popover_tracklist_track_actions(ti, widget, true);
   };
 
   panel_tracks->on_selection_rmb = [](WidgetTrack* widget) -> void {
-    show_popover_tracklist_selection_actions(widget);
+    show_popover_tracklist_tracks_actions(widget, panel_tracks->selection().get());
   };
 
   panel_tracks->on_playlist_sort_button_pressed = [](size_t, size_t playlist_id, Widget* w) {
@@ -1071,21 +1072,32 @@ static void show_popup_rename_playlist(db::playlist_id_t playlist_id) {
   };
 }
 
-static void show_popover_track_actions(db::track_info ti, Widget* widget, bool remove_from_playlist_option,
-                                       const std::function<void()>& callback_close) {
+static void show_popover_tracklist_track_actions(db::track_info ti, Widget* widget, bool remove_from_playlist_option,
+                                                 const std::function<void()>& callback_close) {
   if (!db::track_by_id(ti.track_id).has_value()) { return; }
   bool is_loved = db::playlist_loved_tracks().has_track_id(ti.track_id);
   bool is_user_playlist = db::playlist_by_id(ti.playlist_id).value().get().type == db::PlaylistType::User;
 
   decltype(popover_descriptor::buttons) buttons;
 
+  buttons.emplace_back(tr::get("popover.track.play"), [ti, callback_close]() -> void {
+    player::play(ti, true);
+    if (callback_close) { callback_close(); }
+  });
+
   buttons.emplace_back(tr::get("popover.track.play_next"), [ti, callback_close]() -> void {
-    player::enqueue(
-      db::track_info{.collection_id = ti.collection_id, .playlist_id = ti.playlist_id, .track_id = ti.track_id},
-      player::get_playing_index().value_or(player::get_playing_queue().size()));
+    player::enqueue(ti, player::get_playing_index().value_or(player::get_playing_queue().size()));
 
     notifications->push(
-      tr::format("notification.playing_next", utf32_to_utf8(db::track_by_id(ti.track_id)->get().pretty_name())));
+      tr::format("notification.appended_to_queue", utf32_to_utf8(db::track_by_id(ti.track_id)->get().pretty_name())));
+    if (callback_close) { callback_close(); }
+  });
+
+  buttons.emplace_back(tr::get("popover.track.append_to_queue"), [ti, callback_close]() -> void {
+    player::enqueue(ti, player::get_playing_queue().size());
+
+    notifications->push(
+      tr::format("notification.appended_to_queue", utf32_to_utf8(db::track_by_id(ti.track_id)->get().pretty_name())));
     if (callback_close) { callback_close(); }
   });
 
@@ -1160,16 +1172,14 @@ static void show_popover_track_actions(db::track_info ti, Widget* widget, bool r
   popup_controller->create_popover(d);
 };
 
-static void show_popover_tracklist_selection_actions(WidgetTrack* widget, const std::function<void()>& callback_close) {
-  auto selection = panel_tracks->selection();
-  if (selection.get().empty()) { return; }
+static void show_popover_tracklist_tracks_actions(WidgetTrack* widget, std::span<const db::track_info> tracks,
+                                                  const std::function<void()>& callback_close) {
+  if (tracks.empty()) { return; }
 
   bool all_tracks_loved = true;
   bool all_tracks_not_loved = true;
-  std::optional<db::playlist_id_t> common_playlist_id = selection.get()[0].playlist_id;
-  for (auto& track_info : selection.get()) {
-    // auto track = db::track_by_id(track_info.track_id);
-    // if (!track.has_value()) { continue; }
+  std::optional<db::playlist_id_t> common_playlist_id = tracks.begin()->playlist_id;
+  for (auto& track_info : tracks) {
     if (track_info.playlist_id != common_playlist_id) { common_playlist_id = std::nullopt; }
     bool is_loved = db::playlist_loved_tracks().has_track_id(track_info.track_id);
     if (!is_loved && all_tracks_loved) { all_tracks_loved = false; }
@@ -1182,21 +1192,38 @@ static void show_popover_tracklist_selection_actions(WidgetTrack* widget, const 
   //                 db::playlist_by_id(common_playlist_id.value()).value().get().type == db::PlaylistType::Album;
 
   std::vector<db::track_id_t> track_ids;
-  for (auto& ti : selection.get()) {
+  std::vector<size_t> track_indices;
+  track_ids.reserve(tracks.size());
+  track_indices.reserve(tracks.size());
+  for (const auto& ti : tracks) {
     track_ids.emplace_back(ti.track_id);
+    track_indices.emplace_back(ti.index);
   }
 
   decltype(popover_descriptor::buttons) buttons;
 
-  buttons.emplace_back(tr::get("popover.track.play_next"), [selection, callback_close]() -> void {
-    for (auto& ti : selection.get()) {
-      player::enqueue(
-        db::track_info{.collection_id = ti.collection_id, .playlist_id = ti.playlist_id, .track_id = ti.track_id},
-        player::get_playing_index().value_or(player::get_playing_queue().size()));
-    }
-    notifications->push(tr::format("notification.playing_next_plural", selection.get().size()));
-    if (callback_close) { callback_close(); }
-  });
+  buttons.emplace_back(tr::get("popover.track.play_plural"),
+                       [tracks_ = std::vector(tracks.begin(), tracks.end()), callback_close]() -> void {
+                         player::clear_queue();
+                         player::add_to_queue(tracks_, 0);
+                         player::set_playing_index(0);
+                         if (callback_close) { callback_close(); }
+                       });
+
+  buttons.emplace_back(tr::get("popover.track.play_next_plural"),
+                       [tracks_ = std::vector(tracks.begin(), tracks.end()), callback_close]() -> void {
+                         player::add_to_queue(
+                           tracks_, player::get_playing_index().value_or(player::get_playing_queue().size()) + 1);
+                         notifications->push(tr::format("notification.appended_to_queue_plural", tracks_.size()));
+                         if (callback_close) { callback_close(); }
+                       });
+
+  buttons.emplace_back(tr::get("popover.track.append_to_queue_plural"),
+                       [tracks_ = std::vector(tracks.begin(), tracks.end()), callback_close]() -> void {
+                         player::add_to_queue(tracks_, player::get_playing_queue().size());
+                         notifications->push(tr::format("notification.appended_to_queue_plural", tracks_.size()));
+                         if (callback_close) { callback_close(); }
+                       });
 
   if (!all_tracks_loved) {
     buttons.emplace_back(tr::get("popover.track.love"), [track_ids, callback_close]() -> void {
@@ -1220,18 +1247,12 @@ static void show_popover_tracklist_selection_actions(WidgetTrack* widget, const 
   if (common_playlist_id.has_value() && is_user_playlist && common_playlist_id != db::playlist_loved_tracks_id()) {
     auto& playlist = db::playlist_by_id(common_playlist_id.value())->get();
     buttons.emplace_back(tr::format("popover.track.remove_from_playlist", utf32_to_utf8(playlist.name)),
-                         [track_ids, callback_close, common_playlist_id]() -> void {
+                         [track_indices, callback_close, common_playlist_id]() -> void {
                            auto& playlist = db::playlist_by_id(common_playlist_id.value())->get();
-                           i32 removed_tracks_count = 0;
-                           for (db::track_id_t track_id : track_ids) {
-                             if (db::remove_track_id_from_playlist(common_playlist_id.value(), track_id)) {
-                               removed_tracks_count += 1;
-                             }
-                           }
-
-                           if (removed_tracks_count != 0) {
+                           db::remove_track_indices_from_playlist(common_playlist_id.value(), track_indices);
+                           if (track_indices.size() != 0) {
                              notifications->push(tr::format("notification.removed_tracks_from_playlist",
-                                                            removed_tracks_count, utf32_to_utf8(playlist.name)));
+                                                            track_indices.size(), utf32_to_utf8(playlist.name)));
                              panel_tracks->clear();
                              panel_tracks->recreate(active_collection_id);
                            }
@@ -1283,7 +1304,7 @@ static void show_popover_collection_actions(db::collection_id_t collection_id, W
   popup_controller->create_popover(d);
 };
 
-static void show_popover_queue_item_actions(db::track_info ti, WidgetTrack* widget) {
+static void show_popover_queue_track_actions(db::track_info ti, WidgetTrack* widget) {
   auto play = player::get_playing_queue()[ti.index];
   size_t track_id = play.track_id;
   size_t playlist_id = play.playlist_id;
@@ -1344,6 +1365,99 @@ static void show_popover_queue_item_actions(db::track_info ti, WidgetTrack* widg
   popup_controller->create_popover(d);
 };
 
+static void show_popover_queue_tracks_actions(WidgetTrack* widget, std::span<const db::track_info> tracks,
+                                              const std::function<void()>& callback_close) {
+  if (tracks.empty()) { return; }
+
+  bool all_tracks_loved = true;
+  bool all_tracks_not_loved = true;
+
+  std::vector<db::track_id_t> track_ids;
+  std::vector<size_t> queue_indices;
+  track_ids.reserve(tracks.size());
+  queue_indices.reserve(tracks.size());
+
+  for (const auto& track_info : tracks) {
+    track_ids.push_back(track_info.track_id);
+    queue_indices.push_back(track_info.index);
+
+    bool is_loved = db::playlist_loved_tracks().has_track_id(track_info.track_id);
+    if (!is_loved) { all_tracks_loved = false; }
+    if (is_loved) { all_tracks_not_loved = false; }
+  }
+
+  decltype(popover_descriptor::buttons) buttons;
+
+  buttons.emplace_back(tr::get("popover.track.play_next_plural"),
+                       [tracks_ = std::vector(tracks.begin(), tracks.end()), callback_close]() -> void {
+                         auto playing_index = player::get_playing_index();
+                         if (playing_index.has_value()) {
+                           size_t target_index = playing_index.value();
+                           size_t adjusted_target_index = target_index;
+
+                           std::vector<size_t> indices_to_remove;
+                           indices_to_remove.reserve(tracks_.size());
+
+                           for (const auto& item : tracks_) {
+                             indices_to_remove.push_back(item.index);
+                             if (item.index <= target_index) { adjusted_target_index -= 1; }
+                           }
+
+                           player::remove_from_queue(indices_to_remove);
+                           player::add_to_queue(tracks_, adjusted_target_index + 1);
+                         } else {
+                           std::vector<size_t> indices_to_remove;
+                           indices_to_remove.reserve(tracks_.size());
+                           for (const auto& item : tracks_) {
+                             indices_to_remove.push_back(item.index);
+                           }
+                           player::remove_from_queue(indices_to_remove);
+                           player::add_to_queue(tracks_, 0);
+                         }
+
+                         panel_queue->on_queue_changed();
+                         if (callback_close) { callback_close(); }
+                       });
+
+  buttons.emplace_back(tr::get("popover.queue.remove_plural"), [queue_indices, callback_close]() -> void {
+    player::remove_from_queue(queue_indices);
+    panel_queue->on_queue_changed();
+    if (callback_close) { callback_close(); }
+  });
+
+  if (!all_tracks_loved) {
+    buttons.emplace_back(tr::get("popover.track.love"), [track_ids, callback_close]() -> void {
+      love_tracks(track_ids);
+      panel_queue->on_queue_changed();
+      if (callback_close) { callback_close(); }
+    });
+  }
+
+  if (!all_tracks_not_loved) {
+    buttons.emplace_back(tr::get("popover.track.unlove"), [track_ids, callback_close]() -> void {
+      unlove_tracks(track_ids);
+      panel_queue->on_queue_changed();
+      if (callback_close) { callback_close(); }
+    });
+  }
+
+  buttons.emplace_back(tr::get("popover.track.add_to_playlist"), [track_ids, callback_close]() -> void {
+    show_add_to_playlist_popup(track_ids);
+    if (callback_close) { callback_close(); }
+  });
+
+  vec2i at = widget->get_position(Anchor::CENTER);
+  at.x = Input::get_mouse_x();
+  popover_descriptor d{
+    .id = "queue_tracks_actions",
+    .title = tr::format("popover.track.title_plural", tracks.size()),
+    .at = at,
+    .distance = 4,
+    .buttons = buttons,
+  };
+  popup_controller->create_popover(d);
+}
+
 static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget* widget, bool play_actions,
                                           const std::function<void()>& callback_close) {
   decltype(popover_descriptor::buttons) buttons;
@@ -1361,7 +1475,7 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
       if (panel_albums->get_collection_id().has_value()) {
         if (player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false)) {
           notifications->push(
-            tr::format("notification.playing_next", utf32_to_utf8(db::playlist_by_id(playlist_id)->get().name)));
+            tr::format("notification.appended_to_queue", utf32_to_utf8(db::playlist_by_id(playlist_id)->get().name)));
         }
       }
     });
@@ -1730,7 +1844,7 @@ static void show_search_popup() {
   };
 
   popup->on_track_rmb = [callback_close](db::track_info ti, Widget* w) -> void {
-    show_popover_track_actions(ti, w, false, callback_close);
+    show_popover_tracklist_track_actions(ti, w, false, callback_close);
   };
 
   popup->on_closed = []() { search_popup_visible = false; };
