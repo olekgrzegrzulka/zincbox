@@ -9,7 +9,7 @@ enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW, MANUAL };
 
 class ToolTip : public Sprite {
   public:
-    ToolTip(UI& ui_, std::u32string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
+    ToolTip(UI& ui_, std::u32string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
       : Sprite(ui_, "tooltip") {
       pos = pos_;
       distance = distance_;
@@ -24,7 +24,7 @@ class ToolTip : public Sprite {
       set_size_and_position();
     }
 
-    ToolTip(UI& ui_, std::string name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
+    ToolTip(UI& ui_, std::string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
       : Sprite(ui_, "tooltip") {
       pos = pos_;
       distance = distance_;
@@ -54,6 +54,10 @@ class ToolTip : public Sprite {
       set_size_and_position();
     }
 
+    void set_clamp(bool value) {
+      if (clamp != value) { clamp = value; }
+    }
+
     void set_size_and_position() {
       label->set_size(vec2i{label->get_text_extents()});
       set_size(vec2i{label->get_text_extents()} + vec2i{20, 20});
@@ -81,15 +85,17 @@ class ToolTip : public Sprite {
     }
 
     void update() override {
-      i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
-      i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
-      i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
-      i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
-
       if (label->get_dirty()) { mark_dirty(); }
 
-      set_x(get_x() + off_screen_left - off_screen_right);
-      set_y(get_y() + off_screen_top - off_screen_bottom);
+      if (clamp) {
+        i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
+        i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
+        i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
+        i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
+
+        set_x(get_x() + off_screen_left - off_screen_right);
+        set_y(get_y() + off_screen_top - off_screen_bottom);
+      }
 
       Sprite::update();
     }
@@ -100,4 +106,5 @@ class ToolTip : public Sprite {
     Label* label{};
     ToolTipPosition pos{};
     i32 distance{};
+    bool clamp = true;
 };

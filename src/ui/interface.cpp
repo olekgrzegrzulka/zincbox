@@ -9,6 +9,7 @@
 #include <string_view>
 #include "common/config.hpp"
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
@@ -51,6 +52,7 @@ static std::vector<std::u32string> tabs_order;
 static bool search_popup_visible = false;
 
 static std::optional<PanelTracksSelection> selection_drag;
+static bool selection_drag_is_from_queue = false;
 static vec2i selection_drag_start{};
 static bool selection_drag_started = false;
 static i32 selection_drag_tab_id = -1;
@@ -170,6 +172,7 @@ void interface::init() {
   tooltip_drag = &ui->add_widget<ToolTip>(U"", ToolTipPosition::MANUAL);
   tooltip_drag->set_is_drawn(false);
   tooltip_drag->set_anchor(Anchor::TOP);
+  tooltip_drag->set_clamp(false);
   panel_albums = &ui->add_widget<PanelAlbums>();
   panel_controls = &ui->add_widget<PanelControls>();
 
@@ -589,19 +592,23 @@ static void handle_drag_and_drop() {
       if (!panel_tracks->selection().empty()) {
         selection_drag_start = Input::get_mouse_pos();
         selection_drag = panel_tracks->selection();
+        selection_drag_is_from_queue = false;
       } else if (hovered_track) {
         selection_drag_start = Input::get_mouse_pos();
         selection_drag = PanelTracksSelection{};
         selection_drag->insert(hovered_track->track_info());
+        selection_drag_is_from_queue = false;
       }
     } else if (panel_queue->get_is_drawn()) {
       if (!panel_queue->selection().empty()) {
         selection_drag_start = Input::get_mouse_pos();
         selection_drag = panel_queue->selection();
+        selection_drag_is_from_queue = true;
       } else if (hovered_track) {
         selection_drag_start = Input::get_mouse_pos();
         selection_drag = PanelTracksSelection{};
         selection_drag->insert(hovered_track->track_info());
+        selection_drag_is_from_queue = true;
       }
     }
   }
@@ -674,7 +681,7 @@ static void handle_drag_and_drop() {
   };
 
   panel_tracks->set_insert_cursor_track_info(std::nullopt);
-  // panel_queue->set_insert_cursor_track_info(std::nullopt);
+  panel_queue->set_insert_cursor_track_info(std::nullopt);
 
   auto handle_drag_tab = [&](Tab* hovered_tab, bool /* drag_ended */) -> bool {
     if (!hovered_tab) { return false; }
@@ -686,30 +693,86 @@ static void handle_drag_and_drop() {
     return false;
   };
 
-  auto handle_drag_track = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+  auto handle_drag_track_queue = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
     if (!hovered_track) { return false; }
+    bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
     if (!drag_ended) {
-      if (panel_queue->get_is_drawn()) {
-        // panel_queue->set_insert_cursor(hovered_track->track_number());
-      } else if (active_collection_id.has_value()) {
-        panel_tracks->set_insert_cursor_track_info(hovered_track->track_info());
-        bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
-        panel_tracks->set_insert_cursor_pos(above ? PanelTracks::InsertCursorPos::ABOVE
-                                                  : PanelTracks::InsertCursorPos::BELOW);
+      auto insert_cursor_pos = above ? PanelTracks::InsertCursorPos::ABOVE : PanelTracks::InsertCursorPos::BELOW;
+      panel_queue->set_insert_cursor_track_info(hovered_track->track_info());
+      panel_queue->set_insert_cursor_pos(insert_cursor_pos);
+      if (selection_drag_is_from_queue) {
+        if (selection_drag->size() > 1) {
+          tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", selection_drag->size()));
+        } else {
+          tooltip_drag->set_text(tr::get("tooltip.drag.reorder"));
+        }
+      } else {
+        if (selection_drag->size() > 1) {
+          tooltip_drag->set_text(tr::format("tooltip.drag.add_to_queue_plural", selection_drag->size()));
+        } else {
+          tooltip_drag->set_text(tr::get("tooltip.drag.add_to_queue"));
+        }
       }
-      tooltip_drag->set_text(U"...");
       return true;
     } else {
+      size_t i = hovered_track->track_info().index;
+      if (!above) { i += 1; }
+      out::warn("dragged {} tracks onto queue at {}", selection_drag->size(), i);
       return true;
     }
   };
 
-  if (vec2i diff = selection_drag_start - Input::get_mouse_pos();
-      selection_drag.has_value() && (std::abs(diff.x) > 4 || std::abs(diff.y) > 4)) {
+  auto handle_drag_track_tracklist = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+    if (!hovered_track) { return false; }
+    if (!selection_drag.has_value()) { return false; }
+    bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+    if (!drag_ended) {
+      auto insert_cursor_pos = above ? PanelTracks::InsertCursorPos::ABOVE : PanelTracks::InsertCursorPos::BELOW;
+      panel_tracks->set_insert_cursor_track_info(hovered_track->track_info());
+      panel_tracks->set_insert_cursor_pos(insert_cursor_pos);
+
+      if (hovered_track->playlist_id() == selection_drag->get_common_playlist_id()) {
+        if (selection_drag->size() > 1) {
+          tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", selection_drag->size()));
+        } else {
+          tooltip_drag->set_text(tr::get("tooltip.drag.reorder"));
+        }
+      } else {
+        if (selection_drag->size() > 1) {
+          auto playlist = db::playlist_by_id(hovered_track->playlist_id());
+          if (!playlist.has_value()) { return false; }
+          tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist_plural", selection_drag->size(),
+                                            utf32_to_utf8(playlist->get().name)));
+        } else {
+          tooltip_drag->set_text(tr::get("tooltip.drag.add_to_playlist"));
+        }
+      }
+      return true;
+    } else {
+      size_t i = hovered_track->track_info().index;
+      if (!above) { i += 1; }
+      out::warn("dragged {} tracks onto tracklist at {}", selection_drag->size(), i);
+      return true;
+    }
+  };
+
+  auto handle_drag_track = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+    if (!hovered_track) { return false; }
+    if (panel_queue->get_is_drawn()) {
+      return handle_drag_track_queue(hovered_track, drag_ended);
+    } else if (panel_tracks->get_is_drawn()) {
+      return handle_drag_track_tracklist(hovered_track, drag_ended);
+    }
+    return false;
+  };
+
+  if (lmb_just_pressed && hovered_track && selection_drag && selection_drag->has(hovered_track->track_info())) {
     selection_drag_started = true;
   }
 
-  bool valid_selection = selection_drag.has_value() && !selection_drag->empty() && selection_drag_started;
+  vec2i diff = selection_drag_start - Input::get_mouse_pos();
+  bool valid_selection = selection_drag && !selection_drag->empty() && selection_drag_started &&
+                         (std::abs(diff.x) > 4 || std::abs(diff.y) > 4);
 
   if (valid_selection) {
     tooltip_drag->set_is_drawn(true);
