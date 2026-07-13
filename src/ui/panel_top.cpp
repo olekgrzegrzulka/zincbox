@@ -57,18 +57,6 @@ const Tab* PanelTop::get_queue_tab() const {
   return nullptr;
 }
 
-void PanelTop::input() {
-  std::array<Widget*, 4> custom_children_input_update_order = {button_right, button_left, button_settings, tab_bar};
-
-  for (auto&& child : custom_children_input_update_order) {
-    if (child->get_is_updated() && !child->get_marked_for_deletion()) { child->input(); }
-  }
-
-  for (auto& ev : Input::get_event_queue()) {
-    std::visit([&](auto& ev) { Widget::event(ev); }, ev);
-  }
-}
-
 void PanelTop::update() {
   set_width(ui.get_window_width());
 

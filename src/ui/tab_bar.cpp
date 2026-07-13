@@ -93,14 +93,12 @@ void Tab::update() {
 void Tab::event(Input::InputEventMouseButton& ev) {
   using enum Input::MouseButton;
   using enum Input::MouseAction;
-  bool handled = false;
-  if (is_mouse_hovering() && ev.button == MOUSE_BUTTON_LEFT && ev.action == PRESS) {
-    handled = true;
-    if (on_drag_start) { on_drag_start(index); }
-  }
 
   Button::event(ev);
-  ev.handled = ev.handled || handled;
+  if (is_mouse_hovering() && ev.button == MOUSE_BUTTON_LEFT && ev.action == PRESS) {
+    ev.handled = true;
+    if (on_drag_start) { on_drag_start(index); }
+  }
 }
 
 TabBar::TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
