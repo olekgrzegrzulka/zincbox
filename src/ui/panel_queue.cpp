@@ -64,13 +64,11 @@ void PanelQueue::update() {
   Widget::update();
 }
 
-void PanelQueue::on_track_lmb(
-  const std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)>& fn) {
+void PanelQueue::on_track_lmb(const std::function<void(db::track_info, WidgetTrack*)>& fn) {
   if (fn) { panel_tracks->on_track_lmb = fn; }
 }
 
-void PanelQueue::on_track_rmb(
-  const std::function<void(db::track_info, size_t playlist_track_index, WidgetTrack*)>& fn) {
+void PanelQueue::on_track_rmb(const std::function<void(db::track_info, WidgetTrack*)>& fn) {
   if (fn) { panel_tracks->on_track_rmb = fn; }
 }
 
