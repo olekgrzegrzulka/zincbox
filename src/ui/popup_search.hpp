@@ -111,18 +111,12 @@ class PopupSearch : public Popup {
       found_tracks.clear();
       if (new_search_text.empty()) {
         playlists_container->props.playlist_ids = {};
-        playlists_container->set_height(0);
         for (auto&& t : tracks_container->get_children()) {
           t->set_marked_for_deletion(true);
         }
-        scrollbar->set_content_size(0);
-        scrollbar->set_page_size(0);
         scrollbar->set_scroll_offset(0);
         scroll_px = 0.1;
         target_scroll_px = 0.0;
-        label_playlists->set_is_drawn(false);
-        label_tracks->set_is_drawn(false);
-        label_no_results->set_is_drawn(true);
         return;
       }
       if (checkbox_search_all_collections->is_checked()) {
@@ -132,7 +126,7 @@ class PopupSearch : public Popup {
         }
         found_tracks = db::search_tracks(search_text, MAX_TRACKS);
       } else {
-        auto res = db::search_playlists(search_text, MAX_PLAYLISTS);
+        auto res = db::search_playlists(search_text, collection_id, MAX_PLAYLISTS);
         for (auto& r : res) {
           playlist_ids.emplace_back(r.playlist_id);
         }
@@ -140,19 +134,13 @@ class PopupSearch : public Popup {
       }
 
       playlists_container->props.playlist_ids = playlist_ids;
+      playlists_container->recreate();
       playlists_container->on_playlist_lmb = [this](size_t playlist_id, Widget* w) -> void {
         if (on_playlist_lmb) { on_playlist_lmb(playlist_id, w); }
       };
       playlists_container->on_playlist_rmb = [this](size_t playlist_id, Widget* w) -> void {
         if (on_playlist_rmb) { on_playlist_rmb(playlist_id, w); }
       };
-      if (playlist_ids.size() > 0) {
-        playlists_container->set_height(playlists_container->get_content_size().y);
-        label_playlists->set_is_drawn(true);
-      } else {
-        playlists_container->set_height(0);
-        label_playlists->set_is_drawn(false);
-      }
 
       for (auto&& t : tracks_container->get_children()) {
         t->set_marked_for_deletion(true);
@@ -174,17 +162,6 @@ class PopupSearch : public Popup {
         i += 1;
       }
 
-      label_tracks->set_is_drawn(found_tracks.size() > 0);
-      label_no_results->set_is_drawn(playlist_ids.size() == 0 && found_tracks.size() == 0);
-
-      i32 track_total_height = found_tracks.size() * track_height;
-      i32 content_size = playlists_container->get_height() + track_total_height;
-      if (label_playlists->get_is_drawn()) { content_size += label_playlists->get_height(); }
-      if (label_tracks->get_is_drawn()) { content_size += label_tracks->get_height(); }
-
-      i32 page_size = scrollable_content->get_height();
-      scrollbar->set_content_size(content_size);
-      scrollbar->set_page_size(page_size);
       scrollbar->set_scroll_offset(0);
       scroll_px = 0.1;
       target_scroll_px = 0.0;
@@ -193,6 +170,12 @@ class PopupSearch : public Popup {
     void update() override {
       set_width(std::clamp(ui.get_window_width() - 100, 300, 600));
       set_height(std::clamp(ui.get_window_height() - 100, 300, 500));
+
+      if (checkbox_search_all_collections_state_old != checkbox_search_all_collections->is_checked()) {
+        checkbox_search_all_collections_state_old = checkbox_search_all_collections->is_checked();
+        search_text.clear();
+        update_search_results();
+      }
 
       if (scroll_px != target_scroll_px) {
         double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
@@ -209,6 +192,13 @@ class PopupSearch : public Popup {
       }
 
       search_bar->set_width(get_width() - 16);
+      label_tracks->set_is_drawn(found_tracks.size() > 0);
+      if (playlist_ids.size() == 0 && found_tracks.size() == 0) {
+        bool no_search_text = sanitize_query(search_bar->label.get_text()).empty();
+        label_no_results->set_is_drawn(!no_search_text);
+      } else {
+        label_no_results->set_is_drawn(false);
+      }
 
       search_results->set_width(get_width() - 16);
       search_results->set_height(get_height() - (22 + 32 + 4 * 8));
@@ -216,7 +206,24 @@ class PopupSearch : public Popup {
       buttons->set_width(get_width() - 16);
 
       playlists_container->set_width(scrollable_content->get_width());
+      if (playlist_ids.size() > 0) {
+        playlists_container->set_height(playlists_container->get_content_size().y);
+        label_playlists->set_is_drawn(true);
+      } else {
+        playlists_container->set_height(0);
+        label_playlists->set_is_drawn(false);
+      }
       tracks_container->set_width(scrollable_content->get_width());
+
+      static i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
+      i32 track_total_height = found_tracks.size() * track_height;
+      i32 content_size = playlists_container->get_height() + track_total_height;
+      if (label_playlists->get_is_drawn()) { content_size += label_playlists->get_height(); }
+      if (label_tracks->get_is_drawn()) { content_size += label_tracks->get_height(); }
+
+      i32 page_size = scrollable_content->get_height();
+      scrollbar->set_content_size(content_size);
+      scrollbar->set_page_size(page_size);
 
       Popup::update();
     }
@@ -256,6 +263,7 @@ class PopupSearch : public Popup {
     Label* label_playlists{};
     Label* label_tracks{};
     Label* label_no_results{};
+    bool checkbox_search_all_collections_state_old = true;
 
     size_t collection_id{};
     std::u32string search_text{};
