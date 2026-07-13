@@ -34,6 +34,21 @@ bool db::Playlist::add_track(size_t track_id) {
   return true;
 }
 
+void db::Playlist::insert_tracks(size_t at, std::span<const size_t> new_track_ids) {
+  if (new_track_ids.empty()) { return; }
+  size_t insert_pos = std::min(at, track_ids.size());
+  std::vector<size_t> unique_tracks;
+  unique_tracks.reserve(new_track_ids.size());
+  for (size_t id : new_track_ids) {
+    if (!has_track_id(id) && std::find(unique_tracks.begin(), unique_tracks.end(), id) == unique_tracks.end()) {
+      unique_tracks.emplace_back(id);
+    }
+  }
+  if (!unique_tracks.empty()) {
+    track_ids.insert(track_ids.begin() + insert_pos, unique_tracks.begin(), unique_tracks.end());
+  }
+}
+
 bool db::Playlist::remove_track_by_id(size_t track_id) {
   auto index = find_track_index(track_id);
   if (!index.has_value()) { return false; }
@@ -45,6 +60,16 @@ bool db::Playlist::remove_track_by_index(size_t index) {
   if (index >= track_ids.size()) { return false; }
   track_ids.erase(track_ids.begin() + index);
   return true;
+}
+
+void db::Playlist::remove_tracks_by_indices(std::span<const size_t> indices) {
+  if (indices.empty() || track_ids.empty()) { return; }
+  std::vector<size_t> sorted_indices(indices.begin(), indices.end());
+  std::sort(sorted_indices.begin(), sorted_indices.end(), std::greater<size_t>());
+  sorted_indices.erase(std::unique(sorted_indices.begin(), sorted_indices.end()), sorted_indices.end());
+  for (size_t index : sorted_indices) {
+    if (index < track_ids.size()) { track_ids.erase(track_ids.begin() + index); }
+  }
 }
 
 void db::Playlist::sort_by_track_number() {

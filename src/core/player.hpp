@@ -1,5 +1,6 @@
 #pragma once
 #include <optional>
+#include <span>
 #include <vector>
 #include "common/signal.hpp"
 #include "common/types.hpp"
@@ -19,7 +20,9 @@ namespace player {
   bool play(db::track_info, bool clear_queue = true);
   bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
   void enqueue(db::track_info, size_t at);
+  void add_to_queue(std::span<const db::track_info> play, size_t at);
   void remove_from_queue(size_t at);
+  void remove_from_queue(std::span<const size_t>);
   void clear_queue();
   void resume();
   void pause();

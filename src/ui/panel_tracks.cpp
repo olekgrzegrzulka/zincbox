@@ -49,6 +49,7 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
 
   insert_cursor = &add_child<Sprite>("insert_cursor");
   insert_cursor->set_height(2);
+  insert_cursor->set_anchor(Anchor::CENTER_LEFT);
   insert_cursor->set_is_drawn(false);
 }
 
@@ -339,6 +340,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   }
 
   scrollbar->set_content_size(max_scroll_px);
+  set_scroll_px(scroll_px);
 }
 
 void PanelTracks::recreate(std::span<const db::track_info> tracks) {
@@ -352,6 +354,7 @@ void PanelTracks::recreate(std::span<const db::track_info> tracks) {
   }
 
   scrollbar->set_content_size(max_scroll_px);
+  set_scroll_px(scroll_px);
 }
 
 void PanelTracks::insert_track(size_t index, db::track_info ti) {
@@ -372,6 +375,16 @@ void PanelTracks::set_track(size_t index, db::track_info ti) {
   Item item_track = {.type = ItemType::TRACK, .track_info = ti};
   items[index] = item_track;
   max_scroll_px += (item_track.height() - prev_height);
+  scrollbar->set_content_size(max_scroll_px);
+  just_recreated = true;
+  m_selection.clear();
+}
+
+void PanelTracks::remove_item(size_t index) {
+  if (index >= items.size()) { return; }
+  i32 h = items[index].height();
+  items.erase(items.begin() + index);
+  max_scroll_px -= h;
   scrollbar->set_content_size(max_scroll_px);
   just_recreated = true;
   m_selection.clear();

@@ -486,6 +486,13 @@ bool db::add_track_id_to_playlist(size_t playlist_id, size_t track_id) {
   return playlist.add_track(track_id);
 }
 
+bool db::add_track_ids_to_playlist(size_t playlist_id, size_t at, std::span<const size_t> track_ids) {
+  if (playlist_id >= playlists.size()) { return false; }
+
+  playlists[playlist_id].insert_tracks(at, track_ids);
+  return true;
+}
+
 bool db::remove_track_id_from_playlist(size_t playlist_id, size_t track_id) {
   if (playlist_id >= playlists.size()) { return false; }
   if (track_id >= tracks.size()) { return false; }
@@ -497,6 +504,13 @@ bool db::remove_track_index_from_playlist(size_t playlist_id, size_t track_index
   if (playlist_id >= playlists.size()) { return false; }
   auto& playlist = playlists[playlist_id];
   return playlist.remove_track_by_index(track_index);
+}
+
+bool db::remove_track_indices_from_playlist(size_t playlist_id, std::span<const size_t> indices) {
+  if (playlist_id >= playlists.size()) { return false; }
+
+  playlists[playlist_id].remove_tracks_by_indices(indices);
+  return true;
 }
 
 size_t db::add_track_to_playlist(size_t playlist_id, Track& track) {
