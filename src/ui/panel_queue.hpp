@@ -23,6 +23,11 @@ class PanelQueue : public Widget {
     const PanelTracksSelection& selection() const { return panel_tracks->selection(); }
     void clear_selection() { panel_tracks->clear_selection(); }
 
+    void set_insert_cursor_track_info(std::optional<db::track_info> value) {
+      panel_tracks->set_insert_cursor_track_info(value);
+    }
+    void set_insert_cursor_pos(PanelTracks::InsertCursorPos value) { panel_tracks->set_insert_cursor_pos(value); }
+
     void on_queue_appended_to_back();
     void on_queue_changed();
     void on_queue_changed_at(size_t);
