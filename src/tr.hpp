@@ -13,6 +13,11 @@ namespace tr {
 
   template <typename... Args> std::u32string format(const std::string& key, Args&&... args) {
     std::u32string fmt_str = get(key);
-    return utf8_to_utf32(fmt::format(fmt::runtime(utf32_to_utf8(fmt_str)), std::forward<Args>(args)...));
+    try {
+      return utf8_to_utf32(fmt::format(fmt::runtime(utf32_to_utf8(fmt_str)), std::forward<Args>(args)...));
+    } catch (const fmt::format_error& e) {
+      out::error("tr::format: error key '{}': {}", key, e.what());
+      return fmt_str;
+    }
   }
 } // namespace tr
