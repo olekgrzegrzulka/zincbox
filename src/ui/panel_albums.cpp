@@ -188,7 +188,7 @@ void PanelAlbums::recreate() {
   panel_search->set_is_drawn(props.panel_search_visible);
 
   scrollbar->set_is_updated(props.is_scrollable);
-  scrollbar->set_is_drawn(props.is_scrollable);
+  scrollbar->set_is_drawn(props.is_scrollable && (scrollbar->get_content_size() > scrollbar->get_page_size()));
 
   button_sort_by->set_is_updated(props.button_sort_by_visible);
   button_sort_by->set_is_drawn(props.button_sort_by_visible);
@@ -277,45 +277,39 @@ void PanelAlbums::reflow() {
   i32 albums_area_width = albums_container->get_width();
   i32 album_covers_in_one_row = albums_area_width / cover_total_width;
   i32 space_left = albums_area_width - album_covers_in_one_row * cover_total_width;
-
   if (album_covers_in_one_row <= 0) { return; }
-
   std::optional<std::u32string_view> prev_artist;
   std::optional<char32_t> prev_name_first_letter;
-
   i32 column = 0;
   i32 cover_y = 0;
   for (auto& album_widget : album_widgets) {
-    i32 x_ = space_left * (column + 1) / (album_covers_in_one_row + 1) + cover_total_width * column;
-    album_widget->set_pos(x_, cover_y);
-
-    column += 1;
-    bool new_row = column >= album_covers_in_one_row;
     bool group_by_author = props.group && (props.sort_by == SortBy::AUTHOR_AZ || props.sort_by == SortBy::AUTHOR_ZA);
-    if (group_by_author && prev_artist && album_widget->label_author->get_text() != *prev_artist) { new_row = true; }
-
+    bool group_by_name = props.group && (props.sort_by == SortBy::NAME_AZ || props.sort_by == SortBy::NAME_ZA);
+    bool force_new_row = false;
+    if (group_by_author && prev_artist && album_widget->label_author->get_text() != *prev_artist) {
+      force_new_row = true;
+    }
     std::optional<char32_t> name_first_letter;
     if (!album_widget->label_title->get_text().empty()) {
       name_first_letter = transform_to_base_char(album_widget->label_title->get_text()[0]);
-      bool group_by_name = props.group && (props.sort_by == SortBy::NAME_AZ || props.sort_by == SortBy::NAME_ZA);
-      if (group_by_name && prev_name_first_letter && *name_first_letter != *prev_name_first_letter) { new_row = true; }
+      if (group_by_name && prev_name_first_letter && *name_first_letter != *prev_name_first_letter) {
+        force_new_row = true;
+      }
     }
-
-    if (new_row) {
+    if (column >= album_covers_in_one_row || (force_new_row && column > 0)) {
       column = 0;
       cover_y += cover_total_height;
     }
-
+    i32 x_ = space_left * (column + 1) / (album_covers_in_one_row + 1) + cover_total_width * column;
+    album_widget->set_pos(x_, cover_y);
+    column += 1;
     prev_artist = album_widget->label_author->get_text();
     prev_name_first_letter = name_first_letter;
   }
-
-  // i32 row_count = (album_widgets.size() + album_covers_in_one_row - 1) /
-  // album_covers_in_one_row;
-  content_height = cover_y + cover_total_height + (8 + panel_search->get_height());
+  i32 covers_total_bounds = album_widgets.empty() ? 0 : (cover_y + cover_total_height);
+  content_height = covers_total_bounds + (props.panel_search_visible ? (8 + panel_search->get_height()) : 0);
   scrollbar->set_content_size(content_height);
   scrollbar->set_page_size(height);
-  scrollbar->set_height(height);
   scrollbar->set_height(height);
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_height - height)));
   albums_container->set_height(content_height);

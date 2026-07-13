@@ -34,6 +34,8 @@ class ScrollBar : public Slider {
       page_size = v;
       recalculate_values();
     }
+    i32 get_content_size() const { return content_size; }
+    i32 get_page_size() const { return page_size; }
 
     void set_scroll_offset(i32 v) {
       set_value(std::clamp((float)v, min_value, max_value));

@@ -40,11 +40,6 @@ void PopupController::create_popover(const popover_descriptor& d) {
   popover.set_nine_slice_margin(8.0f);
   popover.set_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
   popover.set_layout("ttb fit expand fill m:4 s:0");
-  if (arrow_on_top) {
-    popover.get_layout().direction = LayoutDirection::TOP_TO_BOTTOM;
-  } else {
-    popover.get_layout().direction = LayoutDirection::BOTTOM_TO_TOP;
-  }
 
   popover.set_width(50);
   popover.arrow->set_is_drawn(d.show_arrow);
