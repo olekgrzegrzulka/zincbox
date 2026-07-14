@@ -324,7 +324,8 @@ void PanelAlbums::update() {
   albums_container->set_width(props.is_scrollable ? width - scrollbar->get_width() : width);
   reflow();
   auto albums_container_prev_y = albums_container->get_y();
-  albums_container->set_y(props.panel_search_visible ? (4 + panel_search->get_height() + 4) - scroll_px : -scroll_px);
+  albums_container->set_y(props.panel_search_visible ? (4 + panel_search->get_height() + 4) - std::floor(scroll_px)
+                                                     : -std::floor(scroll_px));
   if (albums_container_prev_y != albums_container->get_y()) { ui.mark_dirty_recursive(albums_container); }
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
