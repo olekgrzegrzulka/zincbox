@@ -7,6 +7,7 @@
 class TextInput : public Sprite {
   public:
     TextInput(UI& ui_);
+    void input() override;
     void update() override;
     void clear();
     void event(Input::InputEventMouseButton&) override;
