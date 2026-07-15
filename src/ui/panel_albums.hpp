@@ -57,7 +57,7 @@ class PanelAlbums : public Sprite {
     void clear();
     void update() override;
     void recreate();
-    void scroll_to_playlist(size_t);
+    void scroll_to_playlist(size_t, bool immediate = false);
     using Sprite::event;
     void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
@@ -69,6 +69,8 @@ class PanelAlbums : public Sprite {
     void reflow();
 
   protected:
+    static constexpr i32 PANEL_SEARCH_HEIGHT = 36;
+    static constexpr i32 PANEL_SEARCH_PADDING = 4;
     double scroll_px = 0.0;
     double target_scroll_px = 0.0;
     i32 content_height = 0;

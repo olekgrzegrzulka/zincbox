@@ -130,17 +130,17 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   scrollbar->set_anchor(Anchor::RIGHT);
   scrollbar->set_parent_anchor(Anchor::RIGHT);
   scrollbar->set_width(12);
-  scrollbar->set_thumb_thickness(12);
+  scrollbar->set_thumb_thickness(10);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
-  scrollbar->set_track_thickness(12);
+  scrollbar->set_track_thickness(10);
   scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
   albums_container = &add_child<Widget>();
-  albums_container->set_pos(0, 4 + 36 + 4);
+  albums_container->set_pos(0, PANEL_SEARCH_HEIGHT + 2 * PANEL_SEARCH_PADDING);
 
   panel_search = &add_child<Sprite>("panel_albums_searchbar");
-  panel_search->set_pos(4, 4);
-  panel_search->set_height(36);
+  panel_search->set_pos(PANEL_SEARCH_PADDING, PANEL_SEARCH_PADDING);
+  panel_search->set_height(PANEL_SEARCH_HEIGHT);
   panel_search->set_layout("m:6 s:6 rtl fill expand");
   panel_search->set_nine_slice_margin(8.0f);
   panel_search->set_ignore_parents_layout(true);
@@ -262,10 +262,13 @@ void PanelAlbums::recreate() {
   reflow();
 }
 
-void PanelAlbums::scroll_to_playlist(size_t playlist_id) {
+void PanelAlbums::scroll_to_playlist(size_t playlist_id, bool immediate) {
   for (auto& album_widget : album_widgets) {
     if (album_widget->playlist_id == playlist_id) {
-      scroll_px = album_widget->get_x();
+      target_scroll_px = album_widget->get_y();
+      target_scroll_px = std::clamp(target_scroll_px, 0.0, std::max(0.0, (double)(content_height - height)));
+      scrollbar->set_scroll_offset(target_scroll_px);
+      if (immediate) { scroll_px = target_scroll_px; }
       break;
     }
   }
@@ -320,12 +323,13 @@ void PanelAlbums::update() {
     recreate();
     props_old = props;
   }
-  panel_search->set_width(width - 4 - 4 - scrollbar->get_width());
+  panel_search->set_width(width - (2 * PANEL_SEARCH_PADDING + scrollbar->get_width()));
   albums_container->set_width(props.is_scrollable ? width - scrollbar->get_width() : width);
   reflow();
   auto albums_container_prev_y = albums_container->get_y();
-  albums_container->set_y(props.panel_search_visible ? (4 + panel_search->get_height() + 4) - std::floor(scroll_px)
-                                                     : -std::floor(scroll_px));
+  albums_container->set_y(props.panel_search_visible
+                            ? (panel_search->get_height() + 2 * PANEL_SEARCH_PADDING) - std::floor(scroll_px)
+                            : -std::floor(scroll_px));
   if (albums_container_prev_y != albums_container->get_y()) { ui.mark_dirty_recursive(albums_container); }
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);

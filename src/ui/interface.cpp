@@ -190,9 +190,10 @@ void interface::init() {
   panel_controls->on_playing_track_lmb = [](Widget*) -> void {
     auto playing = player::get_playing();
     if (playing.has_value()) {
+      bool immediate = active_collection_id != playing->collection_id;
       show_collection(playing->collection_id);
-      panel_albums->scroll_to_playlist(playing->playlist_id);
-      panel_tracks->scroll_to_track(playing->playlist_id, playing->track_id);
+      panel_albums->scroll_to_playlist(playing->playlist_id, immediate);
+      panel_tracks->scroll_to_track(playing->playlist_id, playing->track_id, immediate);
     }
   };
 
@@ -313,9 +314,9 @@ void interface::init() {
       .id = "sort_by",
       .title = U"",
       .at = at,
-      .distance = 4,
+      .distance = 10,
       .buttons = buttons,
-      .show_arrow = false,
+      .show_arrow = true,
     };
     popup_controller->create_popover(d);
   };
@@ -918,9 +919,9 @@ static void show_collection(db::collection_id_t collection_id) {
 
   panel_albums->set_is_drawn(true);
   panel_albums->set_is_updated(true);
-  panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
   panel_albums->props.collection_id = active_collection_id;
   panel_albums->recreate();
+  panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
 
   panel_queue->set_is_drawn(false);
   panel_queue->set_is_updated(false);
@@ -1123,8 +1124,10 @@ static void show_popover_tracklist_track_actions(db::track_info ti, Widget* widg
       if (album_id != db::INVALID_ID) {
         auto collection_id = db::collection_of_playlist(album_id);
         if (collection_id.has_value()) {
+          bool immediate = active_collection_id != collection_id;
           show_collection(collection_id.value());
-          panel_tracks->scroll_to_track(album_id, track_id);
+          panel_tracks->scroll_to_track(album_id, track_id, immediate);
+          panel_albums->scroll_to_playlist(album_id, immediate);
         }
       }
       if (callback_close) { callback_close(); }

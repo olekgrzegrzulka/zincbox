@@ -23,9 +23,9 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   scrollbar->set_anchor(Anchor::LEFT);
   scrollbar->set_parent_anchor(Anchor::LEFT);
   scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
-  scrollbar->set_width(12);
-  scrollbar->set_thumb_thickness(12);
-  scrollbar->set_track_thickness(12);
+  scrollbar->set_width(10);
+  scrollbar->set_thumb_thickness(10);
+  scrollbar->set_track_thickness(10);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
 
   button_play_tooltip = &add_child<ToolTip>(tr::get("tooltip.play"), ToolTipPosition::BELOW, 8);
@@ -144,7 +144,7 @@ void PanelTracks::create_item_widget_if_null(Item& item) {
 
 void PanelTracks::draw() { Sprite::draw(); }
 
-void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
+void PanelTracks::scroll_to_playlist(size_t target_playlist_id, bool immediate) {
   i32 offset = 0;
   for (auto& item : items) {
     if (item.type == ItemType::HEADER) {
@@ -152,19 +152,21 @@ void PanelTracks::scroll_to_playlist(size_t target_playlist_id) {
     }
     offset += item.height();
   }
-
-  scrollbar->set_scroll_offset(offset);
+  target_scroll_px = offset;
+  scrollbar->set_scroll_offset(target_scroll_px);
+  if (immediate) { scroll_px = target_scroll_px; }
 }
 
-void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id) {
+void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool immediate) {
   i32 offset = 0;
   for (auto& item : items) {
     auto ti = item.track_info;
     if (item.type == ItemType::TRACK && ti.track_id == track_id && ti.playlist_id == playlist_id) { break; }
     offset += item.height();
   }
-
-  scrollbar->set_scroll_offset(offset);
+  target_scroll_px = std::clamp(offset, 0, std::max(0, (max_scroll_px - get_height())));
+  scrollbar->set_scroll_offset(target_scroll_px);
+  if (immediate) { scroll_px = target_scroll_px; }
 }
 
 void PanelTracks::update() {
