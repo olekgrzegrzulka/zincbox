@@ -28,9 +28,9 @@ class UI final {
       return widget;
     }
 
-    virtual void input();
-    virtual void update(i32 window_width_, i32 window_height_);
-    virtual void draw();
+    void input();
+    void update(i32 window_width_, i32 window_height_);
+    void draw();
 
     void set_font_face(const std::string& location, i32 pixel_height) {
       font_face = FontFace(freetype_lib, location, pixel_height);

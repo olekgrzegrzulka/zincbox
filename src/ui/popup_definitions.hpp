@@ -228,8 +228,8 @@ class PopupSetSources : public Popup {
       buttons->set_max_height(32);
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
-      btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
-      btn_cancel->on_press([this]() { close(); });
+      btn_close = &buttons->add_child<Button>(tr::get("dialog.action.close"));
+      btn_close->on_press([this]() { close(); });
 
       btn_add_dir = &buttons->add_child<Button>(tr::get("dialog.action.add_directory"));
       btn_add_dir->on_press([this]() {
@@ -283,7 +283,7 @@ class PopupSetSources : public Popup {
     Widget* left_panel{};
     Widget* right_panel{};
     Widget* buttons{};
-    Button* btn_cancel{};
+    Button* btn_close{};
     Button* btn_add_dir{};
 
     std::function<void()> on_add_dir_pressed{};

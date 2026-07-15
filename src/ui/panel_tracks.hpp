@@ -132,8 +132,8 @@ class PanelTracks final : public Sprite {
 
     void clear();
 
-    void scroll_to_playlist(size_t playlist_id);
-    void scroll_to_track(size_t playlist_id, size_t track_id);
+    void scroll_to_playlist(size_t playlist_id, bool immediate = false);
+    void scroll_to_track(size_t playlist_id, size_t track_id, bool immediate = false);
     void set_scroll_px(float px);
     float get_scroll_px() const;
 
