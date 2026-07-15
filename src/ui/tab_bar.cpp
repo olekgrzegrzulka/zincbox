@@ -261,9 +261,13 @@ void TabBar::update() {
 void TabBar::update_tab_textures(i32 id) {
   for (Tab* t : tabs) {
     t->set_texture_inactive();
+    t->set_draw_behind_parent(true);
   }
   selected_tab_index = id;
-  if (tab_valid(selected_tab_index)) { tabs[selected_tab_index]->set_texture_active(); }
+  if (tab_valid(selected_tab_index)) {
+    tabs[selected_tab_index]->set_texture_active();
+    tabs[selected_tab_index]->set_draw_behind_parent(false);
+  }
 }
 
 void TabBar::sort_tabs_by_label(std::span<const std::u32string> labels) {
