@@ -564,6 +564,7 @@ static void handle_dropped_files() {
 
 static void handle_drag_and_drop() {
   bool lmb_just_pressed = Input::mouse_just_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
+  bool rmb_just_pressed = Input::mouse_just_pressed(Input::MouseButton::MOUSE_BUTTON_RIGHT);
   bool lmb_pressed = Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
   bool lmb_just_released = Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT);
   bool lmb = lmb_just_pressed || lmb_pressed || lmb_just_released;
@@ -859,7 +860,8 @@ static void handle_drag_and_drop() {
     }
   }
 
-  if (lmb_just_released) {
+  if (lmb_just_released || rmb_just_pressed || Input::key_just_pressed(Input::Key::KEY_ESCAPE) ||
+      popup_controller->is_popup_open()) {
     selection_drag = std::nullopt;
     selection_drag_started = false;
     selection_drag_tab_id = -1;
