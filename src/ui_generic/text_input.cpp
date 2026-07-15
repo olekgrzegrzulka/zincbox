@@ -17,14 +17,8 @@ TextInput::TextInput(UI& ui_) : Sprite(ui_), label(add_child<Label>()), caret(ad
   caret.set_size({1, 14});
 }
 
-void TextInput::update() {
-  Sprite::update();
-
-  if (!focused) {
-    set_texture("text_input_idle", false);
-  } else {
-    set_texture("text_input_focused", false);
-  }
+void TextInput::input() {
+  Sprite::input();
 
   bool backspace = Input::key_pressed(Input::Key::KEY_BACKSPACE);
 
@@ -65,6 +59,15 @@ void TextInput::update() {
     caret_blink_clock = 0.0f;
     caret.set_is_drawn(false);
   }
+}
+
+void TextInput::update() {
+  if (!focused) {
+    set_texture("text_input_idle", false);
+  } else {
+    set_texture("text_input_focused", false);
+  }
+  Sprite::update();
 }
 
 void TextInput::clear() {

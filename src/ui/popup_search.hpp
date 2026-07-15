@@ -165,6 +165,8 @@ class PopupSearch : public Popup {
       scrollbar->set_scroll_offset(0);
       scroll_px = 0.1;
       target_scroll_px = 0.0;
+      
+      update();
     }
 
     void update() override {
@@ -213,7 +215,6 @@ class PopupSearch : public Popup {
         playlists_container->set_height(0);
         label_playlists->set_is_drawn(false);
       }
-      tracks_container->set_width(scrollable_content->get_width());
 
       static i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
       i32 track_total_height = found_tracks.size() * track_height;
@@ -224,6 +225,11 @@ class PopupSearch : public Popup {
       i32 page_size = scrollable_content->get_height();
       scrollbar->set_content_size(content_size);
       scrollbar->set_page_size(page_size);
+
+      scrollbar->update();
+      search_results->update();
+      tracks_container->set_width(scrollable_content->get_width());
+      playlists_container->set_width(scrollable_content->get_width());
 
       Popup::update();
     }
