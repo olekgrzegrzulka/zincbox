@@ -1,7 +1,7 @@
 #include "player.hpp"
 #include <algorithm>
 #include <optional>
-#include <unordered_set>
+#include <set>
 #include <vector>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
@@ -68,8 +68,7 @@ bool play_track() {
   result =
     ma_sound_init_from_file(&engine, utf32_to_utf8(track.path).c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
   if (result != MA_SUCCESS) {
-    out::warn("player::play: ma_sound_init_from_file returned {} for {}", (i32)result,
-                     utf32_to_utf8(track.path));
+    out::warn("player::play: ma_sound_init_from_file returned {} for {}", (i32)result, utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -78,7 +77,7 @@ bool play_track() {
   result = ma_sound_get_length_in_seconds(&sound, &ret);
   if (result != MA_SUCCESS) {
     out::warn("player::play: ma_sound_get_length_in_seconds returned {} for {}", (i32)result,
-                     utf32_to_utf8(track.path));
+              utf32_to_utf8(track.path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -250,6 +249,60 @@ void player::remove_from_queue(std::span<const size_t> indices) {
   }
 
   if (current_track_removed) { play_track(); }
+}
+
+void player::move_queue_tracks(std::span<const size_t> indices, size_t target_index) {
+  if (indices.empty() || playing_queue.empty()) { return; }
+
+  std::set<size_t, std::less<size_t>> sorted_indices(indices.begin(), indices.end());
+
+  if (*sorted_indices.begin() >= playing_queue.size() || *sorted_indices.rbegin() >= playing_queue.size()) {
+    out::error("player::move_queue_tracks(): index out of bounds");
+    return;
+  }
+
+  if (sorted_indices.size() != indices.size()) {
+    out::error("player::move_queue_tracks(): duplicate indices");
+    return;
+  }
+
+  std::vector<db::track_info> tracks_to_insert;
+  tracks_to_insert.reserve(indices.size());
+  std::optional<size_t> playing_track_offset;
+  for (size_t i = 0; i < indices.size(); ++i) {
+    if (playing_index == indices[i]) { playing_track_offset = i; }
+    tracks_to_insert.emplace_back(playing_queue[indices[i]]);
+  }
+
+  std::optional<size_t> corrected_playing_index;
+  if (playing_index && !playing_track_offset.has_value()) {
+    auto it = sorted_indices.lower_bound(playing_index.value());
+    corrected_playing_index = playing_index.value() - std::distance(sorted_indices.begin(), it);
+  }
+
+  auto it_target = sorted_indices.lower_bound(target_index);
+  size_t corrected_target_index = target_index - std::distance(sorted_indices.begin(), it_target);
+
+  std::vector<db::track_info> playing_queue_new;
+  playing_queue_new.reserve(playing_queue.size() - sorted_indices.size());
+  for (size_t i = 0; i < playing_queue.size(); i += 1) {
+    if (sorted_indices.contains(i)) { continue; }
+    playing_queue_new.emplace_back(playing_queue[i]);
+  }
+
+  playing_queue = std::move(playing_queue_new);
+
+  playing_queue.insert(playing_queue.begin() + corrected_target_index, tracks_to_insert.begin(),
+                       tracks_to_insert.end());
+
+  if (playing_track_offset.has_value()) {
+    playing_index = corrected_target_index + playing_track_offset.value();
+  } else if (corrected_playing_index.has_value()) {
+    if (corrected_playing_index.value() >= corrected_target_index) {
+      corrected_playing_index.value() += tracks_to_insert.size();
+    }
+    playing_index = std::min(corrected_playing_index.value(), playing_queue.size() - 1);
+  }
 }
 
 void player::clear_queue() {
