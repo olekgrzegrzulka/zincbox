@@ -573,6 +573,7 @@ static void handle_drag_and_drop() {
   WidgetAlbumCover* hovered_playlist_cover = nullptr;
   WidgetTrack* hovered_track = nullptr;
   WidgetPlaylistHeader* hovered_playlist_header = nullptr;
+  bool hovered_queue_panel = false;
   Tab* hovered_tab = nullptr;
   if (lmb) {
     for (Widget* hovered_widget : ui->get_hovered_widgets()) {
@@ -727,15 +728,12 @@ static void handle_drag_and_drop() {
       size_t target_index = hovered_track->track_info().index;
       if (!above) { target_index += 1; }
       if (move) {
-        std::vector<size_t> indices_to_remove;
-        indices_to_remove.reserve(selection_drag_sorted_top_to_bottom.size());
-        size_t adjusted_target_index = target_index;
+        std::vector<size_t> indices;
+        indices.reserve(selection_drag_sorted_top_to_bottom.size());
         for (const auto& item : selection_drag_sorted_top_to_bottom) {
-          indices_to_remove.emplace_back(item.index);
-          if (item.index < target_index) { adjusted_target_index -= 1; }
+          indices.emplace_back(item.index);
         }
-        player::remove_from_queue(indices_to_remove);
-        player::add_to_queue(selection_drag_sorted_top_to_bottom, adjusted_target_index);
+        player::move_queue_tracks(indices, target_index);
       } else {
         player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
       }
@@ -815,6 +813,47 @@ static void handle_drag_and_drop() {
     return false;
   };
 
+  auto handle_drag_track_queue_panel = [&](bool drag_ended) -> bool {
+    if (!selection_drag.has_value()) { return false; }
+    bool move = selection_drag_is_from_queue;
+    if (!drag_ended) {
+      if (!player::get_playing_queue().empty()) {
+        auto info = player::get_playing_queue().back();
+        info.index = player::get_playing_queue().size() - 1;
+        panel_queue->set_insert_cursor_track_info(info);
+        panel_queue->set_insert_cursor_pos(PanelTracks::InsertCursorPos::BELOW);
+      }
+      if (move) {
+        if (selection_drag->size() > 1) {
+          tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", selection_drag->size()));
+        } else {
+          tooltip_drag->set_text(tr::get("tooltip.drag.reorder"));
+        }
+      } else {
+        if (selection_drag->size() > 1) {
+          tooltip_drag->set_text(tr::format("tooltip.drag.add_to_queue_plural", selection_drag->size()));
+        } else {
+          tooltip_drag->set_text(tr::get("tooltip.drag.add_to_queue"));
+        }
+      }
+      return true;
+    } else {
+      size_t target_index = player::get_playing_queue().size();
+      if (move) {
+        std::vector<size_t> indices;
+        indices.reserve(selection_drag_sorted_top_to_bottom.size());
+        for (const auto& item : selection_drag_sorted_top_to_bottom) {
+          indices.emplace_back(item.index);
+        }
+        player::move_queue_tracks(indices, target_index);
+      } else {
+        player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
+      }
+      panel_queue->on_queue_changed();
+      return true;
+    }
+  };
+
   if (lmb_just_pressed && hovered_track && selection_drag && selection_drag->has(hovered_track->track_info())) {
     selection_drag_started = true;
     selection_drag_sorted_top_to_bottom.clear();
@@ -840,6 +879,7 @@ static void handle_drag_and_drop() {
     if ((hovered_playlist_cover && handle_drag_playlist_cover(hovered_playlist_cover, false)) ||
         (hovered_playlist_header && handle_drag_playlist_header(hovered_playlist_header, false)) ||
         (hovered_track && handle_drag_track(hovered_track, false)) ||
+        (hovered_queue_panel && handle_drag_track_queue_panel(false)) ||
         (hovered_tab && handle_drag_tab(hovered_tab, false))) {
     } else {
       if (selection_drag->size() > 1) {
@@ -854,7 +894,7 @@ static void handle_drag_and_drop() {
   if (lmb_just_released && valid_selection) {
     if (handle_drag_playlist_cover(hovered_playlist_cover, true) ||
         handle_drag_playlist_header(hovered_playlist_header, true) || handle_drag_track(hovered_track, true) ||
-        handle_drag_tab(hovered_tab, true)) {
+        handle_drag_track_queue_panel(true) || handle_drag_tab(hovered_tab, true)) {
       panel_tracks->clear_selection();
       panel_queue->clear_selection();
       selection_drag_sorted_top_to_bottom.clear();
