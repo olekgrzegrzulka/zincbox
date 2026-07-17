@@ -68,10 +68,36 @@ void Widget::update() {
 
     Anchor child_anchor{};
     switch (layout.direction) {
-    case LEFT_TO_RIGHT: child_anchor = CENTER_LEFT; break;
-    case RIGHT_TO_LEFT: child_anchor = CENTER_RIGHT; break;
-    case TOP_TO_BOTTOM: child_anchor = TOP_CENTER; break;
-    case BOTTOM_TO_TOP: child_anchor = BOTTOM_CENTER; break;
+    case LEFT_TO_RIGHT: {
+      switch (layout.align) {
+      case LayoutAlign::BEGIN: child_anchor = TOP_LEFT; break;
+      case LayoutAlign::CENTER: child_anchor = CENTER_LEFT; break;
+      case LayoutAlign::END: child_anchor = BOTTOM_LEFT; break;
+      }
+      break;
+    }
+    case RIGHT_TO_LEFT: {
+      switch (layout.align) {
+      case LayoutAlign::BEGIN: child_anchor = TOP_RIGHT; break;
+      case LayoutAlign::CENTER: child_anchor = CENTER_RIGHT; break;
+      case LayoutAlign::END: child_anchor = BOTTOM_RIGHT; break;
+      }
+      break;
+    }
+    case TOP_TO_BOTTOM:
+      switch (layout.align) {
+      case LayoutAlign::BEGIN: child_anchor = TOP_LEFT; break;
+      case LayoutAlign::CENTER: child_anchor = TOP_CENTER; break;
+      case LayoutAlign::END: child_anchor = TOP_RIGHT; break;
+      }
+      break;
+    case BOTTOM_TO_TOP:
+      switch (layout.align) {
+      case LayoutAlign::BEGIN: child_anchor = BOTTOM_LEFT; break;
+      case LayoutAlign::CENTER: child_anchor = BOTTOM_CENTER; break;
+      case LayoutAlign::END: child_anchor = BOTTOM_RIGHT; break;
+      }
+      break;
     }
 
     // float total_weight = 0;
@@ -83,17 +109,31 @@ void Widget::update() {
       total_i += 1;
     }
 
-    i32 offset = layout.margin;
-    auto available_space = [&]() {
+    i32 offset = 0;
+    if (x_major) {
+      offset = layout.margin.x;
+    } else {
+      offset = layout.margin.y;
+    }
+
+    auto available_space = [&]() -> i32 {
       if (x_major) {
-        return get_width() - offset - layout.margin;
+        return get_width() - offset - layout.margin.x;
       } else {
-        return get_height() - offset - layout.margin;
+        return get_height() - offset - layout.margin.y;
       }
     };
 
     auto set_pos_major = [x_major](Widget& w, i32 to) -> void {
       if (x_major) {
+        w.set_x(to);
+      } else {
+        w.set_y(to);
+      }
+    };
+
+    auto set_pos_minor = [x_major](Widget& w, i32 to) -> void {
+      if (!x_major) {
         w.set_x(to);
       } else {
         w.set_y(to);
@@ -140,6 +180,22 @@ void Widget::update() {
       }
     };
 
+    auto get_margin_major = [this, x_major]() -> i32 {
+      if (x_major) {
+        return layout.margin.x;
+      } else {
+        return layout.margin.y;
+      }
+    };
+
+    auto get_margin_minor = [this, x_major]() -> i32 {
+      if (!x_major) {
+        return layout.margin.x;
+      } else {
+        return layout.margin.y;
+      }
+    };
+
     // float current_weight = 0;
     i32 i = -1;
     for (auto& c : children) {
@@ -165,17 +221,20 @@ void Widget::update() {
         offset += child_size_major + layout.spacing;
       }
 
+      i32 offset_minor = layout.align == LayoutAlign::CENTER ? 0 : get_margin_minor();
+      set_pos_minor(*c, offset_minor);
+
       if (layout.expand_children) {
         if (x_major) {
-          set_size_minor(*c, height - 2 * layout.margin);
+          set_size_minor(*c, height - 2 * get_margin_minor());
         } else {
-          set_size_minor(*c, width - 2 * layout.margin);
+          set_size_minor(*c, width - 2 * get_margin_minor());
         }
       }
     }
 
     offset -= layout.spacing;
-    offset += layout.margin;
+    offset += get_margin_major();
 
     if (layout.fit_to_contents) {
       if (x_major) {
@@ -217,26 +276,6 @@ void Widget::set_layout(std::string_view def) {
       l.expand_children = true;
     } else if (token == "fill") {
       l.fill = true;
-    } else if (token.rfind("m:", 0) == 0 || token.rfind("s:", 0) == 0) {
-      if (token.length() <= 2) {
-        out::debug_warn("invalid layout string, missing value for field: {}", token);
-        return;
-      }
-
-      char* end_ptr;
-      const char* num_start = token.c_str() + 2;
-      long val = std::strtol(num_start, &end_ptr, 10);
-
-      if (num_start == end_ptr || *end_ptr != '\0') {
-        out::debug_warn("invalid layout string, bad integer value: {}", token);
-        return;
-      }
-
-      if (token[0] == 'm') {
-        l.margin = static_cast<i32>(val);
-      } else {
-        l.spacing = static_cast<i32>(val);
-      }
     } else if (token == "ltr" || token == "left_to_right" || token == "h" || token == "hor" || token == "horizontal") {
       l.direction = LayoutDirection::LEFT_TO_RIGHT;
     } else if (token == "rtl" || token == "right_to_left") {
@@ -245,9 +284,51 @@ void Widget::set_layout(std::string_view def) {
       l.direction = LayoutDirection::TOP_TO_BOTTOM;
     } else if (token == "btt" || token == "bottom_to_top") {
       l.direction = LayoutDirection::BOTTOM_TO_TOP;
+    } else if (token == "left" || token == "top" || token == "begin" || token == "start") {
+      l.align = LayoutAlign::BEGIN;
+    } else if (token == "right" || token == "bottom" || token == "end") {
+      l.align = LayoutAlign::END;
+    } else if (token == "center" || token == "middle") {
+      l.align = LayoutAlign::CENTER;
     } else {
-      out::debug_warn("invalid layout string, bad layout keyword: {}", token);
-      return;
+      bool token_margin = token.rfind("m:", 0) == 0;
+      bool token_margin_x = token.rfind("mx:", 0) == 0;
+      bool token_margin_y = token.rfind("my:", 0) == 0;
+      bool token_spacing = token.rfind("s:", 0) == 0;
+
+      size_t token_length = 0;
+      if (token_margin || token_spacing) {
+        token_length = 2;
+      } else if (token_margin_x || token_margin_y) {
+        token_length = 3;
+      } else {
+        out::debug_warn("invalid layout string, bad layout keyword: {}", token);
+        return;
+      }
+
+      if (token.length() <= token_length) {
+        out::debug_warn("invalid layout string, missing value for field: {}", token);
+        return;
+      }
+
+      char* end_ptr;
+      const char* num_start = token.c_str() + token_length;
+      long val = std::strtol(num_start, &end_ptr, 10);
+
+      if (num_start == end_ptr || *end_ptr != '\0') {
+        out::debug_warn("invalid layout string, bad integer value: {}", token);
+        return;
+      }
+
+      if (token_margin) {
+        l.margin = vec2i{val, val};
+      } else if (token_margin_x) {
+        l.margin.x = val;
+      } else if (token_margin_y) {
+        l.margin.y = val;
+      } else if (token_spacing) {
+        l.spacing = val;
+      }
     }
   }
 

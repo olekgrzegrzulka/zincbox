@@ -21,7 +21,7 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   set_height(theme::get_prop("controls_panel_height").as_i32());
   set_layout("ltr expand fill");
   get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32();
-  get_layout().margin = theme::get_prop("controls_panel_padding").as_i32();
+  get_layout().set_margin(theme::get_prop("controls_panel_padding").as_i32());
 
   button_prev = &add_child<ZincboxButton>("prev");
   button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32());
