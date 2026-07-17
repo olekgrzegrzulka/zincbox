@@ -29,6 +29,8 @@ class UI;
 
 enum class LayoutDirection : u8 { LEFT_TO_RIGHT, RIGHT_TO_LEFT, TOP_TO_BOTTOM, BOTTOM_TO_TOP };
 
+enum class LayoutAlign : u8 { BEGIN, CENTER, END };
+
 enum class Anchor : u8 {
   TOP_LEFT,
   TOP_CENTER,
@@ -52,11 +54,14 @@ struct Layout {
     bool fit_to_contents = false;
     bool expand_children = false;
     bool fill = false;
-    i32 margin = 0;
+    vec2i margin{};
     i32 spacing = 0;
     LayoutDirection direction = LayoutDirection::LEFT_TO_RIGHT;
+    LayoutAlign align = LayoutAlign::CENTER;
 
-    auto operator<=>(const Layout&) const = default;
+    void set_margin(i32 value) { margin = vec2i{value, value}; }
+
+    bool operator==(const Layout&) const = default;
 };
 
 inline std::string anchor_to_string(Anchor anchor) {
