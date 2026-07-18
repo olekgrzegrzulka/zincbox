@@ -1,4 +1,5 @@
 #include "panel_controls.hpp"
+#include <cmath>
 #include <iomanip>
 #include <ios>
 #include <sstream>
@@ -25,78 +26,25 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
 
   button_prev = &add_child<ZincboxButton>("prev");
   button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32());
-  auto& button_prev_img = button_prev->add_child<Sprite>("prev");
-  button_prev_img.set_anchor(Anchor::CENTER);
-  button_prev_img.set_parent_anchor(Anchor::CENTER);
+  button_prev->add_image("prev");
 
   button_play_pause = &add_child<ZincboxButton>("play_pause");
   button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32());
-  button_play_pause_img = &button_play_pause->add_child<Sprite>("play");
-  button_play_pause_img->set_anchor(Anchor::CENTER);
-  button_play_pause_img->set_parent_anchor(Anchor::CENTER);
+  button_play_pause->add_image("play");
 
   button_stop = &add_child<ZincboxButton>("stop");
   button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32());
-  auto& button_stop_img = button_stop->add_child<Sprite>("stop");
-  button_stop_img.set_anchor(Anchor::CENTER);
-  button_stop_img.set_parent_anchor(Anchor::CENTER);
+  button_stop->add_image("stop");
 
   button_next = &add_child<ZincboxButton>("next");
   button_next->set_max_width(theme::get_prop("next_button_width").as_i32());
-  auto& button_next_img = button_next->add_child<Sprite>("next");
-  button_next_img.set_anchor(Anchor::CENTER);
-  button_next_img.set_parent_anchor(Anchor::CENTER);
+  button_next->add_image("next");
 
   auto& pad = add_child<Widget>();
   pad.set_min_width(5);
   pad.set_max_width(5);
 
-  auto& panel_right = add_child<Widget>();
-  panel_right.set_layout("m:0 rtl expand fill");
-  panel_right.get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32();
-
-  button_repeat = &panel_right.add_child<ZincboxButton>("repeat");
-  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32());
-  button_repeat_img = &button_repeat->add_child<Sprite>("repeat");
-  update_repeat_mode();
-  button_repeat_img->set_anchor(Anchor::CENTER);
-  button_repeat_img->set_parent_anchor(Anchor::CENTER);
-  tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
-
-  button_shuffle = &panel_right.add_child<ZincboxButton>("shuffle");
-  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32());
-  button_shuffle_img = &button_shuffle->add_child<Sprite>("shuffle");
-  update_shuffle_mode();
-  button_shuffle_img->set_anchor(Anchor::CENTER);
-  button_shuffle_img->set_parent_anchor(Anchor::CENTER);
-  tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
-
-  volume_bar = &panel_right.add_child<ZincboxSlider>("volume_bar");
-  volume_bar->set_track_nine_slice_margin(theme::get_prop("volume_bar_track_nine_slice_margin").as_i32(6.0));
-  volume_bar->set_thumb_nine_slice_margin(theme::get_prop("volume_bar_thumb_nine_slice_margin").as_i32(6.0));
-  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200));
-  i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50);
-  i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50);
-  i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50);
-  volume_bar->set_track_thickness(vol_track_height);
-  volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
-  volume_bar->set_thumb_thickness(vol_thumb_height);
-  volume_bar->set_thumb_length(vol_thumb_width);
-  volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
-  volume_bar->set_min_value(0.0f);
-  volume_bar->set_max_value(1.0f);
-  volume_bar->on_value_changed([](float, float volume) { player::set_volume(volume); });
-
-  tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
-
-  label_progress = &panel_right.add_child<Label>("0:00 / 0:00");
-  label_progress->set_max_width(80);
-
-  auto& pad2 = panel_right.add_child<Widget>();
-  pad2.set_min_width(5);
-  pad2.set_max_width(5);
-
-  auto& panel_middle = panel_right.add_child<Widget>();
+  auto& panel_middle = add_child<Widget>();
   panel_middle.set_layout("m:0 s:4 btt expand fill");
   panel_middle.set_clip_children(true);
 
@@ -111,27 +59,64 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   seekbar->set_thumb_thickness(thumb_height);
   seekbar->set_thumb_length(thumb_width);
   seekbar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
-
   tooltip_timestamp = &seekbar->add_child<ToolTip>("", ToolTipPosition::ABOVE, 4);
 
   auto& label_track_container = panel_middle.add_child<Widget>();
-  label_track_container.set_layout("ltr s:4");
+  label_track_container.set_layout("ltr s:4 fill");
 
   love_icon = &label_track_container.add_child<Sprite>("love");
   love_icon->set_anchor(Anchor::RIGHT);
   love_icon->set_parent_anchor(Anchor::LEFT);
   love_icon->set_size(12, 12);
+  love_icon->set_min_width(12);
+  love_icon->set_max_width(12);
   love_icon->set_nine_slice_margin(0.0f);
   love_icon->set_is_drawn(false);
 
   label_track = &label_track_container.add_child<Label>();
-  label_track->set_resize_to_text_extents(true);
   label_track->set_label_anchor(Anchor::LEFT);
 
   label_track_underline = &label_track->add_child<Sprite>("text_input_caret");
-  label_track_underline->set_ignore_parents_layout(true);
   label_track_underline->set_width(1);
   label_track_underline->set_height(1);
+  label_track_underline->set_parent_anchor(Anchor::CENTER);
+  label_track_underline->set_anchor(Anchor::CENTER);
+
+  label_progress = &add_child<Label>("0:00 / 0:00");
+  label_progress->set_max_width(80);
+
+  auto& pad2 = add_child<Widget>();
+  pad2.set_min_width(5);
+  pad2.set_max_width(5);
+
+  volume_bar = &add_child<ZincboxSlider>("volume_bar");
+  volume_bar->set_track_nine_slice_margin(theme::get_prop("volume_bar_track_nine_slice_margin").as_i32(6.0));
+  volume_bar->set_thumb_nine_slice_margin(theme::get_prop("volume_bar_thumb_nine_slice_margin").as_i32(6.0));
+  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200));
+  i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50);
+  i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50);
+  i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50);
+  volume_bar->set_track_thickness(vol_track_height);
+  volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
+  volume_bar->set_thumb_thickness(vol_thumb_height);
+  volume_bar->set_thumb_length(vol_thumb_width);
+  volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
+  volume_bar->set_min_value(0.0f);
+  volume_bar->set_max_value(1.0f);
+  volume_bar->on_value_changed([](float, float volume) { player::set_volume(volume); });
+  tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
+
+  button_shuffle = &add_child<ZincboxButton>("shuffle");
+  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32());
+  button_shuffle->add_image("shuffle");
+  update_shuffle_mode();
+  tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
+
+  button_repeat = &add_child<ZincboxButton>("repeat");
+  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32());
+  button_repeat->add_image("repeat");
+  update_repeat_mode();
+  tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
   auto on_track_changed = [this]() -> void {
     auto playing = player::get_playing();
@@ -149,8 +134,10 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
       update_love_state(is_loved);
     }
     label_track->update();
+    label_track->set_min_width(label_track->get_text_extents().x);
+    label_track->set_max_width(label_track->get_text_extents().x);
     label_track_underline->set_width(label_track->get_text_extents().x);
-    label_track_underline->set_y(label_track->get_text_extents().y);
+    label_track_underline->set_y(std::floor(label_track->get_text_extents().y / 2.0f));
   };
 
   slot_on_track_changed = player::signal_on_track_changed.connect(on_track_changed);
@@ -332,9 +319,7 @@ void PanelControls::update() {
     tooltip_volume->set_is_drawn(false);
   }
 
-  label_track_underline->set_is_drawn(label_track->is_mouse_hovering() &&
-                                      Input::get_mouse_x() <
-                                        label_track->get_position().x + label_track->get_text_extents().x);
+  label_track_underline->set_is_drawn(label_track->is_mouse_hovering());
   if (!label_track_underline->get_is_drawn()) {
     label_track_underline_lmb = false;
     label_track_underline_rmb = false;
@@ -343,9 +328,9 @@ void PanelControls::update() {
   if (is_playing != player::is_playing()) {
     is_playing = player::is_playing();
     if (is_playing) {
-      button_play_pause_img->set_texture("pause");
+      button_play_pause->add_image("pause");
     } else {
-      button_play_pause_img->set_texture("play");
+      button_play_pause->add_image("play");
     }
   }
 
@@ -391,20 +376,20 @@ void PanelControls::update() {
 void PanelControls::update_repeat_mode() {
   auto repeat_mode = player::get_repeat_mode();
   if (repeat_mode == player::RepeatMode::OFF) {
-    button_repeat_img->set_texture("repeat_off");
+    button_repeat->add_image("repeat_off");
   } else if (repeat_mode == player::RepeatMode::TRACK) {
-    button_repeat_img->set_texture("repeat_track");
+    button_repeat->add_image("repeat_track");
   } else if (repeat_mode == player::RepeatMode::ALBUM) {
-    button_repeat_img->set_texture("repeat_album");
+    button_repeat->add_image("repeat_album");
   }
 }
 
 void PanelControls::update_shuffle_mode() {
   auto shuffle_mode = player::get_shuffle_mode();
   if (shuffle_mode == player::ShuffleMode::OFF) {
-    button_shuffle_img->set_texture("shuffle_off");
+    button_shuffle->add_image("shuffle_off");
   } else if (shuffle_mode == player::ShuffleMode::ON) {
-    button_shuffle_img->set_texture("shuffle");
+    button_shuffle->add_image("shuffle");
   }
 }
 

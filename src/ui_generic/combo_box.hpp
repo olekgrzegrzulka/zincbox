@@ -6,26 +6,27 @@
 #include <string_view>
 #include "button.hpp"
 #include "common/input.hpp"
-#include "common/logger.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
 #include "widget.hpp"
 
 class ComboBoxItem : public Button {
   public:
-    ComboBoxItem(UI& ui_) : Button(ui_), label(add_child<Label>()) {
+    ComboBoxItem(UI& ui_) : Button(ui_) {
       set_parent_anchor(Anchor::TOP_CENTER);
       set_anchor(Anchor::TOP_CENTER);
       set_nine_slice_margin(2);
-
+      set_texture_idle("button_combo_idle");
+      set_texture_hovered("button_combo_hovered");
+      set_texture_pressed("button_combo_pressed");
+      set_texture_disabled("button_combo_disabled");
+      set_nine_slice_margin(6.0);
+      hover_test_parent = false;
       label.set_parent_anchor(Anchor::CENTER_LEFT);
       label.set_anchor(Anchor::CENTER_LEFT);
       label.set_label_anchor(Anchor::CENTER_LEFT);
       label.set_x(2);
     }
-
-  public:
-    Label& label;
 };
 
 class ComboBox : public Sprite {
@@ -98,7 +99,7 @@ class ComboBox : public Sprite {
           float y_residue = (scroll_progress - std::trunc(scroll_progress)) * (item_height + dropdown_padding);
           item->set_y(dropdown_padding + (item_height + dropdown_padding) * widget_i - y_residue);
 
-          item->label.set_text(item_labels[label_i]);
+          item->get_label().set_text(item_labels[label_i]);
           item->set_is_updated(true);
 
         } else {
@@ -138,6 +139,31 @@ class ComboBox : public Sprite {
 
     void draw() override { Sprite::draw(); }
 
+    void event(Input::InputEventMouseButton& ev) override {
+      bool mouse_hovering = is_mouse_hovering();
+      bool lmb_just_pressed =
+        ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT && ev.action == Input::MouseAction::PRESS;
+      bool rmb_just_pressed =
+        ev.button == Input::MouseButton::MOUSE_BUTTON_RIGHT && ev.action == Input::MouseAction::PRESS;
+      bool mmb_just_pressed =
+        ev.button == Input::MouseButton::MOUSE_BUTTON_MIDDLE && ev.action == Input::MouseAction::PRESS;
+
+      if (mouse_hovering && lmb_just_pressed && !focused) {
+        on_button_pressed();
+      } else if (!mouse_hovering && (lmb_just_pressed || rmb_just_pressed || mmb_just_pressed) && focused) {
+        on_button_depressed();
+      }
+    }
+
+    void event(Input::InputEventKey& ev) override {
+      if (!focused) { return; }
+      if (ev.key == Input::Key::KEY_ESCAPE) {
+        on_button_depressed();
+      } else {
+        ev.handled = true;
+      }
+    }
+
     void on_item_selected(std::function<void(i32)> lambda_select_) { lambda_select = std::move(lambda_select_); }
 
     void add_item(std::u32string label) { item_labels.emplace_back(std::move(label)); }
@@ -162,15 +188,27 @@ class ComboBox : public Sprite {
 
   protected:
     void on_button_pressed() {
+      set_focused(true);
       dropdown_state = DropDownState::APPEARING;
       dropdown_animation_progress = 0.0f;
       button_icon.set_texture("combo_box_button_contract");
     }
 
     void on_button_depressed() {
+      set_focused(false);
       dropdown_state = DropDownState::DISAPPEARING;
       dropdown_animation_progress = 0.0f;
       button_icon.set_texture("combo_box_button_expand");
+    }
+
+    void set_focused(bool value) {
+      if (focused == value) { return; }
+      focused = value;
+      if (focused) {
+        set_texture("combo_box_focused", false);
+      } else {
+        set_texture("combo_box", false);
+      }
     }
 
     void on_item_pressed(i32 i) {
@@ -178,8 +216,7 @@ class ComboBox : public Sprite {
       i32 label_i = (i32)scroll_progress + i;
       selected_index = i;
       label_item.set_text(item_labels[label_i]);
-      out::debug_warn("should call button.press()");
-      button.set_is_switched(true);
+      button.set_is_switched(false);
 
       if (lambda_select) { lambda_select(label_i); }
     }
@@ -190,6 +227,7 @@ class ComboBox : public Sprite {
     Sprite& dropdown_bg;
     Label& label_item;
     i32 selected_index = -1;
+    bool focused = false;
 
     std::function<void(i32)> lambda_select = nullptr;
 

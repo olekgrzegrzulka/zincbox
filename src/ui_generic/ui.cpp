@@ -35,18 +35,21 @@ UI::UI(i32 window_width_, i32 window_height_) : shader{shader_vert, shader_frag}
   // font_face = FontFace(freetype_lib, "./assets/arial/ARIAL.TTF", 15);
 }
 
-static void update_hovered_widgets_recursive(Widget* widget, std::vector<Widget*>& hovered_widgets) {
+static void update_hovered_widgets_recursive(Widget* widget, std::vector<Widget*>& hovered_widgets,
+                                             bool parent_hovered = true) {
   vec2i mouse_pos = Input::get_mouse_pos();
   vec2i widget_top_left = widget->get_position(Anchor::TOP_LEFT);
   vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
   bool test_x = mouse_pos.x >= widget_top_left.x && mouse_pos.x < widget_bottom_right.x;
   bool test_y = mouse_pos.y >= widget_top_left.y && mouse_pos.y < widget_bottom_right.y;
-  if (widget->get_is_updated() && widget->get_is_drawn() && test_x && test_y) {
+  bool hovered = test_x && test_y;
+  if (widget->get_hover_test_parent()) { hovered &= parent_hovered; }
 
-    if (widget->get_is_self_drawn()) { hovered_widgets.emplace_back(widget); }
-    for (auto&& child : widget->get_children()) {
-      update_hovered_widgets_recursive(child.get(), hovered_widgets);
-    }
+  if (!widget->get_is_updated() || !widget->get_is_drawn()) { return; }
+
+  if (widget->get_is_self_drawn() && hovered) { hovered_widgets.emplace_back(widget); }
+  for (auto&& child : widget->get_children()) {
+    update_hovered_widgets_recursive(child.get(), hovered_widgets, parent_hovered && hovered);
   }
 }
 
@@ -132,31 +135,28 @@ void UI::draw_widget_recursive(Widget* widget, std::vector<Widget*>* to_be_drawn
     return;
   }
 
-  std::optional<rect2i> my_scissor_rect{};
-  if (widget->get_clip_children()) {
-    my_scissor_rect = {
+  std::optional<rect2i> clipped_rect;
+  if (widget->get_clip_children() || widget->get_clip()) {
+    rect2i widget_rect = {
       .begin = {widget->get_position(Anchor::TOP_LEFT).x, window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
       .size = {widget->get_width(), widget->get_height()}};
-    if (parent_scissor_rect.has_value()) { my_scissor_rect = my_scissor_rect->intersected(*parent_scissor_rect); }
-  } else {
-    my_scissor_rect = parent_scissor_rect;
+    clipped_rect = parent_scissor_rect ? parent_scissor_rect->intersected(widget_rect) : widget_rect;
   }
 
+  std::optional<rect2i> my_scissor_rect = widget->get_clip_children() ? clipped_rect : parent_scissor_rect;
   for (auto&& child : widget->get_children()) {
     if (child->get_draw_behind_parent()) { draw_widget_recursive(child.get(), to_be_drawn_later, my_scissor_rect); }
   }
-
   if (widget->get_is_self_drawn()) {
-    if (parent_scissor_rect.has_value()) {
+    std::optional<rect2i> scissor_rect = widget->get_clip() ? clipped_rect : parent_scissor_rect;
+    if (scissor_rect) {
       glEnable(GL_SCISSOR_TEST);
-      glScissor(parent_scissor_rect->begin.x, parent_scissor_rect->begin.y, parent_scissor_rect->size.x,
-                parent_scissor_rect->size.y);
+      glScissor(scissor_rect->begin.x, scissor_rect->begin.y, scissor_rect->size.x, scissor_rect->size.y);
     } else {
       glDisable(GL_SCISSOR_TEST);
     }
     widget->draw();
   }
-
   for (auto&& child : widget->get_children()) {
     if (!child->get_draw_behind_parent()) { draw_widget_recursive(child.get(), to_be_drawn_later, my_scissor_rect); }
   }

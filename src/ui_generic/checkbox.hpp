@@ -19,22 +19,25 @@ class Checkbox : public Widget {
       uv_checkbox_disabled = ui.get_texture_atlas().get("checkbox_disabled")->get();
       uv_checkbox_check = ui.get_texture_atlas().get("checkbox_check")->get();
 
-      label = &add_child<Label>(label_text);
-      label->set_anchor(Anchor::CENTER_LEFT);
-      label->set_parent_anchor(Anchor::CENTER_LEFT);
-      label->set_label_anchor(Anchor::CENTER_LEFT);
+      set_layout("ltr fill fit s:4");
 
       button = &add_child<Button>();
+      button->set_ignore_parents_layout(true);
       button->set_is_drawn(false);
       button->set_switch_mode(true);
       button->on_press([this]() { sprite_check->set_is_drawn(true); });
       button->on_depress([this]() { sprite_check->set_is_drawn(false); });
+
       sprite_checkbox = &add_child<Sprite>("checkbox_idle");
-      sprite_checkbox->set_anchor(Anchor::CENTER_LEFT);
-      sprite_checkbox->set_parent_anchor(Anchor::CENTER_LEFT);
+      sprite_checkbox->set_min_width(sprite_checkbox->get_width());
+      sprite_checkbox->set_max_width(sprite_checkbox->get_width());
+      sprite_checkbox->set_min_height(sprite_checkbox->get_height());
+      sprite_checkbox->set_max_height(sprite_checkbox->get_height());
       sprite_check = &sprite_checkbox->add_child<Sprite>("checkbox_check");
       sprite_check->set_parent_anchor(Anchor::CENTER);
       sprite_check->set_anchor(Anchor::CENTER);
+
+      label = &add_child<Label>(label_text);
     }
 
     bool is_checked() const { return sprite_check->get_is_drawn(); }
@@ -45,10 +48,7 @@ class Checkbox : public Widget {
     }
 
     void update() override {
-      i32 inside_width = sprite_check->get_width() + 6 + label->get_width();
-      i32 x_ = (width - inside_width) / 2;
-      sprite_checkbox->set_pos(x_, 0);
-      label->set_pos(x_ + sprite_check->get_width() + 6, 0);
+      button->set_size(width, height);
 
       switch (button->get_state()) {
       case ButtonState::IDLE:
@@ -69,7 +69,6 @@ class Checkbox : public Widget {
         break;
       }
 
-      button->set_size(width, height);
       Widget::update();
     }
 

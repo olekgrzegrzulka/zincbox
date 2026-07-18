@@ -35,11 +35,14 @@ class PopupSearch : public Popup {
       search_bar->set_focused(true);
 
       search_results = &add_child<Sprite>("panel_albums");
-      search_results->set_layout("rtl fill expand");
+      search_results->set_layout("ltr fill expand");
       search_results->set_clip_children(true);
       search_results->set_anchor(Anchor::TOP);
       search_results->set_parent_anchor(Anchor::TOP);
       search_results->set_pos(0, 8 + search_bar->get_height() + 8);
+
+      scrollable_content = &search_results->add_child<Widget>();
+      scrollable_content->set_clip_children(true);
 
       scrollbar = &search_results->add_child<ScrollBar>();
       scrollbar->set_anchor(Anchor::TOP_RIGHT);
@@ -49,9 +52,6 @@ class PopupSearch : public Popup {
       scrollbar->set_max_width(10);
       scrollbar->set_orientation(SliderOrientation::VERTICAL);
       scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
-
-      scrollable_content = &search_results->add_child<Widget>();
-      scrollable_content->set_clip_children(true);
 
       label_playlists = &scrollable_content->add_child<Label>(tr::get("search.results_albums_playlists"));
       label_playlists->set_text_color(theme::get_prop("text_color_muted").as_rgba());
@@ -165,7 +165,7 @@ class PopupSearch : public Popup {
       scrollbar->set_scroll_offset(0);
       scroll_px = 0.1;
       target_scroll_px = 0.0;
-      
+
       update();
     }
 

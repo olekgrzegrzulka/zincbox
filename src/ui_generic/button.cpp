@@ -16,6 +16,17 @@ void Button::update() {
   label.set_anchor(Anchor::CENTER_CENTER);
 }
 
+void Button::add_image(std::string_view id, bool resize_to_texture_size) {
+  if (!image) {
+    image = &add_child<Sprite>();
+    image->set_anchor(Anchor::CENTER);
+    image->set_parent_anchor(Anchor::CENTER);
+    label.set_is_drawn(false);
+  }
+
+  image->set_texture(std::string(id), resize_to_texture_size);
+}
+
 void Button::set_texture_idle(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
   if (!val.has_value()) {
@@ -111,15 +122,6 @@ void Button::event(Input::InputEventMouseButton& ev) {
     mouse_pressed = false;
     if (switch_mode) {
       set_is_switched(!is_switched);
-      if (is_switched) {
-        set_state(PRESSED);
-        pressed();
-        ev.handled = true;
-      } else {
-        set_state(HOVERED);
-        depressed();
-        ev.handled = true;
-      }
 
     } else {
       set_state(HOVERED);

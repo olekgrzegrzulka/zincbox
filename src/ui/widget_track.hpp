@@ -13,7 +13,6 @@
 class WidgetTrack final : public Button {
   public:
     enum class TrackHighlightMode : u8 { TRACK_INFO, QUEUE_INDEX, OFF };
-
     WidgetTrack(UI& ui_) : Button(ui_) {
       setup();
 
@@ -47,82 +46,72 @@ class WidgetTrack final : public Button {
       set_nine_slice_margin(8.0f);
       set_height(track_height);
 
+      set_layout("ltr mx:5 my:0 s:5 fill expand");
+
+      label.set_is_drawn(false);
+
       if (!label_track_number) {
         label_track_number = &add_child<Label>();
-        label_track_number->set_resize_to_text_extents(false);
         label_track_number->set_label_anchor(Anchor::LEFT);
-        label_track_number->set_size(20, track_height);
         label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
-        label_track_number->set_x(5);
       }
       label_track_number->set_text(std::to_string(m_track_number));
+      label_track_number->update();
+      label_track_number->set_min_width(std::max<i32>(18, label_track_number->get_text_extents().x));
+      label_track_number->set_max_width(std::max<i32>(18, label_track_number->get_text_extents().x));
 
       if (!label_track_artist) {
         label_track_artist = &add_child<Label>();
         label_track_artist->set_label_anchor(Anchor::LEFT);
-        label_track_artist->set_height(track_height);
         label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
-        label_track_artist->set_resize_to_text_extents(false);
       }
-      label_track_artist->set_x(label_track_number->get_x() + label_track_number->get_width() + 5);
       if (track.has_value()) {
         if (track->get().artist.empty() || track->get().title.empty()) {
+          label_track_artist->set_is_drawn(false);
           label_track_artist->set_text("");
-          label_track_artist->set_width(0);
+          label_track_artist->set_min_width(0);
+          label_track_artist->set_max_width(0);
         } else {
+          label_track_artist->set_is_drawn(true);
           label_track_artist->set_text(track->get().artist);
-          label_track_artist->set_width(label_track_artist->get_text_extents().x);
-
-          // hack to get text extents to update :(
-          label_track_artist->mark_dirty();
           label_track_artist->update();
+          label_track_artist->set_min_width(0);
+          label_track_artist->set_max_width(label_track_artist->get_text_extents().x);
         }
       }
       if (!label_track_title) {
         label_track_title = &add_child<Label>();
-        label_track_title->set_resize_to_text_extents(false);
         label_track_title->set_label_anchor(Anchor::LEFT);
-        label_track_title->set_height(track_height);
         label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
       }
-      label_track_title->set_x(label_track_artist->get_x() + label_track_artist->get_text_extents().x + 5);
       if (track.has_value()) {
         if (track->get().artist.empty() || track->get().title.empty()) {
           label_track_title->set_text(std::filesystem::path{track->get().path}.filename().string());
         } else {
           label_track_title->set_text(track->get().title);
         }
+        label_track_title->update();
       }
-
-      if (!panel_right_side) {
-        panel_right_side = &add_child<Sprite>("panel_tracks");
-        panel_right_side->set_height(track_height);
-        panel_right_side->set_texture(m_track_number % 2 == 0 ? "track_bg2" : "track_bg1", false);
-        panel_right_side->set_layout("m:8 s:8 rtl fit");
-        panel_right_side->set_anchor(Anchor::RIGHT);
-        panel_right_side->set_parent_anchor(Anchor::RIGHT);
-        panel_right_side->set_ignore_parents_layout(true);
-      }
-
-      if (!label_track_length) {
-        label_track_length = &panel_right_side->add_child<Label>();
-        label_track_length->set_height(track_height);
-        label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
-        label_track_length->set_resize_to_text_extents(false);
-      }
-
-      if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
-      // hack to get text extents to update :(
-      label_track_length->mark_dirty();
-      label_track_length->update();
-      label_track_length->set_width(label_track_length->get_text_extents().x);
 
       if (!love_icon) {
-        love_icon = &panel_right_side->add_child<Sprite>("love");
-        love_icon->set_size(12, 12);
+        love_icon = &add_child<Sprite>("love");
+        love_icon->set_min_width(12);
+        love_icon->set_max_width(12);
+        love_icon->set_min_height(12);
+        love_icon->set_max_height(12);
         love_icon->set_nine_slice_margin(0.0f);
       }
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(m_track_id));
+
+      if (!label_track_length) {
+        label_track_length = &add_child<Label>();
+        label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
+      }
+
+      if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
+      label_track_length->update();
+      label_track_length->set_min_width(std::max<i32>(32, label_track_length->get_text_extents().x));
+      label_track_length->set_max_width(std::max<i32>(32, label_track_length->get_text_extents().x));
 
       if (track.has_value() && track->get().is_tombstone()) {
         label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
@@ -131,7 +120,10 @@ class WidgetTrack final : public Button {
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
       }
 
-      if (!hover) { hover = &add_child<Sprite>("track_hovered"); }
+      if (!hover) {
+        hover = &add_child<Sprite>("track_hovered");
+        hover->set_ignore_parents_layout(true);
+      }
 
       set_playback_error(track.has_value() && track->get().is_playback_error());
       update_text_colors();
@@ -154,13 +146,10 @@ class WidgetTrack final : public Button {
     void update_text_colors() {
       std::string txt;
       if (m_is_selected) {
-        panel_right_side->set_texture(m_track_number % 2 == 0 ? "track_bg_selected2" : "track_bg_selected1", false);
         txt = m_track_number % 2 == 0 ? "track_bg_selected2" : "track_bg_selected1";
       } else if (m_highlighted) {
-        panel_right_side->set_texture("track_bg_playing", false);
         txt = "track_bg_playing";
       } else {
-        panel_right_side->set_texture(m_track_number % 2 == 0 ? "track_bg2" : "track_bg1", false);
         txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";
       }
 
@@ -283,7 +272,6 @@ class WidgetTrack final : public Button {
     Label* label_track_number{};
     Label* label_track_artist{};
     Label* label_track_title{};
-    Sprite* panel_right_side{};
     Label* label_track_length{};
     Sprite* hover{};
     Sprite* love_icon{};

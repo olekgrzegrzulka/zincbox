@@ -25,14 +25,11 @@ class PanelControls : public Sprite {
 
   protected:
     Button* button_play_pause{};
-    Sprite* button_play_pause_img{};
     Button* button_stop{};
     Button* button_next{};
     Button* button_prev{};
     Button* button_shuffle{};
     Button* button_repeat{};
-    Sprite* button_repeat_img{};
-    Sprite* button_shuffle_img{};
     ToolTip* tooltip_button_shuffle{};
     ToolTip* tooltip_button_repeat{};
     ToolTip* tooltip_timestamp{};

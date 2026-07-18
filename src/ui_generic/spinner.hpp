@@ -9,38 +9,26 @@
 #include "label.hpp"
 #include "sprite.hpp"
 #include "text_input.hpp"
+#include "ui/zb_widgets.hpp"
 #include "widget.hpp"
 
 class Spinner : public TextInput {
   public:
     Spinner(UI& ui_)
-      : TextInput(ui_), button_label(add_child<Sprite>()), button_increase(add_child<Button>()),
-        button_decrease(add_child<Button>()), label_postfix(add_child<Label>()) {
+      : TextInput(ui_), button_increase(add_child<ZincboxButton>("spinner_increase")),
+        button_decrease(add_child<ZincboxButton>("spinner_decrease")), label_postfix(add_child<Label>()) {
 
-      button_label.set_texture("spinner_buttons");
-      button_label.set_x(-6);
-      button_label.set_parent_anchor(Anchor::CENTER_RIGHT);
-      button_label.set_anchor(Anchor::CENTER_RIGHT);
+      button_decrease.set_parent_anchor(Anchor::LEFT);
+      button_decrease.set_nine_slice_margin(2.0f);
+      button_decrease.set_anchor(Anchor::LEFT);
+      button_decrease.set_pos(1, 0);
 
-      button_increase.set_parent_anchor(Anchor::TOP_RIGHT);
-      button_increase.set_anchor(Anchor::TOP_RIGHT);
-      button_increase.set_size(32, height / 2);
-      button_increase.set_is_drawn(false);
-      // button_increase.on_press([&]() {
-      //   value = std::clamp(value + button_step, min_value, max_value);
-      //   label.set_text(std::to_string(value));
-      //   on_text_changed();
-      // });
+      button_increase.set_parent_anchor(Anchor::RIGHT);
+      button_increase.set_nine_slice_margin(2.0f);
+      button_increase.set_anchor(Anchor::RIGHT);
+      button_increase.set_pos(-1, 0);
 
-      button_decrease.set_parent_anchor(Anchor::BOTTOM_RIGHT);
-      button_decrease.set_anchor(Anchor::BOTTOM_RIGHT);
-      button_decrease.set_size(32, height / 2);
-      button_decrease.set_is_drawn(false);
-      // button_decrease.on_press([&]() {
-      //   value = std::clamp(value - button_step, min_value, max_value);
-      //   label.set_text(std::to_string(value));
-      //   on_text_changed();
-      // });
+      label.set_pos({button_increase.get_width() + 2, 0});
 
       label.set_text(std::to_string(value));
       set_on_text_changed([this]() { on_text_changed(); });
@@ -87,17 +75,14 @@ class Spinner : public TextInput {
     void update() override {
       TextInput::update();
 
-      button_increase.set_size(32, height / 2);
-      button_decrease.set_size(32, height / 2);
+      button_increase.set_height(height - 2);
+      button_decrease.set_height(height - 2);
 
-      bool mouse_on_widget_x = Input::get_mouse_x() >= get_position(Anchor::TOP_LEFT).x &&
-                               Input::get_mouse_x() < get_position(Anchor::BOTTOM_RIGHT).x;
-      bool mouse_on_widget_y = Input::get_mouse_y() >= get_position(Anchor::TOP_LEFT).y &&
-                               Input::get_mouse_y() < get_position(Anchor::BOTTOM_RIGHT).y;
       auto scroll = Input::get_mouse_scroll();
 
-      if (focused && mouse_on_widget_x && mouse_on_widget_y) {
+      if (is_mouse_hovering()) {
         if (scroll.y > 0) {
+          focused = true;
           i32 new_value = std::clamp(value + button_step, min_value, max_value);
           if (value != new_value) {
             if (lambda_value_changed) { lambda_value_changed(); }
@@ -106,6 +91,7 @@ class Spinner : public TextInput {
           label.set_text(std::to_string(value));
           on_text_changed();
         } else if (scroll.y < 0) {
+          focused = true;
           i32 new_value = std::clamp(value - button_step, min_value, max_value);
           if (value != new_value) {
             if (lambda_value_changed) { lambda_value_changed(); }
@@ -115,39 +101,37 @@ class Spinner : public TextInput {
           on_text_changed();
         }
       }
+      button_increase.set_disabled(value >= max_value);
+      button_decrease.set_disabled(value <= min_value);
 
-      bool increase_pressed =
-        button_increase.is_mouse_hovering() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
-      bool decrease_pressed =
-        button_decrease.is_mouse_hovering() && Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
-      if (focused) {
-        if (increase_pressed != decrease_pressed) {
-          if (buttons_clock <= 0) {
-            if (increase_pressed) {
-              value = std::clamp(value + button_step, min_value, max_value);
-            } else if (decrease_pressed) {
-              value = std::clamp(value - button_step, min_value, max_value);
-            }
-            label.set_text(std::to_string(value));
-            on_text_changed();
-            buttons_clock = buttons_first_echo ? buttons_echo_length_initial : buttons_echo_length;
-            buttons_first_echo = false;
-            caret_blink_clock = caret_blink_time;
-            caret.set_is_updated(true);
-          } else {
-            buttons_clock -= 1;
+      bool increase_pressed = button_increase.get_state() == ButtonState::PRESSED;
+      bool decrease_pressed = button_decrease.get_state() == ButtonState::PRESSED;
+      if (increase_pressed || decrease_pressed) {
+        focused = true;
+        if (buttons_clock <= 0) {
+          if (increase_pressed) {
+            value = std::clamp(value + button_step, min_value, max_value);
+          } else if (decrease_pressed) {
+            value = std::clamp(value - button_step, min_value, max_value);
           }
+          label.set_text(std::to_string(value));
+          on_text_changed();
+          buttons_clock = buttons_first_echo ? buttons_echo_length_initial : buttons_echo_length;
+          buttons_first_echo = false;
+          caret_blink_clock = caret_blink_time;
+          caret.set_is_updated(true);
         } else {
-          buttons_clock = 0;
-          buttons_first_echo = true;
+          buttons_clock -= 1;
         }
+      } else {
+        buttons_clock = 0;
+        buttons_first_echo = true;
       }
 
       label_postfix.set_x(label.get_x() + label.get_text_extents().x + 1);
     }
 
   protected:
-    Sprite& button_label;
     Button& button_increase;
     Button& button_decrease;
     Label& label_postfix;
