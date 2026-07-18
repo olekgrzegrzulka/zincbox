@@ -13,6 +13,7 @@ enum class ButtonState : u8 { IDLE, HOVERED, PRESSED, DISABLED };
 class Button : public Sprite {
   protected:
     Label& label;
+    Sprite* image{};
     std::function<void()> lambda_press{};
     std::function<void()> lambda_press_rmb{};
     std::function<void()> lambda_depress{};
@@ -68,6 +69,8 @@ class Button : public Sprite {
 
     void on_press_rmb(std::function<void()> lambda_press_rmb_) { lambda_press_rmb = std::move(lambda_press_rmb_); }
 
+    void add_image(std::string_view id, bool resize_to_texture_size = true);
+
     // Returns true if button's state was changed
     bool set_state(ButtonState state_) {
       if (state_ == state) { return false; }
@@ -77,12 +80,22 @@ class Button : public Sprite {
       return true;
     }
 
-    void set_is_switched(bool state_) { is_switched = state_; }
+    void set_is_switched(bool state_) {
+      if (is_switched == state_) { return; }
+      is_switched = state_;
+      if (is_switched) {
+        set_state(ButtonState::PRESSED);
+        pressed();
+      } else {
+        set_state(ButtonState::HOVERED);
+        depressed();
+      }
+    }
 
     void set_disabled(bool disabled) {
-      if (disabled) {
+      if (disabled && state != ButtonState::DISABLED) {
         set_state(ButtonState::DISABLED);
-      } else {
+      } else if (!disabled && state == ButtonState::DISABLED) {
         set_state(ButtonState::IDLE);
       }
     }
@@ -162,6 +175,7 @@ class Button : public Sprite {
       set_uv_end(uv_end_disabled);
     }
 
+  public:
     void pressed() {
       if (lambda_press) { lambda_press(); }
     }
@@ -170,6 +184,7 @@ class Button : public Sprite {
       if (lambda_depress) { lambda_depress(); }
     }
 
+  protected:
     void on_state_changed(ButtonState /* prev_state */) {
       if (state == ButtonState::HOVERED) {
         set_sprite_hovered();

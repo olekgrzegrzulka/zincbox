@@ -11,18 +11,23 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-Label::Label(UI& ui_) : Widget::Widget(ui_) { set_text_color(theme::get_prop("text_color").as_rgba()); }
+Label::Label(UI& ui_) : Widget::Widget(ui_) {
+  set_text_color(theme::get_prop("text_color").as_rgba());
+  clip = true;
+}
 
 Label::Label(UI& ui_, std::string_view text_) : Widget::Widget(ui_) {
   set_text_color(theme::get_prop("text_color").as_rgba());
   set_text(text_);
   update_mesh();
+  clip = true;
 }
 
 Label::Label(UI& ui_, std::u32string_view text_) : Widget::Widget(ui_) {
   set_text_color(theme::get_prop("text_color").as_rgba());
   set_text(text_);
   update_mesh();
+  clip = true;
 }
 
 Label::~Label() {
@@ -32,7 +37,7 @@ Label::~Label() {
 
 void Label::set_resize_to_text_extents(bool to) {
   if (to != resize_to_text_extents) { resize_to_text_extents = to; }
-  if (resize_to_text_extents) {
+  if (resize_to_text_extents && (!parent || !parent->has_layout())) {
     set_width(text_extents.x);
     set_height(text_extents.y);
     set_min_width(text_extents.x);
@@ -127,7 +132,7 @@ void Label::update_mesh() {
     pen.x += glyph->advance.x / 64.0f;
   }
 
-  if (resize_to_text_extents) {
+  if (resize_to_text_extents && (!parent || !parent->has_layout())) {
     set_width(text_extents.x);
     set_height(text_extents.y);
     set_min_width(text_extents.x);

@@ -57,7 +57,9 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>();
+  label_title->set_clip(false);
   label_author = &add_child<Label>();
+  label_author->set_clip(false);
   if (playlist_id.has_value()) {
     auto& playlist = db::playlist_by_id(playlist_id.value())->get();
     label_title->set_text(playlist.name);
@@ -141,22 +143,21 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   panel_search = &add_child<Sprite>("panel_albums_searchbar");
   panel_search->set_pos(PANEL_SEARCH_PADDING, PANEL_SEARCH_PADDING);
   panel_search->set_height(PANEL_SEARCH_HEIGHT);
-  panel_search->set_layout("m:6 s:6 rtl fill expand");
+  panel_search->set_layout("m:6 s:6 ltr fill expand");
   panel_search->set_nine_slice_margin(8.0f);
   panel_search->set_ignore_parents_layout(true);
-  button_sort_by = &panel_search->add_child<Button>();
+
   search_bar = &panel_search->add_child<TextInput>();
   search_bar->set_on_text_changed([this]() { recreate(); });
   button_clear_search = &search_bar->add_child<Button>();
 
+  button_sort_by = &panel_search->add_child<Button>();
   button_sort_by->set_max_width(24);
   button_sort_by->set_max_height(24);
   button_sort_by->on_press([this]() {
     if (this->on_button_sort_by_pressed) { this->on_button_sort_by_pressed(this->button_sort_by); }
   });
-  auto& img = button_sort_by->add_child<Sprite>("sort_by");
-  img.set_parent_anchor(Anchor::CENTER);
-  img.set_anchor(Anchor::CENTER);
+  button_sort_by->add_image("sort_by");
 
   button_clear_search->set_width(20);
   button_clear_search->set_height(20);

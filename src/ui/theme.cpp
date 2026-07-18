@@ -323,12 +323,14 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("combo_box_button_contract");
   atlas_add_texture("combo_box_button_expand");
   atlas_add_texture("combo_box");
+  atlas_add_texture("combo_box_focused");
   atlas_add_texture("dim");
   atlas_add_texture("red");
   add_custom_slider("slider");
   add_custom_slider("scrollbar");
   add_custom_slider("volume_bar");
-  atlas_add_texture("spinner_buttons");
+  add_custom_button("spinner_decrease");
+  add_custom_button("spinner_increase");
   atlas_add_texture("text_input_caret");
   atlas_add_texture("text_input_focused");
   atlas_add_texture("text_input_idle");
@@ -347,6 +349,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_button("inline_play_next");
   add_custom_button("inline_sort");
   add_custom_button("inline_more");
+  atlas_add_texture("panel");
   add_custom_panel("albums");
   add_custom_panel("albums_searchbar");
   add_custom_panel("controls");
@@ -356,6 +359,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_panel("top");
   add_custom_panel("tracks");
   add_custom_panel("combo");
+  add_custom_button("button_combo");
   add_custom_slider("seekbar");
   atlas_add_texture("track_bg1");
   atlas_add_texture("track_bg2");

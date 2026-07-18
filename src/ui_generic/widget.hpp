@@ -117,7 +117,7 @@ class Widget {
     std::string name;
     i32 x = 0;
     i32 y = 0;
-
+    bool hover_test_parent = true;
     i32 width = 64;
     i32 height = 64;
 
@@ -134,6 +134,7 @@ class Widget {
     bool is_updated = true;
     bool is_drawn = true;
     bool is_self_drawn = true;
+    bool clip = false;
     bool clip_children = false;
     bool ignore_parents_layout = false;
     bool is_drawn_on_top = false;
@@ -188,6 +189,7 @@ class Widget {
     WIDGET_DEF_SETTER_DIRTY(window_height)
     WIDGET_DEF_SETTER_DIRTY(update_children_first)
     WIDGET_DEF_SETTER_DIRTY(is_self_drawn)
+    WIDGET_DEF_SETTER_DIRTY(clip)
     WIDGET_DEF_SETTER_DIRTY(clip_children)
 
     void set_is_drawn(bool to) {
@@ -232,17 +234,21 @@ class Widget {
     WIDGET_DEF_GETTER(update_children_first)
     WIDGET_DEF_GETTER(is_drawn)
     WIDGET_DEF_GETTER(is_self_drawn)
+    WIDGET_DEF_GETTER(clip)
     WIDGET_DEF_GETTER(clip_children)
     WIDGET_DEF_GETTER(ignore_parents_layout)
     WIDGET_DEF_GETTER(is_drawn_on_top)
     WIDGET_DEF_GETTER(weight)
     WIDGET_DEF_GETTER(draw_behind_parent)
     WIDGET_DEF_GETTER(parent)
+    WIDGET_DEF_GETTER(hover_test_parent)
 
     Layout& get_layout() {
       mark_dirty();
       return layout;
     }
+
+    bool has_layout() const { return layout.enabled; }
 
     void set_layout(std::string_view def);
 
