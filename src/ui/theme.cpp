@@ -74,7 +74,10 @@ void load_resources() {
     std::string filename(file_stat.m_filename);
 
     if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
-    if (filename.starts_with("lang/") && filename.ends_with(".json")) { languages.insert(file_stat.m_filename); }
+    if (filename.starts_with("lang/") && filename.ends_with(".json")) {
+      fs::path file_path{file_stat.m_filename};
+      languages.insert(file_path.stem());
+    }
 
     resources[std::move(filename)] = std::move(buffer);
   }
@@ -351,6 +354,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_button("inline_more");
   atlas_add_texture("panel");
   add_custom_panel("albums");
+  atlas_add_texture("panel_dark");
   add_custom_panel("albums_searchbar");
   add_custom_panel("controls");
   add_custom_panel("playlist_header");

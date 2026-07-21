@@ -98,6 +98,7 @@
   "settings.interface.theme_label": "Theme",
   "settings.playback.allow_same_album": "Allow playing the same album consecutively",
   "settings.playback.allow_same_artist": "Allow playing the same artist consecutively",
+  "settings.playback.restart_on_previous": "Jump to track start on previous",
   "settings.playback.shuffle": "Shuffle Options",
   "settings.playback.source_album": "Album",
   "settings.playback.source_label": "Prefer cover art from",

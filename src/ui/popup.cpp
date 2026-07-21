@@ -8,7 +8,6 @@
 
 Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
   : Sprite(ui_, "panel_popup"), controller(controller_), on_close(std::move(on_close_)) {
-  set_is_drawn_on_top(true);
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
   set_anchor(Anchor::CENTER);
@@ -18,13 +17,17 @@ void Popup::update() {
   if (is_dragged) {
     vec2i delta = Input::get_mouse_pos() - drag_start_mouse_pos;
     vec2i new_pos = drag_start_pos + delta;
-    new_pos.x = std::clamp(new_pos.x, (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2);
-    new_pos.y = std::clamp(new_pos.y, (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2);
+    if (width < ui.get_window_width() && height < ui.get_window_height()) {
+      new_pos.x = std::clamp(new_pos.x, (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2);
+      new_pos.y = std::clamp(new_pos.y, (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2);
+    }
     set_pos(new_pos);
     Input::set_cursor(Input::Cursor::HAND);
   } else {
-    set_x(std::clamp(get_x(), (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2));
-    set_y(std::clamp(get_y(), (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2));
+    if (width < ui.get_window_width() && height < ui.get_window_height()) {
+      set_x(std::clamp(get_x(), (width - ui.get_window_width()) / 2, (ui.get_window_width() - width) / 2));
+      set_y(std::clamp(get_y(), (height - ui.get_window_height()) / 2, (ui.get_window_height() - height) / 2));
+    }
     Input::reset_cursor();
   }
   Sprite::update();

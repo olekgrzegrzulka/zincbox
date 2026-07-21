@@ -98,6 +98,7 @@
   "settings.interface.theme_label": "Motyw",
   "settings.playback.allow_same_album": "Zezwalaj na odtwarzanie tego samego albumu pod rząd",
   "settings.playback.allow_same_artist": "Zezwalaj na odtwarzanie tego samego wykonawcy pod rząd",
+  "settings.playback.restart_on_previous": "Poprzedni wraca do początku utworu",
   "settings.playback.shuffle": "Tryb mieszania",
   "settings.playback.source_album": "Albumu",
   "settings.playback.source_label": "Preferuj okładki utworów z",

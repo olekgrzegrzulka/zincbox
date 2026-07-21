@@ -32,6 +32,7 @@
 #include "ui/popup.hpp"
 #include "ui/popup_definitions.hpp"
 #include "ui/popup_search.hpp"
+#include "ui/popup_settings.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/button.hpp"
@@ -163,8 +164,6 @@ void interface::init() {
   shortcut_interceptor = &ui->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 
-  popup_controller = &ui->add_widget<PopupController>();
-  popup_controller->set_is_drawn_on_top(true);
   notifications = &ui->add_widget<InterfaceNotifications>();
   bg = &ui->add_widget<Sprite>("panel_albums");
   panel_top = &ui->add_widget<PanelTop>();
@@ -177,6 +176,7 @@ void interface::init() {
   tooltip_drag->set_clamp(false);
   panel_albums = &ui->add_widget<PanelAlbums>();
   panel_controls = &ui->add_widget<PanelControls>();
+  popup_controller = &ui->add_widget<PopupController>();
 
   panel_queue->set_is_updated(false);
   panel_queue->set_is_drawn(false);
