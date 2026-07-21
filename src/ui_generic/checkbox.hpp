@@ -1,5 +1,7 @@
 #pragma once
+#include <functional>
 #include <string_view>
+#include <utility>
 #include "src/ui_generic/ui.hpp"
 #include "src/ui_generic/widget.hpp"
 #include "ui_generic/button.hpp"
@@ -25,8 +27,8 @@ class Checkbox : public Widget {
       button->set_ignore_parents_layout(true);
       button->set_is_drawn(false);
       button->set_switch_mode(true);
-      button->on_press([this]() { sprite_check->set_is_drawn(true); });
-      button->on_depress([this]() { sprite_check->set_is_drawn(false); });
+      button->on_press([this]() -> void { set_checked(true); });
+      button->on_depress([this]() -> void { set_checked(false); });
 
       sprite_checkbox = &add_child<Sprite>("checkbox_idle");
       sprite_checkbox->set_min_width(sprite_checkbox->get_width());
@@ -40,15 +42,19 @@ class Checkbox : public Widget {
       label = &add_child<Label>(label_text);
     }
 
-    bool is_checked() const { return sprite_check->get_is_drawn(); }
+    bool is_checked() const { return button->get_is_switched(); }
 
-    void set_checked(bool checked) {
-      sprite_check->set_is_drawn(checked);
+    void set_checked(bool value) {
+      if (checked == value) { return; }
+      checked = value;
       button->set_is_switched(checked);
+      sprite_check->set_is_drawn(checked);
+      if (m_on_value_changed) { m_on_value_changed(); }
     }
 
     void update() override {
       button->set_size(width, height);
+      sprite_check->set_is_drawn(checked);
 
       switch (button->get_state()) {
       case ButtonState::IDLE:
@@ -72,7 +78,11 @@ class Checkbox : public Widget {
       Widget::update();
     }
 
+    void on_value_changed(std::function<void()> lambda) { m_on_value_changed = std::move(lambda); }
+
   protected:
+    bool checked = false;
+    std::function<void()> m_on_value_changed;
     Button* button{};
     Sprite* sprite_checkbox{};
     Sprite* sprite_check{};

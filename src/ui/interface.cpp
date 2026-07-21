@@ -17,6 +17,7 @@
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
+#include "core/settings.hpp"
 #include "interface.hpp"
 #include "interface_notifications.hpp"
 #include "lib/json.cpp/json.h"
@@ -1899,12 +1900,11 @@ static void show_settings_popup() {
   auto* popup = popup_controller->show_popup<PopupSettings>();
   popup->load_settings(settings::get());
   popup->on_save = [popup]() {
-    auto new_settings = popup->get_settings();
+    auto old_settings = settings::get();
+    popup->save_settings(settings::get());
+    bool must_reload = old_settings.must_reload(settings::get());
 
-    bool must_reload = new_settings.must_reload(settings::get());
-    settings::get() = new_settings;
-
-    if (must_reload || true) {
+    if (must_reload) {
       auto* popup_close = popup_controller->show_popup<PopupConfirm>(tr::get("popup.reload_required.content"));
       popup_close->title->set_text(tr::get("popup.reload_required.title"));
       popup_close->content->update();

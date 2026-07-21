@@ -3,6 +3,7 @@
 #include <cmath>
 #include <functional>
 #include <numbers>
+#include <string>
 #include <string_view>
 #include "button.hpp"
 #include "common/input.hpp"
@@ -79,7 +80,7 @@ class ComboBox : public Sprite {
       Sprite::update();
 
       target_scroll_progress =
-        std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, item_labels.size() - item_widgets.size() + 1));
+        std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, items.size() - item_widgets.size() + 1));
 
       if (std::abs(scroll_progress - target_scroll_progress) > 0.02f) {
         scroll_progress = std::lerp(scroll_progress, target_scroll_progress, 0.4f);
@@ -92,14 +93,14 @@ class ComboBox : public Sprite {
         i32 label_i = i + (i32)scroll_progress;
 
         auto* item = item_widgets[widget_i];
-        bool draw_item = label_i < (i32)item_labels.size();
+        bool draw_item = label_i < (i32)items.size();
         if (draw_item) {
           item->set_width(width - 2 * dropdown_padding);
           item->set_height(item_height);
           float y_residue = (scroll_progress - std::trunc(scroll_progress)) * (item_height + dropdown_padding);
           item->set_y(dropdown_padding + (item_height + dropdown_padding) * widget_i - y_residue);
 
-          item->get_label().set_text(item_labels[label_i]);
+          item->get_label().set_text(items[label_i].second);
           item->set_is_updated(true);
 
         } else {
@@ -120,8 +121,8 @@ class ComboBox : public Sprite {
         }
       }
 
-      i32 dropdown_height = 2 * dropdown_padding +
-                            (item_height + dropdown_padding) * std::min<i32>(item_labels.size(), dropdown_max_length);
+      i32 dropdown_height =
+        2 * dropdown_padding + (item_height + dropdown_padding) * std::min<i32>(items.size(), dropdown_max_length);
       float dropdown_animation_eased = std::sin(std::numbers::pi * (dropdown_animation_progress - 0.5f)) * 0.5 + 0.5;
       if (dropdown_state == DropDownState::APPEARING) {
         dropdown_height = std::lerp(0, dropdown_height, dropdown_animation_eased);
@@ -164,17 +165,34 @@ class ComboBox : public Sprite {
       }
     }
 
-    void on_item_selected(std::function<void(i32)> lambda_select_) { lambda_select = std::move(lambda_select_); }
+    void on_item_selected(std::function<void()> lambda_select_) { lambda_select = std::move(lambda_select_); }
 
-    void add_item(std::u32string label) { item_labels.emplace_back(std::move(label)); }
+    void add_item(std::string_view id, std::u32string_view label) { items.emplace_back(id, label); }
 
-    std::u32string get_selected_item() const { return label_item.get_text(); }
+    std::string get_selected_item_id() const {
+      if (selected_index < 0 || selected_index >= (i32)items.size()) { return ""; }
+      return items[selected_index].first;
+    }
+
+    std::u32string get_selected_item_label() const {
+      if (selected_index < 0 || selected_index >= (i32)items.size()) { return U""; }
+      return items[selected_index].second;
+    }
 
     i32 get_selected_index() const { return selected_index; }
 
     void select_item_by_label(std::u32string_view label) {
-      for (i32 i = 0; i < (i32)item_labels.size(); ++i) {
-        if (item_labels[i] == label) {
+      for (i32 i = 0; i < (i32)items.size(); i += 1) {
+        if (items[i].second == label) {
+          on_item_pressed(i);
+          break;
+        }
+      }
+    }
+
+    void select_item_by_id(std::string_view id) {
+      for (i32 i = 0; i < (i32)items.size(); i += 1) {
+        if (items[i].first == id) {
           on_item_pressed(i);
           break;
         }
@@ -182,7 +200,7 @@ class ComboBox : public Sprite {
     }
 
     void select_item_by_index(i32 index) {
-      if (index < 0 || index >= (i32)item_labels.size()) { return; }
+      if (index < 0 || index >= (i32)items.size()) { return; }
       on_item_pressed(index);
     }
 
@@ -212,13 +230,13 @@ class ComboBox : public Sprite {
     }
 
     void on_item_pressed(i32 i) {
-      if (Input::get_mouse_y() <= get_position(Anchor::BOTTOM_CENTER).y) { return; }
+      if (i < 0 || i >= (i32)items.size()) { return; }
       i32 label_i = (i32)scroll_progress + i;
       selected_index = i;
-      label_item.set_text(item_labels[label_i]);
+      label_item.set_text(items[label_i].second);
       button.set_is_switched(false);
 
-      if (lambda_select) { lambda_select(label_i); }
+      if (lambda_select) { lambda_select(); }
     }
 
   protected:
@@ -229,7 +247,7 @@ class ComboBox : public Sprite {
     i32 selected_index = -1;
     bool focused = false;
 
-    std::function<void(i32)> lambda_select = nullptr;
+    std::function<void()> lambda_select = nullptr;
 
     i32 item_height = 20;
     i32 dropdown_padding = 1;
@@ -243,7 +261,7 @@ class ComboBox : public Sprite {
 
     std::array<ComboBoxItem*, dropdown_max_length + 1>
       item_widgets; // +1 to accomodate for partially visible extra item
-    std::vector<std::u32string> item_labels;
+    std::vector<std::pair<std::string, std::u32string>> items;
 
   public:
     WIDGET_DEF_SETTER_DIRTY(item_height);

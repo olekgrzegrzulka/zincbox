@@ -7,6 +7,7 @@
 TextInput::TextInput(UI& ui_) : Sprite(ui_), label(add_child<Label>()), caret(add_child<Sprite>()) {
   set_size(64, 24);
   set_nine_slice_margin(4);
+  set_clip_children(true);
   label.set_anchor(Anchor::CENTER_LEFT);
   label.set_parent_anchor(Anchor::CENTER_LEFT);
   label.set_label_anchor(Anchor::CENTER_LEFT);
