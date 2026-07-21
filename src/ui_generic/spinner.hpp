@@ -29,6 +29,7 @@ class Spinner : public TextInput {
       button_increase.set_pos(-1, 0);
 
       label.set_pos({button_increase.get_width() + 2, 0});
+      label.set_resize_to_text_extents(false);
 
       label.set_text(std::to_string(value));
       set_on_text_changed([this]() { on_text_changed(); });
@@ -39,41 +40,48 @@ class Spinner : public TextInput {
     }
 
     void on_text_changed() {
-      i32 new_value = 0;
       auto str = label.get_text();
-
-      if (str.empty()) {
-        label.set_text(str);
-        value = 0;
-        return;
-      }
-
-      if (str.ends_with(U'-')) {
+      bool typed_minus = str.ends_with(U'-');
+      if (typed_minus) {
+        str.erase(str.length() - 1, 1);
         if (str.starts_with(U'-')) {
           str.erase(0, 1);
         } else {
           str = U'-' + str;
         }
       }
-
-      try {
-        new_value = std::stoi(utf32_to_utf8(str));
-      } catch (std::invalid_argument) { new_value = value; } catch (std::out_of_range) {
-        if (str.starts_with('-')) {
-          new_value = std::numeric_limits<i32>::min();
-        } else {
-          new_value = std::numeric_limits<i32>::max();
-        }
-      }
-
-      new_value = std::clamp(new_value, min_value, max_value);
-      value = new_value;
-
-      label.set_text(std::to_string(new_value));
+      label.set_text(str);
+      buffer_changed = true;
     }
 
     void update() override {
       TextInput::update();
+
+      if (buffer_changed && !focused) {
+        buffer_changed = false;
+
+        i32 new_value = 0;
+        auto str = label.get_text();
+
+        if (str.empty()) {
+          new_value = min_value;
+        } else {
+          try {
+            new_value = std::stoi(utf32_to_utf8(str));
+          } catch (std::invalid_argument) { new_value = value; } catch (std::out_of_range) {
+            if (str.starts_with('-')) {
+              new_value = std::numeric_limits<i32>::min();
+            } else {
+              new_value = std::numeric_limits<i32>::max();
+            }
+          }
+        }
+
+        if (!set_value(new_value)) { label.set_text(std::to_string(new_value)); }
+      }
+
+      label.set_height(height);
+      label.set_width(width - (button_increase.get_width() + button_decrease.get_width() + 4));
 
       button_increase.set_height(height - 2);
       button_decrease.set_height(height - 2);
@@ -84,21 +92,11 @@ class Spinner : public TextInput {
         if (scroll.y > 0) {
           focused = true;
           i32 new_value = std::clamp(value + button_step, min_value, max_value);
-          if (value != new_value) {
-            if (lambda_value_changed) { lambda_value_changed(); }
-            value = new_value;
-          }
-          label.set_text(std::to_string(value));
-          on_text_changed();
+          set_value(new_value);
         } else if (scroll.y < 0) {
           focused = true;
           i32 new_value = std::clamp(value - button_step, min_value, max_value);
-          if (value != new_value) {
-            if (lambda_value_changed) { lambda_value_changed(); }
-            value = new_value;
-          }
-          label.set_text(std::to_string(value));
-          on_text_changed();
+          set_value(new_value);
         }
       }
       button_increase.set_disabled(value >= max_value);
@@ -109,17 +107,14 @@ class Spinner : public TextInput {
       if (increase_pressed || decrease_pressed) {
         focused = true;
         if (buttons_clock <= 0) {
-          if (increase_pressed) {
-            value = std::clamp(value + button_step, min_value, max_value);
-          } else if (decrease_pressed) {
-            value = std::clamp(value - button_step, min_value, max_value);
+          if ((increase_pressed && set_value(value + button_step)) ||
+              (decrease_pressed && set_value(value - button_step))) {
+            buttons_clock = buttons_first_echo ? buttons_echo_length_initial : buttons_echo_length;
+            buttons_first_echo = false;
+            caret_blink_clock = caret_blink_time;
+            caret.set_is_updated(true);
           }
-          label.set_text(std::to_string(value));
-          on_text_changed();
-          buttons_clock = buttons_first_echo ? buttons_echo_length_initial : buttons_echo_length;
-          buttons_first_echo = false;
-          caret_blink_clock = caret_blink_time;
-          caret.set_is_updated(true);
+
         } else {
           buttons_clock -= 1;
         }
@@ -141,6 +136,7 @@ class Spinner : public TextInput {
     i32 value = 0;
     i32 min_value = 0;
     i32 max_value = 100;
+    bool buffer_changed = false;
     std::u32string postfix = U"";
     i32 button_step = 1;
 
@@ -159,14 +155,16 @@ class Spinner : public TextInput {
       label_postfix.set_text(postfix);
     }
 
-    void set_value(i32 value_) {
+    bool set_value(i32 value_) {
       i32 new_value = std::clamp(value_, min_value, max_value);
       if (value != new_value) {
-        if (lambda_value_changed) { lambda_value_changed(); }
         value = new_value;
+        label.set_text(std::to_string(value));
+        on_text_changed();
+        if (lambda_value_changed) { lambda_value_changed(); }
+        return true;
       }
-      label.set_text(std::to_string(value));
-      on_text_changed();
+      return false;
     }
 
     void on_value_changed(std::function<void()> lambda_value_changed_) {
@@ -176,21 +174,13 @@ class Spinner : public TextInput {
     void set_min_value(i32 min_value_) {
       if (min_value_ == max_value) { return; }
       min_value = min_value_;
-      if (value < min_value) {
-        value = min_value;
-        if (lambda_value_changed) { lambda_value_changed(); }
-        on_text_changed();
-      }
+      set_value(value);
     }
 
     void set_max_value(i32 max_value_) {
       if (max_value_ == max_value) { return; }
       max_value = max_value_;
-      if (value > max_value) {
-        value = max_value;
-        if (lambda_value_changed) { lambda_value_changed(); }
-        on_text_changed();
-      }
+      set_value(value);
     }
 
     WIDGET_DEF_SETTER(button_step);

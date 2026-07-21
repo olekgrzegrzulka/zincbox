@@ -1,9 +1,10 @@
 #pragma once
 #include <array>
 #include <functional>
-#include <unordered_map>
+#include <map>
 #include "common/utf.hpp"
 #include "core/settings.hpp"
+#include "lib/json.cpp/json.h"
 #include "tr.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
@@ -93,6 +94,9 @@ class PopupSettings : public Popup {
 
         auto& combo = parent->add_child<ComboBox>();
         combo.set_width(128);
+        combo.on_item_selected([this, &combo, json_key]() -> void {
+          changed_props[json_key.first][json_key.second] = combo.get_selected_item_id();
+        });
 
         auto& pad = parent->add_child<Widget>();
         pad.set_min_height(10);
@@ -112,6 +116,9 @@ class PopupSettings : public Popup {
 
         auto& spinner = parent->add_child<Spinner>();
         spinner.set_width(128);
+        spinner.on_value_changed([this, &spinner, json_key]() -> void {
+          changed_props[json_key.first][json_key.second] = spinner.get_value();
+        });
 
         auto& pad = parent->add_child<Widget>();
         pad.set_min_height(10);
@@ -126,18 +133,17 @@ class PopupSettings : public Popup {
         auto& checkbox = parent->add_child<Checkbox>(label_);
         checkbox.set_width(128);
         checkbox.set_height(24);
-
-        // auto& pad = parent->add_child<Widget>();
-        // pad.set_min_height(10);
-        // pad.set_max_height(10);
+        checkbox.on_value_changed([this, &checkbox, json_key]() -> void {
+          changed_props[json_key.first][json_key.second] = checkbox.is_checked();
+        });
 
         checkboxes[std::move(json_key)] = &checkbox;
         return &checkbox;
       };
 
       auto& page_general = *pages[0];
-      auto& page_interface = *pages[1];
-      auto& page_playback = *pages[2];
+      auto& page_playback = *pages[1];
+      auto& page_interface = *pages[2];
 
       // -----------------------------------------------
       //                     GENERAL
@@ -145,16 +151,33 @@ class PopupSettings : public Popup {
 
       auto* combo_cover_preference = create_widget_combobox(&page_general, {"general", "cover_preference"},
                                                             tr::get("settings.playback.source_label"));
-      combo_cover_preference->add_item(tr::get("settings.playback.source_album"));
-      combo_cover_preference->add_item(tr::get("settings.playback.source_playlist"));
+      combo_cover_preference->add_item("album", tr::get("settings.playback.source_album"));
+      combo_cover_preference->add_item("playlist", tr::get("settings.playback.source_playlist"));
 
       auto* spinner_volume_step =
         create_widget_spinner(&page_general, {"general", "volume_step"}, tr::get("settings.playback.volume_step"));
       spinner_volume_step->set_min_value(1);
       spinner_volume_step->set_max_value(10);
       spinner_volume_step->set_value(5);
-      spinner_volume_step->on_value_changed(
-        [spinner_volume_step]() { out::info("{}", spinner_volume_step->get_value()); });
+
+      // -----------------------------------------------
+      //                    PLAYBACK
+      // -----------------------------------------------
+      auto& shuffle_title = page_playback.add_child<Label>(tr::get("settings.playback.shuffle"));
+      shuffle_title.set_resize_to_text_extents(false);
+      shuffle_title.set_height(16);
+      shuffle_title.set_text_color(text_color_muted);
+      create_widget_checkbox(&page_playback, std::pair{"playback", "shuffle_allow_same_album"},
+                             tr::get("settings.playback.allow_same_album"));
+      create_widget_checkbox(&page_playback, std::pair{"playback", "shuffle_allow_same_artist"},
+                             tr::get("settings.playback.allow_same_artist"));
+
+      auto& pad = page_playback.add_child<Widget>();
+      pad.set_min_height(10);
+      pad.set_max_height(10);
+
+      create_widget_checkbox(&page_playback, std::pair{"playback", "restart_on_previous"},
+                             tr::get("settings.playback.restart_on_previous"));
 
       // -----------------------------------------------
       //                    INTERFACE
@@ -162,16 +185,16 @@ class PopupSettings : public Popup {
       auto* combo_theme =
         create_widget_combobox(&page_interface, {"interface", "theme"}, tr::get("settings.interface.theme_label"));
       for (auto& theme : theme::get_themes()) {
-        combo_theme->add_item(utf8_to_utf32(theme));
+        combo_theme->add_item(theme, utf8_to_utf32(theme));
       }
       auto* language_combo = create_widget_combobox(&page_interface, {"interface", "language"},
                                                     tr::get("settings.interface.language_label"));
       for (auto& language : theme::get_languages()) {
-        language_combo->add_item(utf8_to_utf32(language));
+        language_combo->add_item(language, utf8_to_utf32(language));
       }
 
-      auto* spinner_interface_scale = create_widget_spinner(&page_interface, {"interface", "ui_scale"},
-                                                            tr::get("settings.interface.interface_scale"));
+      auto* spinner_interface_scale =
+        create_widget_spinner(&page_interface, {"interface", "scale"}, tr::get("settings.interface.scale"));
       spinner_interface_scale->set_postfix(U"%");
       spinner_interface_scale->set_min_value(50);
       spinner_interface_scale->set_max_value(200);
@@ -183,22 +206,6 @@ class PopupSettings : public Popup {
       spinner_font_size->set_min_value(8);
       spinner_font_size->set_max_value(32);
       spinner_font_size->set_value(12);
-
-      // -----------------------------------------------
-      //                    PLAYBACK
-      // -----------------------------------------------
-      auto& shuffle_title = page_playback.add_child<Label>(tr::get("settings.playback.shuffle"));
-      shuffle_title.set_resize_to_text_extents(false);
-      shuffle_title.set_height(16);
-      shuffle_title.set_text_color(text_color_muted);
-      auto* checkbox_shuffle_allow_same_album =
-        create_widget_checkbox(&page_playback, std::pair{"playback", "shuffle_allow_same_album"},
-                               tr::get("settings.playback.allow_same_album"));
-      auto* checkbox_shuffle_allow_same_artist =
-        create_widget_checkbox(&page_playback, std::pair{"playback", "shuffle_allow_same_artist"},
-                               tr::get("settings.playback.allow_same_artist"));
-      auto* checkbox_restart_on_previous = create_widget_checkbox(
-        &page_playback, std::pair{"playback", "restart_on_previous"}, tr::get("settings.playback.restart_on_previous"));
     }
 
     void load_settings(const settings& settings) {
@@ -208,7 +215,7 @@ class PopupSettings : public Popup {
         if (json.contains(key.first) && json[key.first].contains(key.second) &&
             json[key.first][key.second].isString()) {
           //
-          combo->select_item_by_label(utf8_to_utf32(json[key.first][key.second].getString()));
+          combo->select_item_by_id(json[key.first][key.second].getString());
         }
       }
 
@@ -226,34 +233,20 @@ class PopupSettings : public Popup {
           checkbox->set_checked(json[key.first][key.second].getBool());
         }
       }
+
+      changed_props = jt::Json();
     }
 
-    settings save_settings(const settings& base) const {
-      jt::Json json = base.to_json();
-
-      for (auto& [key, combo] : combo_boxes) {
-        if (json[key.first][key.second].isString()) {
-          json[key.first][key.second] = utf32_to_utf8(combo->get_selected_item());
+    void save_settings(settings& settings) const {
+      auto settings_json = settings.to_json();
+      if (!changed_props.isObject()) { return; }
+      for (const auto& page : changed_props.getObject()) {
+        if (!page.second.isObject()) { continue; }
+        for (auto& prop : page.second.getObject()) {
+          settings_json[page.first][prop.first] = prop.second;
         }
       }
-
-      for (auto& [key, spinner] : spinners) {
-        if (json[key.first][key.second].isNumber()) {
-          //
-          json[key.first][key.second] = spinner->get_value();
-        }
-      }
-
-      for (auto& [key, checkbox] : checkboxes) {
-        if (json[key.first][key.second].isBool()) {
-          //
-          json[key.first][key.second] = checkbox->is_checked();
-        }
-      }
-
-      settings new_settings;
-      new_settings.from_json(json);
-      return new_settings;
+      settings.from_json(settings_json);
     }
 
   public:
@@ -261,6 +254,7 @@ class PopupSettings : public Popup {
     std::function<void()> on_cancel{};
 
   protected:
+    jt::Json changed_props;
     std::array<Widget*, 3> pages{};
     std::array<Button*, 3> page_buttons{};
     std::map<std::pair<std::string, std::string>, ComboBox*> combo_boxes;

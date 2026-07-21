@@ -80,6 +80,8 @@ class Button : public Sprite {
       return true;
     }
 
+    bool get_is_switched() const { return is_switched; }
+
     void set_is_switched(bool state_) {
       if (is_switched == state_) { return; }
       is_switched = state_;
