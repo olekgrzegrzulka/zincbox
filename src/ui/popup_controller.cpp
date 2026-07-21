@@ -36,7 +36,6 @@ void PopupController::create_popover(const popover_descriptor& d) {
   auto& popover = add_child<Popover>(arrow_on_top);
   popovers.emplace(d.id, &popover);
 
-  // popover.set_is_drawn_on_top(true);
   popover.set_nine_slice_margin(8.0f);
   popover.set_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
   popover.set_layout("ttb fit expand fill m:4 s:0");

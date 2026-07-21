@@ -27,7 +27,6 @@ class Dimmer : public Sprite {
         if (on_pressed) { on_pressed(); }
       }
       set_size(ui.get_window_size());
-      set_is_drawn_on_top(true);
       Sprite::update();
     }
 
