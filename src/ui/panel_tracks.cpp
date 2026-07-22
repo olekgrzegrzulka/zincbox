@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
-#include <complex.h>
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
@@ -124,6 +123,8 @@ void PanelTracks::create_item_widget_if_null(Item& item) {
       }
     });
 
+    w->update();
+
   } else if (item.type == ItemType::HEADER) {
     auto* w = &items_container->add_child<WidgetPlaylistHeader>(collection_id.value(), item.track_info.playlist_id);
     w->set_ignore_parents_layout(true);
@@ -139,6 +140,7 @@ void PanelTracks::create_item_widget_if_null(Item& item) {
         on_playlist_more_options_invoked(ti.collection_id, ti.playlist_id, w->button_more);
       }
     });
+    w->update();
   }
 }
 
@@ -167,6 +169,49 @@ void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool imme
   target_scroll_px = std::clamp(offset, 0, std::max(0, (max_scroll_px - get_height())));
   scrollbar->set_scroll_offset(target_scroll_px);
   if (immediate) { scroll_px = target_scroll_px; }
+}
+
+void PanelTracks::input() {
+  if ((i32)scroll_px != (i32)old_scroll_px || vec2i{width, height} != old_size || just_recreated ||
+      selection_modified) {
+
+    insert_cursor->set_x(items_container->get_x());
+    insert_cursor->set_width(items_container->get_width());
+
+    static constexpr i32 MARGIN = 100;
+    i32 current_item_top_y = 0;
+    i32 track_number = 0;
+    for (size_t i = 0; i < items.size(); i += 1) {
+      i32 current_item_bottom_y = current_item_top_y + items[i].height();
+      bool item_visible =
+        current_item_top_y + MARGIN >= scroll_px && current_item_bottom_y - MARGIN <= scroll_px + height;
+      if (item_visible) {
+        items[i].track_info.index = track_number;
+        create_item_widget_if_null(items[i]);
+        ensure(items[i].widget());
+        items[i].widget()->set_width(items_container->get_width());
+        items[i].widget()->set_y(current_item_top_y - scroll_px);
+        if (items[i].type == ItemType::HEADER) { ui.mark_dirty_recursive(items[i].widget()); }
+        items[i].widget()->set_is_drawn(item_visible);
+        if (items[i].type == ItemType::TRACK) {
+          WidgetTrack* widget_track = items[i].widget_track;
+          ensure(widget_track);
+          if (widget_track) { widget_track->is_selected(m_selection.has(items[i].track_info)); }
+        }
+      } else if (items[i].widget()) {
+        items[i].delete_widget();
+      }
+
+      current_item_top_y += items[i].height();
+      track_number += 1;
+      if (items[i].type == ItemType::HEADER) { track_number = 0; }
+      ui.mark_dirty_recursive(items_container); // FIXME without this the view flickers when scrolling down
+    }
+    old_scroll_px = scroll_px;
+    old_size = vec2i{width, height};
+    just_recreated = false;
+    selection_modified = false;
+  }
 }
 
 void PanelTracks::update() {
@@ -236,47 +281,6 @@ void PanelTracks::update() {
 
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
-  if ((i32)scroll_px != (i32)old_scroll_px || vec2i{width, height} != old_size || just_recreated ||
-      selection_modified) {
-
-    insert_cursor->set_x(items_container->get_x());
-    insert_cursor->set_width(items_container->get_width());
-
-    static constexpr i32 MARGIN = 100;
-    i32 current_item_top_y = 0;
-    i32 track_number = 0;
-    for (size_t i = 0; i < items.size(); i += 1) {
-      i32 current_item_bottom_y = current_item_top_y + items[i].height();
-      bool item_visible =
-        current_item_top_y + MARGIN >= scroll_px && current_item_bottom_y - MARGIN <= scroll_px + height;
-      if (item_visible) {
-        items[i].track_info.index = track_number;
-        create_item_widget_if_null(items[i]);
-        ensure(items[i].widget());
-        items[i].widget()->set_width(items_container->get_width());
-        items[i].widget()->set_y(current_item_top_y - scroll_px);
-        if (items[i].type == ItemType::HEADER) { ui.mark_dirty_recursive(items[i].widget()); }
-        items[i].widget()->set_is_drawn(item_visible);
-        if (items[i].type == ItemType::TRACK) {
-          WidgetTrack* widget_track = items[i].widget_track;
-          ensure(widget_track);
-          if (widget_track) { widget_track->is_selected(m_selection.has(items[i].track_info)); }
-        }
-      } else if (items[i].widget()) {
-        items[i].delete_widget();
-      }
-
-      current_item_top_y += items[i].height();
-      track_number += 1;
-      if (items[i].type == ItemType::HEADER) { track_number = 0; }
-      ui.mark_dirty_recursive(items_container); // FIXME without this the view flickers when scrolling down
-    }
-    old_scroll_px = scroll_px;
-    old_size = vec2i{width, height};
-    just_recreated = false;
-    selection_modified = false;
-  }
-
   Sprite::update();
 }
 

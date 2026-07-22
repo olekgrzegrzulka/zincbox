@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include <optional>
 #include <utility>
 #include <vector>
 #include <glm/ext/matrix_transform.hpp>
@@ -29,6 +28,7 @@ class UI final {
     }
 
     void input();
+    void rebuild();
     void update(i32 window_width_, i32 window_height_);
     void draw();
 
@@ -56,16 +56,19 @@ class UI final {
       }
     }
 
-  private:
-    void update_widget_recursive(std::unique_ptr<Widget>& widget);
-
-    void draw_widget_recursive(Widget* widget, std::vector<Widget*>* to_be_drawn_later,
-                               std::optional<rect2i> scissor_rect = std::nullopt);
+  public:
+  protected:
+    void update_hovered_widgets_recursive(Widget* widget);
+    bool rebuild_tree(Widget*, bool tree_changed = false);
+    bool rebuild_tree();
+    void construct_traversal_order(Widget*);
+    void construct_traversal_order();
 
   protected:
     glm::mat4 matrix;
     std::vector<std::unique_ptr<Widget>> widgets;
     std::vector<std::unique_ptr<Widget>> widgets_to_add;
+    std::vector<Widget*> widget_traversal_order;
     std::vector<Widget*> hovered_widgets;
     FT_Library freetype_lib;
     Shader shader;

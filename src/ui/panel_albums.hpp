@@ -55,6 +55,7 @@ class PanelAlbums : public Sprite {
     PanelAlbums(UI& ui_);
     void draw() override;
     void clear();
+    void input() override;
     void update() override;
     void recreate();
     void scroll_to_playlist(size_t, bool immediate = false);

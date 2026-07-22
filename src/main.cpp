@@ -190,9 +190,7 @@ int main() {
     glfwPollEvents();
     Input::update();
     player::update();
-    interface::input();
     interface::update(window_size);
-    interface::draw();
     Input::clear();
     check_opengl_errors();
     set_window_title(window);

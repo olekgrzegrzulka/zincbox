@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -111,6 +112,8 @@ namespace Input {
 } // namespace Input
 
 class Widget {
+    friend UI;
+
   protected:
     UI& ui;
     std::vector<std::unique_ptr<Widget>> children_to_add;
@@ -140,6 +143,11 @@ class Widget {
     bool is_drawn_on_top = false;
     float weight = 1.0; // FIXME: weight does nothing at the moment
     bool draw_behind_parent = false;
+
+    bool hovered_ = false;
+    bool visible_ = false;
+    bool updated_ = false;
+    std::optional<rect2i> scissor_;
 
     Widget* parent = nullptr;
     std::vector<std::unique_ptr<Widget>> children;
