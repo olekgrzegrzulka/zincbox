@@ -120,6 +120,7 @@ class PanelTracks final : public Sprite {
 
     void event(Input::InputEventMouseScroll&) override;
     void event(Input::InputEventMouseButton&) override;
+    void input() override;
     void update() override;
     void draw() override;
 

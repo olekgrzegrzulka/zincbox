@@ -74,6 +74,10 @@ static PanelControls* panel_controls{};
 static Splitter* splitter{};
 static ToolTip* tooltip_drag{};
 
+static void input();
+static void rebuild();
+static void draw();
+
 static void init_atlas();
 static void add_playlist_art_to_texture_atlas(db::collection_id_t);
 static void handle_dropped_files();
@@ -327,7 +331,7 @@ void interface::init() {
   recreate_panel_top(false);
 }
 
-void interface::input() {
+static void input() {
   while (auto cmd = mpris::command_pop()) {
     switch (cmd->type) {
     case mpris::CommandType::PLAY: player::resume(); break;
@@ -381,11 +385,17 @@ void interface::input() {
   }
 
   handle_dropped_files();
-  ui->input();
   handle_drag_and_drop();
+  ui->input();
 }
 
+static void rebuild() { ui->rebuild(); }
+
 void interface::update(vec2i window_size) {
+  input();
+
+  rebuild();
+
   i32 height = window_size.y - panel_top->get_height() - panel_controls->get_height();
   panel_top->set_width(window_size.x);
 
@@ -422,9 +432,11 @@ void interface::update(vec2i window_size) {
   panel_controls->set_width(window_size.x);
 
   ui->update(window_size.x, window_size.y);
+
+  draw();
 }
 
-void interface::draw() { ui->draw(); }
+static void draw() { ui->draw(); }
 
 void interface::deinit() { ui = nullptr; }
 
@@ -502,7 +514,9 @@ static void init_atlas() {
     add_playlist_art_to_texture_atlas(collection_id);
   }
 
+#ifndef NDEBUG
   atlas.save_to_file("atlas.png");
+#endif
 }
 
 static void add_playlist_art_to_texture_atlas(db::collection_id_t collection_id) {
@@ -517,7 +531,9 @@ static void add_playlist_art_to_texture_atlas(db::collection_id_t collection_id)
     ui->get_texture_atlas().add_texture(playlist_id_str, playlist.art_64x64, 64, 64);
     if (count++ >= 1023) { break; }
   }
+#ifndef NDEBUG
   ui->get_texture_atlas().save_to_file("atlas.png");
+#endif
 }
 
 static void create_collection(std::vector<std::string> directories) {
@@ -957,12 +973,15 @@ static void show_collection(db::collection_id_t collection_id) {
   panel_tracks->set_is_drawn(true);
   panel_tracks->set_scroll_px(tracks_scroll_positions[collection_id]);
   panel_tracks->set_is_updated(true);
+  panel_tracks->input();
+  panel_tracks->update();
 
   panel_albums->set_is_drawn(true);
   panel_albums->set_is_updated(true);
   panel_albums->props.collection_id = active_collection_id;
   panel_albums->recreate();
   panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
+  panel_albums->update();
 
   panel_queue->set_is_drawn(false);
   panel_queue->set_is_updated(false);
@@ -980,10 +999,11 @@ static void show_queue() {
   panel_queue->set_is_drawn(true);
   panel_queue->set_is_updated(true);
   panel_queue->recreate();
+  panel_queue->update();
+
   splitter->set_is_drawn(false);
   splitter->set_is_updated(false);
   panel_albums->props.collection_id = std::nullopt;
-  panel_queue->recreate();
   panel_top->select(panel_top->get_queue_tab()->id);
 }
 

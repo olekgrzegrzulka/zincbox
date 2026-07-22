@@ -173,8 +173,6 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   button_clear_search->on_press([this]() { this->search_bar->clear(); });
 }
 
-void PanelAlbums::draw() { Sprite::draw(); }
-
 void PanelAlbums::clear() {
   for (auto& w : album_widgets) {
     w->set_marked_for_deletion(true);
@@ -319,7 +317,7 @@ void PanelAlbums::reflow() {
   albums_container->set_height(content_height);
 }
 
-void PanelAlbums::update() {
+void PanelAlbums::input() {
   if (props_old != props) {
     recreate();
     props_old = props;
@@ -336,8 +334,12 @@ void PanelAlbums::update() {
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
-  Sprite::update();
+  Sprite::input();
 }
+
+void PanelAlbums::update() { Sprite::update(); }
+
+void PanelAlbums::draw() { Sprite::draw(); }
 
 void PanelAlbums::event(Input::InputEventMouseScroll& e) {
   if (props.is_scrollable && is_mouse_hovering()) {

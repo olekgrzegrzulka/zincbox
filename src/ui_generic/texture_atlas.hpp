@@ -19,7 +19,7 @@ struct TextureAtlasData {
 
 class TextureAtlas {
   public:
-    TextureAtlas(i32 atlas_size_ = 1024, i32 margin_px_ = 1, i32 grid_size_px_ = 4);
+    TextureAtlas(i32 atlas_size_ = 2048, i32 margin_px_ = 1, i32 grid_size_px_ = 4);
 
     bool has_texture(std::string_view id, i32 max_depth = 16) const {
       if (max_depth <= 0) { return false; }
