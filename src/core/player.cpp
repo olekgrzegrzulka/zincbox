@@ -62,6 +62,7 @@ bool play_track() {
   }
   auto& track = db::track_by_id(playing->track_id)->get();
   auto& playlist = db::playlist_by_id(playing->playlist_id)->get();
+  auto originating_album = db::playlist_by_id(track.originating_album_id);
 
   ma_engine_stop(&engine);
   ma_sound_uninit(&sound);
@@ -105,12 +106,16 @@ bool play_track() {
 
   mpris::notify_playback_status_playing();
   mpris::notify_volume(volume);
+  std::u32string_view cover_path = playlist.art_file_path;
+  if (settings::get().cover_preference == settings::CoverPreference::Album && originating_album.has_value()) {
+    cover_path = originating_album->get().art_file_path;
+  }
   if (!track.title.empty() && !track.artist.empty()) {
     mpris::notify_track_change(utf32_to_utf8(track.title), utf32_to_utf8(track.artist), utf32_to_utf8(playlist.name),
-                               (u64)track.length_seconds * 1000, utf32_to_utf8(playlist.art_file_path));
+                               (u64)track.length_seconds * 1000, utf32_to_utf8(cover_path));
   } else {
     mpris::notify_track_change(utf32_to_utf8(track.pretty_name()), "", utf32_to_utf8(playlist.name),
-                               (u64)track.length_seconds * 1000, utf32_to_utf8(playlist.art_file_path));
+                               (u64)track.length_seconds * 1000, utf32_to_utf8(cover_path));
   }
 
   db::set_track_playback_error(playing->track_id, false);

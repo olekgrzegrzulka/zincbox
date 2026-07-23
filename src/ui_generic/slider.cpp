@@ -89,14 +89,15 @@ void Slider::update() {
   }
 
   if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
+    float new_value = 0.0f;
     if (orientation == HORIZONTAL && width != 0) {
-      value = (Input::get_mouse_x() - get_position().x) / (float)width;
+      new_value = (Input::get_mouse_x() - get_position().x) / (float)width;
     } else if (height != 0) {
-      value = (Input::get_mouse_y() - get_position().y) / (float)height;
+      new_value = (Input::get_mouse_y() - get_position().y) / (float)height;
     }
-    value *= (max_value - min_value);
-    value += min_value;
-    value = std::clamp(value, min_value, max_value);
+    new_value *= (max_value - min_value);
+    new_value += min_value;
+    set_value(new_value);
     mouse_on_thumb = true;
   }
 
@@ -118,7 +119,7 @@ void Slider::update() {
 
     if ((track_length - thumb_length) != 0) {
       float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
-      value = std::clamp(drag_start_value + drag, min_value, max_value);
+      set_value(drag_start_value + drag);
     }
   }
 
@@ -161,11 +162,6 @@ void Slider::update() {
     track_active.set_height(thumb_pos_lerped + thumb.get_height() * 0.5);
   }
 
-  if (old_value != value) {
-    if (lambda_value_changed) { lambda_value_changed(old_value, value); }
-    old_value = value;
-  }
-
   Widget::update();
 }
 void Slider::event(Input::InputEventMouseButton& ev) {
@@ -175,7 +171,13 @@ void Slider::event(Input::InputEventMouseMove& ev) {
   if (is_mouse_hovering(ev.to)) { ev.handled = true; }
 }
 void Slider::event(Input::InputEventMouseScroll& ev) {
-  if (is_mouse_hovering()) { ev.handled = true; }
+  if (is_mouse_hovering()) {
+    if (!is_dragged) {
+      i32 sign = ev.offset.y / std::abs(ev.offset.y);
+      set_value(value + (float)sign * sensitivity);
+    }
+    ev.handled = true;
+  }
 }
 void Slider::event(Input::InputEventKey& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }

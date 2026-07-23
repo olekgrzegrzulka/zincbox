@@ -13,7 +13,6 @@ class PanelControls : public Sprite {
     PanelControls(UI& ui_);
     ~PanelControls() override;
     using Sprite::event;
-    void event(Input::InputEventMouseScroll&) override;
     void event(Input::InputEventMouseButton&) override;
     void event(Input::InputEventKey&) override;
     void update() override;

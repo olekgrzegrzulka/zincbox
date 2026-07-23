@@ -7,6 +7,7 @@
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
+#include "core/settings.hpp"
 #include "tr.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
@@ -103,7 +104,8 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
   volume_bar->set_min_value(0.0f);
   volume_bar->set_max_value(1.0f);
-  volume_bar->on_value_changed([](float, float volume) { player::set_volume(volume); });
+  volume_bar->on_value_changed([](float, float volume) -> void { player::set_volume(volume); });
+  volume_bar->on_drag_ended([](float, float volume) -> void { player::set_volume(volume); });
   tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
 
   button_shuffle = &add_child<ZincboxButton>("shuffle");
@@ -188,14 +190,6 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
 
 PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
-void PanelControls::event(Input::InputEventMouseScroll& ev) {
-  if (volume_bar->is_mouse_hovering()) {
-    i32 sign = ev.offset.y / std::abs(ev.offset.y);
-    player::set_volume(player::get_volume() + sign * 0.03);
-    ev.handled = true;
-  }
-}
-
 void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 
@@ -255,6 +249,7 @@ void PanelControls::update() {
   seekbar->set_min_value(0);
   seekbar->set_max_value(player::get_total_duration_ms());
 
+  volume_bar->set_sensitivity(settings::get().volume_step * 0.01f);
   if (!volume_bar->is_being_dragged()) { volume_bar->set_value(player::get_volume(), false); }
 
   i32 progress_ms = seekbar->is_being_dragged() ? seekbar->get_value() : player::get_current_time_ms();
@@ -310,7 +305,7 @@ void PanelControls::update() {
     if (volume_bar->get_thumb().is_mouse_hovering()) { tooltip_value = volume_bar->get_value(); }
     if (tooltip_value != volume_prev) {
       volume_prev = tooltip_value;
-      tooltip_volume->set_text(std::to_string((i32)(tooltip_value * 100)) + "%");
+      tooltip_volume->set_text(std::to_string((i32)(std::round(tooltip_value * 100))) + "%");
     }
     tooltip_volume->set_is_drawn(true);
     // tooltip is centered - subtract half width to compensate
