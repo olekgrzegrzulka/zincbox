@@ -10,6 +10,7 @@
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 
 #include "ui_generic/label.hpp"
@@ -211,7 +212,7 @@ class PopupSetSources : public Popup {
       scrollable_content->set_clip_children(true);
       scrollable_content->set_layout("ttb s:0 m:0 expand fit");
 
-      scrollbar = &content->add_child<ScrollBar>();
+      scrollbar = &content->add_child<ZincboxScrollbar>();
       scrollbar->set_ignore_parents_layout(true);
       scrollbar->set_anchor(Anchor::TOP_RIGHT);
       scrollbar->set_parent_anchor(Anchor::TOP_RIGHT);

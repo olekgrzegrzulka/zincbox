@@ -11,6 +11,7 @@
 #include "panel_albums.hpp"
 #include "theme.hpp"
 #include "tr.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
@@ -128,10 +129,10 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
 PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   set_clip_children(true);
 
-  scrollbar = &add_child<ScrollBar>();
+  scrollbar = &add_child<ZincboxScrollbar>();
   scrollbar->set_anchor(Anchor::RIGHT);
   scrollbar->set_parent_anchor(Anchor::RIGHT);
-  scrollbar->set_width(12);
+  scrollbar->set_width(10);
   scrollbar->set_thumb_thickness(10);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
   scrollbar->set_track_thickness(10);

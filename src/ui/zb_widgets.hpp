@@ -1,5 +1,7 @@
 #pragma once
+#include "core/settings.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/scrollbar.hpp"
 #include "ui_generic/slider.hpp"
 #include "ui_generic/ui.hpp"
 
@@ -23,5 +25,15 @@ class ZincboxSlider final : public Slider {
       set_texture_thumb_idle(name + "_thumb_idle");
       set_texture_track_inactive(name + "_track_inactive");
       set_texture_track_active(name + "_track_active");
+    }
+};
+
+class ZincboxScrollbar final : public ScrollBar {
+  public:
+    ZincboxScrollbar(UI& ui_) : ScrollBar(ui_) {}
+
+    void update() {
+      sensitivity = settings::get().scrolling_speed;
+      ScrollBar::update();
     }
 };

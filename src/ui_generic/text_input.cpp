@@ -96,6 +96,8 @@ void TextInput::event(Input::InputEventMouseButton& ev) {
   } else if (!mouse_hovering && (lmb_just_pressed || rmb_just_pressed || mmb_just_pressed) && focused) {
     focused = false;
   }
+
+  if (focused) { ev.handled = true; }
 }
 
 void TextInput::event(Input::InputEventKey& ev) {

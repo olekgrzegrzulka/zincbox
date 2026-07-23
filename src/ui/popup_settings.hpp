@@ -8,6 +8,7 @@
 #include "tr.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
+#include "ui/scrollable_view.hpp"
 #include "ui_generic/checkbox.hpp"
 #include "ui_generic/combo_box.hpp"
 #include "ui_generic/spinner.hpp"
@@ -64,8 +65,8 @@ class PopupSettings : public Popup {
                                                   tr::get("settings.category.interface")};
 
       for (size_t i = 0; i < pages.size(); i += 1) {
-        pages[i] = &content.add_child<Sprite>("panel_dark");
-        pages[i]->set_layout("ttb m:8 s:8 left");
+        pages[i] = &content.add_child<ScrollableView>();
+        pages[i]->background()->set_texture("panel_dark");
         pages[i]->set_is_drawn(false);
         pages[i]->set_is_updated(false);
 
@@ -75,6 +76,7 @@ class PopupSettings : public Popup {
           for (size_t j = 0; j < pages.size(); j += 1) {
             pages[j]->set_is_drawn(i == j);
             pages[j]->set_is_updated(i == j);
+            pages[j]->update();
             if (i != j) { page_buttons[j]->set_is_switched(false); }
           }
         });
@@ -149,13 +151,13 @@ class PopupSettings : public Popup {
       //                     GENERAL
       // -----------------------------------------------
 
-      auto* combo_cover_preference = create_widget_combobox(&page_general, {"general", "cover_preference"},
+      auto* combo_cover_preference = create_widget_combobox(page_general.content(), {"general", "cover_preference"},
                                                             tr::get("settings.playback.source_label"));
       combo_cover_preference->add_item("album", tr::get("settings.playback.source_album"));
       combo_cover_preference->add_item("playlist", tr::get("settings.playback.source_playlist"));
 
-      auto* spinner_volume_step =
-        create_widget_spinner(&page_general, {"general", "volume_step"}, tr::get("settings.playback.volume_step"));
+      auto* spinner_volume_step = create_widget_spinner(page_general.content(), {"general", "volume_step"},
+                                                        tr::get("settings.playback.volume_step"));
       spinner_volume_step->set_min_value(1);
       spinner_volume_step->set_max_value(10);
       spinner_volume_step->set_value(5);
@@ -163,49 +165,55 @@ class PopupSettings : public Popup {
       // -----------------------------------------------
       //                    PLAYBACK
       // -----------------------------------------------
-      auto& shuffle_title = page_playback.add_child<Label>(tr::get("settings.playback.shuffle"));
+      auto& shuffle_title = page_playback.content()->add_child<Label>(tr::get("settings.playback.shuffle"));
       shuffle_title.set_resize_to_text_extents(false);
       shuffle_title.set_height(16);
       shuffle_title.set_text_color(text_color_muted);
-      create_widget_checkbox(&page_playback, std::pair{"playback", "shuffle_allow_same_album"},
+      create_widget_checkbox(page_playback.content(), std::pair{"playback", "shuffle_allow_same_album"},
                              tr::get("settings.playback.allow_same_album"));
-      create_widget_checkbox(&page_playback, std::pair{"playback", "shuffle_allow_same_artist"},
+      create_widget_checkbox(page_playback.content(), std::pair{"playback", "shuffle_allow_same_artist"},
                              tr::get("settings.playback.allow_same_artist"));
 
-      auto& pad = page_playback.add_child<Widget>();
+      auto& pad = page_playback.content()->add_child<Widget>();
       pad.set_min_height(10);
       pad.set_max_height(10);
 
-      create_widget_checkbox(&page_playback, std::pair{"playback", "restart_on_previous"},
+      create_widget_checkbox(page_playback.content(), std::pair{"playback", "restart_on_previous"},
                              tr::get("settings.playback.restart_on_previous"));
 
       // -----------------------------------------------
       //                    INTERFACE
       // -----------------------------------------------
-      auto* combo_theme =
-        create_widget_combobox(&page_interface, {"interface", "theme"}, tr::get("settings.interface.theme_label"));
+      auto* combo_theme = create_widget_combobox(page_interface.content(), {"interface", "theme"},
+                                                 tr::get("settings.interface.theme_label"));
       for (auto& theme : theme::get_themes()) {
         combo_theme->add_item(theme, utf8_to_utf32(theme));
       }
-      auto* language_combo = create_widget_combobox(&page_interface, {"interface", "language"},
+      auto* language_combo = create_widget_combobox(page_interface.content(), {"interface", "language"},
                                                     tr::get("settings.interface.language_label"));
       for (auto& language : theme::get_languages()) {
         language_combo->add_item(language, utf8_to_utf32(language));
       }
 
       auto* spinner_interface_scale =
-        create_widget_spinner(&page_interface, {"interface", "scale"}, tr::get("settings.interface.scale"));
+        create_widget_spinner(page_interface.content(), {"interface", "scale"}, tr::get("settings.interface.scale"));
       spinner_interface_scale->set_postfix(U"%");
       spinner_interface_scale->set_min_value(50);
       spinner_interface_scale->set_max_value(200);
       spinner_interface_scale->set_value(100);
 
-      auto* spinner_font_size =
-        create_widget_spinner(&page_interface, {"interface", "font_size"}, tr::get("settings.interface.font_size"));
+      auto* spinner_font_size = create_widget_spinner(page_interface.content(), {"interface", "font_size"},
+                                                      tr::get("settings.interface.font_size"));
       spinner_font_size->set_postfix(U"px");
       spinner_font_size->set_min_value(8);
       spinner_font_size->set_max_value(32);
       spinner_font_size->set_value(12);
+
+      auto* spinner_scrolling_speed = create_widget_spinner(page_interface.content(), {"interface", "scrolling_speed"},
+                                                            tr::get("settings.interface.scrolling_speed"));
+      spinner_scrolling_speed->set_min_value(10);
+      spinner_scrolling_speed->set_max_value(150);
+      spinner_scrolling_speed->set_value(12);
     }
 
     void load_settings(const settings& settings) {
@@ -255,7 +263,7 @@ class PopupSettings : public Popup {
 
   protected:
     jt::Json changed_props;
-    std::array<Widget*, 3> pages{};
+    std::array<ScrollableView*, 3> pages{};
     std::array<Button*, 3> page_buttons{};
     std::map<std::pair<std::string, std::string>, ComboBox*> combo_boxes;
     std::map<std::pair<std::string, std::string>, Spinner*> spinners;

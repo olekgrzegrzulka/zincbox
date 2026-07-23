@@ -28,6 +28,7 @@ class Slider : public Widget {
     float old_value = 0.0f;
     float min_value = -10.0f;
     float max_value = 10.0f;
+    float sensitivity = 40.0f;
 
     bool is_dragged = false;
     std::function<void(float, float)> lambda_value_changed = nullptr;
@@ -62,13 +63,11 @@ class Slider : public Widget {
     void event(Input::InputEventMouseMove&) override;
     void event(Input::InputEventMouseScroll&) override;
     void event(Input::InputEventKey&) override;
-    void event(Input::InputEventMouseEntered&) override;
-    void event(Input::InputEventMouseLeft&) override;
-    void event(Input::InputEventCloseWindow&) override;
 
     WIDGET_DEF_GETTER(value)
     WIDGET_DEF_GETTER(min_value)
     WIDGET_DEF_GETTER(max_value)
+    WIDGET_DEF_GETTER(sensitivity)
     WIDGET_DEF_SETTER(drag_area_inflation)
     WIDGET_DEF_GETTER(drag_area_inflation)
 
@@ -80,7 +79,7 @@ class Slider : public Widget {
     }
     WIDGET_DEF_SETTER_DIRTY(min_value)
     WIDGET_DEF_SETTER_DIRTY(max_value)
-
+    WIDGET_DEF_SETTER(sensitivity)
     WIDGET_DEF_SETTER_DIRTY(thumb_constraint)
     WIDGET_DEF_SETTER_DIRTY(orientation)
     WIDGET_DEF_SETTER_DIRTY(track_thickness)
