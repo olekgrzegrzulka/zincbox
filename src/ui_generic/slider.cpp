@@ -168,13 +168,18 @@ void Slider::update() {
 
   Widget::update();
 }
-void Slider::event(Input::InputEventMouseButton&) {}
-void Slider::event(Input::InputEventMouseMove&) {}
-void Slider::event(Input::InputEventMouseScroll&) {}
-void Slider::event(Input::InputEventKey&) {}
-void Slider::event(Input::InputEventMouseEntered&) {}
-void Slider::event(Input::InputEventMouseLeft&) {}
-void Slider::event(Input::InputEventCloseWindow&) {}
+void Slider::event(Input::InputEventMouseButton& ev) {
+  if (is_mouse_hovering()) { ev.handled = true; }
+}
+void Slider::event(Input::InputEventMouseMove& ev) {
+  if (is_mouse_hovering(ev.to)) { ev.handled = true; }
+}
+void Slider::event(Input::InputEventMouseScroll& ev) {
+  if (is_mouse_hovering()) { ev.handled = true; }
+}
+void Slider::event(Input::InputEventKey& ev) {
+  if (is_mouse_hovering()) { ev.handled = true; }
+}
 
 void Slider::set_texture_thumb_pressed(const std::string& id) {
   auto t_ = ui.get_texture_atlas().get(id);

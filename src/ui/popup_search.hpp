@@ -7,6 +7,7 @@
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui/widget_track.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui_generic/checkbox.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
@@ -44,7 +45,7 @@ class PopupSearch : public Popup {
       scrollable_content = &search_results->add_child<Widget>();
       scrollable_content->set_clip_children(true);
 
-      scrollbar = &search_results->add_child<ScrollBar>();
+      scrollbar = &search_results->add_child<ZincboxScrollbar>();
       scrollbar->set_anchor(Anchor::TOP_RIGHT);
       scrollbar->set_parent_anchor(Anchor::TOP_RIGHT);
       scrollbar->set_thumb_thickness(10);

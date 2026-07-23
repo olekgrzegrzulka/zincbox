@@ -18,7 +18,7 @@
 PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   set_clip_children(true);
 
-  scrollbar = &add_child<ScrollBar>();
+  scrollbar = &add_child<ZincboxScrollbar>();
   scrollbar->set_anchor(Anchor::LEFT);
   scrollbar->set_parent_anchor(Anchor::LEFT);
   scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });

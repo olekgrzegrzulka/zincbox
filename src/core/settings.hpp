@@ -33,6 +33,7 @@ struct settings {
     std::string language = "en-US";
     i32 scale = 100;
     i32 font_size = 12;
+    float scrolling_speed = 40.0f;
 
     jt::Json to_json() const {
       jt::Json json;
@@ -45,6 +46,7 @@ struct settings {
       json["interface"]["language"] = language;
       json["interface"]["scale"] = scale;
       json["interface"]["font_size"] = font_size;
+      json["interface"]["scrolling_speed"] = scrolling_speed;
       return json;
     }
 
@@ -90,6 +92,9 @@ struct settings {
         }
         if (interface.contains("font_size") && interface["font_size"].isNumber()) {
           font_size = std::clamp<i32>(interface["font_size"].getNumber(), 8, 32);
+        }
+        if (interface.contains("scrolling_speed") && interface["scrolling_speed"].isNumber()) {
+          scrolling_speed = std::clamp<i32>(interface["scrolling_speed"].getNumber(), 10, 150);
         }
       }
     }
