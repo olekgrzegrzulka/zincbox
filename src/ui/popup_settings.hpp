@@ -158,6 +158,7 @@ class PopupSettings : public Popup {
 
       auto* spinner_volume_step = create_widget_spinner(page_general.content(), {"general", "volume_step"},
                                                         tr::get("settings.playback.volume_step"));
+      spinner_volume_step->set_postfix(U"%");
       spinner_volume_step->set_min_value(1);
       spinner_volume_step->set_max_value(10);
       spinner_volume_step->set_value(5);

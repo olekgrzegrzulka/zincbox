@@ -1,7 +1,6 @@
 #pragma once
 #include <glm/ext/vector_float2.hpp>
 #include "button.hpp"
-#include "common/input.hpp"
 #include "common/types.hpp"
 #include "slider.hpp"
 #include "sprite.hpp"
@@ -22,9 +21,6 @@ class ScrollBar : public Slider {
     void recalculate_values();
 
     void scroll(float force);
-
-    void event(Input::InputEventMouseScroll&) override;
-    void event(Input::InputEventMouseButton&) override;
 
     void set_content_size(i32 v) {
       content_size = v;

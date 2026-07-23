@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <glm/ext/vector_float2.hpp>
 #include "button.hpp"
 #include "common/types.hpp"
@@ -25,7 +26,6 @@ class Slider : public Widget {
     i32 drag_area_inflation = 0;
 
     float value = 0.0f;
-    float old_value = 0.0f;
     float min_value = -10.0f;
     float max_value = 10.0f;
     float sensitivity = 40.0f;
@@ -74,8 +74,12 @@ class Slider : public Widget {
     const Sprite& get_thumb() const { return thumb; }
 
     void set_value(float new_value, bool signal = true) {
+      i32 old_value = value;
+      new_value = std::clamp(new_value, min_value, max_value);
+      if (value == new_value) { return; }
+
       value = new_value;
-      if (!signal) { old_value = new_value; }
+      if (signal && lambda_value_changed) { lambda_value_changed(old_value, value); }
     }
     WIDGET_DEF_SETTER_DIRTY(min_value)
     WIDGET_DEF_SETTER_DIRTY(max_value)
