@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <optional>
 #include <set>
+#include <string_view>
 #include <vector>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
@@ -9,7 +10,9 @@
 #include "common/utf.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
+#include "core/settings.hpp"
 #include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};
@@ -341,15 +344,15 @@ void player::set_volume(float v) {
 
 float player::get_volume() { return volume; }
 
-bool is_in_tracks_history(size_t track_id, i32 from_index, i32 to_index) {
-  if (playing_queue.size() == 0) { return false; }
+std::optional<i32> get_track_history_distance(size_t track_id, i32 from_index, i32 to_index) {
+  if (playing_queue.size() == 0) { return std::nullopt; }
   from_index = std::max(from_index, 0);
   to_index = std::min(to_index, (i32)playing_queue.size() - 1);
-  if (from_index > to_index) { return false; }
-  for (i32 i = from_index; i <= to_index; i += 1) {
-    if (track_id == playing_queue[i].track_id) { return true; }
+  if (from_index > to_index) { return std::nullopt; }
+  for (i32 i = to_index; i >= from_index; i -= 1) {
+    if (track_id == playing_queue[i].track_id) { return to_index - i; }
   }
-  return false;
+  return std::nullopt;
 };
 
 void player::next_track(i32 tries) {
@@ -369,14 +372,18 @@ void player::next_track(i32 tries) {
   }
 
   auto playing = playing_queue[*playing_index];
-  auto playlist = db::playlist_by_id(playing.playlist_id);
-  auto collection = db::collection_by_id(playing.collection_id);
-  if (!playlist.has_value()) { return; }
+  auto& track = db::track_by_id(playing.track_id)->get();
+  auto& playlist = db::playlist_by_id(playing.playlist_id)->get();
+  auto& collection = db::collection_by_id(playing.collection_id)->get();
+  if (!db::track_by_id(playing.track_id).has_value() || !db::playlist_by_id(playing.playlist_id).has_value() ||
+      !db::collection_by_id(playing.collection_id).has_value()) {
+    return;
+  }
 
   if (repeat_mode == RepeatMode::TRACK) {
     seek_ms(0);
   } else if (shuffle_mode == ShuffleMode::OFF) {
-    auto next_track_id = playlist->get().next_track_id(playing.track_id);
+    auto next_track_id = playlist.next_track_id(playing.track_id);
     if (next_track_id.has_value()) {
       bool result = play(
         db::track_info{
@@ -390,7 +397,7 @@ void player::next_track(i32 tries) {
         return;
       }
     } else if (repeat_mode == RepeatMode::OFF) {
-      auto next_playlist_id = collection->get().next_playlist_id(playing.playlist_id);
+      auto next_playlist_id = collection.next_playlist_id(playing.playlist_id);
       if (next_playlist_id.has_value()) {
         auto next_playlist = db::playlist_by_id(next_playlist_id.value());
         if (!next_playlist.has_value()) { return; }
@@ -408,7 +415,7 @@ void player::next_track(i32 tries) {
         }
       }
     } else if (repeat_mode == RepeatMode::ALBUM) {
-      if (playlist->get().get_tracks_count() == 0) {
+      if (playlist.get_tracks_count() == 0) {
         out::debug_warn("player::play: empty playlist");
         return;
       }
@@ -416,7 +423,7 @@ void player::next_track(i32 tries) {
         db::track_info{
           .collection_id = playing.collection_id,
           .playlist_id = playing.playlist_id,
-          .track_id = playlist->get().get_track_ids()[0],
+          .track_id = playlist.get_track_ids()[0],
         },
         false);
       if (!result) {
@@ -429,55 +436,105 @@ void player::next_track(i32 tries) {
     }
   } else if (shuffle_mode == ShuffleMode::ON) {
     if (repeat_mode == RepeatMode::OFF) {
-      size_t rand_playlist_id = 0;
-      size_t rand_track_id = 0;
+      std::map<i32, db::track_info> candidates;
       for (i32 shuffle_tries = 10; shuffle_tries > 0; shuffle_tries -= 1) {
         auto& playlist_ids = db::collection_by_id(playing.collection_id)->get().playlist_ids();
-        rand_playlist_id = rng.pick(std::span(playlist_ids));
+        size_t rand_playlist_id_ = rng.pick(std::span(playlist_ids));
         i32 collection_track_count = 0;
         for (size_t playlist_id : playlist_ids) {
           collection_track_count += db::playlist_by_id(playlist_id)->get().get_tracks_count();
         }
-        rand_track_id = rng.pick(std::span{db::playlist_by_id(rand_playlist_id)->get().get_track_ids()});
+        size_t rand_track_id_ = rng.pick(std::span{db::playlist_by_id(rand_playlist_id_)->get().get_track_ids()});
         i32 last_tracks_to_check = std::clamp(collection_track_count / 2, 0, 30);
-        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check,
-                                  playing_index.value_or(0))) {
+        i32 score = get_track_history_distance(rand_track_id_, playing_index.value_or(0) - last_tracks_to_check,
+                                               playing_index.value_or(0))
+                      .value_or(last_tracks_to_check);
+        auto candidate_ = db::track_info{
+          .collection_id = playing.collection_id,
+          .playlist_id = rand_playlist_id_,
+          .track_id = rand_track_id_,
+        };
+        if (playing_queue.size() > 0) {
+          bool same_playlist_as_prev = playing_queue.back().playlist_id == rand_playlist_id_;
+          std::u32string_view artist_prev = db::track_by_id(playing_queue.back().track_id)->get().artist;
+          std::u32string_view artist_rand = db::track_by_id(rand_track_id_)->get().artist;
+          bool same_artist_as_prev = artist_prev == artist_rand;
+          bool shuffle_allow_same_album_passed = !settings::get().shuffle_allow_same_album || !same_playlist_as_prev;
+          bool shuffle_allow_same_artist_passed = !settings::get().shuffle_allow_same_artist || !same_artist_as_prev;
+          if (shuffle_allow_same_album_passed) { score += 3; }
+          if (shuffle_allow_same_artist_passed) { score += 3; }
+
+          if (shuffle_allow_same_album_passed && shuffle_allow_same_artist_passed &&
+              score - 6 > last_tracks_to_check / 2) {
+            candidates = {{score, candidate_}};
+            break;
+          } else {
+            candidates.insert({score, candidate_});
+          }
+        } else {
+          candidates = {{score, candidate_}};
           break;
         }
       }
 
-      bool result = play(
-        db::track_info{
-          .collection_id = playing.collection_id,
-          .playlist_id = rand_playlist_id,
-          .track_id = rand_track_id,
-        },
-        false);
-      if (!result) {
-        next_track(tries - 1);
-        return;
+      if (!candidates.empty()) {
+        bool result = play(candidates.rbegin()->second, false);
+        if (!result) {
+          next_track(tries - 1);
+          return;
+        }
       }
+
     } else if (repeat_mode == RepeatMode::ALBUM) {
-      size_t rand_track_id = 0;
+      std::map<i32, db::track_info> candidates;
       for (i32 shuffle_tries = 10; shuffle_tries > 0; shuffle_tries -= 1) {
-        rand_track_id = rng.pick(std::span{db::playlist_by_id(playing.playlist_id)->get().get_track_ids()});
-        i32 last_tracks_to_check =
-          std::clamp((i32)db::playlist_by_id(playing.playlist_id)->get().get_tracks_count() / 2, 0, 30);
-        if (!is_in_tracks_history(rand_track_id, playing_index.value_or(0) - last_tracks_to_check,
-                                  playing_index.value_or(0))) {
+        size_t rand_track_id_ = rng.pick(std::span{playlist.get_track_ids()});
+        i32 last_tracks_to_check = std::clamp((i32)playlist.get_tracks_count() / 2, 0, 30);
+
+        i32 score = get_track_history_distance(rand_track_id_, playing_index.value_or(0) - last_tracks_to_check,
+                                               playing_index.value_or(0))
+                      .value_or(last_tracks_to_check);
+
+        auto candidate_ = db::track_info{
+          .collection_id = playing.collection_id,
+          .playlist_id = playing.playlist_id,
+          .track_id = rand_track_id_,
+        };
+
+        if (playing_queue.size() > 0) {
+          bool same_playlist_as_prev = false;
+          bool same_artist_as_prev = false;
+          bool is_album = playlist.type == db::PlaylistType::Album;
+          if (!is_album) {
+            auto prev_originating_album_id = track.originating_album_id;
+            auto rand_originating_album_id = db::track_by_id(rand_track_id_)->get().originating_album_id;
+            same_playlist_as_prev = prev_originating_album_id == rand_originating_album_id;
+            std::u32string_view artist_prev = track.artist;
+            std::u32string_view artist_rand = db::track_by_id(rand_track_id_)->get().artist;
+            same_artist_as_prev = artist_prev == artist_rand;
+          }
+          bool shuffle_allow_same_album_passed = settings::get().shuffle_allow_same_album || !same_playlist_as_prev;
+          bool shuffle_allow_same_artist_passed = settings::get().shuffle_allow_same_artist || !same_artist_as_prev;
+          if (shuffle_allow_same_album_passed) { score += 3; }
+          if (shuffle_allow_same_artist_passed) { score += 3; }
+          if (shuffle_allow_same_album_passed && shuffle_allow_same_artist_passed &&
+              score - 6 > last_tracks_to_check / 2) {
+            candidates = {{score, candidate_}};
+            break;
+          } else {
+            candidates.insert({score, candidate_});
+          }
+        } else {
+          candidates = {{score, candidate_}};
           break;
         }
       }
-      bool result = play(
-        db::track_info{
-          .collection_id = playing.collection_id,
-          .playlist_id = playing.playlist_id,
-          .track_id = rand_track_id,
-        },
-        false);
-      if (!result) {
-        next_track(tries - 1);
-        return;
+      if (!candidates.empty()) {
+        bool result = play(candidates.rbegin()->second, false);
+        if (!result) {
+          next_track(tries - 1);
+          return;
+        }
       }
     } else {
       out::debug_warn("player::play: unknown RepeatMode enum value");
@@ -500,6 +557,11 @@ void player::prev_track(i32 tries) {
   std::optional<db::track_info> play_prev;
 
   if (repeat_mode == RepeatMode::TRACK) {
+    seek_ms(0);
+    return;
+  }
+
+  if (settings::get().restart_on_previous && get_current_time_ms() > 5000) {
     seek_ms(0);
     return;
   }
