@@ -21,25 +21,25 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   static const float scale = settings::get().scale * 0.01f;
   set_anchor(Anchor::BOTTOM);
   set_parent_anchor(Anchor::BOTTOM);
-  set_height(theme::get_prop("controls_panel_height").as_i32() * scale);
+  set_height(theme::get_prop("controls_panel_height").as_i32(44) * scale);
   set_layout("ltr expand fill");
-  get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32() * scale;
+  get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32(4) * scale;
   get_layout().set_margin(theme::get_prop("controls_panel_padding").as_i32() * scale);
 
   button_prev = &add_child<ZincboxButton>("prev");
-  button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32() * scale);
+  button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32(36) * scale);
   button_prev->add_image("prev");
 
   button_play_pause = &add_child<ZincboxButton>("play_pause");
-  button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32() * scale);
+  button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32(36) * scale);
   button_play_pause->add_image("play");
 
   button_stop = &add_child<ZincboxButton>("stop");
-  button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32() * scale);
+  button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32(36) * scale);
   button_stop->add_image("stop");
 
   button_next = &add_child<ZincboxButton>("next");
-  button_next->set_max_width(theme::get_prop("next_button_width").as_i32() * scale);
+  button_next->set_max_width(theme::get_prop("next_button_width").as_i32(36) * scale);
   button_next->add_image("next");
 
   auto& pad = add_child<Widget>();
@@ -109,13 +109,13 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
 
   button_shuffle = &add_child<ZincboxButton>("shuffle");
-  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32() * scale);
+  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32(36) * scale);
   button_shuffle->add_image("shuffle");
   update_shuffle_mode();
   tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
   button_repeat = &add_child<ZincboxButton>("repeat");
-  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32() * scale);
+  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32(36) * scale);
   button_repeat->add_image("repeat");
   update_repeat_mode();
   tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);

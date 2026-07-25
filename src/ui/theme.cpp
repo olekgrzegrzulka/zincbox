@@ -147,7 +147,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     // Check if the theme exists in the themes directory
     if (!fs::is_directory(theme_path)) {
       out::warn("no theme found at {}", std::string{theme_path});
-      load_theme("", ui);
+      load_theme("", ui, language);
       return;
     }
 
@@ -156,7 +156,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     bool invalid_theme = !success || !ini.contains("theme");
     if (invalid_theme) {
       out::warn("failed to load theme {} invalid or missing theme.cfg", theme_name);
-      load_theme("", ui);
+      load_theme("", ui, language);
       return;
     }
 
@@ -172,7 +172,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       ui.set_font_face(font_path, settings::get().font_size);
     } else {
       out::warn("no ttf file found in {}", std::string{theme_name});
-      load_theme("", ui);
+      load_theme("", ui, language);
       return;
     }
   } else {
@@ -193,7 +193,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       out::critical("no ttf file found in default theme");
       exit(1);
     }
-    ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(), 14);
+    ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(),
+                               settings::get().font_size);
   }
 
   // Parse theme.cfg

@@ -187,6 +187,7 @@ class PopupSettings : public Popup {
       // -----------------------------------------------
       auto* combo_theme = create_widget_combobox(page_interface.content(), {"interface", "theme"},
                                                  tr::get("settings.interface.theme_label"));
+      combo_theme->add_item("default", tr::get("settings.interface.default_theme"));
       for (auto& theme : theme::get_themes()) {
         combo_theme->add_item(theme, utf8_to_utf32(theme));
       }

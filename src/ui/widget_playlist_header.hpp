@@ -19,7 +19,7 @@ class WidgetPlaylistHeader : public Widget {
       set_layout("ttb m:0 s:0 fit expand");
 
       auto& header_container = add_child<Widget>();
-      header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() * scale);
+      header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32(48) * scale);
       header_container.set_layout("s:0 fit fill");
       header_container.get_layout().set_margin(4 * scale);
 
@@ -29,7 +29,7 @@ class WidgetPlaylistHeader : public Widget {
       header.set_layout("ltr fit fill");
       header.get_layout().spacing = 8 * scale;
       header.get_layout().margin.x = 8 * scale;
-      header.set_height((theme::get_prop("tracklist_playlist_header_height").as_i32() - 20) * scale);
+      header.set_height((theme::get_prop("tracklist_playlist_header_height").as_i32(48) - 20) * scale);
       header.set_nine_slice_margin(8.0f);
       header.set_y(6 * scale);
 

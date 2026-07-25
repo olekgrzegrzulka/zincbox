@@ -160,7 +160,12 @@ void interface::init() {
                              config::json()["settings"]["interface"]["language"].isString()
                            ? config::json()["settings"]["interface"]["language"].getString()
                            : "en-US";
-  theme::load_theme("default", *ui.get(), language);
+  std::string theme = config::json().contains("settings") && config::json()["settings"].contains("interface") &&
+                          config::json()["settings"]["interface"].contains("theme") &&
+                          config::json()["settings"]["interface"]["theme"].isString()
+                        ? config::json()["settings"]["interface"]["theme"].getString()
+                        : "default";
+  theme::load_theme(theme, *ui.get(), language);
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));
   db::set_loved_tracks_playlist_name(tr::get("playlist.loved_tracks_playlist_name"));
 

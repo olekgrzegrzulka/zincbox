@@ -15,7 +15,7 @@ static constexpr size_t QUEUE_TAB_ID = 10000;
 PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   static const float scale = settings::get().scale * 0.01f;
 
-  set_height(theme::get_prop("top_bar_height").as_i32(32) * scale);
+  set_height(theme::get_prop("top_bar_height").as_i32(26) * scale);
 
   tab_bar = &add_child<TabBar>();
   tab_bar->set_height(height);
