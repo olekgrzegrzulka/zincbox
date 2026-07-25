@@ -37,7 +37,7 @@ class WidgetTrack final : public Button {
     void setup() {
       static const float scale = settings::get().scale * 0.01f;
       static const float font_size = settings::get().font_size;
-      static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32() * scale;
+      static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22) * scale;
       const auto track = db::track_by_id(m_track_id);
       const std::string txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";
 

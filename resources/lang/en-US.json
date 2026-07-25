@@ -92,6 +92,7 @@
   "settings.category.general": "General",
   "settings.category.interface": "Interface",
   "settings.category.playback": "Playback",
+  "settings.interface.default_theme": "Default",
   "settings.interface.font_size": "Font size",
   "settings.interface.language_label": "Language",
   "settings.interface.scale": "Interface scale",
