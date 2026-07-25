@@ -11,22 +11,27 @@
 class WidgetPlaylistHeader : public Widget {
   public:
     WidgetPlaylistHeader(UI& ui_, size_t collection_id, size_t playlist_id_) : Widget(ui_) {
+      static const float scale = settings::get().scale * 0.01f;
+
       playlist_id = playlist_id_;
       auto playlist = db::playlist_by_id(playlist_id);
 
       set_layout("ttb m:0 s:0 fit expand");
 
       auto& header_container = add_child<Widget>();
-      header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32());
-      header_container.set_layout("m:4 s:0 fit fill");
+      header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() * scale);
+      header_container.set_layout("s:0 fit fill");
+      header_container.get_layout().set_margin(4 * scale);
 
       auto& header = header_container.add_child<Sprite>("panel_playlist_header");
       header.set_anchor(Anchor::CENTER);
       header.set_parent_anchor(Anchor::CENTER);
-      header.set_layout("ltr s:8 mx:8 fit fill");
-      header.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32() - 20);
+      header.set_layout("ltr fit fill");
+      header.get_layout().spacing = 8 * scale;
+      header.get_layout().margin.x = 8 * scale;
+      header.set_height((theme::get_prop("tracklist_playlist_header_height").as_i32() - 20) * scale);
       header.set_nine_slice_margin(8.0f);
-      header.set_y(6);
+      header.set_y(6 * scale);
 
       auto& label_author = header.add_child<Label>();
       label_author.set_text(playlist.has_value() ? playlist->get().author : U"?");

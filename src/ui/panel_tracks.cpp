@@ -22,9 +22,6 @@ PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
   scrollbar->set_anchor(Anchor::LEFT);
   scrollbar->set_parent_anchor(Anchor::LEFT);
   scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
-  scrollbar->set_width(10);
-  scrollbar->set_thumb_thickness(10);
-  scrollbar->set_track_thickness(10);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
 
   button_play_tooltip = &add_child<ToolTip>(tr::get("tooltip.play"), ToolTipPosition::BELOW, 8);

@@ -2,6 +2,7 @@
 #include <string>
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/settings.hpp"
 #include "tr.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
@@ -12,13 +13,18 @@
 static constexpr size_t QUEUE_TAB_ID = 10000;
 
 PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
-  set_height(theme::get_prop("top_bar_height").as_i32(32));
+  static const float scale = settings::get().scale * 0.01f;
+
+  set_height(theme::get_prop("top_bar_height").as_i32(32) * scale);
 
   tab_bar = &add_child<TabBar>();
+  tab_bar->set_height(height);
+  tab_bar->get_button_add()->set_width(height - 1 * 7 * scale);
+  tab_bar->get_button_add()->set_height(height - 1 * 7 * scale);
 
   button_settings = &add_child<Button>("");
-  button_settings->set_size(height - 4, height - 4);
-  button_settings->set_x(-2);
+  button_settings->set_size(height - 4 * scale, height - 4 * scale);
+  button_settings->set_x(-2 * scale);
   button_settings->set_parent_anchor(Anchor::CENTER_RIGHT);
   button_settings->set_anchor(Anchor::CENTER_RIGHT);
   button_settings->on_press([this]() {
@@ -26,14 +32,14 @@ PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
   });
 
   button_right = &add_child<Button>("");
-  button_right->set_size(height - 4, height - 4);
-  button_right->set_x(-2 - (height - 4) - 2);
+  button_right->set_size(height - 4 * scale, height - 4 * scale);
+  button_right->set_x(height - 4 * scale);
   button_right->set_parent_anchor(Anchor::CENTER_RIGHT);
   button_right->set_anchor(Anchor::CENTER_RIGHT);
 
   button_left = &add_child<Button>("");
-  button_left->set_size(height - 4, height - 4);
-  button_left->set_x(2);
+  button_left->set_size(height - 4 * scale, height - 4 * scale);
+  button_left->set_x(2 * scale);
   button_left->set_parent_anchor(Anchor::CENTER_LEFT);
   button_left->set_anchor(Anchor::CENTER_LEFT);
 

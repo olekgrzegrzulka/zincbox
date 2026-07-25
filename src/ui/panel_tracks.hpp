@@ -103,8 +103,10 @@ class PanelTracks final : public Sprite {
         }
 
         i32 height() const {
-          static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
-          static const i32 header_height = theme::get_prop("tracklist_playlist_header_height").as_i32();
+          static const float scale = settings::get().scale * 0.01f;
+          static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32() * scale;
+          static const i32 header_height = theme::get_prop("tracklist_playlist_header_height").as_i32() * scale;
+
           if (type == ItemType::TRACK) {
             return track_height;
           } else if (type == ItemType::HEADER) {

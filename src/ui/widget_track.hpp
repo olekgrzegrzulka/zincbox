@@ -5,6 +5,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
+#include "core/settings.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/sprite.hpp"
@@ -34,7 +35,9 @@ class WidgetTrack final : public Button {
     ~WidgetTrack() override { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
     void setup() {
-      static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32();
+      static const float scale = settings::get().scale * 0.01f;
+      static const float font_size = settings::get().font_size;
+      static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32() * scale;
       const auto track = db::track_by_id(m_track_id);
       const std::string txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";
 
@@ -57,8 +60,8 @@ class WidgetTrack final : public Button {
       }
       label_track_number->set_text(std::to_string(m_track_number));
       label_track_number->update();
-      label_track_number->set_min_width(std::max<i32>(18, label_track_number->get_text_extents().x));
-      label_track_number->set_max_width(std::max<i32>(18, label_track_number->get_text_extents().x));
+      label_track_number->set_min_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
+      label_track_number->set_max_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
 
       if (!label_track_artist) {
         label_track_artist = &add_child<Label>();
@@ -110,8 +113,8 @@ class WidgetTrack final : public Button {
 
       if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
       label_track_length->update();
-      label_track_length->set_min_width(std::max<i32>(32, label_track_length->get_text_extents().x));
-      label_track_length->set_max_width(std::max<i32>(32, label_track_length->get_text_extents().x));
+      label_track_length->set_min_width(std::max<i32>(font_size * 2.2f, label_track_length->get_text_extents().x));
+      label_track_length->set_max_width(std::max<i32>(font_size * 2.2f, label_track_length->get_text_extents().x));
 
       if (track.has_value() && track->get().is_tombstone()) {
         label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);

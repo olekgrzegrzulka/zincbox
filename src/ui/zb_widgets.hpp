@@ -30,7 +30,14 @@ class ZincboxSlider final : public Slider {
 
 class ZincboxScrollbar final : public ScrollBar {
   public:
-    ZincboxScrollbar(UI& ui_) : ScrollBar(ui_) {}
+    ZincboxScrollbar(UI& ui_) : ScrollBar(ui_) {
+      static const float scale = settings::get().scale * 0.01f;
+      set_thumb_thickness(10 * scale);
+      set_track_thickness(10 * scale);
+      set_min_width(10 * scale);
+      set_max_width(10 * scale);
+      set_width(10 * scale);
+    }
 
     void update() {
       sensitivity = settings::get().scrolling_speed;

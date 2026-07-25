@@ -21,6 +21,7 @@ void Button::add_image(std::string_view id, bool resize_to_texture_size) {
     image = &add_child<Sprite>();
     image->set_anchor(Anchor::CENTER);
     image->set_parent_anchor(Anchor::CENTER);
+    image->set_nine_slice_margin(0);
     label.set_is_drawn(false);
   }
 

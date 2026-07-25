@@ -132,10 +132,7 @@ PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
   scrollbar = &add_child<ZincboxScrollbar>();
   scrollbar->set_anchor(Anchor::RIGHT);
   scrollbar->set_parent_anchor(Anchor::RIGHT);
-  scrollbar->set_width(10);
-  scrollbar->set_thumb_thickness(10);
   scrollbar->set_orientation(SliderOrientation::VERTICAL);
-  scrollbar->set_track_thickness(10);
   scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
   albums_container = &add_child<Widget>();
@@ -229,9 +226,10 @@ void PanelAlbums::recreate() {
     });
   }
 
-  vec2i cover_widget_size = {props.cover_width + props.cover_min_horizontal_spacing,
-                             props.cover_width + props.cover_min_vertical_spacing};
-  vec2i cover_widget_cover_size = {props.cover_width, props.cover_width};
+  static const float scale = settings::get().scale * 0.01f;
+  vec2i cover_widget_size = vec2i{props.cover_width + props.cover_min_horizontal_spacing * scale,
+                                  props.cover_width + props.cover_min_vertical_spacing * scale};
+  vec2i cover_widget_cover_size = vec2i{props.cover_width, props.cover_width};
 
   std::vector<size_t> playlist_ids_sorted_filtered =
     db::search_playlists(search_bar->label.get_text(), playlist_ids_sorted, 512);

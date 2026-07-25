@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "core/settings.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
@@ -40,9 +41,11 @@ class Notification : public Sprite {
 class InterfaceNotifications : public Widget {
   public:
     InterfaceNotifications(UI& ui_) : Widget(ui_) {
+      static const float scale = settings::get().scale * 0.01f;
+
       set_is_drawn_on_top(true);
       set_parent_anchor(Anchor::BOTTOM_CENTER);
-      set_y(NOTIFICATIONS_Y_OFFSET);
+      set_y(NOTIFICATIONS_Y_OFFSET * scale);
       set_anchor(Anchor::BOTTOM_CENTER);
     }
 
@@ -54,6 +57,8 @@ class InterfaceNotifications : public Widget {
     }
 
     void update() override {
+      static const float scale = settings::get().scale * 0.01f;
+
       i32 offset = 0;
       for (auto* w : notifications) {
         float target_y = w->timer > HIDE_TIMER_THRESHOLD ? -(theme::get_prop("notification_height").as_i32(10) + offset)
@@ -61,7 +66,7 @@ class InterfaceNotifications : public Widget {
         w->y_lerped = w->y_lerped * LERP_FACTOR + target_y * (1.0f - LERP_FACTOR);
         w->set_y(w->y_lerped);
         if (w->timer > HIDE_TIMER_THRESHOLD) {
-          offset += w->get_height() + theme::get_prop("notification_spacing").as_i32(10);
+          offset += w->get_height() + theme::get_prop("notification_spacing").as_i32(10) * scale;
         }
 
         if (w->timer <= 0) { w->set_marked_for_deletion(true); }

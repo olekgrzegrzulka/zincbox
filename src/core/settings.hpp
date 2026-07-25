@@ -32,7 +32,7 @@ struct settings {
     std::string theme = "default";
     std::string language = "en-US";
     i32 scale = 100;
-    i32 font_size = 12;
+    i32 font_size = 14;
     float scrolling_speed = 40.0f;
 
     jt::Json to_json() const {
@@ -88,7 +88,7 @@ struct settings {
           language = interface["language"].getString();
         }
         if (interface.contains("scale") && interface["scale"].isNumber()) {
-          scale = std::clamp<i32>(interface["scale"].getNumber(), 50, 200);
+          scale = std::clamp<i32>(interface["scale"].getNumber(), 75, 200);
         }
         if (interface.contains("font_size") && interface["font_size"].isNumber()) {
           font_size = std::clamp<i32>(interface["font_size"].getNumber(), 8, 32);
