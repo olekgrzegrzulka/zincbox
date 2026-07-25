@@ -199,7 +199,7 @@ class PopupSettings : public Popup {
       auto* spinner_interface_scale =
         create_widget_spinner(page_interface.content(), {"interface", "scale"}, tr::get("settings.interface.scale"));
       spinner_interface_scale->set_postfix(U"%");
-      spinner_interface_scale->set_min_value(50);
+      spinner_interface_scale->set_min_value(75);
       spinner_interface_scale->set_max_value(200);
       spinner_interface_scale->set_value(100);
 

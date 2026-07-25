@@ -102,12 +102,12 @@ void Tab::event(Input::InputEventMouseButton& ev) {
 }
 
 TabBar::TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
-  set_height(theme::get_prop("top_bar_height").as_i32(32));
-  set_layout("fit");
+  set_layout("ltr fit");
   tab_container = &add_child<Widget>();
-  tab_container->set_height(height);
+  auto& pad = add_child<Widget>();
+  pad.set_width(6);
   button_add = &add_child<ZincboxButton>("add_tab");
-  button_add->set_nine_slice_margin(0.0f);
+  button_add->add_image("add_tab_icon");
   button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
   button_add->set_anchor(Anchor::BOTTOM_LEFT);
   button_add->on_press([this]() {
@@ -204,6 +204,8 @@ void TabBar::close_all_tabs() {
 }
 
 void TabBar::update() {
+  tab_container->set_height(height);
+
   if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) { dragged_tab_index = -1; }
 
   i32 mouse_x = Input::get_mouse_x() - x;

@@ -2,6 +2,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "core/settings.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
@@ -30,7 +31,8 @@ void PopupController::on_dimmer_enter_pressed() {}
 void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 
 void PopupController::create_popover(const popover_descriptor& d) {
-  i32 space_needed = 8 + (4 + 24) * d.buttons.size() + 12;
+  static const float scale = settings::get().scale * 0.01f;
+  i32 space_needed = (8 + (4 + 24) * d.buttons.size() + 12) * scale;
   bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 
   auto& popover = add_child<Popover>(arrow_on_top);
@@ -38,9 +40,10 @@ void PopupController::create_popover(const popover_descriptor& d) {
 
   popover.set_nine_slice_margin(8.0f);
   popover.set_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
-  popover.set_layout("ttb fit expand fill m:4 s:0");
+  popover.set_layout("ttb fit expand fill s:0");
+  popover.get_layout().set_margin(4 * scale);
 
-  popover.set_width(50);
+  popover.set_width(50 * scale);
   popover.arrow->set_is_drawn(d.show_arrow);
   if (arrow_on_top) {
     popover.set_pos(d.at.x, d.at.y + (d.distance + popover.arrow->get_height()));
@@ -53,13 +56,13 @@ void PopupController::create_popover(const popover_descriptor& d) {
   if (!d.title.empty()) {
     auto& label = popover.add_child<Label>(d.title);
     label.update();
-    popover.set_width(std::max(popover.get_width(), label.get_width() + 30));
+    popover.set_width(std::max<i32>(popover.get_width(), label.get_width() + 30 * scale));
     label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
     label.set_label_anchor(Anchor::TOP);
     label.set_resize_to_text_extents(false);
-    label.set_min_height(20);
-    label.set_max_height(20);
-    label.set_height(20);
+    label.set_min_height(20 * scale);
+    label.set_max_height(20 * scale);
+    label.set_height(20 * scale);
   }
 
   for (auto& [label, action] : d.buttons) {
@@ -71,9 +74,9 @@ void PopupController::create_popover(const popover_descriptor& d) {
     btn.set_texture_pressed("button_popover_pressed");
     btn.set_texture_disabled("button_popover_disabled");
     btn.set_texture("button_popover_idle", false);
-    btn.set_min_height(22);
-    btn.set_max_height(22);
-    btn.set_height(22);
+    btn.set_min_height(22 * scale);
+    btn.set_max_height(22 * scale);
+    btn.set_height(22 * scale);
     popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 30));
 
     auto lambda = [this, action, popover_id, &popover]() -> void {

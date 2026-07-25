@@ -63,6 +63,7 @@ class TabBar : public Sprite {
     void sort_tabs_by_label(std::span<const std::u32string>);
     const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
     const Tab* get_tab_by_label(const std::u32string& label) const;
+    Button* get_button_add() { return button_add; }
 
   protected:
     void on_tab_drag_start(i32 id);

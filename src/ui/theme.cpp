@@ -12,6 +12,7 @@
 #include "common/logger.hpp"
 #include "common/types.hpp"
 #include "core/io.hpp"
+#include "core/settings.hpp"
 #include "lib/inifile.h"
 #include "lib/miniz/miniz.h"
 #include "theme.hpp"
@@ -168,7 +169,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       }
     }
     if (font_path != "") {
-      ui.set_font_face(font_path, 14);
+      ui.set_font_face(font_path, settings::get().font_size);
     } else {
       out::warn("no ttf file found in {}", std::string{theme_name});
       load_theme("", ui);
@@ -380,6 +381,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("popover_arrow");
   atlas_add_texture("popover_arrow_inverted");
   add_custom_button("add_tab");
+  atlas_add_texture("add_tab_icon");
   add_custom_button("button_popover");
   atlas_add_texture("notification");
   // icons

@@ -24,7 +24,8 @@ FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_
 
   bool success = (try_creating_glyph_data(freetype_face, 256, pixel_height) ||
                   try_creating_glyph_data(freetype_face, 512, pixel_height) ||
-                  try_creating_glyph_data(freetype_face, 1024, pixel_height));
+                  try_creating_glyph_data(freetype_face, 1024, pixel_height) ||
+                  try_creating_glyph_data(freetype_face, 2048, pixel_height));
 
   m_line_height = freetype_face->size->metrics.height / 64.0f;
   m_ascender = freetype_face->size->metrics.ascender / 64.0f;

@@ -216,9 +216,6 @@ class PopupSetSources : public Popup {
       scrollbar->set_ignore_parents_layout(true);
       scrollbar->set_anchor(Anchor::TOP_RIGHT);
       scrollbar->set_parent_anchor(Anchor::TOP_RIGHT);
-      scrollbar->set_thumb_thickness(10);
-      scrollbar->set_track_thickness(10);
-      scrollbar->set_width(10);
       scrollbar->set_orientation(SliderOrientation::VERTICAL);
       scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 

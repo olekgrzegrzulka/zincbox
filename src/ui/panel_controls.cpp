@@ -18,32 +18,33 @@
 #include "ui_generic/widget.hpp"
 
 PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
+  static const float scale = settings::get().scale * 0.01f;
   set_anchor(Anchor::BOTTOM);
   set_parent_anchor(Anchor::BOTTOM);
-  set_height(theme::get_prop("controls_panel_height").as_i32());
+  set_height(theme::get_prop("controls_panel_height").as_i32() * scale);
   set_layout("ltr expand fill");
-  get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32();
-  get_layout().set_margin(theme::get_prop("controls_panel_padding").as_i32());
+  get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32() * scale;
+  get_layout().set_margin(theme::get_prop("controls_panel_padding").as_i32() * scale);
 
   button_prev = &add_child<ZincboxButton>("prev");
-  button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32());
+  button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32() * scale);
   button_prev->add_image("prev");
 
   button_play_pause = &add_child<ZincboxButton>("play_pause");
-  button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32());
+  button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32() * scale);
   button_play_pause->add_image("play");
 
   button_stop = &add_child<ZincboxButton>("stop");
-  button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32());
+  button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32() * scale);
   button_stop->add_image("stop");
 
   button_next = &add_child<ZincboxButton>("next");
-  button_next->set_max_width(theme::get_prop("next_button_width").as_i32());
+  button_next->set_max_width(theme::get_prop("next_button_width").as_i32() * scale);
   button_next->add_image("next");
 
   auto& pad = add_child<Widget>();
-  pad.set_min_width(5);
-  pad.set_max_width(5);
+  pad.set_min_width(5 * scale);
+  pad.set_max_width(5 * scale);
 
   auto& panel_middle = add_child<Widget>();
   panel_middle.set_layout("m:0 s:4 btt expand fill");
@@ -52,9 +53,9 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
   seekbar->set_track_nine_slice_margin(theme::get_prop("seekbar_track_nine_slice_margin").as_i32(6.0));
   seekbar->set_thumb_nine_slice_margin(theme::get_prop("seekbar_thumb_nine_slice_margin").as_i32(6.0));
-  i32 track_height = std::clamp(theme::get_prop("seekbar_track_height").as_i32(12), 1, 50);
-  i32 thumb_width = std::clamp(theme::get_prop("seekbar_thumb_width").as_i32(12), 1, 50);
-  i32 thumb_height = std::clamp(theme::get_prop("seekbar_thumb_height").as_i32(12), 1, 50);
+  i32 track_height = std::clamp(theme::get_prop("seekbar_track_height").as_i32(12), 1, 50) * scale;
+  i32 thumb_width = std::clamp(theme::get_prop("seekbar_thumb_width").as_i32(12), 1, 50) * scale;
+  i32 thumb_height = std::clamp(theme::get_prop("seekbar_thumb_height").as_i32(12), 1, 50) * scale;
   seekbar->set_track_thickness(track_height);
   seekbar->set_drag_area_inflation(std::max(16 - track_height, 0));
   seekbar->set_thumb_thickness(thumb_height);
@@ -83,20 +84,19 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   label_track_underline->set_parent_anchor(Anchor::CENTER);
   label_track_underline->set_anchor(Anchor::CENTER);
 
-  label_progress = &add_child<Label>("0:00 / 0:00");
-  label_progress->set_max_width(80);
-
   auto& pad2 = add_child<Widget>();
-  pad2.set_min_width(5);
-  pad2.set_max_width(5);
+  pad2.set_min_width(5 * scale);
+  pad2.set_max_width(5 * scale);
+
+  label_progress = &add_child<Label>("0:00 / 0:00");
 
   volume_bar = &add_child<ZincboxSlider>("volume_bar");
   volume_bar->set_track_nine_slice_margin(theme::get_prop("volume_bar_track_nine_slice_margin").as_i32(6.0));
   volume_bar->set_thumb_nine_slice_margin(theme::get_prop("volume_bar_thumb_nine_slice_margin").as_i32(6.0));
-  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200));
-  i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50);
-  i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50);
-  i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50);
+  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200) * scale);
+  i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50) * scale;
+  i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50) * scale;
+  i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50) * scale;
   volume_bar->set_track_thickness(vol_track_height);
   volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
   volume_bar->set_thumb_thickness(vol_thumb_height);
@@ -109,13 +109,13 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
 
   button_shuffle = &add_child<ZincboxButton>("shuffle");
-  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32());
+  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32() * scale);
   button_shuffle->add_image("shuffle");
   update_shuffle_mode();
   tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
   button_repeat = &add_child<ZincboxButton>("repeat");
-  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32());
+  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32() * scale);
   button_repeat->add_image("repeat");
   update_repeat_mode();
   tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
@@ -274,6 +274,8 @@ void PanelControls::update() {
   }
 
   label_progress->set_is_drawn(width > 650);
+  label_progress->set_min_width(label_progress->get_text_extents().x);
+  label_progress->set_max_width(label_progress->get_text_extents().x);
 
   seekbar->set_value(player::get_current_time_ms(), false);
 

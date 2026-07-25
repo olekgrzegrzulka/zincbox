@@ -4,6 +4,7 @@
 #include "label.hpp"
 #include "sprite.hpp"
 #include "ui.hpp"
+#include "core/settings.hpp"
 
 enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW, MANUAL };
 
@@ -11,8 +12,9 @@ class ToolTip : public Sprite {
   public:
     ToolTip(UI& ui_, std::u32string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
       : Sprite(ui_, "tooltip") {
+      float scale = settings::get().scale * 0.01f;
       pos = pos_;
-      distance = distance_;
+      distance = distance_ * scale;
       set_ignore_parents_layout(true);
       set_is_drawn_on_top(true);
       set_nine_slice_margin(4.0f);
