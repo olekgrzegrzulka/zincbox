@@ -22,25 +22,11 @@ FontFace::FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_
     exit(1);
   }
 
-  bool success = (try_creating_glyph_data(freetype_face, 256, pixel_height) ||
-                  try_creating_glyph_data(freetype_face, 512, pixel_height) ||
-                  try_creating_glyph_data(freetype_face, 1024, pixel_height) ||
-                  try_creating_glyph_data(freetype_face, 2048, pixel_height));
-
-  m_line_height = freetype_face->size->metrics.height / 64.0f;
-  m_ascender = freetype_face->size->metrics.ascender / 64.0f;
-
+  bool success = init(freetype_face, pixel_height);
   if (FT_Done_Face(freetype_face) || !success) {
     out::critical("failed to create font texture atlas of font at {}", path);
     exit(1);
   }
-  glCreateSamplers(1, &sampler);
-  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-  // save_glyph_texture_to_file("./assets/glyphs.png");
 }
 
 FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height) {
@@ -50,21 +36,29 @@ FontFace::FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 p
     exit(1);
   }
 
-  bool success = (try_creating_glyph_data(freetype_face, 256, pixel_height) ||
-                  try_creating_glyph_data(freetype_face, 512, pixel_height) ||
-                  try_creating_glyph_data(freetype_face, 1024, pixel_height));
-
+  bool success = init(freetype_face, pixel_height);
   if (FT_Done_Face(freetype_face) || !success) {
-    out::critical("failed to create font texture atlas of font");
+    out::critical("failed to create font texture atlas");
     exit(1);
   }
-  glCreateSamplers(1, &sampler);
-  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
 
-  // save_glyph_texture_to_file("./assets/glyphs.png");
+bool FontFace::init(FT_Face& face, i32 pixel_height) {
+  bool success =
+    (try_creating_glyph_data(face, 256, pixel_height) || try_creating_glyph_data(face, 512, pixel_height) ||
+     try_creating_glyph_data(face, 1024, pixel_height) || try_creating_glyph_data(face, 2048, pixel_height));
+
+  m_line_height = face->size->metrics.height / 64.0f;
+  m_ascender = face->size->metrics.ascender / 64.0f;
+
+  if (success) {
+    glCreateSamplers(1, &sampler);
+    glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  }
+  return success;
 }
 
 /*

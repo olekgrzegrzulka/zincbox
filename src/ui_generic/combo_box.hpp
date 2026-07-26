@@ -17,10 +17,10 @@ class ComboBoxItem : public Button {
       set_parent_anchor(Anchor::TOP_CENTER);
       set_anchor(Anchor::TOP_CENTER);
       set_nine_slice_margin(2);
-      set_texture_idle("button_combo_idle");
-      set_texture_hovered("button_combo_hovered");
-      set_texture_pressed("button_combo_pressed");
-      set_texture_disabled("button_combo_disabled");
+      set_texture_idle("combobox_item_idle");
+      set_texture_hovered("combobox_item_hovered");
+      set_texture_pressed("combobox_item_pressed");
+      set_texture_disabled("combobox_item_disabled");
       set_nine_slice_margin(6.0);
       hover_test_parent = false;
       label.set_parent_anchor(Anchor::CENTER_LEFT);
@@ -30,36 +30,35 @@ class ComboBoxItem : public Button {
     }
 };
 
-class ComboBox : public Sprite {
+class ComboBox : public Button {
+    using Button::event;
+
   public:
     ComboBox(UI& ui_)
-      : Sprite(ui_), button(add_child<Button>()), button_icon(add_child<Sprite>()),
-        dropdown_bg(add_child<Sprite>("panel_combo")), label_item(add_child<Label>()) {
+      : Button(ui_), icon(add_child<Sprite>("combobox_expand")), dropdown_bg(add_child<Sprite>("panel_combobox")) {
       set_size(64, 24);
-      set_texture("combo_box", false);
-      set_nine_slice_margin(2);
+      set_nine_slice_margin(4.0);
 
-      button.set_parent_anchor(Anchor::CENTER_RIGHT);
-      button.set_anchor(Anchor::CENTER_RIGHT);
-      button.set_is_drawn(false);
-      button.set_switch_mode(true);
-      button.on_press([&] { on_button_pressed(); });
-      button.on_depress([&] { on_button_depressed(); });
+      set_texture_idle("combobox_idle");
+      set_texture_hovered("combobox_hovered");
+      set_texture_pressed("combobox_pressed");
+      set_texture_disabled("combobox_disabled");
 
-      button_icon.set_parent_anchor(Anchor::CENTER_RIGHT);
-      button_icon.set_anchor(Anchor::CENTER_RIGHT);
-      button_icon.set_texture("combo_box_button_expand");
-      button_icon.set_size(32, 32);
+      set_switch_mode(true);
+      on_press([&] { on_button_pressed(); });
+      on_depress([&] { on_button_depressed(); });
+
+      icon.set_anchor(Anchor::RIGHT);
+      icon.set_parent_anchor(Anchor::RIGHT);
+      icon.set_nine_slice_margin(0.0f);
+      icon.set_x(-8);
+
+      label.set_x((-icon.get_width() - 8) / 2);
 
       dropdown_bg.set_parent_anchor(Anchor::BOTTOM_CENTER);
       dropdown_bg.set_anchor(Anchor::TOP_CENTER);
       dropdown_bg.set_clip_children(true);
       dropdown_bg.set_is_drawn_on_top(true);
-
-      label_item.set_parent_anchor(Anchor::CENTER_LEFT);
-      label_item.set_anchor(Anchor::CENTER_LEFT);
-      label_item.set_label_anchor(Anchor::CENTER_LEFT);
-      label_item.set_x(2);
 
       for (i32 i = 0; i < dropdown_max_length + 1; i += 1) {
         auto& item = dropdown_bg.add_child<ComboBoxItem>();
@@ -77,7 +76,7 @@ class ComboBox : public Sprite {
     }
 
     void update() override {
-      Sprite::update();
+      Button::update();
 
       target_scroll_progress =
         std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, items.size() - item_widgets.size() + 1));
@@ -108,8 +107,6 @@ class ComboBox : public Sprite {
         }
       }
 
-      button.set_size(width, height);
-
       dropdown_animation_progress = std::min(dropdown_animation_progress + 0.3f, 1.0f);
       if (dropdown_animation_progress >= 1.0) {
         if (dropdown_state == DropDownState::APPEARING) {
@@ -138,22 +135,10 @@ class ComboBox : public Sprite {
       // debug_warn(items_to_draw);
     }
 
-    void draw() override { Sprite::draw(); }
+    void draw() override { Button::draw(); }
 
     void event(Input::InputEventMouseButton& ev) override {
-      bool mouse_hovering = is_mouse_hovering();
-      bool lmb_just_pressed =
-        ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT && ev.action == Input::MouseAction::PRESS;
-      bool rmb_just_pressed =
-        ev.button == Input::MouseButton::MOUSE_BUTTON_RIGHT && ev.action == Input::MouseAction::PRESS;
-      bool mmb_just_pressed =
-        ev.button == Input::MouseButton::MOUSE_BUTTON_MIDDLE && ev.action == Input::MouseAction::PRESS;
-
-      if (mouse_hovering && lmb_just_pressed && !focused) {
-        on_button_pressed();
-      } else if (!mouse_hovering && (lmb_just_pressed || rmb_just_pressed || mmb_just_pressed) && focused) {
-        on_button_depressed();
-      }
+      if (!ev.handled) { Button::event(ev); }
     }
 
     void event(Input::InputEventKey& ev) override {
@@ -206,44 +191,30 @@ class ComboBox : public Sprite {
 
   protected:
     void on_button_pressed() {
-      set_focused(true);
       dropdown_state = DropDownState::APPEARING;
       dropdown_animation_progress = 0.0f;
-      button_icon.set_texture("combo_box_button_contract");
+      icon.set_texture("combobox_contract");
     }
 
     void on_button_depressed() {
-      set_focused(false);
       dropdown_state = DropDownState::DISAPPEARING;
       dropdown_animation_progress = 0.0f;
-      button_icon.set_texture("combo_box_button_expand");
-    }
-
-    void set_focused(bool value) {
-      if (focused == value) { return; }
-      focused = value;
-      if (focused) {
-        set_texture("combo_box_focused", false);
-      } else {
-        set_texture("combo_box", false);
-      }
+      icon.set_texture("combobox_expand");
     }
 
     void on_item_pressed(i32 i) {
       if (i < 0 || i >= (i32)items.size()) { return; }
       i32 label_i = (i32)scroll_progress + i;
       selected_index = i;
-      label_item.set_text(items[label_i].second);
-      button.set_is_switched(false);
+      label.set_text(items[label_i].second);
+      set_is_switched(false);
 
       if (lambda_select) { lambda_select(); }
     }
 
   protected:
-    Button& button;
-    Sprite& button_icon;
+    Sprite& icon;
     Sprite& dropdown_bg;
-    Label& label_item;
     i32 selected_index = -1;
     bool focused = false;
 

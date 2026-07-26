@@ -74,7 +74,7 @@ static PanelControls* panel_controls{};
 static Splitter* splitter{};
 static ToolTip* tooltip_drag{};
 
-static void input();
+static void input(vec2i window_size);
 static void rebuild();
 static void draw();
 
@@ -336,7 +336,7 @@ void interface::init() {
   recreate_panel_top(false);
 }
 
-static void input() {
+static void input(vec2i window_size) {
   while (auto cmd = mpris::command_pop()) {
     switch (cmd->type) {
     case mpris::CommandType::PLAY: player::resume(); break;
@@ -391,13 +391,13 @@ static void input() {
 
   handle_dropped_files();
   handle_drag_and_drop();
-  ui->input();
+  ui->input(window_size.x, window_size.y);
 }
 
 static void rebuild() { ui->rebuild(); }
 
 void interface::update(vec2i window_size) {
-  input();
+  input(window_size);
 
   rebuild();
 
@@ -436,7 +436,7 @@ void interface::update(vec2i window_size) {
   }
   panel_controls->set_width(window_size.x);
 
-  ui->update(window_size.x, window_size.y);
+  ui->update();
 
   draw();
 }
