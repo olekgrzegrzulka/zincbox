@@ -20,7 +20,6 @@ class Button : public Sprite {
     ButtonState state = ButtonState::IDLE;
     bool switch_mode = false;
     bool is_switched = false;
-    bool offset_label_on_press = false;
 
     bool mouse_hovering = false;
     bool mouse_pressed = false;
@@ -51,7 +50,9 @@ class Button : public Sprite {
       set_nine_slice_margin(3.0f);
       set_nine_slice_scale(1.0f);
 
-      get_label().set_text_color(theme::get_prop("text_color").as_rgba());
+      label.set_text_color(theme::get_prop("text_color").as_rgba());
+      label.set_parent_anchor(Anchor::CENTER_CENTER);
+      label.set_anchor(Anchor::CENTER_CENTER);
 
       set_sprite_idle();
     }
@@ -106,9 +107,6 @@ class Button : public Sprite {
 
     WIDGET_DEF_SETTER_DIRTY(switch_mode);
     WIDGET_DEF_GETTER(switch_mode);
-
-    WIDGET_DEF_SETTER_DIRTY(offset_label_on_press);
-    WIDGET_DEF_GETTER(offset_label_on_press);
 
     void set_uv_start_idle(vec2f to) {
       if (uv_start_idle == to) { return; }

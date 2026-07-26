@@ -55,7 +55,8 @@ void UI::update_hovered_widgets_recursive(Widget* widget) {
   }
 }
 
-void UI::construct_traversal_order(Widget* widget) {
+void UI::construct_traversal_order(Widget* widget, i32 always_on_top_layer) {
+  if (widget->is_drawn_on_top) { always_on_top_layer += 1; }
   Widget* parent = widget->parent;
 
   bool parent_drawn = parent ? parent->visible_ : true;
@@ -76,13 +77,19 @@ void UI::construct_traversal_order(Widget* widget) {
   }
 
   for (auto&& child : widget->get_children()) {
-    if (child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) { construct_traversal_order(child.get()); }
+    if (child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) {
+      construct_traversal_order(child.get(), always_on_top_layer);
+    }
   }
-
-  widget_traversal_order.emplace_back(widget);
+  if ((i32)widget_traversal_order.size() <= always_on_top_layer) {
+    widget_traversal_order.resize(always_on_top_layer + 1);
+  }
+  widget_traversal_order[always_on_top_layer].emplace_back(widget);
 
   for (auto&& child : widget->get_children()) {
-    if (!child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) { construct_traversal_order(child.get()); }
+    if (!child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) {
+      construct_traversal_order(child.get(), always_on_top_layer);
+    }
   }
 
   for (auto&& child : widget->get_children()) {
@@ -145,13 +152,20 @@ bool UI::rebuild_tree() {
   return tree_changed;
 }
 
-void UI::input() {
-  for (auto it = widget_traversal_order.rbegin(); it != widget_traversal_order.rend(); ++it) {
-    if ((*it)->updated_) {
-      for (auto& ev : Input::get_event_queue()) {
-        std::visit([it](auto& ev) { (*it)->event(ev); }, ev);
+void UI::input(i32 window_width_, i32 window_height_) {
+  window_width = window_width_;
+  window_height = window_height_;
+
+  for (auto it_layer = widget_traversal_order.rbegin(); it_layer != widget_traversal_order.rend(); ++it_layer) {
+    for (auto it = (*it_layer).rbegin(); it != (*it_layer).rend(); ++it) {
+      (*it)->set_window_width(window_width);
+      (*it)->set_window_height(window_height);
+      if ((*it)->updated_) {
+        for (auto& ev : Input::get_event_queue()) {
+          std::visit([it](auto& ev) { (*it)->event(ev); }, ev);
+        }
+        (*it)->input();
       }
-      (*it)->input();
     }
   }
 }
@@ -166,14 +180,11 @@ void UI::rebuild() {
   }
 }
 
-void UI::update(i32 window_width_, i32 window_height_) {
-  window_width = window_width_;
-  window_height = window_height_;
-
-  for (auto* widget : widget_traversal_order) {
-    widget->set_window_width(window_width);
-    widget->set_window_height(window_height);
-    if (widget->updated_) { widget->update(); }
+void UI::update() {
+  for (auto& layer : widget_traversal_order) {
+    for (auto* widget : layer) {
+      if (widget->updated_) { widget->update(); }
+    }
   }
 }
 
@@ -187,22 +198,24 @@ void UI::draw() {
   shader.set_uniform_float("tex_size", 16, 16);
   texture_atlas.bind(0);
   font_face.bind(1);
-  for (auto* widget : widget_traversal_order) {
-    if (widget->visible_ && widget->is_self_drawn) {
-      if (widget->scissor_.has_value()) {
-        rect2i scissor_rect = widget->scissor_.value();
-        if (widget->get_clip()) {
-          rect2i widget_rect = {.begin = {widget->get_position(Anchor::TOP_LEFT).x,
-                                          window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
-                                .size = {widget->get_width(), widget->get_height()}};
-          scissor_rect = scissor_rect.intersected(widget_rect);
+  for (auto& layer : widget_traversal_order) {
+    for (auto* widget : layer) {
+      if (widget->visible_ && widget->is_self_drawn) {
+        if (widget->scissor_.has_value()) {
+          rect2i scissor_rect = widget->scissor_.value();
+          if (widget->get_clip()) {
+            rect2i widget_rect = {.begin = {widget->get_position(Anchor::TOP_LEFT).x,
+                                            window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
+                                  .size = {widget->get_width(), widget->get_height()}};
+            scissor_rect = scissor_rect.intersected(widget_rect);
+          }
+          glEnable(GL_SCISSOR_TEST);
+          glScissor(scissor_rect.begin.x, scissor_rect.begin.y, scissor_rect.size.x, scissor_rect.size.y);
+        } else {
+          glDisable(GL_SCISSOR_TEST);
         }
-        glEnable(GL_SCISSOR_TEST);
-        glScissor(scissor_rect.begin.x, scissor_rect.begin.y, scissor_rect.size.x, scissor_rect.size.y);
-      } else {
-        glDisable(GL_SCISSOR_TEST);
+        widget->draw();
       }
-      widget->draw();
     }
   }
 }

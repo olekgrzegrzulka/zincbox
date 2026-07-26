@@ -319,16 +319,15 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     atlas_add_texture_row(track_ids, {name + "_track", "slider_track"});
   };
 
-  auto add_custom_panel = [&atlas_add_texture](const std::string& name) {
-    atlas_add_texture("panel_" + name, {"panel_" + name, "panel"});
-  };
+  auto add_custom_panel = [&atlas_add_texture](const std::string& name) { atlas_add_texture(name, {name, "panel"}); };
 
   // ui
   atlas_add_texture_row({"button_idle", "button_hovered", "button_pressed", "button_disabled"}, {"button"});
-  atlas_add_texture("combo_box_button_contract");
-  atlas_add_texture("combo_box_button_expand");
-  atlas_add_texture("combo_box");
-  atlas_add_texture("combo_box_focused");
+  add_custom_button("combobox");
+  atlas_add_texture("combobox_contract");
+  atlas_add_texture("combobox_expand");
+  add_custom_panel("panel_combobox");
+  add_custom_button("combobox_item");
   atlas_add_texture("dim");
   atlas_add_texture("red");
   add_custom_slider("slider");
@@ -355,17 +354,15 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_button("inline_sort");
   add_custom_button("inline_more");
   atlas_add_texture("panel");
-  add_custom_panel("albums");
+  add_custom_panel("panel_albums");
   atlas_add_texture("panel_dark");
-  add_custom_panel("albums_searchbar");
-  add_custom_panel("controls");
-  add_custom_panel("playlist_header");
-  add_custom_panel("popup");
-  add_custom_panel("tabbar");
-  add_custom_panel("top");
-  add_custom_panel("tracks");
-  add_custom_panel("combo");
-  add_custom_button("button_combo");
+  add_custom_panel("panel_albums_searchbar");
+  add_custom_panel("panel_controls");
+  add_custom_panel("panel_playlist_header");
+  add_custom_panel("panel_popup");
+  add_custom_panel("panel_tabbar");
+  add_custom_panel("panel_top");
+  add_custom_panel("panel_tracks");
   add_custom_slider("seekbar");
   atlas_add_texture("track_bg1");
   atlas_add_texture("track_bg2");

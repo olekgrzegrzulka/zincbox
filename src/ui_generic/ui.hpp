@@ -27,9 +27,9 @@ class UI final {
       return widget;
     }
 
-    void input();
+    void input(i32 window_width_, i32 window_height_);
     void rebuild();
-    void update(i32 window_width_, i32 window_height_);
+    void update();
     void draw();
 
     void set_font_face(const std::string& location, i32 pixel_height) {
@@ -61,14 +61,14 @@ class UI final {
     void update_hovered_widgets_recursive(Widget* widget);
     bool rebuild_tree(Widget*, bool tree_changed = false);
     bool rebuild_tree();
-    void construct_traversal_order(Widget*);
+    void construct_traversal_order(Widget*, i32 always_on_top_layer = 0);
     void construct_traversal_order();
 
   protected:
     glm::mat4 matrix;
     std::vector<std::unique_ptr<Widget>> widgets;
     std::vector<std::unique_ptr<Widget>> widgets_to_add;
-    std::vector<Widget*> widget_traversal_order;
+    std::vector<std::vector<Widget*>> widget_traversal_order;
     std::vector<Widget*> hovered_widgets;
     FT_Library freetype_lib;
     Shader shader;

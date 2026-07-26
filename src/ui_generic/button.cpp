@@ -2,19 +2,7 @@
 #include "common/input.hpp"
 #include "ui.hpp"
 
-void Button::update() {
-  Sprite::update();
-
-  if (state == ButtonState::PRESSED && offset_label_on_press) {
-    label.set_x(1);
-    label.set_y(1);
-  } else {
-    label.set_x(0);
-    label.set_y(0);
-  }
-  label.set_parent_anchor(Anchor::CENTER_CENTER);
-  label.set_anchor(Anchor::CENTER_CENTER);
-}
+void Button::update() { Sprite::update(); }
 
 void Button::add_image(std::string_view id, bool resize_to_texture_size) {
   if (!image) {

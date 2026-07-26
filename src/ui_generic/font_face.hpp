@@ -35,6 +35,7 @@ class FontFace {
     float get_ascender() const { return m_ascender; }
 
   private:
+    bool init(FT_Face&, i32 pixel_height);
     bool try_creating_glyph_data(FT_Face&, i32 texture_dimensions, i32 pixel_height);
 
   private:

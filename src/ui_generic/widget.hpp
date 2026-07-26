@@ -147,6 +147,7 @@ class Widget {
     bool hovered_ = false;
     bool visible_ = false;
     bool updated_ = false;
+    i32 always_on_top_layer_ = 0;
     std::optional<rect2i> scissor_;
 
     Widget* parent = nullptr;
