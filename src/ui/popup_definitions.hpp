@@ -6,6 +6,7 @@
 #include <vector>
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/settings.hpp"
 #include "tr.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
@@ -26,13 +27,13 @@ class PopupInput : public Popup {
       set_layout("ttb expand fit fill m:8 s:8");
 
       title = &add_child<Label>(U"");
-      title->set_max_height(32);
+      title->set_max_height(32 * settings::get().scale * 0.01f);
       text_input = &add_child<TextInput>();
       text_input->set_max_height(24);
 
       buttons = &add_child<Widget>();
       buttons->set_layout("ltr fill fit expand m:0 s:8");
-      buttons->set_max_height(32);
+      buttons->set_max_height(32 * settings::get().scale * 0.01f);
 
       btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() {
@@ -65,9 +66,9 @@ class PopupConfirm : public Popup {
       set_layout("ttb fill fit expand m:8 s:8");
 
       title = &add_child<Label>(U"");
-      title->set_height(32);
-      title->set_min_height(32);
-      title->set_max_height(32);
+      title->set_height(32 * settings::get().scale * 0.01f);
+      title->set_min_height(32 * settings::get().scale * 0.01f);
+      title->set_max_height(32 * settings::get().scale * 0.01f);
 
       content = &add_child<Label>(content_);
       content->set_height(content->get_text_extents().y);
@@ -75,9 +76,9 @@ class PopupConfirm : public Popup {
       content->set_max_height(content->get_text_extents().y);
 
       buttons = &add_child<Widget>();
-      buttons->set_height(32);
-      buttons->set_min_height(32);
-      buttons->set_max_height(32);
+      buttons->set_height(32 * settings::get().scale * 0.01f);
+      buttons->set_min_height(32 * settings::get().scale * 0.01f);
+      buttons->set_max_height(32 * settings::get().scale * 0.01f);
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
       btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
@@ -116,9 +117,9 @@ class PopupImportFolders : public Popup {
       title = &add_child<Label>(U"");
       title->set_anchor(Anchor::TOP);
       title->set_parent_anchor(Anchor::TOP);
-      title->set_height(32);
-      title->set_min_height(32);
-      title->set_max_height(32);
+      title->set_height(32 * settings::get().scale * 0.01f);
+      title->set_min_height(32 * settings::get().scale * 0.01f);
+      title->set_max_height(32 * settings::get().scale * 0.01f);
 
       content = &add_child<Label>(U"");
       content->set_anchor(Anchor::CENTER);
@@ -127,9 +128,9 @@ class PopupImportFolders : public Popup {
       buttons = &add_child<Widget>();
       buttons->set_anchor(Anchor::BOTTOM);
       buttons->set_parent_anchor(Anchor::BOTTOM);
-      buttons->set_height(32);
-      buttons->set_min_height(32);
-      buttons->set_max_height(32);
+      buttons->set_height(32 * settings::get().scale * 0.01f);
+      buttons->set_min_height(32 * settings::get().scale * 0.01f);
+      buttons->set_max_height(32 * settings::get().scale * 0.01f);
 
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
@@ -200,7 +201,7 @@ class PopupSetSources : public Popup {
       auto& collection = db::collection_by_id(collection_id)->get();
 
       title = &add_child<Label>(tr::format("popup.sources.title", utf32_to_utf8(collection.name())));
-      title->set_height(32);
+      title->set_height(32 * settings::get().scale * 0.01f);
       title->set_anchor(Anchor::TOP);
       title->set_parent_anchor(Anchor::TOP);
 
@@ -222,7 +223,7 @@ class PopupSetSources : public Popup {
       buttons = &add_child<Widget>();
       buttons->set_anchor(Anchor::BOTTOM);
       buttons->set_parent_anchor(Anchor::BOTTOM);
-      buttons->set_height(32);
+      buttons->set_height(32 * settings::get().scale * 0.01f);
       buttons->set_layout("ltr fill fit expand m:0 s:8");
 
       btn_close = &buttons->add_child<Button>(tr::get("dialog.action.close"));
@@ -336,9 +337,9 @@ class PopupAddToPlaylist : public Popup {
       } else {
         title = &add_child<Label>(tr::format("popup.add_to_playlist.title_plural"));
       }
-      title->set_height(32);
-      title->set_min_height(32);
-      title->set_max_height(32);
+      title->set_height(32 * settings::get().scale * 0.01f);
+      title->set_min_height(32 * settings::get().scale * 0.01f);
+      title->set_max_height(32 * settings::get().scale * 0.01f);
       title->set_anchor(Anchor::TOP);
       title->set_parent_anchor(Anchor::TOP);
 
@@ -359,9 +360,9 @@ class PopupAddToPlaylist : public Popup {
       };
 
       buttons = &add_child<Widget>();
-      buttons->set_height(32);
-      buttons->set_min_height(32);
-      buttons->set_max_height(32);
+      buttons->set_height(32 * settings::get().scale * 0.01f);
+      buttons->set_min_height(32 * settings::get().scale * 0.01f);
+      buttons->set_max_height(32 * settings::get().scale * 0.01f);
       buttons->set_anchor(Anchor::BOTTOM);
       buttons->set_parent_anchor(Anchor::BOTTOM);
 
@@ -407,9 +408,9 @@ class PopupCreateSmartPlaylist : public Popup {
       input_artists->set_height(22);
 
       buttons = &add_child<Widget>();
-      buttons->set_height(32);
-      buttons->set_min_height(32);
-      buttons->set_max_height(32);
+      buttons->set_height(32 * settings::get().scale * 0.01f);
+      buttons->set_min_height(32 * settings::get().scale * 0.01f);
+      buttons->set_max_height(32 * settings::get().scale * 0.01f);
       buttons->set_layout("ltr fill fit expand m:0 s:8");
       btn_cancel = &buttons->add_child<Button>(tr::get("dialog.action.cancel"));
       btn_cancel->on_press([this]() -> void {
@@ -445,7 +446,7 @@ class PopupAbout : public Popup {
       set_width(450);
 
       auto& title = add_child<Label>(tr::get("popup.about.title"));
-      title.set_height(32);
+      title.set_height(32 * settings::get().scale * 0.01f);
       title.set_resize_to_text_extents(false);
       auto& content =
         add_child<Label>(tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
@@ -453,7 +454,30 @@ class PopupAbout : public Popup {
 
       auto& buttons = add_child<Widget>();
       buttons.set_layout("ltr fill fit expand m:0 s:8");
-      buttons.set_height(32);
+      buttons.set_height(32 * settings::get().scale * 0.01f);
+      auto& btn_ok = buttons.add_child<Button>(tr::get("dialog.action.ok"));
+      btn_ok.on_press([this]() -> void { close(); });
+    }
+};
+
+class PopupWelcome : public Popup {
+  public:
+    PopupWelcome(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+      : Popup(ui_, controller_, std::move(on_close_)) {
+      set_layout("ttb fit expand m:8 s:12");
+
+      auto& title = add_child<Label>(tr::get("popup.welcome.title"));
+      title.set_height(32 * settings::get().scale * 0.01f);
+      title.set_resize_to_text_extents(false);
+      auto& content = add_child<Label>(tr::format("popup.welcome.content"));
+      content.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      content.set_width(content.get_text_extents().x);
+
+      set_width(content.get_width() + 24);
+
+      auto& buttons = add_child<Widget>();
+      buttons.set_layout("ltr fill fit expand m:0 s:8");
+      buttons.set_height(32 * settings::get().scale * 0.01f);
       auto& btn_ok = buttons.add_child<Button>(tr::get("dialog.action.ok"));
       btn_ok.on_press([this]() -> void { close(); });
     }

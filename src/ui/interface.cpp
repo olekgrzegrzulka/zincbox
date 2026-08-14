@@ -197,6 +197,8 @@ void interface::init() {
   splitter->set_is_updated(false);
   splitter->set_is_drawn(false);
 
+  if (db::collection_count() == 0) { popup_controller->show_popup<PopupWelcome>(); }
+
   panel_controls->on_playing_track_lmb = [](Widget*) -> void {
     auto playing = player::get_playing();
     if (playing.has_value()) {

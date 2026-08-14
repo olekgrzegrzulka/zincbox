@@ -85,6 +85,8 @@
   "popup.smart_playlist.add.label_input": "Playlist name",
   "popup.smart_playlist.add.title": "Edit smart playlist",
   "popup.sources.title": "Set sources for '{}'",
+  "popup.welcome.content": "Thank you for installing zincbox music player.\nTo start listening to your tracks, you first need to add a new collection.\nDrag and drop a folder onto this window, or use the '+' button at the top to select a directory.",
+  "popup.welcome.title": "Welcome",
   "search.all_collections": "Search all collections",
   "search.no_results": "No results found",
   "search.results_albums_playlists": "Albums/Playlists",
