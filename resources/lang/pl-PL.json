@@ -85,6 +85,8 @@
   "popup.smart_playlist.add.label_input": "Nazwa playlisty",
   "popup.smart_playlist.add.title": "Edytuj smart playlistę",
   "popup.sources.title": "Ustaw źródła dla '{}'",
+  "popup.welcome.content": "Dziękujemy za instalację odtwarzacza zincbox.\nAby zacząć słuchać swoich utworów, musisz najpierw dodać nową kolekcję.\nPrzeciągnij i upuść folder na to okno lub użyj przycisku '+' na górze, aby wybrać katalog.",
+  "popup.welcome.title": "Witaj",
   "search.all_collections": "Szukaj we wszystkich kolekcjach",
   "search.no_results": "Brak wyników",
   "search.results_albums_playlists": "Albumy/Playlisty",
