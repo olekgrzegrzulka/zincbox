@@ -3,9 +3,6 @@ project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# GLFW
-set(GLFW_STANDALONE ON CACHE BOOL "" FORCE)
-
 # Native File Dialog Extended
 option(NFD_PORTAL "" ON)
 set(NFD_PORTAL ON)
@@ -41,6 +38,12 @@ set(BUILD_SHARED_LIBS OFF)
 
 # json.cpp
 set(JSON_CPP_BUILD_TESTS OFF)
+
+# SDL3
+set(SDL_X11_XSCRNSAVER OFF)
+set(SDL_X11_XTEST OFF)
+set(SDL_STATIC ${STATIC_DEPS})
+set(SDL_SHARED OFF)
 
 if(NOT WIN32)
   find_package(PkgConfig REQUIRED)
@@ -80,7 +83,6 @@ message(STATUS "------------------------------------------------")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 add_subdirectory(lib/freetype SYSTEM)
-add_subdirectory(lib/glfw SYSTEM)
 add_subdirectory(lib/nativefiledialog-extended SYSTEM)
 add_subdirectory(lib/zlib SYSTEM)
 set(ZLIB_FOUND TRUE)
@@ -97,6 +99,7 @@ add_subdirectory(lib/glad SYSTEM)
 add_subdirectory(lib/miniz SYSTEM)
 add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(lib/json.cpp SYSTEM)
+add_subdirectory(lib/SDL SYSTEM)
 
 # add_subdirectory(lib/miniaudio SYSTEM)
 
@@ -190,7 +193,6 @@ endif()
 
 
 target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE nfd)
 target_link_libraries(${PROJECT_NAME} PRIVATE zlibstatic)
 target_link_libraries(${PROJECT_NAME} PRIVATE spng_static)
@@ -205,4 +207,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
 target_link_libraries(${PROJECT_NAME} PRIVATE json)
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL3)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

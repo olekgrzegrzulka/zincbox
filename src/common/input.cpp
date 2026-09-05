@@ -2,13 +2,15 @@
 #include <algorithm>
 #include <array>
 #include <vector>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_events.h>
 #include "common/types.hpp"
-#include "opengl_includes.hpp"
+#include "common/utf.hpp"
 
 namespace Input {
 
   namespace detail {
-    static GLFWwindow* glfw_window{};
+    static SDL_Window* sdl_window{};
     static i32 mouse_x{};
     static i32 mouse_y{};
     static i32 last_mouse_x{};
@@ -17,7 +19,7 @@ namespace Input {
     static i32 window_y{};
     static std::vector<InputEvent> event_queue{};
     static std::vector<std::string> dropped_paths{};
-    static std::array<GLFWcursor*, (size_t)Cursor::CURSOR_SIZE> cursors{};
+    static std::array<SDL_Cursor*, (size_t)Cursor::CURSOR_SIZE> cursors{};
 
     enum class ButtonState : u8 { RELEASED, PRESSED, JUST_RELEASED, JUST_PRESSED };
 
@@ -29,136 +31,111 @@ namespace Input {
     vec2f accumulated_scroll{};
   } // namespace detail
 
-  void glfw_cursor_position_callback(GLFWwindow*, double x, double y) {
-    InputEventMouseMove ev{.to = {x, y}};
-    detail::event_queue.emplace_back(ev);
-  }
-
-  void glfw_mouse_button_callback(GLFWwindow*, i32 button, i32 action, i32 /* mods */) {
-    InputEventMouseButton ev = {
-      .button = static_cast<MouseButton>(button),
-      .action = (action == GLFW_PRESS) ? MouseAction::PRESS : MouseAction::RELEASE,
-    };
-    detail::event_queue.emplace_back(ev);
-  }
-
-  void glfw_drop_callback(GLFWwindow*, i32 count, const char** paths) {
-    detail::dropped_paths.clear();
-    detail::dropped_paths.resize(count);
-    for (i32 i = 0; i < count; i += 1) {
-      detail::dropped_paths[i] = std::string{paths[i]};
+  void process_event(const SDL_Event& event) {
+    switch (event.type) {
+    case SDL_EVENT_MOUSE_MOTION: {
+      InputEventMouseMove ev{.to = {static_cast<double>(event.motion.x), static_cast<double>(event.motion.y)}};
+      detail::event_queue.emplace_back(ev);
+      break;
+    }
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: [[fallthrough]];
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
+      InputEventMouseButton ev = {
+        .button = static_cast<MouseButton>(event.button.button),
+        .action = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) ? MouseAction::PRESS : MouseAction::RELEASE,
+      };
+      detail::event_queue.emplace_back(ev);
+      break;
+    }
+    case SDL_EVENT_DROP_FILE: {
+      detail::dropped_paths.emplace_back(event.drop.data);
+      break;
+    }
+    case SDL_EVENT_MOUSE_WHEEL: {
+      detail::accumulated_scroll_next += vec2f{event.wheel.x, event.wheel.y};
+      InputEventMouseScroll ev = {
+        .offset = {static_cast<double>(event.wheel.x), static_cast<double>(event.wheel.y)},
+      };
+      detail::event_queue.emplace_back(ev);
+      break;
+    }
+    case SDL_EVENT_TEXT_INPUT: {
+      std::string utf8_text = event.text.text;
+      std::u32string utf32_text = utf8_to_utf32(utf8_text);
+      detail::keyboard_characters_curr += utf32_text;
+      break;
+    }
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP: {
+      KeyAction key_action = KeyAction::RELEASE;
+      if (event.type == SDL_EVENT_KEY_DOWN) { key_action = event.key.repeat ? KeyAction::REPEAT : KeyAction::PRESS; }
+      InputEventKey ev = {
+        .key = static_cast<Key>(event.key.key),
+        .action = key_action,
+        .scancode = static_cast<i32>(event.key.scancode),
+      };
+      detail::event_queue.emplace_back(ev);
+      break;
+    }
+    case SDL_EVENT_WINDOW_MOUSE_ENTER: detail::event_queue.emplace_back(InputEventMouseEntered{}); break;
+    case SDL_EVENT_WINDOW_MOUSE_LEAVE: detail::event_queue.emplace_back(InputEventMouseLeft{}); break;
+    default: break;
     }
   }
 
-  void glfw_scroll_button_callback(GLFWwindow*, double x, double y) {
-    detail::accumulated_scroll_next += vec2f{x, y};
+  void init(SDL_Window* window) {
+    detail::sdl_window = window;
+    SDL_StartTextInput(window);
 
-    InputEventMouseScroll ev = {
-      .offset = {x, y},
-    };
-    detail::event_queue.emplace_back(ev);
-  }
-
-  void glfw_char_callback(GLFWwindow*, u32 c) { detail::keyboard_characters_curr += c; }
-
-  void glfw_key_callback(GLFWwindow*, i32 key, i32 scancode, i32 action, i32) {
-    KeyAction key_action{};
-    if (action == GLFW_PRESS) { key_action = KeyAction::PRESS; }
-    if (action == GLFW_REPEAT) { key_action = KeyAction::REPEAT; }
-    if (action == GLFW_RELEASE) { key_action = KeyAction::RELEASE; }
-    InputEventKey ev = {
-      .key = static_cast<Key>(key),
-      .action = key_action,
-      .scancode = scancode,
-    };
-    detail::event_queue.emplace_back(ev);
-  }
-
-  void glfw_cursor_enter_callback(GLFWwindow*, i32 entered) {
-    if (entered == GLFW_TRUE) {
-      detail::event_queue.emplace_back(InputEventMouseEntered{});
-    } else {
-      detail::event_queue.emplace_back(InputEventMouseLeft{});
-    }
-  }
-
-  void glfw_close_window_callback(GLFWwindow*) {
-    // detail::event_queue.emplace_back(InputEventCloseWindow{});
-  }
-
-  void init(GLFWwindow* window) {
-    detail::glfw_window = window;
-    glfwSetCursorPosCallback(window, glfw_cursor_position_callback);
-    glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
-    glfwSetScrollCallback(window, glfw_scroll_button_callback);
-    glfwSetCharCallback(window, glfw_char_callback);
-    glfwSetKeyCallback(window, glfw_key_callback);
-    glfwSetCursorEnterCallback(window, glfw_cursor_enter_callback);
-    glfwSetWindowCloseCallback(window, glfw_close_window_callback);
-    glfwSetDropCallback(window, glfw_drop_callback);
-
-    detail::cursors[(size_t)Cursor::ARROW] = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-    detail::cursors[(size_t)Cursor::IBEAM] = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-    detail::cursors[(size_t)Cursor::CROSSHAIR] = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
-    detail::cursors[(size_t)Cursor::HAND] = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
-    detail::cursors[(size_t)Cursor::RESIZE_HORIZONTAL] = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-    detail::cursors[(size_t)Cursor::RESIZE_VERTICAL] = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
-    detail::cursors[(size_t)Cursor::RESIZE] = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
-    detail::cursors[(size_t)Cursor::NOT_ALLOWED] = glfwCreateStandardCursor(GLFW_NOT_ALLOWED_CURSOR);
+    detail::cursors[(size_t)Cursor::ARROW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
+    detail::cursors[(size_t)Cursor::IBEAM] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT);
+    detail::cursors[(size_t)Cursor::CROSSHAIR] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+    detail::cursors[(size_t)Cursor::HAND] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
+    detail::cursors[(size_t)Cursor::RESIZE_HORIZONTAL] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE);
+    detail::cursors[(size_t)Cursor::RESIZE_VERTICAL] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE);
+    detail::cursors[(size_t)Cursor::RESIZE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_MOVE);
+    detail::cursors[(size_t)Cursor::NOT_ALLOWED] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NOT_ALLOWED);
   }
 
   void update() {
-    double x, y;
-    glfwGetWindowPos(detail::glfw_window, &detail::window_x, &detail::window_y);
-    glfwGetCursorPos(detail::glfw_window, &x, &y);
+    float x = 0.0f;
+    float y = 0.0f;
+    SDL_GetWindowPosition(detail::sdl_window, &detail::window_x, &detail::window_y);
+    SDL_MouseButtonFlags mouse_mask = SDL_GetMouseState(&x, &y);
     detail::last_mouse_x = detail::mouse_x;
     detail::last_mouse_y = detail::mouse_y;
-    detail::mouse_x = (i32)x;
-    detail::mouse_y = (i32)y;
+    detail::mouse_x = static_cast<i32>(x);
+    detail::mouse_y = static_cast<i32>(y);
 
     for (size_t i = 0; i < detail::mouse_states.size(); i += 1) {
       using enum detail::ButtonState;
-      bool is_pressed = glfwGetMouseButton(detail::glfw_window, i) == GLFW_PRESS;
+      bool is_pressed = (mouse_mask & SDL_BUTTON_MASK(i)) != 0;
 
       if (detail::mouse_states[i] == RELEASED && is_pressed) {
         detail::mouse_states[i] = JUST_PRESSED;
       } else if (detail::mouse_states[i] == PRESSED && !is_pressed) {
         detail::mouse_states[i] = JUST_RELEASED;
       } else if (detail::mouse_states[i] == JUST_RELEASED) {
-        if (!is_pressed) {
-          detail::mouse_states[i] = RELEASED;
-        } else {
-          detail::mouse_states[i] = JUST_PRESSED;
-        }
+        detail::mouse_states[i] = is_pressed ? JUST_PRESSED : RELEASED;
       } else if (detail::mouse_states[i] == JUST_PRESSED) {
-        if (is_pressed) {
-          detail::mouse_states[i] = PRESSED;
-        } else {
-          detail::mouse_states[i] = JUST_RELEASED;
-        }
+        detail::mouse_states[i] = is_pressed ? PRESSED : JUST_RELEASED;
       }
     }
 
-    for (size_t i = 0; i < detail::key_states.size(); i += 1) {
+    i32 num_keys = 0;
+    const bool* keyboard_state = SDL_GetKeyboardState(&num_keys);
+    for (size_t scancode = 0; scancode < detail::key_states.size(); scancode += 1) {
       using enum detail::ButtonState;
-      bool is_pressed = glfwGetKey(detail::glfw_window, i) == GLFW_PRESS;
+      bool is_pressed = keyboard_state[scancode];
 
-      if (detail::key_states[i] == RELEASED && is_pressed) {
-        detail::key_states[i] = JUST_PRESSED;
-      } else if (detail::key_states[i] == PRESSED && !is_pressed) {
-        detail::key_states[i] = JUST_RELEASED;
-      } else if (detail::key_states[i] == JUST_RELEASED) {
-        if (!is_pressed) {
-          detail::key_states[i] = RELEASED;
-        } else {
-          detail::key_states[i] = JUST_PRESSED;
-        }
-      } else if (detail::key_states[i] == JUST_PRESSED) {
-        if (is_pressed) {
-          detail::key_states[i] = PRESSED;
-        } else {
-          detail::key_states[i] = JUST_RELEASED;
-        }
+      if (detail::key_states[scancode] == RELEASED && is_pressed) {
+        detail::key_states[scancode] = JUST_PRESSED;
+      } else if (detail::key_states[scancode] == PRESSED && !is_pressed) {
+        detail::key_states[scancode] = JUST_RELEASED;
+      } else if (detail::key_states[scancode] == JUST_RELEASED) {
+        detail::key_states[scancode] = is_pressed ? JUST_PRESSED : RELEASED;
+      } else if (detail::key_states[scancode] == JUST_PRESSED) {
+        detail::key_states[scancode] = is_pressed ? PRESSED : JUST_RELEASED;
       }
     }
     // clang-format on
@@ -231,7 +208,7 @@ namespace Input {
   vec2i get_window_size() {
     i32 width = 0;
     i32 height = 0;
-    glfwGetWindowSize(detail::glfw_window, &width, &height);
+    SDL_GetWindowSize(detail::sdl_window, &width, &height);
     return {width, height};
   }
 
@@ -365,6 +342,6 @@ namespace Input {
 
   const std::vector<std::string>& get_dropped_paths() { return detail::dropped_paths; }
 
-  void reset_cursor() { glfwSetCursor(detail::glfw_window, NULL); }
-  void set_cursor(Input::Cursor cursor) { glfwSetCursor(detail::glfw_window, detail::cursors[(size_t)cursor]); }
+  void reset_cursor() { SDL_SetCursor(SDL_GetDefaultCursor()); }
+  void set_cursor(Input::Cursor cursor) { SDL_SetCursor(detail::cursors[(size_t)cursor]); }
 }; // namespace Input
