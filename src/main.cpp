@@ -1,5 +1,6 @@
 #include <csignal>
 #include "core/settings.hpp"
+#include "core/tray.hpp"
 #define STBI_ASSERT(x) ensure(x);
 #define STBIW_ASSERT(x) ensure(x);
 #define STBIR_ASSERT(x) ensure(x);
@@ -171,6 +172,9 @@ int main() {
 
   Input::init(window);
   interface::init();
+  tray::init(window);
+
+  SDL_GL_MakeCurrent(window, gl_context);
   if (config::json().contains("ui")) { interface::from_json(config::json()["ui"]); }
 
   while (!stop_flag) {
@@ -178,7 +182,7 @@ int main() {
     auto t1 = high_resolution_clock::now();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_EVENT_QUIT) {
+      if (event.type == SDL_EVENT_QUIT || event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
         stop_flag = true;
       } else if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
         window_size.x = event.window.data1;
@@ -189,6 +193,7 @@ int main() {
     }
     Input::update();
     player::update();
+    tray::update();
     interface::update(window_size);
     Input::clear();
     check_opengl_errors();
@@ -218,6 +223,7 @@ int main() {
   config::json()["ui"] = interface::to_json();
   config::json()["settings"] = settings::get().to_json();
   config::save_to_file();
+  tray::deinit();
   interface::deinit();
   player::deinit();
   mpris::deinit();

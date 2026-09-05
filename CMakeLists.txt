@@ -114,6 +114,7 @@ set(SOURCES
     ./src/core/musicdb/collection.cpp
     ./src/core/musicdb/playlist.cpp
     ./src/core/musicdb/track.cpp
+    ./src/core/tray.cpp
     ./src/tr.cpp
     ./src/core/player.cpp
     ./src/core/mpris.cpp
