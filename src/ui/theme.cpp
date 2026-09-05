@@ -52,6 +52,17 @@ i32 theme::get_button_nine_slice_margin(std::string_view name) {
     .as_i32(get_prop("button_nine_slice_margin").as_i32());
 }
 
+static constexpr std::vector<uint8_t> NO_RESOURCE = {};
+
+const std::vector<uint8_t>& theme::get_raw_resource(const std::string& path) {
+  auto it = resources.find(path);
+  if (it == resources.end()) {
+    return NO_RESOURCE;
+  } else {
+    return it->second;
+  }
+}
+
 void load_resources() {
   if (!resources.empty()) { return; }
 

@@ -137,5 +137,17 @@
   "tooltip.repeat.track": "Powtarzanie: Utwór",
   "tooltip.shuffle.off": "Mieszanie: Wył.",
   "tooltip.shuffle.on": "Mieszanie: Wł.",
-  "tooltip.sort_by": "Sortuj według"
+  "tooltip.sort_by": "Sortuj według",
+  "tray.next": "Następny",
+  "tray.pause": "Wstrzymaj",
+  "tray.play": "Odtwórz",
+  "tray.prev": "Poprzedni",
+  "tray.quit": "Wyjdź",
+  "tray.repeat": "Powtarzanie",
+  "tray.repeat_album": "Album",
+  "tray.repeat_off": "Wyłączone",
+  "tray.repeat_track": "Utwór",
+  "tray.show": "Pokaż odtwarzacz",
+  "tray.shuffle": "Mieszaj",
+  "tray.stop": "Zatrzymaj"
 }
