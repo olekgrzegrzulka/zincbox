@@ -15,7 +15,7 @@
 #include <ostream>
 #include <stacktrace>
 #include <thread>
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 #include <glm/ext/vector_float2.hpp>
 #include <glm/vec2.hpp>
 #include <nfd.hpp>
@@ -56,7 +56,7 @@ void check_opengl_errors() {
   }
 }
 
-void set_window_title(GLFWwindow* window) {
+void set_window_title(SDL_Window* window) {
   static std::optional<db::track_info> prev_playing;
   auto playing = player::get_playing();
   if (playing == prev_playing) { return; }
@@ -70,9 +70,8 @@ void set_window_title(GLFWwindow* window) {
     window_title = "zincbox";
   }
 
-  glfwSetWindowTitle(window, window_title.c_str());
+  SDL_SetWindowTitle(window, window_title.c_str());
 }
-
 std::atomic<bool> stop_flag = false;
 
 extern "C" void handle_sigint(int signal) {
@@ -132,13 +131,8 @@ int main() {
 
   if (config::json().contains("player")) { player::from_json(config::json()["player"]); }
 
-  // libdecor causes lag when resizing the window on Wayland
-  // but it's needed for GNOME - so disable only if not needed
-  const char* xdg_current_desktop = std::getenv("XDG_CURRENT_DESKTOP");
-  bool is_kde = std::strstr(xdg_current_desktop, "KDE") != nullptr;
-  if (is_kde) { glfwInitHint(GLFW_WAYLAND_LIBDECOR, GLFW_WAYLAND_DISABLE_LIBDECOR); }
-  if (!glfwInit()) {
-    out::critical("failed to initialize GLFW");
+  if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
+    out::critical("failed to initialize SDL3: {}", SDL_GetError());
     exit(1);
   }
   i32 w = (config::json().contains("window_width") && config::json()["window_width"].isNumber())
@@ -151,32 +145,27 @@ int main() {
     std::clamp(w, 480, 1920 * 4),
     std::clamp(h, 320, 1080 * 4),
   };
-  glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
-  GLFWwindow* window = glfwCreateWindow(window_size.x, window_size.y, "zincbox", NULL, NULL);
+  SDL_Window* window =
+    SDL_CreateWindow("zincbox", window_size.x, window_size.y, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
   if (!window) {
-    out::critical("failed to create window");
+    out::critical("failed to create window: {}", SDL_GetError());
     exit(1);
   }
-  glfwMakeContextCurrent(window);
-  glfwSetWindowUserPointer(window, &window_size);
-  glfwSetWindowSizeCallback(window, [](GLFWwindow* window_, int width, int height) -> void {
-    glViewport(0, 0, width, height);
-    auto* window_size_ = reinterpret_cast<glm::vec<2, int>*>(glfwGetWindowUserPointer(window_));
-    window_size_->x = width;
-    window_size_->y = height;
-  });
-  glfwSetWindowSizeLimits(window, 480, 320, GLFW_DONT_CARE, GLFW_DONT_CARE);
-  glfwGetWindowSize(window, &window_size.x, &window_size.y);
-  int o = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+  SDL_SetWindowMinimumSize(window, 480, 320);
+  SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+  if (!gl_context) {
+    out::critical("failed to create GL context: {}", SDL_GetError());
+    exit(1);
+  }
+  SDL_GL_MakeCurrent(window, gl_context);
+  SDL_GetWindowSize(window, &window_size.x, &window_size.y);
+  int o = gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
   if (o == 0) {
     out::critical("failed to load glad");
     exit(1);
   }
-  // FIXME: glfwSwapBuffers hangs with  glfwSwapInterval(1), resulting in app not working
-  // in the background possibly fixed by:
-  // https://github.com/glfw/glfw/commit/413ba1dceb77f0d4552d565e7acc69a4379c6df8
   bool vsync = false;
-  glfwSwapInterval(vsync ? 1 : 0);
+  SDL_GL_SetSwapInterval(vsync ? 1 : 0);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -187,23 +176,32 @@ int main() {
   while (!stop_flag) {
     using namespace std::chrono;
     auto t1 = high_resolution_clock::now();
-    glfwPollEvents();
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      if (event.type == SDL_EVENT_QUIT) {
+        stop_flag = true;
+      } else if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
+        window_size.x = event.window.data1;
+        window_size.y = event.window.data2;
+        glViewport(0, 0, window_size.x, window_size.y);
+      }
+      Input::process_event(event);
+    }
     Input::update();
     player::update();
     interface::update(window_size);
     Input::clear();
     check_opengl_errors();
     set_window_title(window);
-    glfwSwapBuffers(window);
+    SDL_GL_SwapWindow(window);
 
     auto t2 = high_resolution_clock::now();
     long delta_us = duration_cast<microseconds>(t2 - t1).count();
     long sleep_us = std::max(1000.0, 16666.0 - delta_us);
     if (!vsync) { std::this_thread::sleep_for(microseconds(sleep_us)); }
-    if (glfwWindowShouldClose(window)) { stop_flag = true; }
   }
 
-  i32 maximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
+  bool maximized = (SDL_GetWindowFlags(window) & SDL_WINDOW_MAXIMIZED) != 0;
   config::json()["window_maximized"] = maximized;
   if (!maximized) {
     config::json()["window_width"] = window_size.x;
@@ -223,4 +221,7 @@ int main() {
   interface::deinit();
   player::deinit();
   mpris::deinit();
+  SDL_GL_DestroyContext(gl_context);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
 }
