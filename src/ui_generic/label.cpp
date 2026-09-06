@@ -149,7 +149,7 @@ void Label::setup_buffers() {
 
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex_label), vertices.data(), GL_DYNAMIC_DRAW);
 
-  glVertexAttribPointer(0, 1, GL_INT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, type));
+  glVertexAttribIPointer(0, 1, GL_INT, sizeof(vertex_label), (void*)offsetof(vertex_label, type));
   glEnableVertexAttribArray(0);
 
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, pos));
