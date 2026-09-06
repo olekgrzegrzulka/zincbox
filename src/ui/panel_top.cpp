@@ -7,15 +7,17 @@
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
 static constexpr size_t QUEUE_TAB_ID = 10000;
 
-PanelTop::PanelTop(UI& ui_) : Sprite(ui_, "panel_top") {
+PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
+  set_color(theme::config().top_bar.color);
   static const float scale = settings::get().scale * 0.01f;
 
-  set_height(theme::get_prop("top_bar_height").as_i32(26) * scale);
+  set_height(theme::config().top_bar.height * scale);
 
   tab_bar = &add_child<TabBar>();
   tab_bar->set_height(height);
@@ -84,7 +86,7 @@ void PanelTop::update() {
     ui.mark_dirty_recursive(this);
   }
 
-  Sprite::update();
+  ColorRect::update();
 }
 
 void PanelTop::recreate(std::optional<size_t> selected_collection_id) {

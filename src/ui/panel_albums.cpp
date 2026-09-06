@@ -42,8 +42,8 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
                                    bool is_add_button_)
   : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
   m_is_add_button = is_add_button_;
-  label_title_text_color = theme::get_prop("playlist_title_text_color").as_rgba({255, 255, 255, 255});
-  label_author_text_color = theme::get_prop("playlist_author_text_color").as_rgba({255, 255, 255, 255});
+  label_title_text_color = theme::config().panel_playlists.title_color;
+  label_author_text_color = theme::config().panel_playlists.author_color;
   set_clip_children(true);
   set_size(total_size.x, total_size.y);
   std::string sprite_cover_id;
@@ -73,7 +73,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   label_title->set_label_anchor(Anchor::TOP_LEFT);
   label_title->set_anchor(Anchor::TOP_LEFT);
   label_title->set_parent_anchor(Anchor::TOP_LEFT);
-  label_title->set_text_color(theme::get_prop("playlist_title_text_color").as_rgba());
+  label_title->set_text_color(theme::config().panel_playlists.title_color);
   label_title->set_y(cover_size.y + 8);
 
   label_author->set_resize_to_text_extents(false);
@@ -81,7 +81,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   label_author->set_label_anchor(Anchor::TOP_LEFT);
   label_author->set_anchor(Anchor::TOP_LEFT);
   label_author->set_parent_anchor(Anchor::TOP_LEFT);
-  label_author->set_text_color(theme::get_prop("playlist_author_text_color").as_rgba());
+  label_author->set_text_color(theme::config().panel_playlists.author_color);
   label_author->set_y(cover_size.y + 8 + 16);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
@@ -126,7 +126,8 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
   Button::event(ev);
 }
 
-PanelAlbums::PanelAlbums(UI& ui_) : Sprite(ui_, "panel_albums") {
+PanelAlbums::PanelAlbums(UI& ui_) : ColorRect(ui_) {
+  set_color(theme::config().panel_playlists.color);
   set_clip_children(true);
 
   scrollbar = &add_child<ZincboxScrollbar>();
@@ -333,12 +334,12 @@ void PanelAlbums::input() {
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
-  Sprite::input();
+  ColorRect::input();
 }
 
-void PanelAlbums::update() { Sprite::update(); }
+void PanelAlbums::update() { ColorRect::update(); }
 
-void PanelAlbums::draw() { Sprite::draw(); }
+void PanelAlbums::draw() { ColorRect::draw(); }
 
 void PanelAlbums::event(Input::InputEventMouseScroll& e) {
   if (props.is_scrollable && is_mouse_hovering()) {

@@ -6,6 +6,7 @@
 #include "common/input.hpp"
 #include "common/signal.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/text_input.hpp"
@@ -47,7 +48,7 @@ class WidgetAlbumCover : public Button {
     rgba label_author_text_color{};
 };
 
-class PanelAlbums : public Sprite {
+class PanelAlbums : public ColorRect {
   public:
     enum class SortBy : u8 { NAME_AZ, NAME_ZA, AUTHOR_AZ, AUTHOR_ZA };
 
@@ -59,7 +60,7 @@ class PanelAlbums : public Sprite {
     void update() override;
     void recreate();
     void scroll_to_playlist(size_t, bool immediate = false);
-    using Sprite::event;
+    using ColorRect::event;
     void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px);

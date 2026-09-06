@@ -26,6 +26,29 @@ struct rgba {
     u8 b{};
     u8 a{};
 
+    rgba() = default;
+
+    rgba(u8 r_, u8 g_, u8 b_, u8 a_) {
+      r = r_;
+      g = g_;
+      b = b_;
+      a = a_;
+    }
+
+    rgba(u8 r_, u8 g_, u8 b_) {
+      r = r_;
+      g = g_;
+      b = b_;
+      a = 255;
+    }
+
+    rgba(u32 hex) {
+      r = (hex >> 24) & 0xff;
+      g = (hex >> 16) & 0xff;
+      b = (hex >> 8) & 0xff;
+      a = (hex >> 0) & 0xff;
+    }
+
     auto operator<=>(const rgba& rhs) const = default;
 
     rgba operator*(double n) const {

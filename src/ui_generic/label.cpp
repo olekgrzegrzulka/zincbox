@@ -12,19 +12,19 @@
 #include "ui_generic/widget.hpp"
 
 Label::Label(UI& ui_) : Widget::Widget(ui_) {
-  set_text_color(theme::get_prop("text_color").as_rgba());
+  set_text_color(theme::config().text_color);
   clip = true;
 }
 
 Label::Label(UI& ui_, std::string_view text_) : Widget::Widget(ui_) {
-  set_text_color(theme::get_prop("text_color").as_rgba());
+  set_text_color(theme::config().text_color);
   set_text(text_);
   update_mesh();
   clip = true;
 }
 
 Label::Label(UI& ui_, std::u32string_view text_) : Widget::Widget(ui_) {
-  set_text_color(theme::get_prop("text_color").as_rgba());
+  set_text_color(theme::config().text_color);
   set_text(text_);
   update_mesh();
   clip = true;

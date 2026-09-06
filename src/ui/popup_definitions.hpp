@@ -11,9 +11,11 @@
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
+#include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/text_input.hpp"
@@ -239,7 +241,9 @@ class PopupSetSources : public Popup {
         for (i32 num = 1; const auto& path : collection.paths()) {
           std::u32string str = utf8_to_utf32(std::to_string(num)) + U". " + utf8_to_utf32(path);
 
-          auto& container = scrollable_content->add_child<Sprite>(num % 2 == 0 ? "track_bg1" : "track_bg2");
+          auto color_odd = theme::config().panel_tracklist.track_color_odd;
+          auto color_even = theme::config().panel_tracklist.track_color_even;
+          auto& container = scrollable_content->add_child<ColorRect>(num % 2 == 0 ? color_odd : color_even);
           container.set_layout("ltr fill expand m:8 s:8");
           container.set_height(40);
 
@@ -262,7 +266,7 @@ class PopupSetSources : public Popup {
         }
       } else {
         auto& label = add_child<Label>(tr::get("collection.sources.none"));
-        label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+        label.set_text_color(theme::config().text_color_muted);
         label.set_ignore_parents_layout(true);
         label.set_anchor(Anchor::CENTER);
         label.set_parent_anchor(Anchor::CENTER);
@@ -450,7 +454,7 @@ class PopupAbout : public Popup {
       title.set_resize_to_text_extents(false);
       auto& content =
         add_child<Label>(tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
-      content.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      content.set_text_color(theme::config().text_color_muted);
 
       auto& buttons = add_child<Widget>();
       buttons.set_layout("ltr fill fit expand m:0 s:8");
@@ -470,7 +474,7 @@ class PopupWelcome : public Popup {
       title.set_height(32 * settings::get().scale * 0.01f);
       title.set_resize_to_text_extents(false);
       auto& content = add_child<Label>(tr::format("popup.welcome.content"));
-      content.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      content.set_text_color(theme::config().text_color_muted);
       content.set_width(content.get_text_extents().x);
 
       set_width(content.get_width() + 24);

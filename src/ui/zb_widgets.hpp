@@ -1,5 +1,6 @@
 #pragma once
 #include "core/settings.hpp"
+#include "theme_config.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/slider.hpp"
@@ -8,12 +9,23 @@
 class ZincboxButton final : public Button {
   public:
     ZincboxButton(UI& ui_, const std::string& name) : Button(ui_) {
+      this->name = name;
+      init();
+    }
+
+    ZincboxButton(UI& ui_, const std::string& name, const ButtonConfig& config) : Button(ui_) {
+      this->name = name;
+      init();
+      set_nine_slice_margin(config.nine_slice_margin);
+    }
+
+  private:
+    void init() {
       set_texture_disabled(name + "_disabled");
       set_texture_hovered(name + "_hovered");
       set_texture_idle(name + "_idle");
       set_texture_pressed(name + "_pressed");
       set_texture(name + "_idle", true);
-      set_nine_slice_margin(theme::get_button_nine_slice_margin(name));
     }
 };
 

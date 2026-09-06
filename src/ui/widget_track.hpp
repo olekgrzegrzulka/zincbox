@@ -37,7 +37,7 @@ class WidgetTrack final : public Button {
     void setup() {
       static const float scale = settings::get().scale * 0.01f;
       static const float font_size = settings::get().font_size;
-      static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22) * scale;
+      static const i32 track_height = theme::config().panel_tracklist.track_height * scale;
       const auto track = db::track_by_id(m_track_id);
       const std::string txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";
 
@@ -56,7 +56,7 @@ class WidgetTrack final : public Button {
       if (!label_track_number) {
         label_track_number = &add_child<Label>();
         label_track_number->set_label_anchor(Anchor::LEFT);
-        label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
+        label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
       }
       label_track_number->set_text(std::to_string(m_track_number));
       label_track_number->update();
@@ -66,7 +66,7 @@ class WidgetTrack final : public Button {
       if (!label_track_artist) {
         label_track_artist = &add_child<Label>();
         label_track_artist->set_label_anchor(Anchor::LEFT);
-        label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
+        label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
       }
       if (track.has_value()) {
         if (track->get().artist.empty() || track->get().title.empty()) {
@@ -85,7 +85,7 @@ class WidgetTrack final : public Button {
       if (!label_track_title) {
         label_track_title = &add_child<Label>();
         label_track_title->set_label_anchor(Anchor::LEFT);
-        label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
+        label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
       }
       if (track.has_value()) {
         if (track->get().artist.empty() || track->get().title.empty()) {
@@ -108,7 +108,7 @@ class WidgetTrack final : public Button {
 
       if (!label_track_length) {
         label_track_length = &add_child<Label>();
-        label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
+        label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
       }
 
       if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
@@ -161,10 +161,10 @@ class WidgetTrack final : public Button {
       set_texture_hovered(txt);
       set_texture_disabled(txt);
       set_texture_pressed(txt);
-      label_track_number->set_text_color(theme::get_prop("tracklist_track_number_text_color").as_rgba());
-      label_track_artist->set_text_color(theme::get_prop("tracklist_artist_text_color").as_rgba());
-      label_track_title->set_text_color(theme::get_prop("tracklist_title_text_color").as_rgba());
-      label_track_length->set_text_color(theme::get_prop("tracklist_length_text_color").as_rgba());
+      label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
+      label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
+      label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
+      label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
 
       auto track = db::track_by_id(m_track_id);
       if (track.has_value()) {

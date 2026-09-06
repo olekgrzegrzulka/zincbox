@@ -2,17 +2,18 @@
 #include "common/input.hpp"
 #include "common/signal.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/slider.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
 #include "ui_generic/widget.hpp"
 
-class PanelControls : public Sprite {
+class PanelControls : public ColorRect {
   public:
     PanelControls(UI& ui_);
     ~PanelControls() override;
-    using Sprite::event;
+    using ColorRect::event;
     void event(Input::InputEventMouseButton&) override;
     void event(Input::InputEventKey&) override;
     void update() override;

@@ -4,18 +4,16 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <unordered_set>
-#include <variant>
 #include <vector>
-#include "common/color.hpp"
+#include <glaze/glaze.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/types.hpp"
 #include "core/io.hpp"
 #include "core/settings.hpp"
-#include "lib/inifile.h"
 #include "lib/miniz/miniz.h"
 #include "theme.hpp"
+#include "theme_config.hpp"
 #include "tr.hpp"
 #include "ui_generic/texture_atlas.hpp"
 #include "ui_generic/ui.hpp"
@@ -31,26 +29,10 @@ struct StringHash {
     size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
 };
 
-static std::unordered_map<std::string, theme::theme_prop, StringHash, std::equal_to<>> properties;
-static std::unordered_set<std::string, StringHash, std::equal_to<>> props_not_found;
 static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> resources;
 static std::string resources_ttf_path;
 static std::set<std::string> languages;
-
-theme::theme_prop theme::get_prop(std::string_view prop) {
-  if (auto it = properties.find(prop); it != properties.end()) { return it->second; }
-  if (!props_not_found.contains(prop)) {
-    std::string prop_str(prop);
-    props_not_found.emplace(prop_str);
-    out::debug_warn("theme has no property {}", prop_str);
-  }
-  return theme_prop{std::monostate()};
-}
-
-i32 theme::get_button_nine_slice_margin(std::string_view name) {
-  return get_prop(std::string(name) + "_button_nine_slice_margin")
-    .as_i32(get_prop("button_nine_slice_margin").as_i32());
-}
+static ThemeConfig config_;
 
 static constexpr std::vector<uint8_t> NO_RESOURCE = {};
 
@@ -62,6 +44,8 @@ const std::vector<uint8_t>& theme::get_raw_resource(const std::string& path) {
     return it->second;
   }
 }
+
+const ThemeConfig& theme::config() { return config_; }
 
 void load_resources() {
   if (!resources.empty()) { return; }
@@ -100,7 +84,7 @@ std::set<std::string> theme::get_themes() {
   std::set<std::string> ret;
 
   for (const auto& entry : fs::directory_iterator(io::get_themes_path())) {
-    if (fs::is_regular_file(entry.path() / "theme.cfg")) {
+    if (fs::is_regular_file(entry.path() / "theme.json")) {
       const std::string name = entry.path().filename().string();
       ret.insert(name);
     }
@@ -152,7 +136,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   if (load_theme_from_resources) { load_resources(); }
 
   fs::path theme_path(io::get_themes_path() / theme_name);
-  ini::inifile ini;
 
   if (!load_theme_from_resources) {
     // Check if the theme exists in the themes directory
@@ -162,11 +145,10 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       return;
     }
 
-    // Try to load theme.cfg, else fallback to default theme
-    bool success = ini.load(io::get_themes_path() / theme_name / "theme.cfg");
-    bool invalid_theme = !success || !ini.contains("theme");
-    if (invalid_theme) {
-      out::warn("failed to load theme {} invalid or missing theme.cfg", theme_name);
+    std::string theme_json_path = io::get_themes_path() / theme_name / "theme.json";
+    auto error = glz::read_file_json(config_, theme_json_path, std::string{});
+    if (error) {
+      out::warn("failed to load theme {} invalid or missing theme.json", theme_name);
       load_theme("", ui, language);
       return;
     }
@@ -188,15 +170,14 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     }
   } else {
     load_resources();
-    if (!resources.contains("theme.cfg")) {
-      out::critical("theme.cfg not found");
+    if (!resources.contains("theme.json")) {
+      out::critical("theme.json not found");
       exit(1);
     }
-    std::string str_theme_cfg(reinterpret_cast<const char*>(resources["theme.cfg"].data()),
-                              resources["theme.cfg"].size());
-    ini.from_string(str_theme_cfg);
-    if (!ini.contains("theme")) {
-      out::critical("failed to parse theme.cfg");
+
+    auto error = glz::read_json(config_, reinterpret_cast<const char*>(resources["theme.json"].data()));
+    if (error) {
+      out::critical("failed to parse theme.json");
       exit(1);
     }
 
@@ -206,34 +187,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     }
     ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(),
                                settings::get().font_size);
-  }
-
-  // Parse theme.cfg
-  properties.clear();
-  for (const auto& [key, str_value2] : ini["theme"]) {
-    theme::theme_prop prop;
-    std::string str_value = str_value2.as<std::string>();
-    const char* first = str_value.data();
-    const char* last = first + str_value.size();
-
-    if (auto color = color_utils::parse_color(str_value); color.has_value()) {
-      prop.value = color.value();
-    } else {
-      i32 i;
-      auto [ptr_i, ec_i] = std::from_chars(first, last, i);
-      if (ec_i == std::errc{} && ptr_i == last) {
-        prop.value = i;
-      } else {
-        double d;
-        auto [ptr_d, ec_d] = std::from_chars(first, last, d);
-        if (ec_d == std::errc{} && ptr_d == last) {
-          prop.value = d;
-        } else {
-          prop.value = str_value;
-        }
-      }
-    }
-    properties[key] = std::move(prop);
   }
 
   load_translations(theme_name, language);
@@ -365,15 +318,10 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_button("inline_sort");
   add_custom_button("inline_more");
   atlas_add_texture("panel");
-  add_custom_panel("panel_albums");
   atlas_add_texture("panel_dark");
   add_custom_panel("panel_albums_searchbar");
-  add_custom_panel("panel_controls");
   add_custom_panel("panel_playlist_header");
   add_custom_panel("panel_popup");
-  add_custom_panel("panel_tabbar");
-  add_custom_panel("panel_top");
-  add_custom_panel("panel_tracks");
   add_custom_slider("seekbar");
   atlas_add_texture("track_bg1");
   atlas_add_texture("track_bg2");

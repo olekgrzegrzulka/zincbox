@@ -9,6 +9,7 @@
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/scrollable_view.hpp"
+#include "ui/theme.hpp"
 #include "ui_generic/checkbox.hpp"
 #include "ui_generic/combo_box.hpp"
 #include "ui_generic/spinner.hpp"
@@ -84,7 +85,7 @@ class PopupSettings : public Popup {
 
       page_buttons[0]->pressed();
 
-      rgba text_color_muted = theme::get_prop("text_color_muted").as_rgba();
+      rgba text_color_muted = theme::config().text_color_muted;
 
       auto create_widget_combobox = [this, &text_color_muted](Widget* parent,
                                                               std::pair<std::string, std::string> json_key,

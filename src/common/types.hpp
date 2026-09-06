@@ -16,7 +16,7 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-enum Dir {
+enum Dir : u8 {
   NONE = 0,
   LEFT = 1,
   RIGHT = 2,
