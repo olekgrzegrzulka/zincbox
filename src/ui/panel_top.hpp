@@ -2,9 +2,9 @@
 #include <functional>
 #include <optional>
 #include "tab_bar.hpp"
-#include "ui_generic/sprite.hpp"
+#include "ui_generic/color_rect.hpp"
 
-class PanelTop : public Sprite {
+class PanelTop : public ColorRect {
   public:
     PanelTop(UI& ui_);
     void update() override;

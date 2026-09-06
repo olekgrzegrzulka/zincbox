@@ -4,6 +4,7 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "theme.hpp"
+#include "theme_config.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
@@ -18,31 +19,34 @@ class WidgetPlaylistHeader : public Widget {
 
       set_layout("ttb m:0 s:0 fit expand");
 
+      i32 header_height = theme::config().panel_tracklist.header_height;
+      i32 header_spacing = theme::config().panel_tracklist.header_spacing;
+
       auto& header_container = add_child<Widget>();
-      header_container.set_height(theme::get_prop("tracklist_playlist_header_height").as_i32(48) * scale);
-      header_container.set_layout("s:0 fit fill");
-      header_container.get_layout().set_margin(4 * scale);
+      header_container.set_height((header_height + 2 * header_spacing) * scale);
+      header_container.set_layout("s:0 fit fill expand");
+      header_container.get_layout().margin.x = 4 * scale;
+      header_container.get_layout().margin.y = header_spacing;
 
       auto& header = header_container.add_child<Sprite>("panel_playlist_header");
-      header.set_anchor(Anchor::CENTER);
-      header.set_parent_anchor(Anchor::CENTER);
+      // header.set_anchor(Anchor::CENTER);
+      // header.set_parent_anchor(Anchor::CENTER);
       header.set_layout("ltr fit fill");
       header.get_layout().spacing = 8 * scale;
       header.get_layout().margin.x = 8 * scale;
-      header.set_height((theme::get_prop("tracklist_playlist_header_height").as_i32(48) - 20) * scale);
       header.set_nine_slice_margin(8.0f);
       header.set_y(6 * scale);
 
       auto& label_author = header.add_child<Label>();
       label_author.set_text(playlist.has_value() ? playlist->get().author : U"?");
-      label_author.set_text_color(theme::get_prop("tracklist_header_author_color").as_rgba());
+      label_author.set_text_color(theme::config().panel_tracklist.header_author_color);
       label_author.set_label_anchor(Anchor::LEFT);
       if (playlist.has_value() && playlist->get().author.empty()) { label_author.set_is_drawn(false); }
       label_author.update();
       label_author.set_max_width(label_author.get_text_extents().x);
       auto& label_name = header.add_child<Label>();
       label_name.set_text(playlist.has_value() ? playlist->get().name : U"?");
-      label_name.set_text_color(theme::get_prop("tracklist_header_name_color").as_rgba());
+      label_name.set_text_color(theme::config().panel_tracklist.header_name_color);
       label_name.set_label_anchor(Anchor::LEFT);
 
       std::pair<Button**, std::string> button_configs[] = {{&button_more, "inline_more"},

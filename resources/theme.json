@@ -1,0 +1,100 @@
+{
+  "text_color": "hsv(312, 0.20, 0.95)",
+  "text_color_muted": "hsv(312, 0.24, 0.7)",
+  "text_color_disabled": "hsv(312, 0.10, 0.60)",
+
+  "top_bar": {
+    "color": "#1e0e1c",
+    "height": 26
+  },
+
+  "panel_controls": {
+    "color": "#1e0e1c",
+    "height": 44,
+    "padding": 4,
+
+    "button_previous": {
+      "visible": true,
+      "width": 36,
+      "nine_slice_margin": 0
+    },
+
+    "button_play": {
+      "visible": true,
+      "width": 36,
+      "nine_slice_margin": 0
+    },
+
+    "button_stop": {
+      "visible": true,
+      "width": 36,
+      "nine_slice_margin": 0
+    },
+
+    "button_next": {
+      "visible": true,
+      "width": 36,
+      "nine_slice_margin": 0
+    },
+
+    "seekbar": {
+      "visible": true,
+      "nine_slice_margin": 6,
+      "track_height": 12,
+      "thumb_width": 12,
+      "thumb_height": 12
+    },
+
+    "timestamp": {
+      "visible": true
+    },
+
+    "volume_bar": {
+      "visible": true,
+      "width": 70,
+      "nine_slice_margin": 6,
+      "track_height": 12,
+      "thumb_width": 12,
+      "thumb_height": 12
+    },
+
+    "button_repeat": {
+      "visible": true,
+      "width": 36,
+      "nine_slice_margin": 0
+    },
+
+    "button_shuffle": {
+      "visible": true,
+      "width": 36,
+      "nine_slice_margin": 0
+    }
+  },
+
+  "panel_tracklist": {
+    "color": "#0f070c",
+    "track_height": 22,
+    "header_height": 28,
+    "header_spacing": 10,
+    "header_author_color": "hsv(312, 0.30, 0.66)",
+    "header_name_color": "hsv(312, 0.30, 0.86)",
+    "track_color_odd": "#0c050b",
+    "track_color_even": "#150913",
+    "track_artist_color": "hsv(312, 0.20, 0.50)",
+    "track_number_color": "hsv(312, 0.20, 0.65)",
+    "title_color": "hsv(312, 0.20, 0.80)",
+    "length_color": "hsv(312, 0.20, 0.50)"
+  },
+
+  "panel_playlists": {
+    "color": "#0f070c",
+    "title_color": "hsv(312, 0.20, 0.86)",
+    "author_color": "hsv(312, 0.20, 0.66)"
+  },
+
+  "notification": {
+    "nine_slice_margin": 6,
+    "height": 10,
+    "spacing": 10
+  }
+}

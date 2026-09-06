@@ -9,6 +9,7 @@
 #include "ui/widget_track.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/checkbox.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/text_input.hpp"
@@ -35,7 +36,7 @@ class PopupSearch : public Popup {
       search_bar->set_pos(0, 8);
       search_bar->set_focused(true);
 
-      search_results = &add_child<Sprite>("panel_albums");
+      search_results = &add_child<ColorRect>(theme::config().panel_playlists.color);
       search_results->set_layout("ltr fill expand");
       search_results->set_clip_children(true);
       search_results->set_anchor(Anchor::TOP);
@@ -52,7 +53,7 @@ class PopupSearch : public Popup {
       scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
       label_playlists = &scrollable_content->add_child<Label>(tr::get("search.results_albums_playlists"));
-      label_playlists->set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      label_playlists->set_text_color(theme::config().text_color_muted);
       label_playlists->set_resize_to_text_extents(false);
       label_playlists->set_x(8);
       label_playlists->set_height(32);
@@ -67,7 +68,7 @@ class PopupSearch : public Popup {
       playlists_container->props.cover_min_vertical_spacing = 44;
 
       label_no_results = &scrollable_content->add_child<Label>(tr::get("search.no_results"));
-      label_no_results->set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      label_no_results->set_text_color(theme::config().text_color_muted);
       label_no_results->set_resize_to_text_extents(false);
       label_no_results->set_label_anchor(Anchor::CENTER);
       label_no_results->set_parent_anchor(Anchor::CENTER);
@@ -75,7 +76,7 @@ class PopupSearch : public Popup {
       label_no_results->set_is_drawn(false);
 
       label_tracks = &scrollable_content->add_child<Label>(tr::get("search.results_tracks"));
-      label_tracks->set_text_color(theme::get_prop("text_color_muted").as_rgba());
+      label_tracks->set_text_color(theme::config().text_color_muted);
       label_tracks->set_resize_to_text_extents(false);
       label_tracks->set_x(8);
       label_tracks->set_height(32);
@@ -145,7 +146,7 @@ class PopupSearch : public Popup {
       }
 
       i32 i = 1;
-      i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
+      i32 track_height = theme::config().panel_tracklist.track_height;
       for (db::track_info& ti : found_tracks) {
         auto* w = &tracks_container->add_child<WidgetTrack>();
         w->track_id(ti.track_id).track_number(i);
@@ -214,7 +215,7 @@ class PopupSearch : public Popup {
         label_playlists->set_is_drawn(false);
       }
 
-      static i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22);
+      static i32 track_height = theme::config().panel_tracklist.track_height;
       i32 track_total_height = found_tracks.size() * track_height;
       i32 content_size = playlists_container->get_height() + track_total_height;
       if (label_playlists->get_is_drawn()) { content_size += label_playlists->get_height(); }

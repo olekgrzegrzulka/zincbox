@@ -34,7 +34,7 @@ void Tab::set_texture_active() {
   set_texture_hovered("tab_active_hovered");
   set_texture_idle("tab_active_idle");
   set_texture_pressed("tab_active_pressed");
-  label.set_text_color(theme::get_prop("text_color").as_rgba());
+  label.set_text_color(theme::config().text_color);
   if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
   } else if (mouse_hovering) {
@@ -49,7 +49,7 @@ void Tab::set_texture_inactive() {
   set_texture_hovered("tab_inactive_hovered");
   set_texture_idle("tab_inactive_idle");
   set_texture_pressed("tab_inactive_pressed");
-  label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+  label.set_text_color(theme::config().text_color_muted);
   if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
   } else if (mouse_hovering) {
@@ -85,8 +85,8 @@ void Tab::update() {
   set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
   Button::update();
 
-  static const rgba text_color = theme::get_prop("text_color").as_rgba();
-  static const rgba text_color_muted = theme::get_prop("text_color_muted").as_rgba();
+  const auto& text_color = theme::config().text_color;
+  const auto& text_color_muted = theme::config().text_color_muted;
   get_label().set_text_color(active ? text_color : text_color_muted);
 }
 
@@ -101,12 +101,12 @@ void Tab::event(Input::InputEventMouseButton& ev) {
   }
 }
 
-TabBar::TabBar(UI& ui_) : Sprite(ui_, "panel_tabbar") {
+TabBar::TabBar(UI& ui_) : Widget(ui_) {
   set_layout("ltr fit");
   tab_container = &add_child<Widget>();
   auto& pad = add_child<Widget>();
   pad.set_width(6);
-  button_add = &add_child<ZincboxButton>("add_tab");
+  button_add = &add_child<ZincboxButton>("add_tab", theme::config().top_bar.button_add_tab);
   button_add->add_image("add_tab_icon");
   button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
   button_add->set_anchor(Anchor::BOTTOM_LEFT);
@@ -257,7 +257,7 @@ void TabBar::update() {
   }
 
   tab_container->set_width(tab_x);
-  Sprite::update();
+  Widget::update();
 }
 
 void TabBar::update_tab_textures(i32 id) {

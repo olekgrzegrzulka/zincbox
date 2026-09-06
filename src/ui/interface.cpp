@@ -175,7 +175,7 @@ void interface::init() {
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 
   notifications = &ui->add_widget<InterfaceNotifications>();
-  bg = &ui->add_widget<Sprite>("panel_albums");
+  bg = &ui->add_widget<Sprite>("panel_dark");
   panel_top = &ui->add_widget<PanelTop>();
   panel_tracks = &ui->add_widget<PanelTracks>();
   panel_queue = &ui->add_widget<PanelQueue>();

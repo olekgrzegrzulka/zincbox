@@ -9,6 +9,8 @@ ColorRect::ColorRect(UI& ui_) : Widget(ui_) {}
 
 ColorRect::ColorRect(UI& ui_, i32 width_, i32 height_) : Widget(ui_, width_, height_) {}
 
+ColorRect::ColorRect(UI& ui_, rgba color_) : Widget(ui_) { set_color(color_); }
+
 ColorRect::~ColorRect() {
   if (vbo != 0) { glDeleteBuffers(1, &vbo); }
   if (vao != 0) { glDeleteVertexArrays(1, &vao); }

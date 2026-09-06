@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "core/settings.hpp"
 #include "ui/popup_controller.hpp"
+#include "ui/theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
@@ -57,7 +58,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
     auto& label = popover.add_child<Label>(d.title);
     label.update();
     popover.set_width(std::max<i32>(popover.get_width(), label.get_width() + 30 * scale));
-    label.set_text_color(theme::get_prop("text_color_muted").as_rgba());
+    label.set_text_color(theme::config().text_color_muted);
     label.set_label_anchor(Anchor::TOP);
     label.set_resize_to_text_extents(false);
     label.set_min_height(20 * scale);

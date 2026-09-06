@@ -38,7 +38,7 @@ class Tab : public Button {
     bool just_added = true;
 };
 
-class TabBar : public Sprite {
+class TabBar : public Widget {
   public:
     TabBar(UI& ui_);
 

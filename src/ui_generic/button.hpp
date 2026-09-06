@@ -50,7 +50,7 @@ class Button : public Sprite {
       set_nine_slice_margin(3.0f);
       set_nine_slice_scale(1.0f);
 
-      label.set_text_color(theme::get_prop("text_color").as_rgba());
+      label.set_text_color(theme::config().text_color);
       label.set_parent_anchor(Anchor::CENTER_CENTER);
       label.set_anchor(Anchor::CENTER_CENTER);
 
@@ -188,16 +188,16 @@ class Button : public Sprite {
     void on_state_changed(ButtonState /* prev_state */) {
       if (state == ButtonState::HOVERED) {
         set_sprite_hovered();
-        get_label().set_text_color(theme::get_prop("text_color").as_rgba());
+        get_label().set_text_color(theme::config().text_color);
       } else if (state == ButtonState::IDLE) {
         set_sprite_idle();
-        get_label().set_text_color(theme::get_prop("text_color").as_rgba());
+        get_label().set_text_color(theme::config().text_color);
       } else if (state == ButtonState::PRESSED) {
         set_sprite_pressed();
-        get_label().set_text_color(theme::get_prop("text_color").as_rgba());
+        get_label().set_text_color(theme::config().text_color);
       } else if (state == ButtonState::DISABLED) {
         set_sprite_disabled();
-        get_label().set_text_color(theme::get_prop("text_color_disabled").as_rgba());
+        get_label().set_text_color(theme::config().text_color_disabled);
       }
     }
 

@@ -9,13 +9,15 @@
 #include "theme.hpp"
 #include "tr.hpp"
 #include "ui/widget_track.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/scrollbar.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 #include "widget_playlist_header.hpp"
 
-PanelTracks::PanelTracks(UI& ui_) : Sprite(ui_, "panel_tracks") {
+PanelTracks::PanelTracks(UI& ui_) : ColorRect(ui_) {
+  set_color(theme::config().panel_tracklist.color);
   set_clip_children(true);
 
   scrollbar = &add_child<ZincboxScrollbar>();
@@ -141,7 +143,7 @@ void PanelTracks::create_item_widget_if_null(Item& item) {
   }
 }
 
-void PanelTracks::draw() { Sprite::draw(); }
+void PanelTracks::draw() { ColorRect::draw(); }
 
 void PanelTracks::scroll_to_playlist(size_t target_playlist_id, bool immediate) {
   i32 offset = 0;
@@ -278,7 +280,7 @@ void PanelTracks::update() {
 
   scrollbar->set_page_size(height);
   scrollbar->set_height(height);
-  Sprite::update();
+  ColorRect::update();
 }
 
 void PanelTracks::event(Input::InputEventMouseScroll& e) {

@@ -7,8 +7,10 @@
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
+#include "ui/theme.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
 #include "ui_generic/widget.hpp"
@@ -68,9 +70,9 @@ class PanelTracksSelection {
     std::vector<db::track_info> selection_vector;
 };
 
-class PanelTracks final : public Sprite {
+class PanelTracks final : public ColorRect {
   public:
-    using Sprite::event;
+    using ColorRect::event;
 
     enum class ItemType : u8 { TRACK, HEADER };
     struct Item {
@@ -104,8 +106,10 @@ class PanelTracks final : public Sprite {
 
         i32 height() const {
           static const float scale = settings::get().scale * 0.01f;
-          static const i32 track_height = theme::get_prop("tracklist_track_height").as_i32(22) * scale;
-          static const i32 header_height = theme::get_prop("tracklist_playlist_header_height").as_i32(48) * scale;
+          static const i32 track_height = theme::config().panel_tracklist.track_height * scale;
+          static const i32 header_height =
+            (theme::config().panel_tracklist.header_height + 2 * theme::config().panel_tracklist.header_spacing) *
+            scale;
 
           if (type == ItemType::TRACK) {
             return track_height;

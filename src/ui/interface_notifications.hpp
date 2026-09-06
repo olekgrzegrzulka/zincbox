@@ -18,7 +18,7 @@ constexpr auto LERP_FACTOR = 0.75f;
 class Notification : public Sprite {
   public:
     Notification(UI& ui_) : Sprite(ui_, "notification") {
-      set_nine_slice_margin(theme::get_prop("notification_nine_slice_margin").as_i32(6));
+      set_nine_slice_margin(theme::config().notification.nine_slice_margin);
       label = &add_child<Label>();
       set_parent_anchor(Anchor::CENTER);
       set_anchor(Anchor::CENTER);
@@ -61,12 +61,12 @@ class InterfaceNotifications : public Widget {
 
       i32 offset = 0;
       for (auto* w : notifications) {
-        float target_y = w->timer > HIDE_TIMER_THRESHOLD ? -(theme::get_prop("notification_height").as_i32(10) + offset)
-                                                         : OFFSCREEN_Y_POSITION;
+        float target_y =
+          w->timer > HIDE_TIMER_THRESHOLD ? -(theme::config().notification.height + offset) : OFFSCREEN_Y_POSITION;
         w->y_lerped = w->y_lerped * LERP_FACTOR + target_y * (1.0f - LERP_FACTOR);
         w->set_y(w->y_lerped);
         if (w->timer > HIDE_TIMER_THRESHOLD) {
-          offset += w->get_height() + theme::get_prop("notification_spacing").as_i32(10) * scale;
+          offset += w->get_height() + theme::config().notification.spacing * scale;
         }
 
         if (w->timer <= 0) { w->set_marked_for_deletion(true); }

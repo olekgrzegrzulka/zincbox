@@ -11,35 +11,41 @@
 #include "tr.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
+PanelControls::PanelControls(UI& ui_) : ColorRect(ui_) {
+  set_color(theme::config().panel_controls.color);
   static const float scale = settings::get().scale * 0.01f;
   set_anchor(Anchor::BOTTOM);
   set_parent_anchor(Anchor::BOTTOM);
-  set_height(theme::get_prop("controls_panel_height").as_i32(44) * scale);
+  set_height(theme::config().panel_controls.height * scale);
   set_layout("ltr expand fill");
-  get_layout().spacing = theme::get_prop("controls_panel_padding").as_i32(4) * scale;
-  get_layout().set_margin(theme::get_prop("controls_panel_padding").as_i32() * scale);
+  get_layout().spacing = theme::config().panel_controls.padding * scale;
+  get_layout().set_margin(theme::config().panel_controls.padding * scale);
 
-  button_prev = &add_child<ZincboxButton>("prev");
-  button_prev->set_max_width(theme::get_prop("prev_button_width").as_i32(36) * scale);
+  button_prev = &add_child<ZincboxButton>("prev", theme::config().panel_controls.button_previous);
+  button_prev->set_max_width(theme::config().panel_controls.button_previous.width * scale);
+  button_prev->set_is_drawn(theme::config().panel_controls.button_previous.visible);
   button_prev->add_image("prev");
 
-  button_play_pause = &add_child<ZincboxButton>("play_pause");
-  button_play_pause->set_max_width(theme::get_prop("play_pause_button_width").as_i32(36) * scale);
+  button_play_pause = &add_child<ZincboxButton>("play_pause", theme::config().panel_controls.button_play);
+  button_play_pause->set_max_width(theme::config().panel_controls.button_play.width * scale);
+  button_play_pause->set_is_drawn(theme::config().panel_controls.button_play.visible);
   button_play_pause->add_image("play");
 
-  button_stop = &add_child<ZincboxButton>("stop");
-  button_stop->set_max_width(theme::get_prop("stop_button_width").as_i32(36) * scale);
+  button_stop = &add_child<ZincboxButton>("stop", theme::config().panel_controls.button_stop);
+  button_stop->set_max_width(theme::config().panel_controls.button_stop.width * scale);
+  button_stop->set_is_drawn(theme::config().panel_controls.button_stop.visible);
   button_stop->add_image("stop");
 
-  button_next = &add_child<ZincboxButton>("next");
-  button_next->set_max_width(theme::get_prop("next_button_width").as_i32(36) * scale);
+  button_next = &add_child<ZincboxButton>("next", theme::config().panel_controls.button_next);
+  button_next->set_max_width(theme::config().panel_controls.button_next.width * scale);
+  button_next->set_is_drawn(theme::config().panel_controls.button_next.visible);
   button_next->add_image("next");
 
   auto& pad = add_child<Widget>();
@@ -51,11 +57,12 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   panel_middle.set_clip_children(true);
 
   seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
-  seekbar->set_track_nine_slice_margin(theme::get_prop("seekbar_track_nine_slice_margin").as_i32(6.0));
-  seekbar->set_thumb_nine_slice_margin(theme::get_prop("seekbar_thumb_nine_slice_margin").as_i32(6.0));
-  i32 track_height = std::clamp(theme::get_prop("seekbar_track_height").as_i32(12), 1, 50) * scale;
-  i32 thumb_width = std::clamp(theme::get_prop("seekbar_thumb_width").as_i32(12), 1, 50) * scale;
-  i32 thumb_height = std::clamp(theme::get_prop("seekbar_thumb_height").as_i32(12), 1, 50) * scale;
+  seekbar->set_is_drawn(theme::config().panel_controls.seekbar.visible);
+  seekbar->set_track_nine_slice_margin(theme::config().panel_controls.seekbar.nine_slice_margin);
+  seekbar->set_thumb_nine_slice_margin(theme::config().panel_controls.seekbar.nine_slice_margin);
+  i32 track_height = std::clamp(theme::config().panel_controls.seekbar.track_height, 1, 50) * scale;
+  i32 thumb_width = std::clamp(theme::config().panel_controls.seekbar.thumb_width, 1, 50) * scale;
+  i32 thumb_height = std::clamp(theme::config().panel_controls.seekbar.thumb_height, 1, 50) * scale;
   seekbar->set_track_thickness(track_height);
   seekbar->set_drag_area_inflation(std::max(16 - track_height, 0));
   seekbar->set_thumb_thickness(thumb_height);
@@ -91,12 +98,13 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   label_progress = &add_child<Label>("0:00 / 0:00");
 
   volume_bar = &add_child<ZincboxSlider>("volume_bar");
-  volume_bar->set_track_nine_slice_margin(theme::get_prop("volume_bar_track_nine_slice_margin").as_i32(6.0));
-  volume_bar->set_thumb_nine_slice_margin(theme::get_prop("volume_bar_thumb_nine_slice_margin").as_i32(6.0));
-  volume_bar->set_max_width(std::clamp(theme::get_prop("volume_bar_width").as_i32(70), 20, 200) * scale);
-  i32 vol_track_height = std::clamp(theme::get_prop("volume_bar_track_height").as_i32(12), 1, 50) * scale;
-  i32 vol_thumb_width = std::clamp(theme::get_prop("volume_bar_thumb_width").as_i32(12), 1, 50) * scale;
-  i32 vol_thumb_height = std::clamp(theme::get_prop("volume_bar_thumb_height").as_i32(12), 1, 50) * scale;
+  volume_bar->set_is_drawn(theme::config().panel_controls.volume_bar.visible);
+  volume_bar->set_track_nine_slice_margin(theme::config().panel_controls.volume_bar.nine_slice_margin);
+  volume_bar->set_thumb_nine_slice_margin(theme::config().panel_controls.volume_bar.nine_slice_margin);
+  volume_bar->set_max_width(std::clamp(theme::config().panel_controls.volume_bar.width, 20, 200) * scale);
+  i32 vol_track_height = std::clamp(theme::config().panel_controls.volume_bar.track_height, 1, 50) * scale;
+  i32 vol_thumb_width = std::clamp(theme::config().panel_controls.volume_bar.thumb_width, 1, 50) * scale;
+  i32 vol_thumb_height = std::clamp(theme::config().panel_controls.volume_bar.thumb_height, 1, 50) * scale;
   volume_bar->set_track_thickness(vol_track_height);
   volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
   volume_bar->set_thumb_thickness(vol_thumb_height);
@@ -108,14 +116,16 @@ PanelControls::PanelControls(UI& ui_) : Sprite(ui_, "panel_controls") {
   volume_bar->on_drag_ended([](float, float volume) -> void { player::set_volume(volume); });
   tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
 
-  button_shuffle = &add_child<ZincboxButton>("shuffle");
-  button_shuffle->set_max_width(theme::get_prop("shuffle_button_width").as_i32(36) * scale);
+  button_shuffle = &add_child<ZincboxButton>("shuffle", theme::config().panel_controls.button_shuffle);
+  button_shuffle->set_max_width(theme::config().panel_controls.button_shuffle.width * scale);
+  button_shuffle->set_is_drawn(theme::config().panel_controls.button_shuffle.visible);
   button_shuffle->add_image("shuffle");
   update_shuffle_mode();
   tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  button_repeat = &add_child<ZincboxButton>("repeat");
-  button_repeat->set_max_width(theme::get_prop("repeat_button_width").as_i32(36) * scale);
+  button_repeat = &add_child<ZincboxButton>("repeat", theme::config().panel_controls.button_repeat);
+  button_repeat->set_max_width(theme::config().panel_controls.button_repeat.width * scale);
+  button_repeat->set_is_drawn(theme::config().panel_controls.button_repeat.visible);
   button_repeat->add_image("repeat");
   update_repeat_mode();
   tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
@@ -273,7 +283,7 @@ void PanelControls::update() {
     label_progress->set_text(ss.str());
   }
 
-  label_progress->set_is_drawn(width > 650);
+  label_progress->set_is_drawn(theme::config().panel_controls.timestamp.visible && width > 650);
   label_progress->set_min_width(label_progress->get_text_extents().x);
   label_progress->set_max_width(label_progress->get_text_extents().x);
 
@@ -367,7 +377,7 @@ void PanelControls::update() {
     shuffle_mode_prev = (i32)player::get_shuffle_mode();
   }
 
-  Sprite::update();
+  ColorRect::update();
 }
 
 void PanelControls::update_repeat_mode() {
