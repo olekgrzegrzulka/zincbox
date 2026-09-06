@@ -12,7 +12,7 @@ layout(location = 3) in float scale;
 layout(location = 4) in flat uvec2 widget_size;
 layout(location = 5) in vec2 uv_start;
 layout(location = 6) in vec2 uv_end;
-layout(location = 7) in vec3 text_color;
+layout(location = 7) in vec3 color;
 
 out vec4 FragColor;
 
@@ -51,8 +51,10 @@ void main() {
     uv2 = uv2 * uv_extents + uv_start;
     vec4 color = texture(atlas, uv2);
     FragColor = color;
-  } else {
+  } else if (type == 1) {
     float a = texture(text_atlas, uv).a;
-    FragColor = vec4(text_color, a);
+    FragColor = vec4(color, a);
+  } else if (type == 2) {
+    FragColor = vec4(color, 1.0);
   }
 }

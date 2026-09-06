@@ -10,7 +10,10 @@ Sprite::Sprite(UI& ui_) : Widget(ui_) {}
 
 Sprite::Sprite(UI& ui_, i32 width_, i32 height_) : Widget(ui_, width_, height_) {}
 
-Sprite::~Sprite() {}
+Sprite::~Sprite() {
+  if (vbo != 0) { glDeleteBuffers(1, &vbo); }
+  if (vao != 0) { glDeleteVertexArrays(1, &vao); }
+}
 
 void Sprite::update() { Widget::update(); }
 
@@ -90,7 +93,7 @@ void Sprite::setup_buffers() {
 
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertex_sprite), vertices.data(), GL_DYNAMIC_DRAW);
 
-  glVertexAttribPointer(0, 1, GL_INT, GL_FALSE, sizeof(vertex_sprite), (void*)offsetof(vertex_sprite, type));
+  glVertexAttribIPointer(0, 1, GL_INT, sizeof(vertex_sprite), (void*)offsetof(vertex_sprite, type));
   glEnableVertexAttribArray(0);
 
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)offsetof(vertex_sprite, pos));
