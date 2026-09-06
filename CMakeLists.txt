@@ -63,6 +63,10 @@ include_directories(SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/toolkit
 )
 
+include_directories(SYSTEM
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/glaze/include
+)
+
 
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -100,6 +104,7 @@ add_subdirectory(lib/miniz SYSTEM)
 add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(lib/json.cpp SYSTEM)
 add_subdirectory(lib/SDL SYSTEM)
+add_subdirectory(lib/glaze SYSTEM)
 
 # add_subdirectory(lib/miniaudio SYSTEM)
 
@@ -210,4 +215,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
 target_link_libraries(${PROJECT_NAME} PRIVATE json)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3)
+target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)
