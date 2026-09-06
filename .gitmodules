@@ -34,3 +34,6 @@
 [submodule "lib/SDL"]
 	path = lib/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "lib/glaze"]
+	path = lib/glaze
+	url = https://github.com/stephenberry/glaze.git
