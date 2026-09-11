@@ -24,13 +24,13 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
   tab_bar->get_button_add()->set_width(height - 1 * 7 * scale);
   tab_bar->get_button_add()->set_height(height - 1 * 7 * scale);
 
-  button_settings = &add_child<Button>("");
-  button_settings->set_size(height - 4 * scale, height - 4 * scale);
-  button_settings->set_x(-2 * scale);
-  button_settings->set_parent_anchor(Anchor::CENTER_RIGHT);
-  button_settings->set_anchor(Anchor::CENTER_RIGHT);
-  button_settings->on_press([this]() {
-    if (this->on_settings_button_pressed) { this->on_settings_button_pressed(this->button_settings); }
+  button_hamburger = &add_child<Button>("");
+  button_hamburger->set_size(height - 4 * scale, height - 4 * scale);
+  button_hamburger->set_x(-2 * scale);
+  button_hamburger->set_parent_anchor(Anchor::CENTER_RIGHT);
+  button_hamburger->set_anchor(Anchor::CENTER_RIGHT);
+  button_hamburger->on_press([this]() {
+    if (this->on_hamburger_button_pressed) { this->on_hamburger_button_pressed(this->button_hamburger); }
   });
 
   button_right = &add_child<Button>("");
@@ -45,7 +45,7 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
   button_left->set_parent_anchor(Anchor::CENTER_LEFT);
   button_left->set_anchor(Anchor::CENTER_LEFT);
 
-  auto* btn_settings_img = &button_settings->add_child<Sprite>("settings");
+  auto* btn_settings_img = &button_hamburger->add_child<Sprite>("hamburger");
   btn_settings_img->set_anchor(Anchor::CENTER);
   btn_settings_img->set_parent_anchor(Anchor::CENTER);
 

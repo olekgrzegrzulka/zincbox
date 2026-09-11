@@ -12,7 +12,7 @@ class PanelTop : public ColorRect {
     void select(size_t selected_collection_id);
 
   public:
-    std::function<void(Widget*)> on_settings_button_pressed{};
+    std::function<void(Widget*)> on_hamburger_button_pressed{};
     std::function<void(Widget*)> on_add_collection_button_pressed{};
     std::function<void(size_t collection_id)> on_collection_opened{};
     std::function<void()> on_queue_view_opened{};
@@ -25,5 +25,5 @@ class PanelTop : public ColorRect {
     TabBar* tab_bar{};
     Button* button_left{};
     Button* button_right{};
-    Button* button_settings{};
+    Button* button_hamburger{};
 };

@@ -66,7 +66,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
     label.set_height(20 * scale);
   }
 
-  for (auto& [label, action] : d.buttons) {
+  for (auto& [label, action, icon_id] : d.buttons) {
     auto& btn = popover.add_child<Button>(label);
     buttons.emplace_back(&btn);
     btn.set_nine_slice_margin(8.0f);
@@ -78,7 +78,20 @@ void PopupController::create_popover(const popover_descriptor& d) {
     btn.set_min_height(22 * scale);
     btn.set_max_height(22 * scale);
     btn.set_height(22 * scale);
-    popover.set_width(std::max(popover.get_width(), btn.get_label().get_width() + 30));
+    i32 w = btn.get_label().get_width() + 30;
+
+    if (!icon_id.empty()) {
+      auto& icon = btn.get_label().add_child<Sprite>(icon_id);
+      btn.get_label().set_x(btn.get_label().get_x() + icon.get_width() / 2);
+      icon.set_ignore_parents_layout(true);
+      icon.set_ignore_parents_layout(true);
+      icon.set_anchor(Anchor::RIGHT);
+      icon.set_parent_anchor(Anchor::LEFT);
+      icon.set_x(-4);
+      w += icon.get_width();
+    }
+
+    popover.set_width(std::max(popover.get_width(), w));
 
     auto lambda = [this, action, popover_id, &popover]() -> void {
       if (action) { action(); }

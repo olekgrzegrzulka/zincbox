@@ -15,7 +15,7 @@ struct popover_descriptor {
     std::u32string title;
     vec2i at;
     i32 distance;
-    std::vector<std::pair<std::u32string, std::function<void()>>> buttons;
+    std::vector<std::tuple<std::u32string, std::function<void()>, std::string>> buttons;
     bool show_arrow = true;
 };
 
