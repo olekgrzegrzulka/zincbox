@@ -6,10 +6,12 @@
 #include "tr.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/color_rect.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
+#include "ui_generic/widget.hpp"
 
 static constexpr size_t QUEUE_TAB_ID = 10000;
 
@@ -24,11 +26,40 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
   tab_bar->get_button_add()->set_width(height - 1 * 7 * scale);
   tab_bar->get_button_add()->set_height(height - 1 * 7 * scale);
 
-  button_hamburger = &add_child<Button>("");
+  right_to_left = &add_child<Widget>();
+  right_to_left->set_anchor(Anchor::RIGHT);
+  right_to_left->set_parent_anchor(Anchor::RIGHT);
+  right_to_left->set_layout("rtl fit");
+  right_to_left->get_layout().margin = {scale, scale};
+  right_to_left->get_layout().spacing = scale;
+  right_to_left->set_ignore_parents_layout(true);
+
+  button_decor_close = &right_to_left->add_child<ZincboxButton>("button_decor_close");
+  button_decor_close->add_image("icon_decor_close");
+  button_decor_close->set_is_drawn(theme::config().custom_window_decoration.enabled &&
+                                   theme::config().custom_window_decoration.show_close_button);
+  button_decor_close->on_press([this]() -> void {
+    if (on_close_button_pressed) { on_close_button_pressed(); }
+  });
+
+  button_decor_maximize = &right_to_left->add_child<ZincboxButton>("button_decor_maximize");
+  button_decor_maximize->add_image("icon_decor_maximize");
+  button_decor_maximize->set_is_drawn(theme::config().custom_window_decoration.enabled &&
+                                      theme::config().custom_window_decoration.show_maximize_button);
+  button_decor_maximize->on_press([this]() -> void {
+    if (on_maximize_button_pressed) { on_maximize_button_pressed(); }
+  });
+
+  button_decor_minimize = &right_to_left->add_child<ZincboxButton>("button_decor_minimize");
+  button_decor_minimize->add_image("icon_decor_minimize");
+  button_decor_minimize->set_is_drawn(theme::config().custom_window_decoration.enabled &&
+                                      theme::config().custom_window_decoration.show_minimize_button);
+  button_decor_minimize->on_press([this]() -> void {
+    if (on_minimize_button_pressed) { on_minimize_button_pressed(); }
+  });
+
+  button_hamburger = &right_to_left->add_child<Button>("");
   button_hamburger->set_size(height - 4 * scale, height - 4 * scale);
-  button_hamburger->set_x(-2 * scale);
-  button_hamburger->set_parent_anchor(Anchor::CENTER_RIGHT);
-  button_hamburger->set_anchor(Anchor::CENTER_RIGHT);
   button_hamburger->on_press([this]() {
     if (this->on_hamburger_button_pressed) { this->on_hamburger_button_pressed(this->button_hamburger); }
   });
@@ -66,7 +97,7 @@ const Tab* PanelTop::get_queue_tab() const {
 }
 
 void PanelTop::update() {
-  set_width(ui.get_window_width());
+  right_to_left->set_height(height);
 
   button_left->set_is_drawn(tab_bar->get_x() != 0);
   button_left->set_is_updated(button_left->get_is_drawn());

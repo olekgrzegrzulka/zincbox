@@ -96,5 +96,13 @@
     "nine_slice_margin": 6,
     "height": 10,
     "spacing": 10
+  },
+
+  "custom_window_decoration": {
+    "enabled": true,
+    "show_minimize_button": true,
+    "show_maximize_button": true,
+    "show_close_button": true,
+    "border_size": 3
   }
 }

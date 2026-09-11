@@ -1,6 +1,8 @@
 #include <csignal>
 #include "core/settings.hpp"
 #include "core/tray.hpp"
+#include "lib/SDL/include/SDL3/SDL_video.h"
+#include "ui/theme.hpp"
 #define STBI_ASSERT(x) ensure(x);
 #define STBIW_ASSERT(x) ensure(x);
 #define STBIR_ASSERT(x) ensure(x);
@@ -101,6 +103,24 @@ extern "C" void handle_segfault(int) {
   std::exit(1);
 }
 
+SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point*, void*) {
+  interface::DecorationHover decoration_hover = interface::get_decoration_hover();
+
+  switch (decoration_hover) {
+  case interface::DecorationHover::TOP_LEFT: return SDL_HITTEST_RESIZE_TOPLEFT;
+  case interface::DecorationHover::TOP_RIGHT: return SDL_HITTEST_RESIZE_TOPRIGHT;
+  case interface::DecorationHover::BOTTOM_LEFT: return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+  case interface::DecorationHover::BOTTOM_RIGHT: return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+  case interface::DecorationHover::TOP: return SDL_HITTEST_RESIZE_TOP;
+  case interface::DecorationHover::LEFT: return SDL_HITTEST_RESIZE_LEFT;
+  case interface::DecorationHover::RIGHT: return SDL_HITTEST_RESIZE_RIGHT;
+  case interface::DecorationHover::BOTTOM: return SDL_HITTEST_RESIZE_BOTTOM;
+  case interface::DecorationHover::TITLEBAR: return SDL_HITTEST_DRAGGABLE;
+  case interface::DecorationHover::INSIDE: [[__fallthrough__]];
+  default: return SDL_HITTEST_NORMAL;
+  }
+}
+
 int main() {
   if (std::signal(SIGINT, handle_sigint) == SIG_ERR) {
     out::critical("failed to set up signal handler for SIGINT");
@@ -172,6 +192,26 @@ int main() {
 
   Input::init(window);
   interface::init();
+  SDL_SetWindowHitTest(window, hit_test_callback, NULL);
+  if (theme::config().custom_window_decoration.enabled) { SDL_SetWindowBordered(window, false); }
+
+  interface::on_minimize_button_pressed([window]() -> void { SDL_MinimizeWindow(window); });
+
+  interface::on_maximize_button_pressed([window]() -> void {
+    Uint64 flags = SDL_GetWindowFlags(window);
+    if (flags & SDL_WINDOW_MAXIMIZED) {
+      SDL_RestoreWindow(window);
+    } else {
+      SDL_MaximizeWindow(window);
+    }
+  });
+
+  interface::on_close_button_pressed([]() -> void {
+    SDL_Event quit_event;
+    quit_event.type = SDL_EVENT_QUIT;
+    SDL_PushEvent(&quit_event);
+  });
+
   tray::init(window);
 
   SDL_GL_MakeCurrent(window, gl_context);

@@ -37,6 +37,7 @@
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/text_input.hpp"
@@ -65,7 +66,7 @@ static std::unique_ptr<UI> ui;
 static class ShortcutInterceptor* shortcut_interceptor{};
 static PopupController* popup_controller{};
 static InterfaceNotifications* notifications{};
-static Sprite* bg{};
+static ColorRect* bg{};
 static PanelTop* panel_top{};
 static PanelTracks* panel_tracks{};
 static PanelQueue* panel_queue{};
@@ -175,7 +176,7 @@ void interface::init() {
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 
   notifications = &ui->add_widget<InterfaceNotifications>();
-  bg = &ui->add_widget<Sprite>("panel_dark");
+  bg = &ui->add_widget<ColorRect>(theme::config().top_bar.color);
   panel_top = &ui->add_widget<PanelTop>();
   panel_tracks = &ui->add_widget<PanelTracks>();
   panel_queue = &ui->add_widget<PanelQueue>();
@@ -215,11 +216,8 @@ void interface::init() {
   };
 
   panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
-
   panel_top->on_queue_view_opened = [&]() { show_queue(); };
-
   panel_top->on_queue_rmb = show_popover_queue_actions;
-
   panel_top->on_show_collection_actions_popover = show_popover_collection_actions;
 
   panel_top->on_add_collection_button_pressed = [&](Widget*) {
@@ -406,11 +404,20 @@ static void rebuild() { ui->rebuild(); }
 
 void interface::update(vec2i window_size) {
   input(window_size);
-
   rebuild();
 
-  i32 height = window_size.y - panel_top->get_height() - panel_controls->get_height();
-  panel_top->set_width(window_size.x);
+  auto& window_decor = theme::config().custom_window_decoration;
+
+  i32 border = 0;
+  if (window_decor.enabled) { border = window_decor.border_size; }
+
+  i32 content_x = border;
+  i32 content_width = window_size.x - (border * 2);
+  i32 content_y = border + panel_top->get_height();
+  i32 content_height = window_size.y - (border * 2) - panel_top->get_height() - panel_controls->get_height();
+
+  panel_top->set_pos(content_x, border);
+  panel_top->set_width(content_width);
 
   if (!popup_controller->is_popup_open() && (splitter->is_mouse_hovering() || splitter->get_is_dragged()) &&
       splitter->get_is_drawn()) {
@@ -422,36 +429,80 @@ void interface::update(vec2i window_size) {
   bg->set_size(window_size);
 
   if (panel_queue->get_is_drawn()) {
-    panel_queue->set_y(panel_top->get_height());
-    panel_queue->set_width(window_size.x);
-    panel_queue->set_height(height);
+    panel_queue->set_pos(content_x, content_y);
+    panel_queue->set_width(content_width);
+    panel_queue->set_height(content_height);
   } else {
-    i32 width_tracks = window_size.x * splitter->get_ratio() - (i32)(splitter->get_width() / 2);
-    width_tracks = std::clamp(width_tracks, 200, window_size.x - 200);
-    i32 width_albums = window_size.x - width_tracks - splitter->get_width();
-    i32 y = panel_top->get_height();
+    i32 width_tracks = (content_width * splitter->get_ratio()) - (i32)(splitter->get_width() / 2);
+    width_tracks = std::clamp(width_tracks, 200, content_width - 200);
+    i32 width_albums = content_width - width_tracks - splitter->get_width();
 
-    panel_tracks->set_pos(0, y);
+    panel_tracks->set_pos(content_x, content_y);
     panel_tracks->set_width(width_tracks);
-    panel_tracks->set_height(height);
+    panel_tracks->set_height(content_height);
 
-    splitter->set_pos(width_tracks, y);
-    splitter->set_height(height);
+    splitter->set_pos(content_x + width_tracks, content_y);
+    splitter->set_height(content_height);
 
-    panel_albums->set_pos(width_tracks + splitter->get_width(), y);
+    panel_albums->set_pos(content_x + width_tracks + splitter->get_width(), content_y);
     panel_albums->set_width(width_albums);
-    panel_albums->set_height(height);
+    panel_albums->set_height(content_height);
   }
-  panel_controls->set_width(window_size.x);
+
+  panel_controls->set_pos(content_x, -border);
+  panel_controls->set_width(content_width);
 
   ui->update();
-
   draw();
 }
 
 static void draw() { ui->draw(); }
 
 void interface::deinit() { ui = nullptr; }
+
+interface::DecorationHover interface::get_decoration_hover() {
+  if (!theme::config().custom_window_decoration.enabled) { return DecorationHover::INSIDE; }
+
+  vec2i mouse_pos = Input::get_mouse_pos();
+  i32 border_size = theme::config().custom_window_decoration.border_size;
+  if (border_size < 6) { border_size = 6; }
+  i32 w = ui->get_window_width();
+  i32 h = ui->get_window_height();
+
+  if (mouse_pos.x < border_size && mouse_pos.y < border_size) { return DecorationHover::TOP_LEFT; }
+  if (mouse_pos.x >= w - border_size && mouse_pos.y < border_size) { return DecorationHover::TOP_RIGHT; }
+  if (mouse_pos.x < border_size && mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM_LEFT; }
+  if (mouse_pos.x >= w - border_size && mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM_RIGHT; }
+
+  if (mouse_pos.y < border_size) { return DecorationHover::TOP; }
+  if (mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM; }
+  if (mouse_pos.x < border_size) { return DecorationHover::LEFT; }
+  if (mouse_pos.x >= w - border_size) { return DecorationHover::RIGHT; }
+
+  if (panel_top->is_mouse_hovering()) {
+    bool panel_top_bg_hovered = true;
+    for (auto& child : panel_top->get_children()) {
+      if (child->is_mouse_hovering()) {
+        panel_top_bg_hovered = false;
+        break;
+      }
+    }
+    if (panel_top_bg_hovered) { return DecorationHover::TITLEBAR; }
+  }
+
+  return DecorationHover::INSIDE;
+  ;
+}
+
+void interface::on_minimize_button_pressed(std::function<void()> fn) {
+  panel_top->on_minimize_button_pressed = std::move(fn);
+}
+void interface::on_maximize_button_pressed(std::function<void()> fn) {
+  panel_top->on_maximize_button_pressed = std::move(fn);
+}
+void interface::on_close_button_pressed(std::function<void()> fn) {
+  panel_top->on_close_button_pressed = std::move(fn);
+}
 
 jt::Json interface::to_json() {
   tabs_order.clear();

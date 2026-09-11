@@ -392,6 +392,12 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("add_playlist", {"icons/actions/add_playlist"});
   atlas_add_texture("add_playlist_from_json", {"icons/actions/add_playlist_from_json"});
   atlas_add_texture("add_smart_playlist", {"icons/actions/add_smart_playlist"});
+  add_custom_button("button_decor_minimize");
+  add_custom_button("button_decor_maximize");
+  add_custom_button("button_decor_close");
+  atlas_add_texture("icon_decor_minimize", {"icons/icon_decor_minimize"});
+  atlas_add_texture("icon_decor_maximize", {"icons/icon_decor_maximize"});
+  atlas_add_texture("icon_decor_close", {"icons/icon_decor_close"});
 
   atlas_add_texture("cover_unknown");
   atlas_add_texture("playlist_playing");

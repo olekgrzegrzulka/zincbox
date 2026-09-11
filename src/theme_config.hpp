@@ -92,6 +92,15 @@ struct NotificationConfig {
     i32 spacing{10};
 };
 
+struct CustomWindowDecorationConfig {
+    bool enabled = true;
+    // color and size are based on top_bar.color and top_bar.height
+    bool show_minimize_button = true;
+    bool show_maximize_button = true;
+    bool show_close_button = true;
+    i32 border_size{3};
+};
+
 struct ThemeConfig {
     rgba text_color{0xf2c2e9ff};
     rgba text_color_muted{0xb388aaff};
@@ -101,4 +110,5 @@ struct ThemeConfig {
     PanelTracklistConfig panel_tracklist;
     PanelPlaylistsConfig panel_playlists;
     NotificationConfig notification;
+    CustomWindowDecorationConfig custom_window_decoration;
 };
