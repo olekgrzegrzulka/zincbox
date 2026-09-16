@@ -946,6 +946,8 @@ static void handle_drag_and_drop() {
   if (valid_selection) {
     tooltip_drag->set_is_drawn(true);
     tooltip_drag->set_pos(Input::get_mouse_pos() + vec2i{0, 10});
+    panel_tracks->set_is_dragged(true);
+    panel_queue->set_is_dragged(true);
 
     if ((hovered_playlist_cover && handle_drag_playlist_cover(hovered_playlist_cover, false)) ||
         (hovered_playlist_header && handle_drag_playlist_header(hovered_playlist_header, false)) ||
@@ -969,6 +971,8 @@ static void handle_drag_and_drop() {
       panel_tracks->clear_selection();
       panel_queue->clear_selection();
       selection_drag_sorted_top_to_bottom.clear();
+      panel_tracks->set_is_dragged(false);
+      panel_queue->set_is_dragged(false);
     }
   }
 

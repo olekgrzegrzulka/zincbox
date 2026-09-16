@@ -6,6 +6,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
+#include "core/settings.hpp"
 #include "theme.hpp"
 #include "tr.hpp"
 #include "ui/widget_track.hpp"
@@ -171,6 +172,27 @@ void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool imme
 }
 
 void PanelTracks::input() {
+  // scroll on the edges of view when dragging
+  if (is_dragged && is_mouse_hovering()) {
+    static i32 THRESHOLD = 50 * settings::get().scale * 0.01f;
+    i32 mouse_y = Input::get_mouse_y() - get_position().y;
+
+    if (mouse_y < THRESHOLD) {
+      scroll_edge_factor = (mouse_y - THRESHOLD) / (float)THRESHOLD;
+    } else if (mouse_y > height - THRESHOLD && mouse_y < height) {
+      scroll_edge_factor = (THRESHOLD - (height - mouse_y)) / (float)THRESHOLD;
+    } else {
+      scroll_edge_factor *= 0.5f;
+    }
+  } else {
+    scroll_edge_factor *= 0.5f;
+  }
+
+  if (std::abs(scroll_edge_factor) > 0.01f) {
+    scroll_edge_factor = std::clamp(scroll_edge_factor, -1.0f, 1.0f);
+    scrollbar->set_scroll_offset(target_scroll_px + (double)scroll_edge_factor * 8.0);
+  }
+
   if ((i32)scroll_px != (i32)old_scroll_px || vec2i{width, height} != old_size || just_recreated ||
       selection_modified) {
 

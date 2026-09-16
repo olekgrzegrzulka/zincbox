@@ -154,6 +154,7 @@ class PanelTracks final : public ColorRect {
     void set_insert_cursor_track_info(std::optional<db::track_info> value) { insert_cursor_track_info = value; }
     void set_insert_cursor_pos(InsertCursorPos value) { insert_cursor_pos = value; }
     void set_track_highlight_mode(WidgetTrack::TrackHighlightMode value) { track_highlight_mode = value; }
+    void set_is_dragged(bool value) { is_dragged = value; }
 
   protected:
     WidgetTrack::TrackHighlightMode track_highlight_mode = WidgetTrack::TrackHighlightMode::TRACK_INFO;
@@ -174,6 +175,8 @@ class PanelTracks final : public ColorRect {
     double old_scroll_px{};
     vec2i old_size{};
     i32 max_scroll_px{};
+    float scroll_edge_factor = 0.0f;
+    bool is_dragged = false;
     bool just_recreated = false;
     bool selection_modified = false;
     ScrollBar* scrollbar{};

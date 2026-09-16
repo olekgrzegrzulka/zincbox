@@ -75,3 +75,5 @@ void PanelQueue::on_track_rmb(const std::function<void(db::track_info, WidgetTra
 void PanelQueue::on_selection_rmb(const std::function<void(WidgetTrack*)>& fn) {
   if (fn) { panel_tracks->on_selection_rmb = fn; }
 }
+
+void PanelQueue::set_is_dragged(bool value) { panel_tracks->set_is_dragged(value); }

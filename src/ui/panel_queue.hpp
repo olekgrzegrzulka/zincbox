@@ -38,6 +38,7 @@ class PanelQueue : public Widget {
     void on_track_lmb(const std::function<void(db::track_info, WidgetTrack*)>&);
     void on_track_rmb(const std::function<void(db::track_info, WidgetTrack*)>&);
     void on_selection_rmb(const std::function<void(WidgetTrack*)>&);
+    void set_is_dragged(bool);
 
   protected:
     PanelTracks* panel_tracks{};
