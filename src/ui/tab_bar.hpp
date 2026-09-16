@@ -41,6 +41,7 @@ class Tab : public Button {
 class TabBar : public Widget {
   public:
     TabBar(UI& ui_);
+    virtual void event(Input::InputEventMouseScroll&) override;
 
     struct tab_info {
         i32 id{};
@@ -64,6 +65,10 @@ class TabBar : public Widget {
     const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
     const Tab* get_tab_by_label(const std::u32string& label) const;
     Button* get_button_add() { return button_add; }
+    i32 get_tab_container_width();
+    double get_scroll_px() { return scroll_px; }
+    double get_max_scroll_px();
+    void scroll(double);
 
   protected:
     void on_tab_drag_start(i32 id);
@@ -77,9 +82,13 @@ class TabBar : public Widget {
   protected:
     Widget* tab_container{};
     Button* button_add{};
+    Button* button_left{};
+    Button* button_right{};
     i32 selected_tab_index = -1;
     std::vector<Tab*> tabs;
     i32 dragged_tab_index = -1;
     i32 drag_start_mouse_pos = 0;
     i32 drag_start_tab_pos = 0;
+    double scroll_px = 0.0;
+    double target_scroll_px = 0.0;
 };

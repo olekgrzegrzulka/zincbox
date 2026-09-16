@@ -10,6 +10,7 @@ class PanelTop : public ColorRect {
     void update() override;
     void recreate(std::optional<size_t> selected_collection_id);
     void select(size_t selected_collection_id);
+    bool can_drag_window();
 
   public:
     std::function<void(Widget*)> on_hamburger_button_pressed{};
@@ -25,12 +26,11 @@ class PanelTop : public ColorRect {
     const Tab* get_queue_tab() const;
 
   protected:
+    Widget* container_tabbar{};
+    Widget* container_drag_region{};
+    Widget* container_buttons{};
     TabBar* tab_bar{};
-    Widget* right_to_left{};
-    Button* button_left{};
-    Button* button_right{};
     Button* button_hamburger{};
-
     Button* button_decor_minimize{};
     Button* button_decor_maximize{};
     Button* button_decor_close{};

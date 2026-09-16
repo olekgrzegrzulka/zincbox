@@ -102,10 +102,16 @@ void Tab::event(Input::InputEventMouseButton& ev) {
 }
 
 TabBar::TabBar(UI& ui_) : Widget(ui_) {
-  set_layout("ltr fit");
+  set_layout("ltr expand fill");
+  // set_clip_children(true);
+
   tab_container = &add_child<Widget>();
+  tab_container->set_clip_children(true);
+
   auto& pad = add_child<Widget>();
-  pad.set_width(6);
+  pad.set_min_width(6);
+  pad.set_max_width(6);
+
   button_add = &add_child<ZincboxButton>("add_tab", theme::config().top_bar.button_add_tab);
   button_add->add_image("add_tab_icon");
   button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
@@ -113,6 +119,22 @@ TabBar::TabBar(UI& ui_) : Widget(ui_) {
   button_add->on_press([this]() {
     if (on_add_tab_button_pressed) { on_add_tab_button_pressed(); };
   });
+
+  static const float scale = settings::get().scale * 0.01f;
+
+  button_right = &add_child<Button>("");
+  button_right->add_image("right");
+  button_right->set_ignore_parents_layout(true);
+  button_right->set_x(-2 * scale);
+  button_right->set_parent_anchor(Anchor::CENTER_LEFT);
+  button_right->set_anchor(Anchor::CENTER_RIGHT);
+
+  button_left = &add_child<Button>("");
+  button_left->add_image("left");
+  button_left->set_ignore_parents_layout(true);
+  button_left->set_x(2 * scale);
+  button_left->set_parent_anchor(Anchor::CENTER_LEFT);
+  button_left->set_anchor(Anchor::CENTER_LEFT);
 }
 
 void TabBar::add_tab(const tab_info& info, bool select) { add_tab(info, tabs.size(), select); }
@@ -126,8 +148,7 @@ void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
   t->is_draggable = info.is_draggable;
   t->on_drag_start = [this](i32 id) { on_tab_drag_start(id); };
   t->on_active = [this, info](Tab* tab) {
-    i32 mouse_x = Input::get_mouse_x() - x;
-    i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - mouse_x - x);
+    i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - Input::get_mouse_x());
     if ((i32)tab->index == dragged_tab_index && mouse_drag_delta > 10) { return; }
 
     update_tab_textures(tab->index);
@@ -203,12 +224,35 @@ void TabBar::close_all_tabs() {
   selected_tab_index = -1;
 }
 
+i32 TabBar::get_tab_container_width() { return tab_container->get_max_width(); }
+
+double TabBar::get_max_scroll_px() { return std::max(0, get_tab_container_width() - width); }
+
+void TabBar::scroll(double value) {
+  value = std::clamp<double>(target_scroll_px + value, 0, get_max_scroll_px());
+  if ((i32)target_scroll_px != (i32)value) { target_scroll_px = value; }
+}
+
 void TabBar::update() {
-  tab_container->set_height(height);
+  button_add->set_min_width(button_add->get_width());
+  button_add->set_max_width(button_add->get_width());
+  button_add->set_min_height(button_add->get_height());
+  button_add->set_max_height(button_add->get_height());
+
+  target_scroll_px = std::clamp<double>(target_scroll_px, 0, get_max_scroll_px());
+  auto scroll_px_ = scroll_px;
+  double delta = std::abs(scroll_px - target_scroll_px);
+  if (delta > 2.0f) {
+    double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
+    scroll_px = std::lerp(scroll_px, target_scroll_px, t);
+  } else {
+    scroll_px = scroll_px_;
+  }
+  if ((i32)scroll_px_ != (i32)scroll_px) { ui.mark_dirty_recursive(this); }
 
   if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) { dragged_tab_index = -1; }
 
-  i32 mouse_x = Input::get_mouse_x() - x;
+  i32 mouse_x = Input::get_mouse_x() - x + scroll_px;
   i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - Input::get_mouse_x());
 
   if (dragged_tab_index != -1 && mouse_drag_delta > 10) {
@@ -244,7 +288,7 @@ void TabBar::update() {
       //   tab->move(tab_x);
       //   tab->just_added = false;
       // } else {
-      tab->move_smooth(tab_x);
+      tab->move_smooth(tab_x - scroll_px);
       // }
 
     } else {
@@ -256,7 +300,30 @@ void TabBar::update() {
     tab_x += tab->get_width() - 1;
   }
 
-  tab_container->set_width(tab_x);
+  tab_container->set_max_width(tab_x + 28); // FIXME
+
+  button_right->set_x(tab_container->get_width());
+  button_left->set_is_drawn(target_scroll_px > 0);
+  button_left->set_is_updated(button_left->get_is_drawn());
+  button_right->set_is_drawn(target_scroll_px < get_max_scroll_px());
+  button_right->set_is_updated(button_right->get_is_drawn());
+
+  if (button_right->is_mouse_hovering() && button_right->get_is_drawn() &&
+      Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
+    scroll(3);
+  }
+
+  if (button_left->is_mouse_hovering() && button_left->get_is_drawn() &&
+      Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
+    scroll(-3);
+  }
+
+  scroll_px = std::clamp<double>(scroll_px, 0, get_max_scroll_px());
+
+  static const float scale = settings::get().scale * 0.01f;
+  button_right->set_size(height - 4 * scale, height - 4 * scale);
+  button_left->set_size(height - 4 * scale, height - 4 * scale);
+
   Widget::update();
 }
 
@@ -322,4 +389,12 @@ bool TabBar::swap_tabs(size_t index_a, size_t index_b) {
     selected_tab_index = index_a;
   }
   return true;
+}
+
+void TabBar::event(Input::InputEventMouseScroll& ev) {
+  if (is_mouse_hovering()) {
+    scroll(ev.offset.y * 15.0f);
+    ev.handled = true;
+  }
+  if (!ev.handled) { Widget::event(ev); }
 }

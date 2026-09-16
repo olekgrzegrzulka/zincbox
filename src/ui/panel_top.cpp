@@ -1,6 +1,5 @@
 #include "panel_top.hpp"
 #include <string>
-#include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/settings.hpp"
 #include "tr.hpp"
@@ -16,25 +15,36 @@
 static constexpr size_t QUEUE_TAB_ID = 10000;
 
 PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
-  set_color(theme::config().top_bar.color);
   static const float scale = settings::get().scale * 0.01f;
-
+  set_color(theme::config().top_bar.color);
   set_height(theme::config().top_bar.height * scale);
 
-  tab_bar = &add_child<TabBar>();
+  container_tabbar = &add_child<Widget>();
+  container_tabbar->set_parent_anchor(Anchor::TOP_LEFT);
+  container_tabbar->set_anchor(Anchor::TOP_LEFT);
+  // container_tabbar->set_clip_children(true);
+  container_tabbar->set_layout("expand fill");
+
+  container_drag_region = &add_child<Widget>();
+  container_drag_region->set_parent_anchor(Anchor::TOP_LEFT);
+  container_drag_region->set_anchor(Anchor::TOP_LEFT);
+  container_drag_region->set_is_self_drawn(false);
+  container_drag_region->set_min_width(100 * scale);
+  container_drag_region->set_max_width(9999 * scale);
+
+  container_buttons = &add_child<Widget>();
+  container_buttons->set_layout("rtl expand fit");
+  container_buttons->get_layout().margin = {scale, scale};
+  container_buttons->get_layout().spacing = scale;
+  container_buttons->set_parent_anchor(Anchor::TOP_RIGHT);
+  container_buttons->set_anchor(Anchor::TOP_RIGHT);
+
+  tab_bar = &container_tabbar->add_child<TabBar>();
   tab_bar->set_height(height);
   tab_bar->get_button_add()->set_width(height - 1 * 7 * scale);
   tab_bar->get_button_add()->set_height(height - 1 * 7 * scale);
 
-  right_to_left = &add_child<Widget>();
-  right_to_left->set_anchor(Anchor::RIGHT);
-  right_to_left->set_parent_anchor(Anchor::RIGHT);
-  right_to_left->set_layout("rtl fit");
-  right_to_left->get_layout().margin = {scale, scale};
-  right_to_left->get_layout().spacing = scale;
-  right_to_left->set_ignore_parents_layout(true);
-
-  button_decor_close = &right_to_left->add_child<ZincboxButton>("button_decor_close");
+  button_decor_close = &container_buttons->add_child<ZincboxButton>("button_decor_close");
   button_decor_close->add_image("icon_decor_close");
   button_decor_close->set_is_drawn(theme::config().custom_window_decoration.enabled &&
                                    theme::config().custom_window_decoration.show_close_button);
@@ -42,7 +52,7 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
     if (on_close_button_pressed) { on_close_button_pressed(); }
   });
 
-  button_decor_maximize = &right_to_left->add_child<ZincboxButton>("button_decor_maximize");
+  button_decor_maximize = &container_buttons->add_child<ZincboxButton>("button_decor_maximize");
   button_decor_maximize->add_image("icon_decor_maximize");
   button_decor_maximize->set_is_drawn(theme::config().custom_window_decoration.enabled &&
                                       theme::config().custom_window_decoration.show_maximize_button);
@@ -50,7 +60,7 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
     if (on_maximize_button_pressed) { on_maximize_button_pressed(); }
   });
 
-  button_decor_minimize = &right_to_left->add_child<ZincboxButton>("button_decor_minimize");
+  button_decor_minimize = &container_buttons->add_child<ZincboxButton>("button_decor_minimize");
   button_decor_minimize->add_image("icon_decor_minimize");
   button_decor_minimize->set_is_drawn(theme::config().custom_window_decoration.enabled &&
                                       theme::config().custom_window_decoration.show_minimize_button);
@@ -58,35 +68,12 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
     if (on_minimize_button_pressed) { on_minimize_button_pressed(); }
   });
 
-  button_hamburger = &right_to_left->add_child<Button>("");
+  button_hamburger = &container_buttons->add_child<Button>("");
+  button_hamburger->add_image("hamburger");
   button_hamburger->set_size(height - 4 * scale, height - 4 * scale);
   button_hamburger->on_press([this]() {
     if (this->on_hamburger_button_pressed) { this->on_hamburger_button_pressed(this->button_hamburger); }
   });
-
-  button_right = &add_child<Button>("");
-  button_right->set_size(height - 4 * scale, height - 4 * scale);
-  button_right->set_x(height - 4 * scale);
-  button_right->set_parent_anchor(Anchor::CENTER_RIGHT);
-  button_right->set_anchor(Anchor::CENTER_RIGHT);
-
-  button_left = &add_child<Button>("");
-  button_left->set_size(height - 4 * scale, height - 4 * scale);
-  button_left->set_x(2 * scale);
-  button_left->set_parent_anchor(Anchor::CENTER_LEFT);
-  button_left->set_anchor(Anchor::CENTER_LEFT);
-
-  auto* btn_settings_img = &button_hamburger->add_child<Sprite>("hamburger");
-  btn_settings_img->set_anchor(Anchor::CENTER);
-  btn_settings_img->set_parent_anchor(Anchor::CENTER);
-
-  auto& button_right_img = button_right->add_child<Sprite>("right");
-  button_right_img.set_anchor(Anchor::CENTER);
-  button_right_img.set_parent_anchor(Anchor::CENTER);
-
-  auto& button_left_img = button_left->add_child<Sprite>("left");
-  button_left_img.set_anchor(Anchor::CENTER);
-  button_left_img.set_parent_anchor(Anchor::CENTER);
 }
 
 const Tab* PanelTop::get_queue_tab() const {
@@ -97,26 +84,16 @@ const Tab* PanelTop::get_queue_tab() const {
 }
 
 void PanelTop::update() {
-  right_to_left->set_height(height);
+  container_tabbar->set_width(std::min(tab_bar->get_tab_container_width(),
+                                       width - 100 - container_buttons->get_width())); // FIXME
+  container_drag_region->set_x(container_tabbar->get_width());
+  container_drag_region->set_width(width - container_tabbar->get_width() - container_buttons->get_width());
 
-  button_left->set_is_drawn(tab_bar->get_x() != 0);
-  button_left->set_is_updated(button_left->get_is_drawn());
-  button_right->set_is_drawn(ui.get_window_width() < tab_bar->get_width() &&
-                             tab_bar->get_x() != ui.get_window_width() - tab_bar->get_width());
-  button_right->set_is_updated(button_right->get_is_drawn());
+  container_tabbar->set_height(height);
+  container_drag_region->set_height(height);
+  container_buttons->set_height(height);
 
-  if (button_right->is_mouse_hovering() && button_right->get_is_drawn() &&
-      Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
-    tab_bar->set_x(std::max(tab_bar->get_x() - 3, ui.get_window_width() - tab_bar->get_width()));
-    ui.mark_dirty_recursive(this);
-  }
-
-  if (button_left->is_mouse_hovering() && button_left->get_is_drawn() &&
-      Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT)) {
-    tab_bar->set_x(std::min(tab_bar->get_x() + 3, 0));
-    ui.mark_dirty_recursive(this);
-  }
-
+  tab_bar->set_x(std::clamp(tab_bar->get_x(), container_tabbar->get_width() - tab_bar->get_tab_container_width(), 0));
   ColorRect::update();
 }
 
@@ -167,3 +144,5 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
 }
 
 void PanelTop::select(size_t selected_collection_id) { tab_bar->select_tab(selected_collection_id); }
+
+bool PanelTop::can_drag_window() { return container_drag_region->is_mouse_hovering(); }

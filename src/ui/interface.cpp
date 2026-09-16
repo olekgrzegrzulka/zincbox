@@ -478,17 +478,7 @@ interface::DecorationHover interface::get_decoration_hover() {
   if (mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM; }
   if (mouse_pos.x < border_size) { return DecorationHover::LEFT; }
   if (mouse_pos.x >= w - border_size) { return DecorationHover::RIGHT; }
-
-  if (panel_top->is_mouse_hovering()) {
-    bool panel_top_bg_hovered = true;
-    for (auto& child : panel_top->get_children()) {
-      if (child->is_mouse_hovering()) {
-        panel_top_bg_hovered = false;
-        break;
-      }
-    }
-    if (panel_top_bg_hovered) { return DecorationHover::TITLEBAR; }
-  }
+  if (panel_top->can_drag_window()) { return DecorationHover::TITLEBAR; }
 
   return DecorationHover::INSIDE;
   ;
@@ -988,6 +978,8 @@ static void handle_drag_and_drop() {
     selection_drag_started = false;
     selection_drag_tab_id = -1;
     selection_drag_tab_timer = 0;
+    panel_tracks->set_is_dragged(false);
+    panel_queue->set_is_dragged(false);
   }
 }
 

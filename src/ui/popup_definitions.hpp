@@ -447,13 +447,13 @@ class PopupAbout : public Popup {
     PopupAbout(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
       : Popup(ui_, controller_, std::move(on_close_)) {
       set_layout("ttb fit expand m:8 s:12");
-      set_width(450);
 
       auto& title = add_child<Label>(tr::get("popup.about.title"));
       title.set_height(32 * settings::get().scale * 0.01f);
       title.set_resize_to_text_extents(false);
       auto& content =
         add_child<Label>(tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
+      set_width(content.get_text_extents().x + 16);
       content.set_text_color(theme::config().text_color_muted);
 
       auto& buttons = add_child<Widget>();
