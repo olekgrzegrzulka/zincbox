@@ -19,7 +19,7 @@ To access configuration such as playback settings or theme options, click the se
 
 # Building and Installation
 
-This project uses **CMake**. Follow the instructions below to install the required dependencies and compile Zincbox. You will need a compiler (**Clang** or **GCC**) and a build system (**Make** or **Ninja**) installed on your system.
+Zincbox is built with **CMake**. You will need a compiler (**Clang** or **GCC**) and a build system (**Make** or **Ninja**) installed on your system.
 
 ## 1. Install Dependencies
 
@@ -27,35 +27,48 @@ This project uses **CMake**. Follow the instructions below to install the requir
 
 ```bash
 sudo apt update
-sudo apt install cmake pkg-config libsystemd-dev \
-libdbus-1-dev libx11-dev libwayland-dev libxkbcommon-dev libgl-dev \
-libasound2-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+sudo apt install cmake pkg-config \
+libdbus-1-dev libsystemd-dev \
+libgl1-mesa-dev libegl1-mesa-dev \
+libxkbcommon-dev \
+libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev \
+libwayland-dev wayland-protocols libdecor-0-dev
 ```
 
 ### Fedora / RHEL / AlmaLinux
 
 ```bash
 sudo dnf check-update
-sudo dnf install cmake pkgconf-pkg-config systemd-devel \
-dbus-devel libX11-devel wayland-devel libxkbcommon-devel mesa-libGL-devel \
-alsa-lib-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+sudo dnf install cmake pkg-config \
+dbus-devel systemd-devel \
+mesa-libGL-devel mesa-libEGL-devel \
+libxkbcommon-devel \
+libX11-devel libXext-devel libXrandr-devel libXcursor-devel libXfixes-devel libXi-devel \
+wayland-devel wayland-protocols-devel libdecor-devel
 ```
 
 ### Arch Linux / Manjaro
 
 ```bash
 sudo pacman -Syu
-sudo pacman -S base-devel cmake pkgconf systemd dbus libx11 \
-wayland libxkbcommon mesa alsa-lib libxrandr libxinerama libxcursor libxi
+sudo pacman -S cmake pkgconf \
+dbus systemd-libs \
+mesa libgl \
+libxkbcommon \
+libx11 libxext libxrandr libxcursor libxfixes libxi \
+wayland wayland-protocols libdecor
 ```
 
 ### openSUSE
 
 ```bash
 sudo zypper refresh
-sudo zypper install cmake pkgconf systemd-devel \
-dbus-1-devel libX11-devel wayland-devel libxkbcommon-devel Mesa-libGL-devel \
-alsa-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+sudo zypper install cmake pkg-config \
+dbus-1-devel systemd-devel \
+Mesa-libGL-devel Mesa-libEGL-devel \
+libxkbcommon-devel \
+libX11-devel libXext-devel libXrandr-devel libXcursor-devel libXfixes-devel libXi-devel \
+wayland-devel wayland-protocols-devel libdecor-devel
 ```
 
 ## 2. Build
@@ -68,6 +81,8 @@ Build using the provided script (`build.sh`) with optional flags:
 | `release` | Build in release mode         |
 | `clang`   | Use Clang (default)           |
 | `gcc`     | Use GCC                       |
+| `ninja`   | Use Ninja (default)           |
+| `make `   | Use Make                      |
 | `asan`    | Build with AddressSanitizer   |
 | `run`     | Run the program after build   |
 | `clean`   | Remove the build directory    |
@@ -77,7 +92,7 @@ For example
 
 # Technical Details
 
-Low level functions such as window management and system event handling are managed via GLFW.
+Low level functions such as window management and system event handling are managed via SDL3.
 
 The interface utilizes a custom retained-mode GUI library, leveraging `glad` for OpenGL rendering and FreeType for text.
 
@@ -85,4 +100,4 @@ Music discovery uses `std::filesystem` for traversal and `TagLib` for metadata, 
 
 Playback is handled by `miniaudio`, with `sdbus-cpp` integration on Linux to enable desktop environment media controls.
 
-The built-in theme is bundled into the executable using C++26 `#embed` and functions as a fallback if no valid theme is found in the themes directory.
+The built-in theme is bundled into the executable using CMakeRC and functions as a fallback if no valid theme is found in the themes directory.

@@ -87,21 +87,21 @@ class PopupSettings : public Popup {
 
       rgba text_color_muted = theme::config().text_color_muted;
 
-      auto create_widget_combobox = [this, &text_color_muted](Widget* parent,
+      auto create_widget_combobox = [this, &text_color_muted](Widget* parent_,
                                                               std::pair<std::string, std::string> json_key,
                                                               std::u32string_view label_) -> ComboBox* {
-        auto& label = parent->add_child<Label>(label_);
+        auto& label = parent_->add_child<Label>(label_);
         label.set_resize_to_text_extents(false);
         label.set_height(16);
         label.set_text_color(text_color_muted);
 
-        auto& combo = parent->add_child<ComboBox>();
+        auto& combo = parent_->add_child<ComboBox>();
         combo.set_width(128);
         combo.on_item_selected([this, &combo, json_key]() -> void {
           changed_props[json_key.first][json_key.second] = combo.get_selected_item_id();
         });
 
-        auto& pad = parent->add_child<Widget>();
+        auto& pad = parent_->add_child<Widget>();
         pad.set_min_height(10);
         pad.set_max_height(10);
 
@@ -109,21 +109,21 @@ class PopupSettings : public Popup {
         return &combo;
       };
 
-      auto create_widget_spinner = [this, &text_color_muted](Widget* parent,
+      auto create_widget_spinner = [this, &text_color_muted](Widget* parent_,
                                                              std::pair<std::string, std::string> json_key,
                                                              std::u32string_view label_) -> Spinner* {
-        auto& label = parent->add_child<Label>(label_);
+        auto& label = parent_->add_child<Label>(label_);
         label.set_resize_to_text_extents(false);
         label.set_height(16);
         label.set_text_color(text_color_muted);
 
-        auto& spinner = parent->add_child<Spinner>();
+        auto& spinner = parent_->add_child<Spinner>();
         spinner.set_width(128);
         spinner.on_value_changed([this, &spinner, json_key]() -> void {
           changed_props[json_key.first][json_key.second] = spinner.get_value();
         });
 
-        auto& pad = parent->add_child<Widget>();
+        auto& pad = parent_->add_child<Widget>();
         pad.set_min_height(10);
         pad.set_max_height(10);
 
@@ -131,9 +131,9 @@ class PopupSettings : public Popup {
         return &spinner;
       };
 
-      auto create_widget_checkbox = [this](Widget* parent, std::pair<std::string, std::string> json_key,
+      auto create_widget_checkbox = [this](Widget* parent_, std::pair<std::string, std::string> json_key,
                                            std::u32string_view label_) -> Checkbox* {
-        auto& checkbox = parent->add_child<Checkbox>(label_);
+        auto& checkbox = parent_->add_child<Checkbox>(label_);
         checkbox.set_width(128);
         checkbox.set_height(24);
         checkbox.on_value_changed([this, &checkbox, json_key]() -> void {

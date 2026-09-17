@@ -68,7 +68,7 @@ class Spinner : public TextInput {
         } else {
           try {
             new_value = std::stoi(utf32_to_utf8(str));
-          } catch (std::invalid_argument) { new_value = value; } catch (std::out_of_range) {
+          } catch (const std::invalid_argument&) { new_value = value; } catch (const std::out_of_range&) {
             if (str.starts_with('-')) {
               new_value = std::numeric_limits<i32>::min();
             } else {

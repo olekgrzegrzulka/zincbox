@@ -37,3 +37,6 @@
 [submodule "lib/glaze"]
 	path = lib/glaze
 	url = https://github.com/stephenberry/glaze.git
+[submodule "lib/cmrc"]
+	path = lib/cmrc
+	url = https://github.com/vector-of-bool/cmrc.git

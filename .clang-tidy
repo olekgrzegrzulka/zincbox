@@ -1,2 +1,2 @@
-Checks: 'bugprone-*,performance-*, -bugprone-easily-swappable-parameters, readability-braces-around-statements, -bugprone-narrowing-conversions'
+Checks: 'bugprone-*,performance-*, -bugprone-easily-swappable-parameters, readability-braces-around-statements, -bugprone-narrowing-conversions, -*,misc-include-cleaner'
 WarningsAsErrors: ''

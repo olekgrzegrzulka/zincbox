@@ -152,7 +152,7 @@ class ComboBox : public Button {
 
     void on_item_selected(std::function<void()> lambda_select_) { lambda_select = std::move(lambda_select_); }
 
-    void add_item(std::string_view id, std::u32string_view label) { items.emplace_back(id, label); }
+    void add_item(std::string_view id, std::u32string_view label_) { items.emplace_back(id, label_); }
 
     std::string get_selected_item_id() const {
       if (selected_index < 0 || selected_index >= (i32)items.size()) { return ""; }
@@ -166,9 +166,9 @@ class ComboBox : public Button {
 
     i32 get_selected_index() const { return selected_index; }
 
-    void select_item_by_label(std::u32string_view label) {
+    void select_item_by_label(std::u32string_view label_) {
       for (i32 i = 0; i < (i32)items.size(); i += 1) {
-        if (items[i].second == label) {
+        if (items[i].second == label_) {
           on_item_pressed(i);
           break;
         }

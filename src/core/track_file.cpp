@@ -7,8 +7,8 @@
 #include <vector>
 #include <taglib/fileref.h>
 #include <taglib/flac/flacfile.h>
-#include <taglib/id3v2tag.h>
 #include <taglib/mp4/mp4file.h>
+#include <taglib/mpeg/id3v2/id3v2tag.h>
 #include <taglib/mpeg/mpegfile.h>
 #include <taglib/ogg/vorbis/vorbisfile.h>
 #include <taglib/tag.h>
@@ -35,11 +35,11 @@ std::optional<TagLib::ByteVector> get_picture_frame(const TagLib::FileRef&);
 
 static Random rng{};
 
-TrackFile::TrackFile(const fs::path& path, bool fetch_album_art) {
-  this->path = path;
-  ScopeTimer timer("TrackFile " + std::string(path));
+TrackFile::TrackFile(const fs::path& path_, bool fetch_album_art) {
+  path = path_;
+  ScopeTimer timer("TrackFile " + std::string(path_));
 
-  TagLib::FileStream fstream(path.c_str(), true);
+  TagLib::FileStream fstream(path_.c_str(), true);
   TagLib::FileRef f(&fstream);
 
   if (f.isNull()) { return; }
@@ -65,7 +65,7 @@ TrackFile::TrackFile(const fs::path& path, bool fetch_album_art) {
   track = db::Track{
     (i32)tag->track(),      utf8_to_utf32(tag->title().to8Bit(true)), utf8_to_utf32(tag->artist().to8Bit(true)),
     album_artist,           utf8_to_utf32(tag->genre().to8Bit(true)), (i32)tag->year(),
-    audio_props->bitrate(), audio_props->lengthInSeconds(),           utf8_to_utf32(path.string()),
+    audio_props->bitrate(), audio_props->lengthInSeconds(),           utf8_to_utf32(path_.string()),
   };
 
   if (fetch_album_art) { this->fetch_album_art(&f); }
@@ -178,8 +178,8 @@ std::optional<fs::path> TrackFile::save_album_art(stbi_uc* img, i32 width, i32 h
 
   spng_set_png_file(enc_ctx, out_file);
   struct spng_ihdr ihdr = {
-    .width = w,
-    .height = h,
+    .width = (u32)w,
+    .height = (u32)h,
     .bit_depth = 8,
     .color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA,
     .compression_method = 0,

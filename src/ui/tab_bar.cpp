@@ -153,8 +153,8 @@ void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
 
     update_tab_textures(tab->index);
 
-    for (Tab* t : tabs) {
-      t->active = false;
+    for (Tab* t_ : tabs) {
+      t_->active = false;
     }
 
     tab->active = true;

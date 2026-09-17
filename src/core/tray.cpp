@@ -73,6 +73,7 @@ namespace tray {
   } // namespace
 
   void init(SDL_Window* window_) {
+    return;
     window = window_;
 
     icon_stopped = load_icon_surface("tray/stopped.png");
@@ -87,16 +88,16 @@ namespace tray {
     current_icon_state = TrayIconState::STOPPED;
 
     main_menu = SDL_CreateTrayMenu(system_tray);
-    entry_show = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.show").c_str(), 0);
+    entry_show = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.show").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_show, cb_show, nullptr);
     SDL_InsertTrayEntryAt(main_menu, -1, nullptr, 0);
-    entry_play_pause = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.play").c_str(), 0);
+    entry_play_pause = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.play").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_play_pause, cb_play_pause, nullptr);
-    entry_stop = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.stop").c_str(), 0);
+    entry_stop = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.stop").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_stop, cb_stop, nullptr);
-    entry_prev = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.prev").c_str(), 0);
+    entry_prev = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.prev").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_prev, cb_prev, nullptr);
-    entry_next = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.next").c_str(), 0);
+    entry_next = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.next").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_next, cb_next, nullptr);
     SDL_InsertTrayEntryAt(main_menu, -1, nullptr, 0);
     entry_shuffle = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.shuffle").c_str(), SDL_TRAYENTRY_CHECKBOX);
@@ -114,7 +115,7 @@ namespace tray {
       SDL_InsertTrayEntryAt(repeat_menu, -1, tr_utf8("tray.repeat_album").c_str(), SDL_TRAYENTRY_CHECKBOX);
     SDL_SetTrayEntryCallback(entry_repeat_album, cb_repeat_album, nullptr);
     SDL_InsertTrayEntryAt(main_menu, -1, nullptr, 0);
-    entry_quit = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.quit").c_str(), 0);
+    entry_quit = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.quit").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_quit, cb_quit, nullptr);
   }
 

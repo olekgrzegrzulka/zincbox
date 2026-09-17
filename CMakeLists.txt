@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(OUTPUT_NAME "${PROJECT_NAME}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 # Native File Dialog Extended
 option(NFD_PORTAL "" ON)
@@ -41,10 +46,25 @@ set(BUILD_SHARED_LIBS OFF)
 set(JSON_CPP_BUILD_TESTS OFF)
 
 # SDL3
+set(SDL_STATIC ON)
+set(SDL_SHARED OFF)
 set(SDL_X11_XSCRNSAVER OFF)
 set(SDL_X11_XTEST OFF)
-set(SDL_STATIC ${STATIC_DEPS})
-set(SDL_SHARED OFF)
+set(SDL_TEST_LIBRARY OFF)
+set(SDL_AUDIO OFF)
+set(SDL_GPU OFF)
+set(SDL_RENDER OFF)
+set(SDL_CAMERA OFF)
+set(SDL_JOYSTICK OFF)
+set(SDL_HAPTIC OFF)
+set(SDL_HIDAPI OFF)
+set(SDL_POWER OFF)
+set(SDL_SENSOR OFF)
+set(SDL_DIALOG OFF)
+set(SDL_NOTIFICATION OFF)
+
+# fmt
+set(FMT_MODULE OFF)
 
 if(NOT WIN32)
   find_package(PkgConfig REQUIRED)
@@ -62,25 +82,24 @@ include_directories(SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/mp4
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/toolkit
-)
-
-include_directories(SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glaze/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/fmt/include
 )
-
-
-set(CMAKE_CXX_STANDARD 26)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(OUTPUT_NAME "${PROJECT_NAME}")
 
 message(STATUS "------------------------------------------------")
 message(STATUS " Project Name:    ${PROJECT_NAME}")
 message(STATUS " C++ Standard:    ${CMAKE_CXX_STANDARD}")
-message(STATUS " Compiler ID:     ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS " Compiler Path:   ${CMAKE_CXX_COMPILER}")
+message(STATUS " Generator:       ${CMAKE_GENERATOR}")
+message(STATUS " Compiler:        ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
 message(STATUS " Build Type:      ${CMAKE_BUILD_TYPE}")
 message(STATUS " ASAN Enabled:    ${ENABLE_ASAN}")
+if(CMAKE_LINKER_TYPE)
+  message(STATUS " Linker Type:     ${CMAKE_LINKER_TYPE}")
+elseif(CMAKE_EXE_LINKER_FLAGS MATCHES "-fuse-ld=([^ ]+)")
+  message(STATUS " Linker:          ${CMAKE_MATCH_1}")
+else()
+  message(STATUS " Linker:          ${CMAKE_LINKER}")
+endif()
 if(MY_FLAGS)
   message(STATUS " Extra Flags:     ${MY_FLAGS}")
 endif()
@@ -106,9 +125,20 @@ add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(lib/json.cpp SYSTEM)
 add_subdirectory(lib/SDL SYSTEM)
 add_subdirectory(lib/glaze SYSTEM)
-
+add_subdirectory(lib/cmrc SYSTEM)
 # add_subdirectory(lib/miniaudio SYSTEM)
 
+file(GLOB_RECURSE THEME_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/theme/*")
+
+add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/resources/theme.zip
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_CURRENT_SOURCE_DIR}/resources/theme.zip" --format=zip "."
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources/theme
+    DEPENDS ${THEME_FILES}
+)
+
+cmrc_add_resource_library(zincbox_resources NAMESPACE zincbox_resources)
+cmrc_add_resources(zincbox_resources WHENCE resources resources/theme.zip)
 
 set(SOURCES
     ./src/main.cpp
@@ -166,14 +196,14 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=switch
     -Werror=unused-result
     -Werror=return-type
-    -fPIC
     -Wno-narrowing
+    -fdiagnostics-color=always
+    -fPIC
 )
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 
 if(ENABLE_ASAN)
-  message(STATUS "AddressSanitizer enabled")
   target_compile_options(${PROJECT_NAME} PRIVATE
     -fsanitize=address,undefined
     -fno-omit-frame-pointer
@@ -200,21 +230,13 @@ endif()
 
 
 
-target_link_libraries(${PROJECT_NAME} PRIVATE freetype)
-target_link_libraries(${PROJECT_NAME} PRIVATE nfd)
-target_link_libraries(${PROJECT_NAME} PRIVATE zlibstatic)
-target_link_libraries(${PROJECT_NAME} PRIVATE spng_static)
-target_link_libraries(${PROJECT_NAME} PRIVATE tag)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+  freetype nfd zlibstatic spng_static
+  tag glm::glm stb_image glad
+  miniz fmt::fmt stdc++exp json
+  SDL3::SDL3-static glaze::glaze zincbox_resources
+)
 if(NOT WIN32)
   target_link_libraries(${PROJECT_NAME} PRIVATE sdbus-c++)
 endif()
-target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
-target_link_libraries(${PROJECT_NAME} PRIVATE stb_image)
-target_link_libraries(${PROJECT_NAME} PRIVATE glad)
-target_link_libraries(${PROJECT_NAME} PRIVATE miniz)
-target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
-target_link_libraries(${PROJECT_NAME} PRIVATE stdc++exp)
-target_link_libraries(${PROJECT_NAME} PRIVATE json)
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL3)
-target_link_libraries(${PROJECT_NAME} PRIVATE glaze::glaze)
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

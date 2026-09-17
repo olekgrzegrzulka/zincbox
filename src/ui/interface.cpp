@@ -759,43 +759,43 @@ static void handle_drag_and_drop() {
     }
   };
 
-  auto handle_drag_playlist_cover = [&](WidgetAlbumCover* hovered_playlist_cover, bool drag_ended) -> bool {
-    if (!hovered_playlist_cover) { return false; }
-    if (hovered_playlist_cover->is_add_button()) {
+  auto handle_drag_playlist_cover = [&](WidgetAlbumCover* hovered_playlist_cover_, bool drag_ended) -> bool {
+    if (!hovered_playlist_cover_) { return false; }
+    if (hovered_playlist_cover_->is_add_button()) {
       return handle_drag_create_playlist(drag_ended);
     } else {
-      if (!hovered_playlist_cover->playlist_id.has_value()) { return false; }
-      return handle_drag_playlist(hovered_playlist_cover->playlist_id.value(), drag_ended);
+      if (!hovered_playlist_cover_->playlist_id.has_value()) { return false; }
+      return handle_drag_playlist(hovered_playlist_cover_->playlist_id.value(), drag_ended);
     }
   };
 
-  auto handle_drag_playlist_header = [&](WidgetPlaylistHeader* hovered_playlist_header, bool drag_ended) -> bool {
-    if (!hovered_playlist_header) { return false; }
-    return handle_drag_playlist(hovered_playlist_header->playlist_id, drag_ended);
+  auto handle_drag_playlist_header = [&](WidgetPlaylistHeader* hovered_playlist_header_, bool drag_ended) -> bool {
+    if (!hovered_playlist_header_) { return false; }
+    return handle_drag_playlist(hovered_playlist_header_->playlist_id, drag_ended);
   };
 
   panel_tracks->set_insert_cursor_track_info(std::nullopt);
   panel_queue->set_insert_cursor_track_info(std::nullopt);
 
-  auto handle_drag_tab = [&](Tab* hovered_tab, bool /* drag_ended */) -> bool {
-    if (!hovered_tab) { return false; }
+  auto handle_drag_tab = [&](Tab* hovered_tab_, bool /* drag_ended */) -> bool {
+    if (!hovered_tab_) { return false; }
     if (selection_drag_tab_timer < SELECTION_DRAG_TAB_TIMER) {
       selection_drag_tab_timer += 1;
     } else {
-      panel_top->select(hovered_tab->id);
+      panel_top->select(hovered_tab_->id);
     }
     return false;
   };
 
-  auto handle_drag_track_queue = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+  auto handle_drag_track_queue = [&](WidgetTrack* hovered_track_, bool drag_ended) -> bool {
     if (!selection_drag.has_value()) { return false; }
-    if (!hovered_track) { return false; }
-    auto playlist = db::playlist_by_id(hovered_track->playlist_id());
+    if (!hovered_track_) { return false; }
+    auto playlist = db::playlist_by_id(hovered_track_->playlist_id());
     if (!playlist.has_value()) { return false; }
-    bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+    bool above = hovered_track_->get_position(Anchor::CENTER).y > Input::get_mouse_y();
     if (!drag_ended) {
       auto insert_cursor_pos = above ? PanelTracks::InsertCursorPos::ABOVE : PanelTracks::InsertCursorPos::BELOW;
-      panel_queue->set_insert_cursor_track_info(hovered_track->track_info());
+      panel_queue->set_insert_cursor_track_info(hovered_track_->track_info());
       panel_queue->set_insert_cursor_pos(insert_cursor_pos);
       bool move = selection_drag_is_from_queue;
       if (move) {
@@ -814,7 +814,7 @@ static void handle_drag_and_drop() {
       return true;
     } else {
       bool move = selection_drag_is_from_queue;
-      size_t target_index = hovered_track->track_info().index;
+      size_t target_index = hovered_track_->track_info().index;
       if (!above) { target_index += 1; }
       if (move) {
         std::vector<size_t> indices;
@@ -831,14 +831,14 @@ static void handle_drag_and_drop() {
     }
   };
 
-  auto handle_drag_track_tracklist = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
+  auto handle_drag_track_tracklist = [&](WidgetTrack* hovered_track_, bool drag_ended) -> bool {
     if (!selection_drag.has_value()) { return false; }
-    if (!hovered_track) { return false; }
-    auto target_playlist_id = hovered_track->playlist_id();
+    if (!hovered_track_) { return false; }
+    auto target_playlist_id = hovered_track_->playlist_id();
     auto playlist = db::playlist_by_id(target_playlist_id);
     if (!playlist.has_value()) { return false; }
-    size_t i = hovered_track->track_info().index;
-    bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+    size_t i = hovered_track_->track_info().index;
+    bool above = hovered_track_->get_position(Anchor::CENTER).y > Input::get_mouse_y();
     bool move = !selection_drag_is_from_queue && selection_drag->get_common_playlist_id() == target_playlist_id;
     if (drag_ended) {
       if (playlist->get().type != db::PlaylistType::User) { return false; }
@@ -867,7 +867,7 @@ static void handle_drag_and_drop() {
       return true;
     } else {
       auto insert_cursor_pos = above ? PanelTracks::InsertCursorPos::ABOVE : PanelTracks::InsertCursorPos::BELOW;
-      panel_tracks->set_insert_cursor_track_info(hovered_track->track_info());
+      panel_tracks->set_insert_cursor_track_info(hovered_track_->track_info());
       panel_tracks->set_insert_cursor_pos(insert_cursor_pos);
       if (playlist->get().type != db::PlaylistType::User) {
         tooltip_drag->set_text(tr::get("tooltip.drag.not_allowed"));
@@ -892,12 +892,12 @@ static void handle_drag_and_drop() {
     }
   };
 
-  auto handle_drag_track = [&](WidgetTrack* hovered_track, bool drag_ended) -> bool {
-    if (!hovered_track) { return false; }
+  auto handle_drag_track = [&](WidgetTrack* hovered_track_, bool drag_ended) -> bool {
+    if (!hovered_track_) { return false; }
     if (panel_queue->get_is_drawn()) {
-      return handle_drag_track_queue(hovered_track, drag_ended);
+      return handle_drag_track_queue(hovered_track_, drag_ended);
     } else if (panel_tracks->get_is_drawn()) {
-      return handle_drag_track_tracklist(hovered_track, drag_ended);
+      return handle_drag_track_tracklist(hovered_track_, drag_ended);
     }
     return false;
   };
@@ -1304,20 +1304,20 @@ static void show_popover_tracklist_track_actions(db::track_info ti, Widget* widg
     buttons.emplace_back(
       tr::format("popover.track.remove_from_playlist", utf32_to_utf8(playlist.name)),
       [ti, callback_close]() -> void {
-        auto& playlist = db::playlist_by_id(ti.playlist_id)->get();
+        auto& playlist_ = db::playlist_by_id(ti.playlist_id)->get();
         if (ti.index != db::INVALID_ID) {
-          ensure(playlist.track_ids.size() > ti.index);
-          ensure(ti.track_id == playlist.track_ids[ti.index]);
+          ensure(playlist_.track_ids.size() > ti.index);
+          ensure(ti.track_id == playlist_.track_ids[ti.index]);
           if (db::remove_track_index_from_playlist(ti.playlist_id, ti.index)) {
             auto track_pretty_name = db::track_by_id(ti.track_id)->get().pretty_name();
             notifications->push(tr::format("notification.removed_track_from_playlist", utf32_to_utf8(track_pretty_name),
-                                           utf32_to_utf8(playlist.name)));
+                                           utf32_to_utf8(playlist_.name)));
           }
         } else {
           if (db::remove_track_id_from_playlist(ti.playlist_id, ti.track_id)) {
             auto track_pretty_name = db::track_by_id(ti.track_id)->get().pretty_name();
             notifications->push(tr::format("notification.removed_track_from_playlist", utf32_to_utf8(track_pretty_name),
-                                           utf32_to_utf8(playlist.name)));
+                                           utf32_to_utf8(playlist_.name)));
           }
         }
         panel_tracks->clear();
@@ -1430,11 +1430,11 @@ static void show_popover_tracklist_tracks_actions(WidgetTrack* widget, std::span
     buttons.emplace_back(
       tr::format("popover.track.remove_from_playlist", utf32_to_utf8(playlist.name)),
       [track_indices, callback_close, common_playlist_id]() -> void {
-        auto& playlist = db::playlist_by_id(common_playlist_id.value())->get();
+        auto& playlist_ = db::playlist_by_id(common_playlist_id.value())->get();
         db::remove_track_indices_from_playlist(common_playlist_id.value(), track_indices);
         if (track_indices.size() != 0) {
           notifications->push(tr::format("notification.removed_tracks_from_playlist", track_indices.size(),
-                                         utf32_to_utf8(playlist.name)));
+                                         utf32_to_utf8(playlist_.name)));
           panel_tracks->clear();
           panel_tracks->recreate(active_collection_id);
         }
@@ -1523,9 +1523,9 @@ static void show_popover_queue_track_actions(db::track_info ti, WidgetTrack* wid
                            auto& track = db::track_by_id(track_id)->get();
                            auto album_id = track.originating_album_id;
                            if (album_id != db::INVALID_ID) {
-                             auto collection_id = db::collection_of_playlist(album_id);
-                             if (collection_id.has_value()) {
-                               show_collection(collection_id.value());
+                             auto collection_id_ = db::collection_of_playlist(album_id);
+                             if (collection_id_.has_value()) {
+                               show_collection(collection_id_.value());
                                panel_tracks->scroll_to_track(album_id, track_id);
                              }
                            }
@@ -1948,7 +1948,7 @@ static void show_popup_new_playlist(const std::function<void(std::optional<db::p
   };
 }
 
-static void show_popup_new_smart_playlist() { auto* popup = popup_controller->show_popup<PopupCreateSmartPlaylist>(); }
+static void show_popup_new_smart_playlist() { popup_controller->show_popup<PopupCreateSmartPlaylist>(); }
 
 static void show_dialog_new_playlist_from_json() {
   NFD::UniquePath result;

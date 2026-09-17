@@ -10,16 +10,10 @@
 #include "label.hpp"
 #include "opengl_includes.hpp"
 #include "shader.hpp"
+#include "shader_src.hpp"
 #include "sprite.hpp"
 #include "ui.hpp"
 #include "widget.hpp"
-
-static constexpr char shader_frag[] = {
-#embed "../shaders/ui.frag"
-  , 0};
-static constexpr char shader_vert[] = {
-#embed "../shaders/ui.vert"
-  , 0};
 
 UI::UI(i32 window_width_, i32 window_height_) : shader{shader_vert, shader_frag} {
   window_width = window_width_;
@@ -162,7 +156,7 @@ void UI::input(i32 window_width_, i32 window_height_) {
       (*it)->set_window_height(window_height);
       if ((*it)->updated_) {
         for (auto& ev : Input::get_event_queue()) {
-          std::visit([it](auto& ev) { (*it)->event(ev); }, ev);
+          std::visit([it](auto& ev_) { (*it)->event(ev_); }, ev);
         }
         (*it)->input();
       }

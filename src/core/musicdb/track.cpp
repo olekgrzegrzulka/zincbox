@@ -10,17 +10,17 @@
 #include "common/utf.hpp"
 #include "core/musicdb/types.hpp"
 
-db::Track::Track(i32 track_number, std::u32string title, std::u32string artist, std::u32string album_artist,
-                 std::u32string genre, i32 year, i32 bitrate, i32 length_seconds, std::u32string path) {
-  this->track_number = track_number;
-  this->title = std::move(title);
-  this->artist = std::move(artist);
-  this->album_artist = std::move(album_artist);
-  this->genre = std::move(genre);
-  this->year = year;
-  this->bitrate = bitrate;
-  this->length_seconds = length_seconds;
-  this->path = std::move(path);
+db::Track::Track(i32 track_number_, std::u32string title_, std::u32string artist_, std::u32string album_artist_,
+                 std::u32string genre_, i32 year_, i32 bitrate_, i32 length_seconds_, std::u32string path_) {
+  track_number = track_number_;
+  title = std::move(title_);
+  artist = std::move(artist_);
+  album_artist = std::move(album_artist_);
+  genre = std::move(genre_);
+  year = year_;
+  bitrate = bitrate_;
+  length_seconds = length_seconds_;
+  path = std::move(path_);
 }
 
 db::Track::Track(std::ifstream& is) {

@@ -2,6 +2,7 @@
 #include <mutex>
 #include <queue>
 #include <string>
+#include <optional>
 #include "common/types.hpp"
 
 namespace mpris {

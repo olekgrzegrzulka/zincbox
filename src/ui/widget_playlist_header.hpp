@@ -53,8 +53,8 @@ class WidgetPlaylistHeader : public Widget {
                                                            {&button_play_next, "inline_play_next"},
                                                            {&button_play, "inline_play"},
                                                            {&button_sort, "inline_sort"}};
-      for (auto& [target, name] : button_configs) {
-        *target = &header.add_child<ZincboxButton>(name);
+      for (auto& [target, name_] : button_configs) {
+        *target = &header.add_child<ZincboxButton>(name_);
         (*target)->set_min_width((*target)->get_width());
         (*target)->set_max_width((*target)->get_width());
         (*target)->set_nine_slice_margin(0);

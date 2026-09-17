@@ -5,6 +5,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <cmrc/cmrc.hpp>
 #include <glaze/glaze.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
@@ -20,9 +21,7 @@
 
 namespace fs = std::filesystem;
 
-static constexpr u8 resources_zip[] = {
-#embed "resources.zip"
-};
+CMRC_DECLARE(zincbox_resources);
 
 struct StringHash {
     using is_transparent = void;
@@ -54,7 +53,17 @@ void load_resources() {
   resources.clear();
   resources_ttf_path.clear();
 
-  if (!mz_zip_reader_init_mem(&zip_archive, resources_zip, sizeof(resources_zip), 0)) {
+  auto cmrc_fs = cmrc::zincbox_resources::get_filesystem();
+
+  if (!cmrc_fs.exists("theme.zip")) {
+    out::critical("theme.zip not found in cmrc");
+    exit(1);
+  }
+
+  auto file = cmrc_fs.open("theme.zip");
+  out::warn("s!");
+
+  if (!mz_zip_reader_init_mem(&zip_archive, file.begin(), file.size(), 0)) {
     out::critical("failed to load resources from memory");
     exit(1);
   }
@@ -266,9 +275,11 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     return false;
   };
 
+  using namespace std::string_literals;
+
   auto add_custom_button = [&atlas_add_texture, &atlas_add_texture_row](const std::string& name) {
     std::array<std::string, 4> ids = {name + "_idle", name + "_hovered", name + "_pressed", name + "_disabled"};
-    if (!atlas_add_texture_row(ids, {name, "button"})) {
+    if (!atlas_add_texture_row(ids, std::array{name, "button"s})) {
       atlas_add_texture(name + "_disabled", {name + "_disabled", name, "button_disabled"});
       atlas_add_texture(name + "_hovered", {name + "_hovered", name, "button_hovered"});
       atlas_add_texture(name + "_idle", {name + "_idle", name, "button_idle"});
@@ -279,14 +290,15 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   auto add_custom_slider = [&atlas_add_texture_row](const std::string& name) {
     std::array<std::string, 3> thumb_ids = {name + "_thumb_idle", name + "_thumb_hovered", name + "_thumb_pressed"};
     std::array<std::string, 2> track_ids = {name + "_track_inactive", name + "_track_active"};
-    atlas_add_texture_row(thumb_ids, {name + "_thumb", "slider_thumb"});
-    atlas_add_texture_row(track_ids, {name + "_track", "slider_track"});
+    atlas_add_texture_row(thumb_ids, std::array{name + "_thumb"s, "slider_thumb"s});
+    atlas_add_texture_row(track_ids, std::array{name + "_track"s, "slider_track"s});
   };
 
   auto add_custom_panel = [&atlas_add_texture](const std::string& name) { atlas_add_texture(name, {name, "panel"}); };
 
   // ui
-  atlas_add_texture_row({"button_idle", "button_hovered", "button_pressed", "button_disabled"}, {"button"});
+  atlas_add_texture_row(std::array{"button_idle"s, "button_hovered"s, "button_pressed"s, "button_disabled"s},
+                        std::array{"button"s});
   add_custom_button("combobox");
   atlas_add_texture("combobox_contract");
   atlas_add_texture("combobox_expand");
@@ -331,10 +343,12 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("track_bg_selected2");
   atlas_add_texture("track_hovered");
   atlas_add_texture("playlist_hovered");
-  atlas_add_texture_row({"tab_active_idle", "tab_active_hovered", "tab_active_pressed", "tab_active_disabled"},
-                        {"tab_active"});
-  atlas_add_texture_row({"tab_inactive_idle", "tab_inactive_hovered", "tab_inactive_pressed", "tab_inactive_disabled"},
-                        {"tab_inactive"});
+  atlas_add_texture_row(
+    std::array{"tab_active_idle"s, "tab_active_hovered"s, "tab_active_pressed"s, "tab_active_disabled"s},
+    std::array{"tab_active"s});
+  atlas_add_texture_row(
+    std::array{"tab_inactive_idle"s, "tab_inactive_hovered"s, "tab_inactive_pressed"s, "tab_inactive_disabled"s},
+    std::array{"tab_inactive"s});
   atlas_add_texture("popover_panel");
   atlas_add_texture("popover_arrow");
   atlas_add_texture("popover_arrow_inverted");
@@ -353,12 +367,14 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("prev", {"icons/prev"});
   atlas_add_texture("expand_player", {"icons/expand_player"});
   atlas_add_texture("mini_player", {"icons/mini_player"});
-  atlas_add_texture_row({"repeat_off", "repeat", "repeat_album", "repeat_track"}, {"icons/repeat"});
-  atlas_add_texture_row({"shuffle_off", "shuffle"}, {"icons/shuffle"});
+  atlas_add_texture_row(std::array{"repeat_off"s, "repeat"s, "repeat_album"s, "repeat_track"s},
+                        std::array{"icons/repeat"s});
+  atlas_add_texture_row(std::array{"shuffle_off"s, "shuffle"s}, std::array{"icons/shuffle"s});
   atlas_add_texture("hamburger", {"icons/hamburger"});
   atlas_add_texture("search", {"icons/actions/search"});
-  atlas_add_texture_row({"clear_search_idle", "clear_search_hovered", "clear_search_pressed", "clear_search_disabled"},
-                        {"icons/clear_search"});
+  atlas_add_texture_row(
+    std::array{"clear_search_idle"s, "clear_search_hovered"s, "clear_search_pressed"s, "clear_search_disabled"s},
+    std::array{"icons/clear_search"s});
   atlas_add_texture("sort_by", {"icons/sort_by"});
   atlas_add_texture("button_add_playlist", {"icons/actions/button_add_playlist"});
   atlas_add_texture("about", {"icons/actions/about"});

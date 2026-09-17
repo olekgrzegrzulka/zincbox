@@ -8,13 +8,13 @@
 
 class ZincboxButton final : public Button {
   public:
-    ZincboxButton(UI& ui_, const std::string& name) : Button(ui_) {
-      this->name = name;
+    ZincboxButton(UI& ui_, const std::string& name_) : Button(ui_) {
+      name = name_;
       init();
     }
 
-    ZincboxButton(UI& ui_, const std::string& name, const ButtonConfig& config) : Button(ui_) {
-      this->name = name;
+    ZincboxButton(UI& ui_, const std::string& name_, const ButtonConfig& config) : Button(ui_) {
+      name = name_;
       init();
       set_nine_slice_margin(config.nine_slice_margin);
     }
@@ -31,12 +31,12 @@ class ZincboxButton final : public Button {
 
 class ZincboxSlider final : public Slider {
   public:
-    ZincboxSlider(UI& ui_, const std::string& name) : Slider(ui_) {
-      set_texture_thumb_pressed(name + "_thumb_pressed");
-      set_texture_thumb_hovered(name + "_thumb_hovered");
-      set_texture_thumb_idle(name + "_thumb_idle");
-      set_texture_track_inactive(name + "_track_inactive");
-      set_texture_track_active(name + "_track_active");
+    ZincboxSlider(UI& ui_, const std::string& name_) : Slider(ui_) {
+      set_texture_thumb_pressed(name_ + "_thumb_pressed");
+      set_texture_thumb_hovered(name_ + "_thumb_hovered");
+      set_texture_thumb_idle(name_ + "_thumb_idle");
+      set_texture_track_inactive(name_ + "_track_inactive");
+      set_texture_track_active(name_ + "_track_active");
     }
 };
 
