@@ -52,6 +52,7 @@ static std::vector<float> tracks_scroll_positions;
 static std::vector<float> playlists_scroll_positions;
 static std::vector<std::u32string> tabs_order;
 static bool search_popup_visible = false;
+static std::optional<bool> mini_player = std::nullopt;
 
 static std::optional<PanelTracksSelection> selection_drag;
 static std::vector<db::track_info> selection_drag_sorted_top_to_bottom;
@@ -123,6 +124,7 @@ static void show_search_popup();
 static void show_settings_popup();
 static void show_about_popup();
 static void quit();
+static void set_mini_player(bool);
 
 static void recreate_panel_top(bool order = true) {
   if (order) {
@@ -201,6 +203,7 @@ void interface::init() {
   if (db::track_count() == 0) { popup_controller->show_popup<PopupWelcome>(); }
 
   panel_controls->on_playing_track_lmb = [](Widget*) -> void {
+    if (mini_player.value_or(false)) { return; }
     auto playing = player::get_playing();
     if (playing.has_value()) {
       bool immediate = active_collection_id != playing->collection_id;
@@ -211,9 +214,12 @@ void interface::init() {
   };
 
   panel_controls->on_playing_track_rmb = [](Widget* w) -> void {
+    if (mini_player.value_or(false)) { return; }
     auto playing = player::get_playing();
     if (playing.has_value()) { show_popover_tracklist_track_actions(playing.value(), w, false); }
   };
+
+  panel_controls->on_button_expand_player_pressed([]() -> void { set_mini_player(false); });
 
   panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
   panel_top->on_queue_view_opened = [&]() { show_queue(); };
@@ -246,6 +252,7 @@ void interface::init() {
   panel_top->on_hamburger_button_pressed = [&](Widget* w) -> void {
     decltype(popover_descriptor::buttons) buttons;
     buttons.emplace_back(tr::get("hamburger.search"), show_search_popup, "search");
+    buttons.emplace_back(tr::get("hamburger.mini_player"), []() -> void { set_mini_player(true); }, "mini_player");
     buttons.emplace_back(tr::get("hamburger.settings"), show_settings_popup, "settings");
     buttons.emplace_back(tr::get("hamburger.about"), show_about_popup, "about");
     buttons.emplace_back(tr::get("hamburger.quit"), quit, "quit");
@@ -407,9 +414,9 @@ void interface::update(vec2i window_size) {
   rebuild();
 
   auto& window_decor = theme::config().custom_window_decoration;
-
+  bool mini_player_disabled = !mini_player.value_or(false);
   i32 border = 0;
-  if (window_decor.enabled) { border = window_decor.border_size; }
+  if (window_decor.enabled && mini_player_disabled) { border = window_decor.border_size; }
 
   i32 content_x = border;
   i32 content_width = window_size.x - (border * 2);
@@ -469,19 +476,26 @@ interface::DecorationHover interface::get_decoration_hover() {
   i32 w = ui->get_window_width();
   i32 h = ui->get_window_height();
 
-  if (mouse_pos.x < border_size && mouse_pos.y < border_size) { return DecorationHover::TOP_LEFT; }
-  if (mouse_pos.x >= w - border_size && mouse_pos.y < border_size) { return DecorationHover::TOP_RIGHT; }
-  if (mouse_pos.x < border_size && mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM_LEFT; }
-  if (mouse_pos.x >= w - border_size && mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM_RIGHT; }
+  bool mini_player_disabled = !mini_player.value_or(false);
 
-  if (mouse_pos.y < border_size) { return DecorationHover::TOP; }
-  if (mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM; }
+  if (mini_player_disabled) {
+    if (mouse_pos.x < border_size && mouse_pos.y < border_size) { return DecorationHover::TOP_LEFT; }
+    if (mouse_pos.x >= w - border_size && mouse_pos.y < border_size) { return DecorationHover::TOP_RIGHT; }
+    if (mouse_pos.x < border_size && mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM_LEFT; }
+    if (mouse_pos.x >= w - border_size && mouse_pos.y >= h - border_size) { return DecorationHover::BOTTOM_RIGHT; }
+  }
+
+  if (mouse_pos.y < border_size && mini_player_disabled) { return DecorationHover::TOP; }
+  if (mouse_pos.y >= h - border_size && mini_player_disabled) { return DecorationHover::BOTTOM; }
   if (mouse_pos.x < border_size) { return DecorationHover::LEFT; }
   if (mouse_pos.x >= w - border_size) { return DecorationHover::RIGHT; }
-  if (panel_top->can_drag_window()) { return DecorationHover::TITLEBAR; }
+  if (mini_player_disabled) {
+    if (panel_top->can_drag_window()) { return DecorationHover::TITLEBAR; }
+  } else {
+    if (panel_controls->can_drag_window()) { return DecorationHover::TITLEBAR; }
+  }
 
   return DecorationHover::INSIDE;
-  ;
 }
 
 void interface::on_minimize_button_pressed(std::function<void()> fn) {
@@ -518,6 +532,8 @@ jt::Json interface::to_json() {
       json["playlists_scroll_offset"] = panel_albums->get_scroll_px();
     }
   }
+
+  json["mini_player"] = mini_player.value_or(false);
 
   return json;
 }
@@ -559,6 +575,8 @@ void interface::from_json(const jt::Json& json) {
   if (json.contains("playlists_scroll_offset") && json["playlists_scroll_offset"].isNumber()) {
     panel_albums->set_scroll_px(json["playlists_scroll_offset"].getNumber());
   }
+
+  if (json.contains("mini_player") && json["mini_player"].isBool()) { set_mini_player(json["mini_player"].getBool()); }
 }
 
 static void init_atlas() {
@@ -2050,6 +2068,7 @@ static void unlove_tracks(std::span<const db::track_id_t> track_ids) {
 }
 
 static void show_search_popup() {
+  if (mini_player.value_or(false)) { return; }
   if (search_popup_visible) { return; }
   auto* popup = popup_controller->show_popup<PopupSearch>();
   auto callback_close = [popup]() -> void {
@@ -2108,3 +2127,31 @@ static void show_settings_popup() {
 static void show_about_popup() { popup_controller->show_popup<PopupAbout>(); }
 
 static void quit() { std::raise(SIGINT); }
+
+bool interface::get_mini_player() { return mini_player.value_or(false); }
+
+static void set_mini_player(bool state) {
+  if (mini_player == state) { return; }
+  mini_player = state;
+  if (mini_player.value()) {
+    panel_tracks->set_is_drawn(false);
+    panel_tracks->set_is_updated(false);
+    panel_albums->set_is_drawn(false);
+    panel_albums->set_is_updated(false);
+    panel_queue->set_is_drawn(false);
+    panel_queue->set_is_updated(false);
+    splitter->set_is_drawn(false);
+    splitter->set_is_updated(false);
+  } else {
+    auto active_collection_id_ = active_collection_id;
+    active_collection_id = std::nullopt;
+    if (active_collection_id_.has_value()) {
+      show_collection(active_collection_id_.value());
+    } else {
+      show_queue();
+    }
+  }
+
+  panel_controls->set_button_expand_player_visibility(mini_player.value_or(false));
+  panel_controls->set_tooltip_visibility(!mini_player.value_or(false));
+}

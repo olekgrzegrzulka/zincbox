@@ -6,6 +6,7 @@ namespace interface {
   void init();
   void deinit();
   void update(vec2i window_size);
+  bool get_mini_player();
 
   enum class DecorationHover : u8 {
     TOP_LEFT,

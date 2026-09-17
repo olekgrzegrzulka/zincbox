@@ -68,6 +68,12 @@
       "visible": true,
       "width": 36,
       "nine_slice_margin": 0
+    },
+
+    "button_expand_player": {
+      "visible": true,
+      "width": 24,
+      "nine_slice_margin": 0
     }
   },
 

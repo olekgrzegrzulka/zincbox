@@ -63,6 +63,7 @@ struct PanelControlsConfig {
     VolumeBarConfig volume_bar;
     ButtonConfig button_repeat;
     ButtonConfig button_shuffle;
+    ButtonConfig button_expand_player;
 };
 
 struct PanelTracklistConfig {

@@ -313,6 +313,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_button("stop");
   add_custom_button("repeat");
   add_custom_button("shuffle");
+  add_custom_button("expand_player");
   add_custom_button("inline_play");
   add_custom_button("inline_play_next");
   add_custom_button("inline_sort");
@@ -350,10 +351,12 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("stop", {"icons/stop"});
   atlas_add_texture("next", {"icons/next"});
   atlas_add_texture("prev", {"icons/prev"});
+  atlas_add_texture("expand_player", {"icons/expand_player"});
+  atlas_add_texture("mini_player", {"icons/mini_player"});
   atlas_add_texture_row({"repeat_off", "repeat", "repeat_album", "repeat_track"}, {"icons/repeat"});
   atlas_add_texture_row({"shuffle_off", "shuffle"}, {"icons/shuffle"});
   atlas_add_texture("hamburger", {"icons/hamburger"});
-  atlas_add_texture("search", {"icons/search"});
+  atlas_add_texture("search", {"icons/actions/search"});
   atlas_add_texture_row({"clear_search_idle", "clear_search_hovered", "clear_search_pressed", "clear_search_disabled"},
                         {"icons/clear_search"});
   atlas_add_texture("sort_by", {"icons/sort_by"});

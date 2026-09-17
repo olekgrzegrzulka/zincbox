@@ -18,10 +18,14 @@ class PanelControls : public ColorRect {
     void event(Input::InputEventKey&) override;
     void update() override;
     void update_love_state(bool);
+    void set_button_expand_player_visibility(bool);
+    void set_tooltip_visibility(bool);
+    bool can_drag_window() const;
 
   public:
     std::function<void(Widget*)> on_playing_track_lmb{};
     std::function<void(Widget*)> on_playing_track_rmb{};
+    void on_button_expand_player_pressed(std::function<void()>);
 
   protected:
     Button* button_play_pause{};
@@ -30,6 +34,7 @@ class PanelControls : public ColorRect {
     Button* button_prev{};
     Button* button_shuffle{};
     Button* button_repeat{};
+    Button* button_expand_player{};
     ToolTip* tooltip_button_shuffle{};
     ToolTip* tooltip_button_repeat{};
     ToolTip* tooltip_timestamp{};
@@ -41,6 +46,7 @@ class PanelControls : public ColorRect {
     Sprite* love_icon{};
     Sprite* label_track_underline{};
 
+    bool tooltip_visibility = true;
     bool label_track_underline_lmb = false;
     bool label_track_underline_rmb = false;
     i32 progress_ms_prev = -1000;

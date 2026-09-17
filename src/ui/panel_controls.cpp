@@ -130,6 +130,11 @@ PanelControls::PanelControls(UI& ui_) : ColorRect(ui_) {
   update_repeat_mode();
   tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
+  button_expand_player =
+    &add_child<ZincboxButton>("expand_player", theme::config().panel_controls.button_expand_player);
+  button_expand_player->set_max_width(theme::config().panel_controls.button_expand_player.width * scale);
+  button_expand_player->add_image("expand_player");
+
   auto on_track_changed = [this]() -> void {
     auto playing = player::get_playing();
     if (!playing.has_value()) {
@@ -305,7 +310,7 @@ void PanelControls::update() {
       ss_hover << std::setw(2) << tooltip_s;
       tooltip_timestamp->set_text(ss_hover.str());
     }
-    tooltip_timestamp->set_is_drawn(true);
+    tooltip_timestamp->set_is_drawn(tooltip_visibility && true);
     // tooltip is centered - subtract half width to compensate
     tooltip_timestamp->set_x(x_rel - seekbar->get_width() / 2);
   } else {
@@ -319,7 +324,7 @@ void PanelControls::update() {
       volume_prev = tooltip_value;
       tooltip_volume->set_text(std::to_string((i32)(std::round(tooltip_value * 100))) + "%");
     }
-    tooltip_volume->set_is_drawn(true);
+    tooltip_volume->set_is_drawn(tooltip_visibility && true);
     // tooltip is centered - subtract half width to compensate
     tooltip_volume->set_x((volume_bar->get_value() - 0.5) * volume_bar->get_width());
   } else {
@@ -342,7 +347,7 @@ void PanelControls::update() {
   }
 
   if (button_shuffle->is_mouse_hovering()) {
-    tooltip_button_shuffle->set_is_drawn(true);
+    tooltip_button_shuffle->set_is_drawn(tooltip_visibility && true);
     auto s = player::get_shuffle_mode();
     if (s == player::ShuffleMode::OFF) {
       tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.off"));
@@ -354,7 +359,7 @@ void PanelControls::update() {
   }
 
   if (button_repeat->is_mouse_hovering()) {
-    tooltip_button_repeat->set_is_drawn(true);
+    tooltip_button_repeat->set_is_drawn(tooltip_visibility && true);
     auto r = player::get_repeat_mode();
     if (r == player::RepeatMode::OFF) {
       tooltip_button_repeat->set_text(tr::get("tooltip.repeat.off"));
@@ -401,3 +406,29 @@ void PanelControls::update_shuffle_mode() {
 }
 
 void PanelControls::update_love_state(bool is_loved) { love_icon->set_is_drawn(is_loved); }
+
+void PanelControls::set_button_expand_player_visibility(bool state) {
+  button_expand_player->set_is_drawn(theme::config().panel_controls.button_expand_player.visible && state);
+}
+
+void PanelControls::on_button_expand_player_pressed(std::function<void()> fn) {
+  button_expand_player->on_press(std::move(fn));
+}
+
+void PanelControls::set_tooltip_visibility(bool state) {
+  tooltip_visibility = state;
+  if (!state) {
+    tooltip_button_shuffle->set_is_drawn(state);
+    tooltip_button_repeat->set_is_drawn(state);
+    tooltip_timestamp->set_is_drawn(state);
+    tooltip_volume->set_is_drawn(state);
+  }
+}
+
+bool PanelControls::can_drag_window() const {
+  return (is_mouse_hovering() && !button_play_pause->is_mouse_hovering() && !button_stop->is_mouse_hovering() &&
+          !button_next->is_mouse_hovering() && !button_prev->is_mouse_hovering() &&
+          !button_shuffle->is_mouse_hovering() && !button_repeat->is_mouse_hovering() &&
+          !button_expand_player->is_mouse_hovering() && !seekbar->is_mouse_hovering() &&
+          !volume_bar->get_thumb().is_mouse_hovering() && !volume_bar->get_track().is_mouse_hovering() && !label_track->is_mouse_hovering() && !love_icon->is_mouse_hovering());
+}

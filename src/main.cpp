@@ -173,6 +173,7 @@ int main() {
     exit(1);
   }
   SDL_SetWindowMinimumSize(window, 480, 320);
+  SDL_SetWindowMaximumSize(window, 7680, 4320);
   SDL_GLContext gl_context = SDL_GL_CreateContext(window);
   if (!gl_context) {
     out::critical("failed to create GL context: {}", SDL_GetError());
@@ -216,7 +217,7 @@ int main() {
 
   SDL_GL_MakeCurrent(window, gl_context);
   if (config::json().contains("ui")) { interface::from_json(config::json()["ui"]); }
-
+  std::optional<bool> mini_player = std::nullopt;
   while (!stop_flag) {
     using namespace std::chrono;
     auto t1 = high_resolution_clock::now();
@@ -231,6 +232,26 @@ int main() {
       }
       Input::process_event(event);
     }
+
+    if (mini_player != interface::get_mini_player()) {
+      mini_player = interface::get_mini_player();
+
+      if (mini_player.value()) {
+        int current_w = 0;
+        int fixed_h = theme::config().panel_controls.height + theme::config().custom_window_decoration.border_size;
+        SDL_GetWindowSize(window, &current_w, nullptr);
+        SDL_SetWindowResizable(window, true);
+        SDL_SetWindowMinimumSize(window, 480, fixed_h);
+        SDL_SetWindowMaximumSize(window, 7680, fixed_h);
+      } else {
+        int current_w = 0;
+        SDL_GetWindowSize(window, &current_w, nullptr);
+        SDL_SetWindowMinimumSize(window, 480, 320);
+        SDL_SetWindowMaximumSize(window, 7680, 4320);
+        SDL_SetWindowSize(window, std::max(current_w, 480), 320);
+      }
+    }
+
     Input::update();
     player::update();
     tray::update();

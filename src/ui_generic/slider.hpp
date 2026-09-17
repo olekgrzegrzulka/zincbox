@@ -72,6 +72,7 @@ class Slider : public Widget {
     WIDGET_DEF_GETTER(drag_area_inflation)
 
     const Sprite& get_thumb() const { return thumb; }
+    const Sprite& get_track() const { return track; }
 
     void set_value(float new_value, bool signal = true) {
       i32 old_value = value;
