@@ -25,9 +25,6 @@
 [submodule "lib/utfcpp"]
 	path = lib/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git
-[submodule "lib/zlib"]
-	path = lib/zlib
-	url = https://github.com/madler/zlib.git
 [submodule "lib/fmt"]
 	path = lib/fmt
 	url = https://github.com/fmtlib/fmt.git

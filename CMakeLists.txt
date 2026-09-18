@@ -7,18 +7,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(OUTPUT_NAME "${PROJECT_NAME}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+set(BUILD_TESTS OFF)
+
+set(SPNG_USE_MINIZ ON)
+set(WITH_ZLIB OFF)
+set(FT_REQUIRE_ZLIB OFF)
+set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE)
 
 # Native File Dialog Extended
 option(NFD_PORTAL "" ON)
 set(NFD_PORTAL ON)
 set(utf8cpp_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/utfcpp/source" CACHE PATH "" FORCE)
-
-# zlib
-set(ZLIB_BUILD_TESTING  OFF)
-set(ZLIB_BUILD_SHARED OFF)
-set(ZLIB_BUILD_STATIC ON)
-set(ZLIB_INSTALL ON)
-set(ZLIB_PREFIX OFF)
 
 # Freetype
 set(BUILD_SHARED_LIBS OFF)
@@ -105,14 +104,6 @@ message(STATUS "------------------------------------------------")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 add_subdirectory(lib/freetype SYSTEM)
 add_subdirectory(lib/nativefiledialog-extended SYSTEM)
-add_subdirectory(lib/zlib SYSTEM)
-set(ZLIB_FOUND TRUE)
-set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/zlib)
-set(ZLIB_LIBRARIES zlibstatic)
-if(NOT TARGET ZLIB::ZLIB)
-  add_library(ZLIB::ZLIB ALIAS zlibstatic)
-endif()
-add_subdirectory(lib/libspng SYSTEM)
 add_subdirectory(lib/taglib SYSTEM)
 add_subdirectory(lib/glm SYSTEM)
 add_subdirectory(lib/stb_image SYSTEM)
@@ -123,6 +114,16 @@ add_subdirectory(lib/SDL SYSTEM)
 add_subdirectory(lib/glaze SYSTEM)
 add_subdirectory(lib/cmrc SYSTEM)
 # add_subdirectory(lib/miniaudio SYSTEM)
+
+if (TARGET miniz AND NOT TARGET miniz::miniz)
+  add_library(miniz::miniz ALIAS miniz)
+endif()
+
+add_library(spng_static STATIC lib/libspng/spng/spng.c)
+target_include_directories(spng_static PUBLIC lib/libspng/spng)
+target_compile_definitions(spng_static PUBLIC SPNG_USE_MINIZ SPNG_STATIC)
+target_link_libraries(spng_static PRIVATE miniz::miniz)
+
 
 file(GLOB_RECURSE THEME_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/theme/*")
 
@@ -225,7 +226,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-  freetype nfd zlibstatic spng_static
+  freetype nfd spng_static
   tag glm::glm stb_image glad
   miniz fmt::fmt stdc++exp
   SDL3::SDL3-static glaze::glaze zincbox_resources
