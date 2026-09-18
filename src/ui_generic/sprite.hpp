@@ -1,5 +1,7 @@
 #pragma once
 #include <functional>
+#include <optional>
+#include <string>
 #include <vector>
 #include <glm/vec2.hpp>
 #include "common/types.hpp"

@@ -1,8 +1,13 @@
 #include "text_input.hpp"
+#include <algorithm>
+#include <string>
 #include "common/input.hpp"
+#include "common/types.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
 #include "widget.hpp"
+
+class UI;
 
 TextInput::TextInput(UI& ui_) : Sprite(ui_), label(add_child<Label>()), caret(add_child<Sprite>()) {
   set_size(64, 24);

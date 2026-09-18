@@ -1,7 +1,10 @@
 #pragma once
 #include <string>
+#include <string_view>
+#include <utility>
 #include <fmt/format.h>
 #include <fmt/xchar.h>
+#include "common/logger.hpp"
 #include "common/utf.hpp"
 
 namespace tr {

@@ -1,13 +1,16 @@
 #pragma once
-#include "common/input.hpp"
+#include <functional>
 #include "common/signal.hpp"
-#include "ui_generic/button.hpp"
+#include "common/types.hpp"
 #include "ui_generic/color_rect.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/slider.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/tooltip.hpp"
-#include "ui_generic/widget.hpp"
+
+class Button;
+class Label;
+class Slider;
+class Sprite;
+class ToolTip;
+class UI;
+class Widget;
 
 class PanelControls : public ColorRect {
   public:

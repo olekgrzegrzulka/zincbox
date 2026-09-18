@@ -1,9 +1,13 @@
 #include "tray.hpp"
 #include <csignal>
 #include <cstring>
+#include <optional>
+#include <string>
+#include <vector>
 #include <SDL3/SDL.h>
 #include <stb_image.h>
 #include "common/logger.hpp"
+#include "common/types.hpp"
 #include "common/utf.hpp"
 #include "player.hpp"
 #include "tr.hpp"

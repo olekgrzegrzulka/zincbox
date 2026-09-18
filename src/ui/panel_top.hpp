@@ -1,8 +1,14 @@
 #pragma once
 #include <functional>
 #include <optional>
-#include "tab_bar.hpp"
+#include <stddef.h>
 #include "ui_generic/color_rect.hpp"
+
+class Button;
+class Tab;
+class TabBar;
+class UI;
+class Widget;
 
 class PanelTop : public ColorRect {
   public:

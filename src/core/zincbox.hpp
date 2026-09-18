@@ -4,7 +4,8 @@
 #include <utility>
 #include "common/types.hpp"
 #include "core/i_window.hpp"
-#include "core/settings.hpp"
+
+struct Settings;
 
 namespace zincbox {
   float ui_scale();

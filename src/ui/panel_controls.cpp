@@ -1,23 +1,35 @@
 #include "panel_controls.hpp"
+#include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <iomanip>
-#include <ios>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <stdlib.h>
+#include "common/color.hpp"
 #include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/playlist.hpp"
+#include "core/musicdb/track.hpp"
+#include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
 #include "core/zincbox.hpp"
+#include "theme_config.hpp"
 #include "tr.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
+#include "ui_generic/button.hpp"
 #include "ui_generic/color_rect.hpp"
 #include "ui_generic/label.hpp"
+#include "ui_generic/slider.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/tooltip.hpp"
-#include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
+
+class UI;
 
 PanelControls::PanelControls(UI& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_controls.color);
@@ -431,5 +443,6 @@ bool PanelControls::can_drag_window() const {
           !button_next->is_mouse_hovering() && !button_prev->is_mouse_hovering() &&
           !button_shuffle->is_mouse_hovering() && !button_repeat->is_mouse_hovering() &&
           !button_expand_player->is_mouse_hovering() && !seekbar->is_mouse_hovering() &&
-          !volume_bar->get_thumb().is_mouse_hovering() && !volume_bar->get_track().is_mouse_hovering() && !label_track->is_mouse_hovering() && !love_icon->is_mouse_hovering());
+          !volume_bar->get_thumb().is_mouse_hovering() && !volume_bar->get_track().is_mouse_hovering() &&
+          !label_track->is_mouse_hovering() && !love_icon->is_mouse_hovering());
 }

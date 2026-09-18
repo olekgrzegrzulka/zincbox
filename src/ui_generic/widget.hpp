@@ -6,7 +6,6 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <glm/vec2.hpp>
 #include "common/debug.hpp"
 #include "common/types.hpp"
 

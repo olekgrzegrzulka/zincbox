@@ -2,20 +2,23 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <set>
+#include <span>
+#include <utility>
 #include <vector>
-#include <glm/common.hpp>
-#include "common/input.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/zincbox.hpp"
+#include "theme_config.hpp"
 #include "ui/theme.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
 #include "ui_generic/color_rect.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/tooltip.hpp"
-#include "ui_generic/widget.hpp"
 
+class Sprite;
+class ToolTip;
+class UI;
+class Widget;
 class ScrollBar;
 
 class PanelTracksSelection {

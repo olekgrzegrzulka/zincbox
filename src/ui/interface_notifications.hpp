@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
-
 #include "core/zincbox.hpp"
+#include "theme_config.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"

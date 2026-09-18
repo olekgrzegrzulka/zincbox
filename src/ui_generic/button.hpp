@@ -1,8 +1,13 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <string_view>
+#include <utility>
+#include "common/color.hpp"
+#include "common/types.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
+#include "theme_config.hpp"
 #include "ui/theme.hpp" // FIXME ui_generic should not depend on ui/theme.hpp
 #include "widget.hpp"
 

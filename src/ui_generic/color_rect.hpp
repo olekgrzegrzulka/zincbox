@@ -1,13 +1,10 @@
 #pragma once
 #include <vector>
-#include <glm/vec2.hpp>
 #include "common/color.hpp"
 #include "common/types.hpp"
 #include "widget.hpp"
 
-class TextureAtlas;
 class UI;
-class Shader;
 
 class ColorRect : public Widget {
     struct vertex final {

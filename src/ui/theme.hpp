@@ -2,7 +2,10 @@
 #include <set>
 #include <string>
 #include <string_view>
-#include "theme_config.hpp"
+#include <stdint.h>     
+#include <vector>  
+
+struct ThemeConfig;
 
 class UI;
 

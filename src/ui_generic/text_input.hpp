@@ -1,8 +1,11 @@
 #pragma once
-#include "common/input.hpp"
-#include "label.hpp"
+#include <functional>
+#include <utility>
 #include "sprite.hpp"
 #include "ui_generic/widget.hpp"
+
+class Label;
+class UI;
 
 class TextInput : public Sprite {
   public:

@@ -1,16 +1,15 @@
 #pragma once
 #include <memory>
+#include <span>
+#include <string>
 #include <utility>
 #include <vector>
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
+#include <stddef.h>
 #include "common/types.hpp"
 #include "font_face.hpp"
 #include "freetype/freetype.h"
-#include "label.hpp"
 #include "shader.hpp"
-#include "sprite.hpp"
 #include "texture_atlas.hpp"
 #include "widget.hpp"
 

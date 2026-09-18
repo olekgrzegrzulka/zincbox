@@ -1,10 +1,8 @@
 #pragma once
+#include <algorithm>
 #include <glm/ext/vector_float2.hpp>
-#include "button.hpp"
 #include "common/types.hpp"
 #include "slider.hpp"
-#include "sprite.hpp"
-#include "widget.hpp"
 
 class UI;
 

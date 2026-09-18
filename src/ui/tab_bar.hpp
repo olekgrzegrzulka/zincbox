@@ -1,14 +1,14 @@
 #pragma once
 #include <functional>
+#include <span>
 #include <string>
 #include <vector>
-#include "common/input.hpp"
+#include <stddef.h>
+#include "common/types.hpp"
 #include "ui_generic/button.hpp"
-#include "ui_generic/sprite.hpp"
 #include "ui_generic/widget.hpp"
 
 class UI;
-class Label;
 
 class Tab : public Button {
   public:

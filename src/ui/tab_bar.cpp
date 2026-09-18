@@ -1,15 +1,21 @@
 #include "tab_bar.hpp"
 #include <algorithm>
+#include <cmath>
 #include <functional>
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+#include <stdlib.h>
+#include "common/color.hpp"
 #include "common/input.hpp"
+#include "core/zincbox.hpp"
+#include "theme_config.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 

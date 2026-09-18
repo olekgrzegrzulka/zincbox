@@ -4,12 +4,16 @@
 #include <string>
 #include <unordered_map>
 #include "common/input.hpp"
-#include "popup.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
+#include <type_traits>               
+#include <utility>                   
+#include <vector>                    
+#include "common/types.hpp"    
+
+class Popup;
+struct popover_descriptor;
 
 class Dimmer : public Sprite {
   public:

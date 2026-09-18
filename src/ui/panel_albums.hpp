@@ -3,15 +3,19 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include "common/input.hpp"
+#include <stddef.h>
+#include "common/color.hpp"
 #include "common/signal.hpp"
+#include "common/types.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/color_rect.hpp"
-#include "ui_generic/scrollbar.hpp"
 #include "ui_generic/sprite.hpp"
-#include "ui_generic/text_input.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+
+class Label;
+class ScrollBar;
+class TextInput;
+class UI;
+class Widget;
 
 class SpriteAlbumCover : public Sprite {
   public:

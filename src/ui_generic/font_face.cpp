@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <ft2build.h>
 #include <glm/vec2.hpp>
+#include <stdlib.h>
 #include "common/debug.hpp"
 #include "common/types.hpp"
 #include "opengl_includes.hpp"

@@ -1,9 +1,11 @@
+#include <algorithm>
 #include <string>
+#include <utility>
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "ui/popup.hpp"
-#include "ui/popup_controller.hpp"
 #include "ui_generic/sprite.hpp"
+#include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
 Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)

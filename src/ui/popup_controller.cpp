@@ -1,9 +1,12 @@
+#include <algorithm>
 #include <functional>
+#include <memory>
 #include <string>
-#include <string_view>
 #include <unordered_map>
-#include "core/settings.hpp"
+#include "common/color.hpp"
 #include "core/zincbox.hpp"
+#include "theme_config.hpp"
+#include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/button.hpp"

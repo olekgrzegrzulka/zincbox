@@ -1,17 +1,21 @@
 #include "panel_top.hpp"
+#include <algorithm>
 #include <string>
+#include "common/color.hpp"
+#include "common/types.hpp"
+#include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
-#include "core/settings.hpp"
 #include "core/zincbox.hpp"
+#include "theme_config.hpp"
 #include "tr.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/color_rect.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
+
+class UI;
 
 static constexpr size_t QUEUE_TAB_ID = 10000;
 

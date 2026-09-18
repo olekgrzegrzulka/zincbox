@@ -1,6 +1,16 @@
 #include "core/zincbox.hpp"
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 #include <glaze/glaze.hpp>
@@ -9,16 +19,19 @@
 #include "common/input.hpp"
 #include "common/logger.hpp"
 #include "common/serialized_state.hpp"
+#include "common/signal.hpp"
 #include "common/utf.hpp"
 #include "core/i_window.hpp"
 #include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
 #include "core/tray.hpp"
 #include "opengl_includes.hpp"
+#include "theme_config.hpp"
 #include "ui/interface.hpp"
 #include "ui/theme.hpp"
 
@@ -59,11 +72,6 @@ void zincbox::init_INTERNAL(u64 flags, std::unique_ptr<zincbox::IWindow> w) {
     s_window->min_size(480, 320);
     s_window->max_size(7680, 4320);
     s_window->vsync(false);
-
-    if (gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) == 0) {
-      out::critical("failed to load glad");
-      exit(1);
-    }
 
     interface::init();
   }

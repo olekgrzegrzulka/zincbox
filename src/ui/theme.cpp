@@ -1,9 +1,12 @@
+#include <array>
 #include <filesystem>
-#include <initializer_list>
+#include <functional>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <cmrc/cmrc.hpp>
 #include <glaze/glaze.hpp>
@@ -15,6 +18,7 @@
 #include "core/settings.hpp"
 #include "core/zincbox.hpp"
 #include "lib/miniz/miniz.h"
+#include "stb_image.h"
 #include "theme.hpp"
 #include "theme_config.hpp"
 #include "tr.hpp"

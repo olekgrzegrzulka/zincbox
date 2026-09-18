@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <glaze/glaze.hpp>
 #include "common/color.hpp"
 #include "common/serialized_state.hpp" // for glz::meta<rgba> specialization

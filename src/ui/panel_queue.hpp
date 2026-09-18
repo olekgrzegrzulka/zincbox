@@ -5,6 +5,8 @@
 #include "core/musicdb/types.hpp"
 #include "ui/panel_tracks.hpp"
 #include "ui_generic/widget.hpp"
+#include <optional>                
+#include <span>     
 
 class UI;
 class WidgetTrack;

@@ -1,7 +1,10 @@
 #include "sdl3_window.hpp"
 #include <SDL3/SDL_video.h>
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
+#include "glad.h"
+
 namespace zincbox {
   SDL3Window::SDL3Window() {
     m_window = SDL_CreateWindow("", 640, 480, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
@@ -15,6 +18,13 @@ namespace zincbox {
       return;
     }
     m_title_cache = "";
+
+    make_current();
+
+    if (gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) == 0) {
+      out::critical("failed to load glad");
+      exit(1);
+    }
   }
 
   SDL3Window::SDL3Window(const char* title, i32 width, i32 height) {

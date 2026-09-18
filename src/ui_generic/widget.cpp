@@ -1,7 +1,9 @@
 #include "widget.hpp"
+#include <cmath>
+#include <cstdlib>
 #include <spanstream>
-#include <glm/vec2.hpp>
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "ui.hpp"
 
 vec2i Widget::get_position(Anchor relative_to) const {

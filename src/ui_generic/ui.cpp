@@ -1,18 +1,21 @@
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
+#include <stdlib.h>
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "freetype/freetype.h"
-#include "label.hpp"
 #include "opengl_includes.hpp"
 #include "shader.hpp"
 #include "shader_src.hpp"
-#include "sprite.hpp"
 #include "ui.hpp"
+#include "ui_generic/font_face.hpp"
+#include "ui_generic/texture_atlas.hpp"
 #include "widget.hpp"
 
 UI::UI(i32 window_width_, i32 window_height_) : shader{shader_vert, shader_frag} {

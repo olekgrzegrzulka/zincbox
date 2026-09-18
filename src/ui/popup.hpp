@@ -1,14 +1,13 @@
 #pragma once
 #include <functional>
 #include <string>
+#include <tuple>
 #include <vector>
-#include "common/input.hpp"
 #include "common/types.hpp"
 #include "ui_generic/sprite.hpp"
-#include "ui_generic/widget.hpp"
 
 class PopupController;
-class Label;
+class UI;
 
 struct popover_descriptor {
     std::string id;

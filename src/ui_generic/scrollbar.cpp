@@ -1,10 +1,8 @@
 #include <algorithm>
-#include "common/input.hpp"
+#include <string>
 #include "common/types.hpp"
 #include "scrollbar.hpp"
 #include "slider.hpp"
-#include "sprite.hpp"
-#include "widget.hpp"
 
 ScrollBar::ScrollBar(UI& ui_, SliderOrientation o) : Slider(ui_, o) {
   set_texture_track_inactive("scrollbar_track_inactive");
