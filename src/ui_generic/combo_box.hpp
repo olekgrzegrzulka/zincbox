@@ -152,21 +152,21 @@ class ComboBox : public Button {
 
     void on_item_selected(std::function<void()> lambda_select_) { lambda_select = std::move(lambda_select_); }
 
-    void add_item(std::string_view id, std::u32string_view label_) { items.emplace_back(id, label_); }
+    void add_item(std::string_view id, std::string_view label_) { items.emplace_back(id, label_); }
 
     std::string get_selected_item_id() const {
       if (selected_index < 0 || selected_index >= (i32)items.size()) { return ""; }
       return items[selected_index].first;
     }
 
-    std::u32string get_selected_item_label() const {
-      if (selected_index < 0 || selected_index >= (i32)items.size()) { return U""; }
+    std::string get_selected_item_label() const {
+      if (selected_index < 0 || selected_index >= (i32)items.size()) { return ""; }
       return items[selected_index].second;
     }
 
     i32 get_selected_index() const { return selected_index; }
 
-    void select_item_by_label(std::u32string_view label_) {
+    void select_item_by_label(std::string_view label_) {
       for (i32 i = 0; i < (i32)items.size(); i += 1) {
         if (items[i].second == label_) {
           on_item_pressed(i);
@@ -232,7 +232,7 @@ class ComboBox : public Button {
 
     std::array<ComboBoxItem*, dropdown_max_length + 1>
       item_widgets; // +1 to accomodate for partially visible extra item
-    std::vector<std::pair<std::string, std::u32string>> items;
+    std::vector<std::pair<std::string, std::string>> items;
 
   public:
     WIDGET_DEF_SETTER_DIRTY(item_height);

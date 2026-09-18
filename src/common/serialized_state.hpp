@@ -24,12 +24,6 @@ template <> struct glz::meta<rgba> {
     static constexpr auto value = glz::custom<read, write>;
 };
 
-template <> struct glz::meta<std::u32string> {
-    static constexpr auto read = [](std::u32string& v, const std::string& s) -> void { v = utf8_to_utf32(s); };
-    static constexpr auto write = [](const std::u32string& v) -> std::string { return utf32_to_utf8(v); };
-    static constexpr auto value = glz::custom<read, write>;
-};
-
 template <> struct glz::meta<player::RepeatMode> {
     using enum player::RepeatMode;
     static constexpr auto value = enumerate("off", OFF, "track", TRACK, "album", ALBUM);
@@ -61,17 +55,17 @@ struct QueueTrackSerialized {
       if (!track_ || !playlist_ || !collection_) { return; }
       auto& track = track_->get();
 
-      collection = utf32_to_utf8(collection_->get().name());
-      playlist = utf32_to_utf8(playlist_->get().name);
+      collection = collection_->get().name();
+      playlist = playlist_->get().name;
       track_number = track.track_number;
-      title = utf32_to_utf8(track.title);
-      artist = utf32_to_utf8(track.artist);
-      album_artist = utf32_to_utf8(track.album_artist);
-      genre = utf32_to_utf8(track.genre);
+      title = track.title;
+      artist = track.artist;
+      album_artist = track.album_artist;
+      genre = track.genre;
       year = track.year;
       bitrate = track.bitrate;
       length_seconds = track.length_seconds;
-      path = utf32_to_utf8(track.path);
+      path = track.path;
     }
 };
 
@@ -97,14 +91,14 @@ struct PlaylistTrackSerialized {
     PlaylistTrackSerialized() = default;
     PlaylistTrackSerialized(const db::Track& track) {
       track_number = track.track_number;
-      title = utf32_to_utf8(track.title);
-      artist = utf32_to_utf8(track.artist);
-      album_artist = utf32_to_utf8(track.album_artist);
-      genre = utf32_to_utf8(track.genre);
+      title = track.title;
+      artist = track.artist;
+      album_artist = track.album_artist;
+      genre = track.genre;
       year = track.year;
       bitrate = track.bitrate;
       length_seconds = track.length_seconds;
-      path = utf32_to_utf8(track.path);
+      path = track.path;
     }
 };
 
@@ -122,7 +116,7 @@ struct PlaylistSerialized {
 
     PlaylistSerialized() = default;
     PlaylistSerialized(const db::Playlist& playlist) {
-      title = utf32_to_utf8(playlist.name);
+      title = playlist.name;
       for (auto track_id : playlist.track_ids) {
         auto& track = db::track_by_id(track_id)->get();
         tracks.emplace_back(PlaylistTrackSerialized(track));

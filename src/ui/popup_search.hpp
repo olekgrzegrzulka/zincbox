@@ -271,7 +271,7 @@ class PopupSearch : public Popup {
     bool checkbox_search_all_collections_state_old = true;
 
     size_t collection_id{};
-    std::u32string search_text{};
+    std::string search_text{};
     std::vector<size_t> playlist_ids;
     std::vector<db::track_info> found_tracks;
     double scroll_px{};

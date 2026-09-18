@@ -18,7 +18,7 @@ struct vertex_label final {
 
 class Label final : public Widget {
   private:
-    std::u32string text;
+    std::string text;
     bool resize_to_text_extents = true;
     Anchor label_anchor = Anchor::CENTER;
     u32 vao = 0;
@@ -30,7 +30,6 @@ class Label final : public Widget {
   public:
     Label(UI&);
     Label(UI&, std::string_view);
-    Label(UI&, std::u32string_view);
 
     ~Label() override;
 
@@ -41,9 +40,7 @@ class Label final : public Widget {
     WIDGET_DEF_GETTER(text_extents);
     WIDGET_DEF_SETTER_DIRTY(label_anchor);
 
-    void set_text(std::string_view text_) { set_text(utf8_to_utf32(text_)); }
-
-    void set_text(std::u32string_view text_) {
+    void set_text(std::string_view text_) {
       if (text == text_) { return; }
       text = text_;
       // text_dirty = true;
@@ -63,23 +60,22 @@ class Label final : public Widget {
       dirty = true;
     }
 
-    void append_text(std::u32string_view append) {
+    void append_text(std::string_view append) {
       if (append.empty()) { return; }
       text += append;
       // text_dirty = true;
       dirty = true;
     }
 
-    void append_text(std::string_view append) { append_text(utf8_to_utf32(append)); }
-
     bool erase_last_character() {
-      if (text.length() > 0) {
-        text.pop_back();
-        return true;
-        // text_dirty = true;
-        dirty = true;
-      }
-      return false;
+      if (text.empty()) { return false; }
+
+      auto it = text.end();
+      utf8::prior(it, text.begin());
+      text.erase(it, text.end());
+
+      dirty = true;
+      return true;
     }
 
     void update() override;

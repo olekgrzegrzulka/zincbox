@@ -1,5 +1,6 @@
 #include <string>
 #include <string_view>
+#include "lib/utfcpp/source/utf8.h"
 
 // clang-format off
 static inline char32_t transform_to_base_char(char32_t c) {
@@ -49,13 +50,17 @@ static inline char32_t transform_to_base_char(char32_t c) {
 }
 // clang-format on
 
-static inline std::u32string sanitize_query(std::u32string_view input) {
-  std::u32string result;
+static inline std::string sanitize_query(std::string_view input) {
+  std::string result;
   result.reserve(input.size());
 
   bool last_was_space = true;
 
-  for (char32_t c : input) {
+  auto start = input.begin();
+  auto end = input.end();
+
+  while (start != end) {
+    char32_t c = utf8::next(start, end);
     char32_t new_char = transform_to_base_char(c);
 
     if (new_char == U' ') {

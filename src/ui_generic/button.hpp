@@ -42,8 +42,6 @@ class Button : public Sprite {
   public:
     Button(UI& ui_) : Sprite::Sprite(ui_), label(add_child<Label>()) { init(); }
 
-    Button(UI& ui_, std::u32string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) { init(); }
-
     Button(UI& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) { init(); }
 
     void init() {

@@ -22,13 +22,6 @@ Label::Label(UI& ui_, std::string_view text_) : Widget::Widget(ui_) {
   clip = true;
 }
 
-Label::Label(UI& ui_, std::u32string_view text_) : Widget::Widget(ui_) {
-  set_text_color(theme::config().text_color);
-  set_text(text_);
-  update_mesh();
-  clip = true;
-}
-
 Label::~Label() {
   if (vbo != 0) { glDeleteBuffers(1, &vbo); }
   if (vao != 0) { glDeleteVertexArrays(1, &vao); }
@@ -73,7 +66,12 @@ void Label::update_mesh() {
   const float line_spacing = 4.0f;
   i32 lines_count = 1;
 
-  for (auto c : text) {
+  auto text_start = text.begin();
+  auto text_end = text.end();
+
+  while (text_start != text_end) {
+    char32_t c = utf8::next(text_start, text_end);
+
     if (c == '\n') {
       text_extents.x = std::max(text_extents.x, current_line_width);
       current_line_width = 0.0f;
@@ -96,7 +94,11 @@ void Label::update_mesh() {
   vec2f pen = start_pos;
   pen.y += font_ascender;
 
-  for (auto c : text) {
+  text_start = text.begin();
+  text_end = text.end();
+
+  while (text_start != text_end) {
+    char32_t c = utf8::next(text_start, text_end);
     if (c == '\n') {
       pen.x = start_pos.x;
       pen.y += font_line_height + line_spacing;

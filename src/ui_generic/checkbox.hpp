@@ -10,11 +10,11 @@
 
 class Checkbox : public Widget {
   public:
-    Checkbox(UI& ui_) : Widget(ui_) { init(U""); }
+    Checkbox(UI& ui_) : Widget(ui_) { init(""); }
 
-    Checkbox(UI& ui_, std::u32string_view label_text) : Widget(ui_) { init(label_text); }
+    Checkbox(UI& ui_, std::string_view label_text) : Widget(ui_) { init(label_text); }
 
-    void init(std::u32string_view label_text) {
+    void init(std::string_view label_text) {
       uv_checkbox_idle = ui.get_texture_atlas().get("checkbox_idle")->get();
       uv_checkbox_hovered = ui.get_texture_atlas().get("checkbox_hovered")->get();
       uv_checkbox_pressed = ui.get_texture_atlas().get("checkbox_pressed")->get();

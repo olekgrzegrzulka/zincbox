@@ -115,7 +115,7 @@ void zincbox::deinit() {
 }
 
 void zincbox::load_state_from_json() {
-  auto ec = glz::read_file_json(s_loaded_state, io::get_cfg_path().string().c_str(), std::string{});
+  auto ec = glz::read_file_json(s_loaded_state, io::get_cfg_path().c_str(), std::string{});
   if (ec) {
     out::error("failed to read zincbox.json: {}", ec.custom_error_message);
     return;
@@ -152,15 +152,15 @@ void zincbox::apply_loaded_state() {
   player::signal_on_queue_changed.emit(false);
   player::signal_on_track_changed.emit();
 
-  std::vector<std::u32string> tabs_order;
+  std::vector<std::string> tabs_order;
   for (const auto& t : s_loaded_state.interface.tabs_order) {
-    tabs_order.emplace_back(utf8_to_utf32(t));
+    tabs_order.emplace_back(t);
   }
 
   interface::set_mini_player(s_loaded_state.interface.mini_player);
 
   interface::set_playlists_scroll_offset(s_loaded_state.interface.playlists_scroll_offset);
-  interface::set_selected_tab(utf8_to_utf32(s_loaded_state.interface.selected_tab));
+  interface::set_selected_tab(s_loaded_state.interface.selected_tab);
   interface::set_tabs_order(tabs_order);
   interface::set_tracks_scroll_offset(s_loaded_state.interface.tracks_scroll_offset);
   if (s_window) {
@@ -193,13 +193,13 @@ void zincbox::save_state_to_json() {
 
   std::vector<std::string> tabs_order;
   for (const auto& t : interface::get_tabs_order()) {
-    tabs_order.emplace_back(utf32_to_utf8(t));
+    tabs_order.emplace_back(t);
   }
 
   state.interface = {
     .mini_player = interface::get_mini_player(),
     .playlists_scroll_offset = interface::get_playlists_scroll_offset(),
-    .selected_tab = utf32_to_utf8(interface::get_selected_tab()),
+    .selected_tab = interface::get_selected_tab(),
     .tabs_order = tabs_order,
     .tracks_scroll_offset = interface::get_tracks_scroll_offset(),
     .window_width = s_window ? s_window->width() : 0,
@@ -208,7 +208,7 @@ void zincbox::save_state_to_json() {
   };
 
   auto ec =
-    glz::write_file_json<glz::opts{.prettify = true}>(state, io::get_cfg_path().string().c_str(), std::string{});
+    glz::write_file_json<glz::opts{.prettify = true}>(state, path_to_utf8(io::get_cfg_path()).c_str(), std::string{});
   if (ec) { out::error("failed to write zincbox.json: {}", ec.custom_error_message); }
 }
 
@@ -252,7 +252,7 @@ void update_window_title() {
   std::string window_title;
   if (playing.has_value()) {
     auto& track = db::track_by_id(playing->track_id)->get();
-    window_title = "zincbox (" + utf32_to_utf8(track.pretty_name()) + ")";
+    window_title = "zincbox (" + track.pretty_name() + ")";
   } else {
     window_title = "zincbox";
   }

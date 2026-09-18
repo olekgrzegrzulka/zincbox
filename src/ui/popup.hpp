@@ -11,10 +11,10 @@ class UI;
 
 struct popover_descriptor {
     std::string id;
-    std::u32string title;
+    std::string title;
     vec2i at;
     i32 distance;
-    std::vector<std::tuple<std::u32string, std::function<void()>, std::string>> buttons;
+    std::vector<std::tuple<std::string, std::function<void()>, std::string>> buttons;
     bool show_arrow = true;
 };
 

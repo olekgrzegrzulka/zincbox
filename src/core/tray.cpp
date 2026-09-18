@@ -35,8 +35,6 @@ namespace tray {
     SDL_Surface* icon_paused = nullptr;
     TrayIconState current_icon_state = TrayIconState::NONE;
 
-    std::string tr_utf8(const std::string& key) { return utf32_to_utf8(tr::get(key)); }
-
     SDL_Surface* load_icon_surface(const std::string& path) {
       auto raw = theme::get_raw_resource(path);
       if (raw.empty()) { return nullptr; }
@@ -82,31 +80,31 @@ namespace tray {
     current_icon_state = TrayIconState::STOPPED;
 
     main_menu = SDL_CreateTrayMenu(system_tray);
-    entry_play_pause = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.play").c_str(), SDL_TRAYENTRY_BUTTON);
+    entry_play_pause = SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.play").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_play_pause, cb_play_pause, nullptr);
-    entry_stop = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.stop").c_str(), SDL_TRAYENTRY_BUTTON);
+    entry_stop = SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.stop").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_stop, cb_stop, nullptr);
-    entry_prev = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.prev").c_str(), SDL_TRAYENTRY_BUTTON);
+    entry_prev = SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.prev").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_prev, cb_prev, nullptr);
-    entry_next = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.next").c_str(), SDL_TRAYENTRY_BUTTON);
+    entry_next = SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.next").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_next, cb_next, nullptr);
     SDL_InsertTrayEntryAt(main_menu, -1, nullptr, 0);
-    entry_shuffle = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.shuffle").c_str(), SDL_TRAYENTRY_CHECKBOX);
+    entry_shuffle = SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.shuffle").c_str(), SDL_TRAYENTRY_CHECKBOX);
     SDL_SetTrayEntryCallback(entry_shuffle, cb_shuffle, nullptr);
     SDL_TrayEntry* entry_repeat_parent =
-      SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.repeat").c_str(), SDL_TRAYENTRY_SUBMENU);
+      SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.repeat").c_str(), SDL_TRAYENTRY_SUBMENU);
     repeat_menu = SDL_CreateTraySubmenu(entry_repeat_parent);
     entry_repeat_off =
-      SDL_InsertTrayEntryAt(repeat_menu, -1, tr_utf8("tray.repeat_off").c_str(), SDL_TRAYENTRY_CHECKBOX);
+      SDL_InsertTrayEntryAt(repeat_menu, -1, tr::get("tray.repeat_off").c_str(), SDL_TRAYENTRY_CHECKBOX);
     SDL_SetTrayEntryCallback(entry_repeat_off, cb_repeat_off, nullptr);
     entry_repeat_track =
-      SDL_InsertTrayEntryAt(repeat_menu, -1, tr_utf8("tray.repeat_track").c_str(), SDL_TRAYENTRY_CHECKBOX);
+      SDL_InsertTrayEntryAt(repeat_menu, -1, tr::get("tray.repeat_track").c_str(), SDL_TRAYENTRY_CHECKBOX);
     SDL_SetTrayEntryCallback(entry_repeat_track, cb_repeat_track, nullptr);
     entry_repeat_album =
-      SDL_InsertTrayEntryAt(repeat_menu, -1, tr_utf8("tray.repeat_album").c_str(), SDL_TRAYENTRY_CHECKBOX);
+      SDL_InsertTrayEntryAt(repeat_menu, -1, tr::get("tray.repeat_album").c_str(), SDL_TRAYENTRY_CHECKBOX);
     SDL_SetTrayEntryCallback(entry_repeat_album, cb_repeat_album, nullptr);
     SDL_InsertTrayEntryAt(main_menu, -1, nullptr, 0);
-    entry_quit = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.quit").c_str(), SDL_TRAYENTRY_BUTTON);
+    entry_quit = SDL_InsertTrayEntryAt(main_menu, -1, tr::get("tray.quit").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_quit, cb_quit, nullptr);
   }
 
@@ -130,7 +128,7 @@ namespace tray {
       }
     }
 
-    SDL_SetTrayEntryLabel(entry_play_pause, tr_utf8(player::is_playing() ? "tray.pause" : "tray.play").c_str());
+    SDL_SetTrayEntryLabel(entry_play_pause, tr::get(player::is_playing() ? "tray.pause" : "tray.play").c_str());
     SDL_SetTrayEntryChecked(entry_shuffle, player::get_shuffle_mode() == player::ShuffleMode::ON);
     auto repeat_mode = player::get_repeat_mode();
     SDL_SetTrayEntryChecked(entry_repeat_off, repeat_mode == player::RepeatMode::OFF);

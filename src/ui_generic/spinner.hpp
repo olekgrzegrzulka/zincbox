@@ -41,13 +41,13 @@ class Spinner : public TextInput {
 
     void on_text_changed() {
       auto str = label.get_text();
-      bool typed_minus = str.ends_with(U'-');
+      bool typed_minus = str.ends_with('-');
       if (typed_minus) {
         str.erase(str.length() - 1, 1);
-        if (str.starts_with(U'-')) {
+        if (str.starts_with('-')) {
           str.erase(0, 1);
         } else {
-          str = U'-' + str;
+          str = '-' + str;
         }
       }
       label.set_text(str);
@@ -67,7 +67,7 @@ class Spinner : public TextInput {
           new_value = min_value;
         } else {
           try {
-            new_value = std::stoi(utf32_to_utf8(str));
+            new_value = std::stoi(str);
           } catch (const std::invalid_argument&) { new_value = value; } catch (const std::out_of_range&) {
             if (str.starts_with('-')) {
               new_value = std::numeric_limits<i32>::min();
@@ -137,7 +137,7 @@ class Spinner : public TextInput {
     i32 min_value = 0;
     i32 max_value = 100;
     bool buffer_changed = false;
-    std::u32string postfix = U"";
+    std::string postfix = "";
     i32 button_step = 1;
 
     static constexpr i32 buttons_echo_length_initial = 40;
@@ -150,7 +150,7 @@ class Spinner : public TextInput {
     WIDGET_DEF_GETTER(min_value);
     WIDGET_DEF_GETTER(max_value);
     WIDGET_DEF_GETTER(button_step);
-    void set_postfix(const std::u32string& postfix_) {
+    void set_postfix(const std::string& postfix_) {
       if (postfix != postfix_) { postfix = postfix_; }
       label_postfix.set_text(postfix);
     }

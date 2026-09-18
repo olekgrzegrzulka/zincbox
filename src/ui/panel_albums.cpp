@@ -287,7 +287,7 @@ void PanelAlbums::reflow() {
   i32 album_covers_in_one_row = albums_area_width / cover_total_width;
   i32 space_left = albums_area_width - album_covers_in_one_row * cover_total_width;
   if (album_covers_in_one_row <= 0) { return; }
-  std::optional<std::u32string_view> prev_artist;
+  std::optional<std::string_view> prev_artist;
   std::optional<char32_t> prev_name_first_letter;
   i32 column = 0;
   i32 cover_y = 0;

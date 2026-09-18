@@ -25,8 +25,8 @@ namespace Input {
 
     std::array<ButtonState, (size_t)MouseButton::MOUSE_BUTTON_SIZE> mouse_states;
     std::array<ButtonState, (size_t)Key::KEY_SIZE> key_states;
-    std::u32string keyboard_characters_prev;
-    std::u32string keyboard_characters_curr;
+    std::string keyboard_characters_prev;
+    std::string keyboard_characters_curr;
     vec2f accumulated_scroll_next{};
     vec2f accumulated_scroll{};
   } // namespace detail
@@ -60,9 +60,7 @@ namespace Input {
       break;
     }
     case SDL_EVENT_TEXT_INPUT: {
-      std::string utf8_text = event.text.text;
-      std::u32string utf32_text = utf8_to_utf32(utf8_text);
-      detail::keyboard_characters_curr += utf32_text;
+      detail::keyboard_characters_curr += event.text.text;
       break;
     }
     case SDL_EVENT_KEY_DOWN:
@@ -212,7 +210,7 @@ namespace Input {
     return {width, height};
   }
 
-  std::u32string get_typed_characters() { return detail::keyboard_characters_prev; }
+  std::string get_typed_characters() { return detail::keyboard_characters_prev; }
 
   std::string key_to_string(Input::Key key) {
     switch ((i32)key) {

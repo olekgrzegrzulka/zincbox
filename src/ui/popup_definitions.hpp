@@ -28,7 +28,7 @@ class PopupInput : public Popup {
       : Popup(ui_, controller_, std::move(on_close_)) {
       set_layout("ttb expand fit fill m:8 s:8");
 
-      title = &add_child<Label>(U"");
+      title = &add_child<Label>("");
       title->set_max_height(32 * zincbox::ui_scale());
       text_input = &add_child<TextInput>();
       text_input->set_max_height(24);
@@ -63,11 +63,11 @@ class PopupInput : public Popup {
 class PopupConfirm : public Popup {
   public:
     PopupConfirm(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                 std::u32string_view content_)
+                 std::string_view content_)
       : Popup(ui_, controller_, std::move(on_close_)) {
       set_layout("ttb fill fit expand m:8 s:8");
 
-      title = &add_child<Label>(U"");
+      title = &add_child<Label>("");
       title->set_height(32 * zincbox::ui_scale());
       title->set_min_height(32 * zincbox::ui_scale());
       title->set_max_height(32 * zincbox::ui_scale());
@@ -116,14 +116,14 @@ class PopupImportFolders : public Popup {
 
       dirs = std::vector<std::string>(dropped_directories.begin(), dropped_directories.end());
 
-      title = &add_child<Label>(U"");
+      title = &add_child<Label>("");
       title->set_anchor(Anchor::TOP);
       title->set_parent_anchor(Anchor::TOP);
       title->set_height(32 * zincbox::ui_scale());
       title->set_min_height(32 * zincbox::ui_scale());
       title->set_max_height(32 * zincbox::ui_scale());
 
-      content = &add_child<Label>(U"");
+      content = &add_child<Label>("");
       content->set_anchor(Anchor::CENTER);
       content->set_parent_anchor(Anchor::CENTER);
 
@@ -148,7 +148,7 @@ class PopupImportFolders : public Popup {
       // remove the last newline
       if (!content_str.empty()) { content_str.pop_back(); }
 
-      content->set_text(utf8_to_utf32(content_str));
+      content->set_text(content_str);
       content->update();
       content->set_size(content->get_text_extents());
       content->set_min_height(content->get_text_extents().y);
@@ -202,7 +202,7 @@ class PopupSetSources : public Popup {
 
       auto& collection = db::collection_by_id(collection_id)->get();
 
-      title = &add_child<Label>(tr::format("popup.sources.title", utf32_to_utf8(collection.name())));
+      title = &add_child<Label>(tr::format("popup.sources.title", collection.name()));
       title->set_height(32 * zincbox::ui_scale());
       title->set_anchor(Anchor::TOP);
       title->set_parent_anchor(Anchor::TOP);
@@ -239,7 +239,7 @@ class PopupSetSources : public Popup {
 
       if (!collection.paths().empty()) {
         for (i32 num = 1; const auto& path : collection.paths()) {
-          std::u32string str = utf8_to_utf32(std::to_string(num)) + U". " + utf8_to_utf32(path);
+          std::string str = std::to_string(num) + ". " + path;
 
           auto color_odd = theme::config().panel_tracklist.track_color_odd;
           auto color_even = theme::config().panel_tracklist.track_color_even;
@@ -324,20 +324,20 @@ class PopupAddToPlaylist : public Popup {
                        std::optional<size_t> track_id_)
       : Popup(ui_, controller_, std::move(on_close_)), track_id(track_id_) {
 
-      std::u32string pretty_track;
+      std::string pretty_track;
       if (track_id.has_value() && db::track_by_id(track_id.value()).has_value()) {
         auto& track = db::track_by_id(track_id.value())->get();
         if (track.artist.empty() || track.title.empty()) {
-          pretty_track = utf8_to_utf32(std::filesystem::path{track.path}.filename().string());
+          pretty_track = path_to_utf8(std::filesystem::path{track.path}.filename());
         } else {
-          pretty_track = track.artist + U" - " + track.title;
+          pretty_track = track.artist + " - " + track.title;
         }
       }
 
       set_layout("ttb fill fit expand m:8 s:8");
 
       if (!pretty_track.empty()) {
-        title = &add_child<Label>(tr::format("popup.add_to_playlist.title", utf32_to_utf8(pretty_track)));
+        title = &add_child<Label>(tr::format("popup.add_to_playlist.title", pretty_track));
       } else {
         title = &add_child<Label>(tr::format("popup.add_to_playlist.title_plural"));
       }

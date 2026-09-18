@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <string>
 #include <string_view>
 #include "common/logger.hpp"
@@ -19,3 +20,8 @@ inline std::u32string utf8_to_utf32(std::string_view str) {
   } catch (const utf8::invalid_utf8& e) { out::debug_error("utf32 to utf conversion failed: {}", e.what()); }
   return ret;
 };
+
+inline std::string path_to_utf8(const std::filesystem::path& p) {
+  auto p_utf8 = p.u8string();
+  return std::string(p_utf8.begin(), p_utf8.end());
+}

@@ -13,8 +13,8 @@
 #include "common/utf.hpp"
 #include "core/musicdb/types.hpp"
 
-db::Track::Track(i32 track_number_, std::u32string title_, std::u32string artist_, std::u32string album_artist_,
-                 std::u32string genre_, i32 year_, i32 bitrate_, i32 length_seconds_, std::u32string path_) {
+db::Track::Track(i32 track_number_, std::string title_, std::string artist_, std::string album_artist_,
+                 std::string genre_, i32 year_, i32 bitrate_, i32 length_seconds_, std::string path_) {
   track_number = track_number_;
   title = std::move(title_);
   artist = std::move(artist_);
@@ -59,26 +59,25 @@ void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old
 }
 
 std::string db::Track::to_string() const {
-  return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) +
-         (is_tombstone() ? " (tombstone)" : "");
+  return std::to_string(track_number) + ". " + artist + " - " + title + (is_tombstone() ? " (tombstone)" : "");
 }
 
-std::u32string db::Track::pretty_name() const {
+std::string db::Track::pretty_name() const {
   if (!title.empty()) {
     if (!artist.empty()) {
-      return artist + U" - " + title;
+      return artist + " - " + title;
     } else {
       return title;
     }
   } else {
-    return utf8_to_utf32(std::filesystem::path(path).filename().string());
+    return path_to_utf8(std::filesystem::path(path).filename());
   }
 }
-std::u32string db::Track::pretty_length() const {
+std::string db::Track::pretty_length() const {
   i32 length_s = length_seconds;
   i32 length_m = length_seconds / 60;
   length_s %= 60;
   std::stringstream ss;
   ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
-  return utf8_to_utf32(ss.str());
+  return ss.str();
 }

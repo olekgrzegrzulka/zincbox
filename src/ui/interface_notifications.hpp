@@ -50,7 +50,7 @@ class InterfaceNotifications : public Widget {
       set_anchor(Anchor::BOTTOM_CENTER);
     }
 
-    void push(std::u32string_view message) {
+    void push(std::string_view message) {
       auto& w = add_child<Notification>();
       w.label->set_text(message);
       w.label->update();

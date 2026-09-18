@@ -39,14 +39,14 @@ class WidgetPlaylistHeader : public Widget {
       header.set_y(6 * scale);
 
       auto& label_author = header.add_child<Label>();
-      label_author.set_text(playlist.has_value() ? playlist->get().author : U"?");
+      label_author.set_text(playlist.has_value() ? playlist->get().author : "?");
       label_author.set_text_color(theme::config().panel_tracklist.header_author_color);
       label_author.set_label_anchor(Anchor::LEFT);
       if (playlist.has_value() && playlist->get().author.empty()) { label_author.set_is_drawn(false); }
       label_author.update();
       label_author.set_max_width(label_author.get_text_extents().x);
       auto& label_name = header.add_child<Label>();
-      label_name.set_text(playlist.has_value() ? playlist->get().name : U"?");
+      label_name.set_text(playlist.has_value() ? playlist->get().name : "?");
       label_name.set_text_color(theme::config().panel_tracklist.header_name_color);
       label_name.set_label_anchor(Anchor::LEFT);
 

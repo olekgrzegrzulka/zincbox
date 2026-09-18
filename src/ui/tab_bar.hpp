@@ -46,7 +46,7 @@ class TabBar : public Widget {
     struct tab_info {
         i32 id{};
         bool is_draggable{};
-        std::u32string label{};
+        std::string label{};
         i32 padding = 0;
         std::function<void()> on_open{};
         std::function<void(Tab*)> on_right_click{};
@@ -61,9 +61,9 @@ class TabBar : public Widget {
     void update() override;
     void update_tab_textures(i32 id);
     const std::vector<Tab*>& get_tabs() const { return tabs; }
-    void sort_tabs_by_label(std::span<const std::u32string>);
+    void sort_tabs_by_label(std::span<const std::string>);
     const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
-    const Tab* get_tab_by_label(const std::u32string& label) const;
+    const Tab* get_tab_by_label(const std::string& label) const;
     Button* get_button_add() { return button_add; }
     i32 get_tab_container_width();
     double get_scroll_px() { return scroll_px; }

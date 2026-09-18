@@ -61,9 +61,9 @@ class PopupSettings : public Popup {
       sidebar.set_layout("ttb expand m:2 s:2");
       sidebar.set_max_width(120);
 
-      std::array<std::u32string, 3> page_names = {tr::get("settings.category.general"),
-                                                  tr::get("settings.category.playback"),
-                                                  tr::get("settings.category.interface")};
+      std::array<std::string, 3> page_names = {tr::get("settings.category.general"),
+                                               tr::get("settings.category.playback"),
+                                               tr::get("settings.category.interface")};
 
       for (size_t i = 0; i < pages.size(); i += 1) {
         pages[i] = &content.add_child<ScrollableView>();
@@ -89,7 +89,7 @@ class PopupSettings : public Popup {
 
       auto create_widget_combobox = [this, &text_color_muted](Widget* parent_,
                                                               std::pair<std::string, std::string> json_key,
-                                                              std::u32string_view label_) -> ComboBox* {
+                                                              std::string_view label_) -> ComboBox* {
         auto& label = parent_->add_child<Label>(label_);
         label.set_resize_to_text_extents(false);
         label.set_height(16);
@@ -108,7 +108,7 @@ class PopupSettings : public Popup {
 
       auto create_widget_spinner = [this, &text_color_muted](Widget* parent_,
                                                              std::pair<std::string, std::string> json_key,
-                                                             std::u32string_view label_) -> Spinner* {
+                                                             std::string_view label_) -> Spinner* {
         auto& label = parent_->add_child<Label>(label_);
         label.set_resize_to_text_extents(false);
         label.set_height(16);
@@ -126,7 +126,7 @@ class PopupSettings : public Popup {
       };
 
       auto create_widget_checkbox = [this](Widget* parent_, std::pair<std::string, std::string> json_key,
-                                           std::u32string_view label_) -> Checkbox* {
+                                           std::string_view label_) -> Checkbox* {
         auto& checkbox = parent_->add_child<Checkbox>(label_);
         checkbox.set_width(128);
         checkbox.set_height(24);
@@ -150,7 +150,7 @@ class PopupSettings : public Popup {
 
       auto* spinner_volume_step = create_widget_spinner(page_general.content(), {"general", "volume_step"},
                                                         tr::get("settings.playback.volume_step"));
-      spinner_volume_step->set_postfix(U"%");
+      spinner_volume_step->set_postfix("%");
       spinner_volume_step->set_min_value(1);
       spinner_volume_step->set_max_value(10);
       spinner_volume_step->set_value(5);
@@ -181,24 +181,24 @@ class PopupSettings : public Popup {
                                                  tr::get("settings.interface.theme_label"));
       combo_theme->add_item("default", tr::get("settings.interface.default_theme"));
       for (auto& theme : theme::get_themes()) {
-        combo_theme->add_item(theme, utf8_to_utf32(theme));
+        combo_theme->add_item(theme, theme);
       }
       auto* language_combo = create_widget_combobox(page_interface.content(), {"interface", "language"},
                                                     tr::get("settings.interface.language_label"));
       for (auto& language : theme::get_languages()) {
-        language_combo->add_item(language, utf8_to_utf32(language));
+        language_combo->add_item(language, language);
       }
 
       auto* spinner_interface_scale =
         create_widget_spinner(page_interface.content(), {"interface", "scale"}, tr::get("settings.interface.scale"));
-      spinner_interface_scale->set_postfix(U"%");
+      spinner_interface_scale->set_postfix("%");
       spinner_interface_scale->set_min_value(75);
       spinner_interface_scale->set_max_value(200);
       spinner_interface_scale->set_value(100);
 
       auto* spinner_font_size = create_widget_spinner(page_interface.content(), {"interface", "font_size"},
                                                       tr::get("settings.interface.font_size"));
-      spinner_font_size->set_postfix(U"px");
+      spinner_font_size->set_postfix("px");
       spinner_font_size->set_min_value(8);
       spinner_font_size->set_max_value(32);
       spinner_font_size->set_value(12);

@@ -345,8 +345,8 @@ void TabBar::update_tab_textures(i32 id) {
   }
 }
 
-void TabBar::sort_tabs_by_label(std::span<const std::u32string> labels) {
-  std::unordered_map<std::u32string, i32> label_priority;
+void TabBar::sort_tabs_by_label(std::span<const std::string> labels) {
+  std::unordered_map<std::string, i32> label_priority;
   for (size_t i = 0; i < labels.size(); i += 1) {
     label_priority[labels[i]] = i;
   }
@@ -365,7 +365,7 @@ void TabBar::sort_tabs_by_label(std::span<const std::u32string> labels) {
   selected_tab_index = -1;
 }
 
-const Tab* TabBar::get_tab_by_label(const std::u32string& label) const {
+const Tab* TabBar::get_tab_by_label(const std::string& label) const {
   for (const Tab* tab : tabs) {
     if (tab->get_label().get_text() == label) { return tab; }
   }

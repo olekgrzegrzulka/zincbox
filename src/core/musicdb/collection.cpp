@@ -1,5 +1,6 @@
 #include "collection.hpp"
 #include "common/serialize.hpp"
+#include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
 
 db::Collection::Collection(std::ifstream& is) {
@@ -25,13 +26,13 @@ db::Collection::Collection(std::ifstream& is) {
 
 bool db::Collection::add_path(const fs::path& path) {
   if (m_playlist_ids.size() > 0 && m_playlist_ids[0] == 0) { return false; }
-  m_paths.emplace(path.string());
+  m_paths.emplace(path_to_utf8(path));
   return true;
 }
 
 bool db::Collection::remove_path(const fs::path& path) {
   if (m_playlist_ids.size() > 0 && m_playlist_ids[0] == 0) { return false; }
-  return m_paths.erase(path.string()) > 0;
+  return m_paths.erase(path_to_utf8(path)) > 0;
 }
 
 std::optional<size_t> db::Collection::next_playlist_id(size_t playlist_id) const {

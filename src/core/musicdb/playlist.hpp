@@ -17,18 +17,18 @@ namespace db {
 
   struct Playlist final {
     public:
-      std::u32string name;
-      std::u32string album_path;
-      std::u32string author;
+      std::string name;
+      std::string album_path;
+      std::string author;
       std::vector<u8> art_64x64;
       PlaylistType type;
       bool tombstone = false;
       std::vector<size_t> track_ids;
-      std::u32string art_file_path;
+      std::string art_file_path;
 
     public:
       Playlist(std::ifstream&);
-      Playlist(std::u32string_view name_, std::u32string_view author_, PlaylistType type_) {
+      Playlist(std::string_view name_, std::string_view author_, PlaylistType type_) {
         name = name_;
         author = author_;
         type = type_;

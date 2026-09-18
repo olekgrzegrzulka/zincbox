@@ -121,14 +121,14 @@ bool db::Playlist::fetch_cover_art(const fs::path& path) {
   i32 width, height, channels;
   stbi_uc* img = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
   if (img == NULL) {
-    out::debug_error("Playlist::fetch_cover_art({}): {}", path.string(), stbi_failure_reason());
+    out::debug_error("Playlist::fetch_cover_art({}): {}", path_to_utf8(path), stbi_failure_reason());
     return false;
   }
   art_64x64 = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
   auto path_art = TrackFile::save_album_art(img, width, height, channels);
   stbi_image_free(img);
   if (path_art.has_value()) {
-    art_file_path = utf8_to_utf32(path_art.value().string());
+    art_file_path = path_to_utf8(*path_art);
   } else {
     path_art->clear();
   }

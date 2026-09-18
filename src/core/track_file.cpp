@@ -51,8 +51,8 @@ TrackFile::TrackFile(const fs::path& path_, bool fetch_album_art) {
   if (properties.contains("ALBUMARTIST")) {
     TagLib::StringList artistList = properties["ALBUMARTIST"];
     for (const TagLib::String& artist : artistList) {
-      album_artist.append(utf8_to_utf32(artist.to8Bit(true)));
-      album_artist.append(U", ");
+      album_artist.append(artist.to8Bit(true));
+      album_artist.append(", ");
     }
     if (album_artist.size() >= 2) {
       album_artist.pop_back();
@@ -60,12 +60,12 @@ TrackFile::TrackFile(const fs::path& path_, bool fetch_album_art) {
     }
   }
 
-  album_name = utf8_to_utf32(tag->album().to8Bit(true));
+  album_name = tag->album().to8Bit(true);
 
   track = db::Track{
-    (i32)tag->track(),      utf8_to_utf32(tag->title().to8Bit(true)), utf8_to_utf32(tag->artist().to8Bit(true)),
-    album_artist,           utf8_to_utf32(tag->genre().to8Bit(true)), (i32)tag->year(),
-    audio_props->bitrate(), audio_props->lengthInSeconds(),           utf8_to_utf32(path_.string()),
+    (i32)tag->track(),      tag->title().to8Bit(true), tag->artist().to8Bit(true),
+    album_artist,           tag->genre().to8Bit(true), (i32)tag->year(),
+    audio_props->bitrate(), audio_props->lengthInSeconds(),           path_to_utf8(path_),
   };
 
   if (fetch_album_art) { this->fetch_album_art(&f); }
@@ -168,7 +168,7 @@ std::optional<fs::path> TrackFile::save_album_art(stbi_uc* img, i32 width, i32 h
   size_t filename = rng.next<size_t>(1000000000, 9999999999);
   std::filesystem::path file_path = std::filesystem::path(path) / (std::to_string(filename) + ".png");
 
-  FILE* out_file = fopen(file_path.string().c_str(), "wb");
+  FILE* out_file = fopen(file_path.c_str(), "wb");
   if (!out_file) { return std::nullopt; }
   spng_ctx* enc_ctx = spng_ctx_new(SPNG_CTX_ENCODER);
   if (!enc_ctx) {

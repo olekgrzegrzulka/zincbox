@@ -78,7 +78,7 @@ void TextInput::update() {
 
 void TextInput::clear() {
   if (label.get_text().empty()) { return; }
-  label.set_text(U"");
+  label.set_text("");
   if (lambda_on_text_changed) { lambda_on_text_changed(); }
 }
 

@@ -30,11 +30,11 @@ using db::Track;
 static std::vector<db::Collection> collections;
 static std::vector<db::Playlist> playlists;
 static std::vector<db::Track> tracks;
-static std::unordered_map<std::u32string, size_t> path_to_track_id;
-static std::unordered_map<std::u32string, std::unordered_set<size_t>> title_to_track_ids;
+static std::unordered_map<std::string, size_t> path_to_track_id;
+static std::unordered_map<std::string, std::unordered_set<size_t>> title_to_track_ids;
 
 static constexpr size_t DB_MAGIC = 667667667;
-static constexpr size_t DB_VERSION = 1;
+static constexpr size_t DB_VERSION = 2;
 
 void db::create_empty_db() {
   collections.clear();
@@ -42,8 +42,8 @@ void db::create_empty_db() {
   tracks.clear();
   path_to_track_id.clear();
   title_to_track_ids.clear();
-  db::add_collection(U"Playlists");
-  db::add_playlist_to_collection(0, db::Playlist{U"Loved tracks", U"", db::PlaylistType::User});
+  db::add_collection("Playlists");
+  db::add_playlist_to_collection(0, db::Playlist{"Loved tracks", "", db::PlaylistType::User});
 }
 
 void db::serialize(std::ofstream& os) {
@@ -176,31 +176,31 @@ void db::print_collections() {
   out::println("Track count: {}", tracks.size());
   out::println("Database tree:");
   for (auto& c : collections) {
-    out::println("Collection {}", utf32_to_utf8(c.name()));
+    out::println("Collection {}", c.name());
     for (auto p_id : c.playlist_ids()) {
       auto& p = playlists[p_id];
       if (!p.tombstone) {
-        out::println("\tPlaylist {} - {}", utf32_to_utf8(p.name), utf32_to_utf8(p.author));
+        out::println("\tPlaylist {} - {}", p.name, p.author);
       } else {
-        out::println("\tPlaylist {} - {} (tombstone)", utf32_to_utf8(p.name), utf32_to_utf8(p.author));
+        out::println("\tPlaylist {} - {} (tombstone)", p.name, p.author);
       }
       for (size_t t_id : p.get_track_ids()) {
         auto& t = tracks[t_id];
         if (!t.is_tombstone()) {
-          out::println(("\t\t{}. {}, {}"), t.track_number, utf32_to_utf8(t.artist), utf32_to_utf8(t.title));
+          out::println(("\t\t{}. {}, {}"), t.track_number, t.artist, t.title);
         } else {
-          out::println(("\t\t{}. {}, {} (tombstone)"), t.track_number, utf32_to_utf8(t.artist), utf32_to_utf8(t.title));
+          out::println(("\t\t{}. {}, {} (tombstone)"), t.track_number, t.artist, t.title);
         }
       }
     }
   }
 }
 
-void db::set_playlists_collection_name(std::u32string_view name) {
+void db::set_playlists_collection_name(std::string_view name) {
   if (!collections.empty()) { collections[0].set_name(name); }
 }
 
-void db::set_loved_tracks_playlist_name(std::u32string_view name) {
+void db::set_loved_tracks_playlist_name(std::string_view name) {
   if (!playlists.empty()) { playlists[0].name = name; }
 }
 
@@ -209,8 +209,8 @@ std::optional<db::track_info> db::find_track(const std::string_view& artist, con
                                              const std::string_view& playlist_name, const std::string_view& path) {
   std::unordered_set<db::track_id_t> matches;
   if (!artist.empty() && !title.empty()) {
-    matches = db::track_by_artist_title(utf8_to_utf32(artist), utf8_to_utf32(title));
-  } else if (auto track_id_by_path = db::track_by_path(utf8_to_utf32(path)); track_id_by_path.has_value()) {
+    matches = db::track_by_artist_title(artist, title);
+  } else if (auto track_id_by_path = db::track_by_path(path); track_id_by_path.has_value()) {
     matches = {track_id_by_path.value()};
   }
 
@@ -220,10 +220,10 @@ std::optional<db::track_info> db::find_track(const std::string_view& artist, con
 
   for (db::collection_id_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
     auto& collection = db::collection_by_id(collection_id)->get();
-    if (utf32_to_utf8(collection.name()) != collection_name) { continue; }
+    if (collection.name() != collection_name) { continue; }
     for (auto& playlist_id : collection.playlist_ids()) {
       auto& playlist = db::playlist_by_id(playlist_id)->get();
-      if (utf32_to_utf8(playlist.name) != playlist_name) { continue; }
+      if (playlist.name != playlist_name) { continue; }
       for (auto& track_id : playlist.track_ids) {
         if (matches.contains(track_id)) {
           return std::make_optional<track_info>(
@@ -249,8 +249,8 @@ size_t db::playlist_loved_tracks_id() { return 0; }
 
 Playlist& db::playlist_loved_tracks() {
   if (playlists.size() == 0) {
-    if (collections.size() == 0) { add_collection(U"Playlists"); }
-    db::add_playlist_to_collection(0, db::Playlist{U"Loved tracks", U"", PlaylistType::User});
+    if (collections.size() == 0) { add_collection("Playlists"); }
+    db::add_playlist_to_collection(0, db::Playlist{"Loved tracks", "", PlaylistType::User});
   }
   return playlists[0];
 }
@@ -264,7 +264,7 @@ std::optional<size_t> db::collection_of_playlist(size_t playlist_id) {
   return std::nullopt;
 }
 
-size_t db::add_collection(std::u32string_view name) {
+size_t db::add_collection(std::string_view name) {
   collections.emplace_back(Collection{name});
   return collections.size() - 1;
 }
@@ -288,7 +288,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
 
   for (auto& entry : fs::directory_iterator(path)) {
     if (entry.is_directory()) {
-      visit_directory(collection_id, entry.path().string());
+      visit_directory(collection_id, path_to_utf8(entry.path()));
     } else if (entry.is_regular_file()) {
       if (io::is_music_file(entry)) {
         TrackFile track_file(entry.path(), false);
@@ -302,7 +302,7 @@ void visit_directory(size_t collection_id, std::string_view path) {
           tracks[track_id].set_not_found_during_rescan(false);
           auto& playlist = playlists[playlist_id];
           if (playlist.art_64x64.empty() && track_file.fetch_album_art()) {
-            playlist.art_file_path = utf8_to_utf32(track_file.art_file_path.value().string());
+            playlist.art_file_path = path_to_utf8(track_file.art_file_path.value());
             playlist.art_64x64 = std::move(track_file.art_64x64);
           }
         } else {
@@ -339,7 +339,7 @@ void setup_albums(size_t collection_id) {
 
     // determine artist if not in metadata
     if (playlist.author.empty()) {
-      std::unordered_map<std::u32string_view, i32> artist_counts;
+      std::unordered_map<std::string_view, i32> artist_counts;
       for (size_t track_id : playlist.get_track_ids()) {
         auto& track = tracks[track_id];
         artist_counts[track.artist] += 1;
@@ -401,7 +401,7 @@ void db::rescan_collection(size_t collection_id) {
   setup_albums(collection_id);
 }
 
-void db::rename_collection(size_t collection_id, std::u32string_view new_name) {
+void db::rename_collection(size_t collection_id, std::string_view new_name) {
   if (collection_id >= collections.size() || collection_id == 0) { return; }
   auto& collection = collections[collection_id];
   collection.set_name(new_name);
@@ -414,12 +414,12 @@ std::optional<std::reference_wrapper<const Playlist>> db::playlist_by_id(size_t 
 
 std::optional<size_t> db::playlist_id_by_path(const fs::path& path) {
   for (size_t i = 0; i < playlists.size(); i += 1) {
-    if (playlists[i].album_path == utf8_to_utf32(path.string())) { return i; }
+    if (playlists[i].album_path == path_to_utf8(path)) { return i; }
   }
   return std::nullopt;
 }
 
-std::vector<size_t> db::playlist_ids_by_name(std::u32string_view n) {
+std::vector<size_t> db::playlist_ids_by_name(std::string_view n) {
   std::vector<size_t> result;
   for (size_t i = 0; i < playlists.size(); i += 1) {
     if (playlists[i].name == n) { result.emplace_back(i); }
@@ -431,15 +431,14 @@ const std::vector<Playlist>& db::all_playlists() { return playlists; }
 
 size_t db::playlist_count() { return playlists.size(); }
 
-size_t db::get_album_id(size_t collection_id, std::u32string album_name, std::u32string album_artist,
-                        std::u32string_view file_path) {
+size_t db::get_album_id(size_t collection_id, std::string album_name, std::string album_artist,
+                        std::string_view file_path) {
   // if album_name is empty, album name becomes the name of the parent directory of the
   // track file
   if (album_name.empty()) {
     fs::path path(file_path);
-    auto album_name_utf32 = (path.parent_path().filename().u32string());
-    album_name = album_name_utf32;
-    album_artist = U"";
+    album_name = path_to_utf8(path.parent_path().filename());
+    album_artist = "";
   }
 
   // find a playlist with matching name and author
@@ -578,7 +577,7 @@ void db::reset_playlist_image(size_t playlist_id) {
   playlist.art_file_path.clear();
 }
 
-void db::rename_playlist(size_t playlist_id, std::u32string_view new_name) {
+void db::rename_playlist(size_t playlist_id, std::string_view new_name) {
   if (playlist_id >= playlists.size() || playlist_id == 0) { return; }
   auto& playlist = playlists[playlist_id];
   playlist.name = new_name;
@@ -614,16 +613,16 @@ std::optional<std::reference_wrapper<const Track>> db::track_by_id(size_t id) {
   return tracks[id];
 }
 
-std::unordered_set<size_t> db::track_by_title(std::u32string_view title) {
+std::unordered_set<size_t> db::track_by_title(std::string_view title) {
   // ensure(tracks.size() == title_to_track_ids.size());
-  auto it = title_to_track_ids.find(std::u32string(title));
+  auto it = title_to_track_ids.find(std::string(title));
   if (it == title_to_track_ids.end()) { return {}; }
   return it->second;
 }
 
-std::unordered_set<size_t> db::track_by_artist_title(std::u32string_view artist, std::u32string_view title) {
+std::unordered_set<size_t> db::track_by_artist_title(std::string_view artist, std::string_view title) {
   // ensure(tracks.size() == title_to_track_ids.size());
-  auto it = title_to_track_ids.find(std::u32string(title));
+  auto it = title_to_track_ids.find(std::string(title));
   if (it == title_to_track_ids.end()) { return {}; }
   std::unordered_set<size_t> res;
   for (auto& track_id : it->second) {
@@ -632,9 +631,9 @@ std::unordered_set<size_t> db::track_by_artist_title(std::u32string_view artist,
   return res;
 }
 
-std::optional<size_t> db::track_by_path(std::u32string_view path) {
+std::optional<size_t> db::track_by_path(std::string_view path) {
   // ensure(tracks.size() == path_to_track_id.size());
-  auto it = path_to_track_id.find(std::u32string(path));
+  auto it = path_to_track_id.find(std::string(path));
   if (it == path_to_track_id.end()) { return std::nullopt; }
   return it->second;
 }
@@ -649,7 +648,7 @@ void db::set_track_playback_error(size_t track_id, bool error) {
   track.set_playback_error(error);
 }
 
-std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_text, size_t max_size) {
+std::vector<db::playlist_info> db::search_playlists(std::string_view search_text, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
   std::vector<playlist_info> result;
@@ -674,7 +673,7 @@ std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_t
   return result;
 }
 
-std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_text, size_t collection_id,
+std::vector<db::playlist_info> db::search_playlists(std::string_view search_text, size_t collection_id,
                                                     size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
@@ -696,7 +695,7 @@ std::vector<db::playlist_info> db::search_playlists(std::u32string_view search_t
   return result;
 }
 
-std::vector<size_t> db::search_playlists(std::u32string_view search_text, std::span<size_t> playlist_ids,
+std::vector<size_t> db::search_playlists(std::string_view search_text, std::span<size_t> playlist_ids,
                                          size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
 
@@ -718,7 +717,7 @@ std::vector<size_t> db::search_playlists(std::u32string_view search_text, std::s
   return result;
 }
 
-std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, size_t max_size) {
+std::vector<db::track_info> db::search_tracks(std::string_view search_text, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
   std::vector<db::track_info> result;
 
@@ -733,12 +732,12 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   return result;
 }
 
-bool sanitize_and_contains(const std::u32string& query_sanitized, const std::u32string& field) {
+bool sanitize_and_contains(const std::string& query_sanitized, const std::string& field) {
   auto s = sanitize_query(field);
   return s.contains(query_sanitized);
 };
 
-std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, size_t collection_id, size_t max_size) {
+std::vector<db::track_info> db::search_tracks(std::string_view search_text, size_t collection_id, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
   std::vector<db::track_info> result;
   if (collections[collection_id].is_tombstone()) { return {}; }
@@ -751,8 +750,7 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
 
       if (sanitize_and_contains(query_sanitized, track.title) || sanitize_and_contains(query_sanitized, track.artist) ||
           sanitize_and_contains(query_sanitized, track.album_artist) ||
-          sanitize_and_contains(query_sanitized,
-                                utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
+          sanitize_and_contains(query_sanitized, path_to_utf8(std::filesystem::path(track.path).filename()))) {
 
         result.emplace_back(db::track_info{collection_id, playlist_id, track_id});
         if (result.size() >= max_size) { break; }
@@ -765,7 +763,7 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
   return result;
 }
 
-std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, std::span<track_info> src,
+std::vector<db::track_info> db::search_tracks(std::string_view search_text, std::span<track_info> src,
                                               size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);
   std::vector<db::track_info> result;
@@ -774,7 +772,7 @@ std::vector<db::track_info> db::search_tracks(std::u32string_view search_text, s
     if (track.is_tombstone()) { continue; }
     if (sanitize_and_contains(query_sanitized, track.title) || sanitize_and_contains(query_sanitized, track.artist) ||
         sanitize_and_contains(query_sanitized, track.album_artist) ||
-        sanitize_and_contains(query_sanitized, utf8_to_utf32(std::filesystem::path(track.path).filename().string()))) {
+        sanitize_and_contains(query_sanitized, path_to_utf8(std::filesystem::path(track.path).filename()))) {
 
       result.emplace_back(track_info_);
       if (result.size() >= max_size) { break; }

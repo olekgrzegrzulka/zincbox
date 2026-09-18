@@ -5,13 +5,12 @@
 #include "label.hpp"
 #include "sprite.hpp"
 #include "ui.hpp"
-#include "core/settings.hpp"
 
 enum class ToolTipPosition : u8 { LEFT, RIGHT, ABOVE, BELOW, MANUAL };
 
 class ToolTip : public Sprite {
   public:
-    ToolTip(UI& ui_, std::u32string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
+    ToolTip(UI& ui_, std::string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
       : Sprite(ui_, "tooltip") {
       float scale = zincbox::ui_scale();
       pos = pos_;
@@ -23,29 +22,6 @@ class ToolTip : public Sprite {
       label = &add_child<Label>(name_);
       label->set_parent_anchor(Anchor::CENTER);
       label->set_anchor(Anchor::CENTER);
-
-      set_size_and_position();
-    }
-
-    ToolTip(UI& ui_, std::string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
-      : Sprite(ui_, "tooltip") {
-      pos = pos_;
-      distance = distance_;
-      set_ignore_parents_layout(true);
-      set_is_drawn_on_top(true);
-      set_nine_slice_margin(4.0f);
-
-      label = &add_child<Label>(name_);
-      label->set_parent_anchor(Anchor::CENTER);
-      label->set_anchor(Anchor::CENTER);
-      label->update();
-
-      set_size_and_position();
-    }
-
-    void set_text(const std::u32string& s) {
-      label->set_text(s);
-      label->update();
 
       set_size_and_position();
     }

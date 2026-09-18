@@ -15,6 +15,7 @@
 #include <taglib/toolkit/tpropertymap.h>
 #include <taglib/toolkit/tstring.h>
 #include "common/logger.hpp"
+#include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_resize2.h"
 #include "lib/stb_image/stb_image_write.h"
@@ -37,11 +38,11 @@ bool io::is_music_file(const fs::path& path) {
 
 void io::open_folder_in_file_manager(const fs::path& path) {
 #ifdef _WIN32
-  std::string command = "explorer \"" + path.string() + "\"";
+  std::string command = "explorer \"" + path_to_utf8(path) + "\"";
 #elif __APPLE__
-  std::string command = "open \"" + path.string() + "\"";
+  std::string command = "open \"" + path_to_utf8(path) + "\"";
 #else
-  std::string command = "xdg-open \"" + path.string() + "\"";
+  std::string command = "xdg-open \"" + path_to_utf8(path) + "\"";
 #endif
   std::system(command.c_str());
 }

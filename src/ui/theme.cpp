@@ -67,7 +67,6 @@ void load_resources() {
   }
 
   auto file = cmrc_fs.open("theme.zip");
-  out::warn("s!");
 
   if (!mz_zip_reader_init_mem(&zip_archive, file.begin(), file.size(), 0)) {
     out::critical("failed to load resources from memory");
@@ -100,7 +99,7 @@ std::set<std::string> theme::get_themes() {
 
   for (const auto& entry : fs::directory_iterator(io::get_themes_path())) {
     if (fs::is_regular_file(entry.path() / "theme.json")) {
-      const std::string name = entry.path().filename().string();
+      const std::string name = path_to_utf8(entry.path().filename());
       ret.insert(name);
     }
   }
@@ -126,7 +125,7 @@ static bool load_language_from_resource(std::string_view language) {
 static bool load_language_from_theme_path(const fs::path& theme_path, std::string_view language) {
   fs::path file_path = theme_path / "lang" / (std::string(language) + ".json");
   if (!fs::is_regular_file(file_path)) { return false; }
-  return tr::load_from_file(file_path.string());
+  return tr::load_from_file(file_path);
 }
 
 static void load_translations(std::string_view theme_name, std::string_view language) {
@@ -160,8 +159,8 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       return;
     }
 
-    std::string theme_json_path = io::get_themes_path() / theme_name / "theme.json";
-    auto error = glz::read_file_json(config_, theme_json_path, std::string{});
+    fs::path theme_json_path = io::get_themes_path() / theme_name / "theme.json";
+    auto error = glz::read_file_json(config_, theme_json_path.c_str(), std::string{});
     if (error) {
       out::warn("failed to load theme {} invalid or missing theme.json", theme_name);
       load_theme("", ui, language);
@@ -252,10 +251,10 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     if (!load_theme_from_resources) {
       for (const std::string& filename : filenames) {
         if (fs::is_regular_file((theme_path / (filename + ".png")))) {
-          atlas.add_texture_row(ids, (theme_path / (filename + ".png")).string());
+          atlas.add_texture_row(ids, path_to_utf8(theme_path / (filename + ".png")));
           return true;
         } else if (fs::is_regular_file((theme_path / (filename + ".PNG")))) {
-          atlas.add_texture_row(ids, (theme_path / (filename + ".PNG")).string());
+          atlas.add_texture_row(ids, path_to_utf8(theme_path / (filename + ".PNG")));
           return true;
         }
       }

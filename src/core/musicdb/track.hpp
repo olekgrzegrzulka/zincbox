@@ -15,21 +15,21 @@ namespace db {
   struct Track final {
       using enum TrackFlag;
 
-      Track(i32 track_number, std::u32string title, std::u32string artist, std::u32string album_artist,
-            std::u32string genre, i32 year, i32 bitrate, i32 length_seconds, std::u32string path);
+      Track(i32 track_number, std::string title, std::string artist, std::string album_artist, std::string genre,
+            i32 year, i32 bitrate, i32 length_seconds, std::string path);
 
       Track(std::ifstream&);
 
     public:
       i32 track_number;
-      std::u32string title;
-      std::u32string artist;
-      std::u32string album_artist;
-      std::u32string genre;
+      std::string title;
+      std::string artist;
+      std::string album_artist;
+      std::string genre;
       i32 year;
       i32 bitrate;
       i32 length_seconds;
-      std::u32string path;
+      std::string path;
       size_t originating_album_id = db::INVALID_ID;
 
     protected:
@@ -39,8 +39,8 @@ namespace db {
       void serialize(std::ostream&,
                      std::optional<std::span<size_t>> old_playlist_id_to_new_playlist_id = std::nullopt) const;
       std::string to_string() const;
-      std::u32string pretty_name() const;
-      std::u32string pretty_length() const;
+      std::string pretty_name() const;
+      std::string pretty_length() const;
 
       void set_tombstone(bool t) { flags.set(TOMBSTONE, t); }
       bool is_tombstone() const { return flags.test(TOMBSTONE); }

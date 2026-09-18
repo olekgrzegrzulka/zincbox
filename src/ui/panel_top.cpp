@@ -131,7 +131,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
     tab_bar->add_tab(TabBar::tab_info{
                        .id = (i32)collection_id,
                        .is_draggable = true,
-                       .label = std::u32string(collection.name()),
+                       .label = std::string(collection.name()),
                        .padding = 20,
                        .on_open =
                          [this, collection_id]() {

@@ -8,7 +8,7 @@
 #include "common/utf.hpp"
 
 namespace tr {
-  static std::unordered_map<std::string, std::u32string> dictionary;
+  static std::unordered_map<std::string, std::string> dictionary;
 
   bool load_from_string(const std::string& json_content) {
     dictionary.clear();
@@ -18,13 +18,13 @@ namespace tr {
     if (ec || !parsed_json.is_object()) { return false; }
 
     for (const auto& [key, value] : parsed_json.get_object()) {
-      if (value.is_string()) { dictionary[key] = utf8_to_utf32(value.get_string()); }
+      if (value.is_string()) { dictionary[key] = value.get_string(); }
     }
 
     return true;
   }
 
-  bool load_from_file(const std::string& filepath) {
+  bool load_from_file(const std::filesystem::path& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) { return false; }
 
@@ -33,9 +33,9 @@ namespace tr {
     return load_from_string(buffer.str());
   }
 
-  std::u32string get(const std::string& key) {
+  std::string get(const std::string& key) {
     auto it = dictionary.find(key);
     if (it != dictionary.end()) { return it->second; }
-    return utf8_to_utf32(key);
+    return key;
   }
 } // namespace tr

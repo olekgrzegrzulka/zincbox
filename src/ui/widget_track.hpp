@@ -90,7 +90,7 @@ class WidgetTrack final : public Button {
       }
       if (track.has_value()) {
         if (track->get().artist.empty() || track->get().title.empty()) {
-          label_track_title->set_text(std::filesystem::path{track->get().path}.filename().string());
+          label_track_title->set_text(path_to_utf8(std::filesystem::path{track->get().path}.filename()));
         } else {
           label_track_title->set_text(track->get().title);
         }
