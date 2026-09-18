@@ -3,6 +3,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
+#include "core/zincbox.hpp"
 #include "theme.hpp"
 #include "theme_config.hpp"
 #include "ui/zb_widgets.hpp"
@@ -12,7 +13,7 @@
 class WidgetPlaylistHeader : public Widget {
   public:
     WidgetPlaylistHeader(UI& ui_, size_t collection_id, size_t playlist_id_) : Widget(ui_) {
-      static const float scale = settings::get().scale * 0.01f;
+      static const float scale = zincbox::ui_scale();
 
       playlist_id = playlist_id_;
       auto playlist = db::playlist_by_id(playlist_id);

@@ -8,6 +8,7 @@
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
+#include "core/zincbox.hpp"
 #include "panel_albums.hpp"
 #include "theme.hpp"
 #include "tr.hpp"
@@ -227,7 +228,7 @@ void PanelAlbums::recreate() {
     });
   }
 
-  static const float scale = settings::get().scale * 0.01f;
+  static const float scale = zincbox::ui_scale();
   vec2i cover_widget_size = vec2i{props.cover_width + props.cover_min_horizontal_spacing * scale,
                                   props.cover_width + props.cover_min_vertical_spacing * scale};
   vec2i cover_widget_cover_size = vec2i{props.cover_width, props.cover_width};

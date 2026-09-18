@@ -5,7 +5,6 @@
 #include <stb_image.h>
 #include "common/logger.hpp"
 #include "common/utf.hpp"
-#include "lib/SDL/include/SDL3/SDL_video.h"
 #include "player.hpp"
 #include "tr.hpp"
 #include "ui/theme.hpp"
@@ -25,15 +24,12 @@ namespace tray {
     SDL_TrayEntry* entry_repeat_off = nullptr;
     SDL_TrayEntry* entry_repeat_track = nullptr;
     SDL_TrayEntry* entry_repeat_album = nullptr;
-    SDL_TrayEntry* entry_show = nullptr;
     SDL_TrayEntry* entry_quit = nullptr;
 
     SDL_Surface* icon_stopped = nullptr;
     SDL_Surface* icon_playing = nullptr;
     SDL_Surface* icon_paused = nullptr;
     TrayIconState current_icon_state = TrayIconState::NONE;
-
-    SDL_Window* window = NULL;
 
     std::string tr_utf8(const std::string& key) { return utf32_to_utf8(tr::get(key)); }
 
@@ -66,16 +62,10 @@ namespace tray {
     void cb_repeat_off(void*, SDL_TrayEntry*) { player::set_repeat_mode(player::RepeatMode::OFF); }
     void cb_repeat_track(void*, SDL_TrayEntry*) { player::set_repeat_mode(player::RepeatMode::TRACK); }
     void cb_repeat_album(void*, SDL_TrayEntry*) { player::set_repeat_mode(player::RepeatMode::ALBUM); }
-    void cb_show(void*, SDL_TrayEntry*) {
-      if (window) { SDL_RestoreWindow(window); }
-    }
     void cb_quit(void*, SDL_TrayEntry*) { std::raise(SIGINT); }
   } // namespace
 
-  void init(SDL_Window* window_) {
-    return;
-    window = window_;
-
+  void init() {
     icon_stopped = load_icon_surface("tray/stopped.png");
     icon_playing = load_icon_surface("tray/playing.png");
     icon_paused = load_icon_surface("tray/paused.png");
@@ -88,9 +78,6 @@ namespace tray {
     current_icon_state = TrayIconState::STOPPED;
 
     main_menu = SDL_CreateTrayMenu(system_tray);
-    entry_show = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.show").c_str(), SDL_TRAYENTRY_BUTTON);
-    SDL_SetTrayEntryCallback(entry_show, cb_show, nullptr);
-    SDL_InsertTrayEntryAt(main_menu, -1, nullptr, 0);
     entry_play_pause = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.play").c_str(), SDL_TRAYENTRY_BUTTON);
     SDL_SetTrayEntryCallback(entry_play_pause, cb_play_pause, nullptr);
     entry_stop = SDL_InsertTrayEntryAt(main_menu, -1, tr_utf8("tray.stop").c_str(), SDL_TRAYENTRY_BUTTON);

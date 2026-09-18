@@ -1,6 +1,12 @@
 #include "button.hpp"
+#include <optional>
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "ui.hpp"
+#include "ui_generic/label.hpp"
+#include "ui_generic/sprite.hpp"
+#include "ui_generic/texture_atlas.hpp"
+#include "ui_generic/widget.hpp"
 
 void Button::update() { Sprite::update(); }
 

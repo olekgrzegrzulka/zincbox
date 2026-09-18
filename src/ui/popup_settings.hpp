@@ -4,7 +4,7 @@
 #include <map>
 #include "common/utf.hpp"
 #include "core/settings.hpp"
-#include "lib/json.cpp/json.h"
+#include "core/zincbox.hpp"
 #include "tr.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
@@ -53,7 +53,7 @@ class PopupSettings : public Popup {
 
       auto& btn_save = buttons.add_child<Button>(tr::get("dialog.action.save"));
       btn_save.on_press([this]() -> void {
-        if (on_save) { on_save(); }
+        if (on_save) { on_save(get_settings()); }
         close();
       });
 
@@ -97,9 +97,6 @@ class PopupSettings : public Popup {
 
         auto& combo = parent_->add_child<ComboBox>();
         combo.set_width(128);
-        combo.on_item_selected([this, &combo, json_key]() -> void {
-          changed_props[json_key.first][json_key.second] = combo.get_selected_item_id();
-        });
 
         auto& pad = parent_->add_child<Widget>();
         pad.set_min_height(10);
@@ -119,9 +116,6 @@ class PopupSettings : public Popup {
 
         auto& spinner = parent_->add_child<Spinner>();
         spinner.set_width(128);
-        spinner.on_value_changed([this, &spinner, json_key]() -> void {
-          changed_props[json_key.first][json_key.second] = spinner.get_value();
-        });
 
         auto& pad = parent_->add_child<Widget>();
         pad.set_min_height(10);
@@ -136,9 +130,6 @@ class PopupSettings : public Popup {
         auto& checkbox = parent_->add_child<Checkbox>(label_);
         checkbox.set_width(128);
         checkbox.set_height(24);
-        checkbox.on_value_changed([this, &checkbox, json_key]() -> void {
-          changed_props[json_key.first][json_key.second] = checkbox.is_checked();
-        });
 
         checkboxes[std::move(json_key)] = &checkbox;
         return &checkbox;
@@ -217,55 +208,60 @@ class PopupSettings : public Popup {
       spinner_scrolling_speed->set_min_value(10);
       spinner_scrolling_speed->set_max_value(150);
       spinner_scrolling_speed->set_value(12);
+
+      load_settings();
     }
 
-    void load_settings(const settings& settings) {
-      const jt::Json& json = settings.to_json();
+    void load_settings() {
+      auto& s = zincbox::settings();
 
-      for (auto& [key, combo] : combo_boxes) {
-        if (json.contains(key.first) && json[key.first].contains(key.second) &&
-            json[key.first][key.second].isString()) {
-          //
-          combo->select_item_by_id(json[key.first][key.second].getString());
-        }
+      if (s.general.cover_preference == Settings::CoverPreference::Album) {
+        combo_boxes.at({"general", "cover_preference"})->select_item_by_id("album");
+      } else {
+        combo_boxes.at({"general", "cover_preference"})->select_item_by_id("playlist");
       }
+      spinners.at({"general", "volume_step"})->set_value(s.general.volume_step);
 
-      for (auto& [key, spinner] : spinners) {
-        if (json.contains(key.first) && json[key.first].contains(key.second) &&
-            json[key.first][key.second].isNumber()) {
-          //
-          spinner->set_value(json[key.first][key.second].getNumber());
-        }
-      }
+      checkboxes.at({"playback", "shuffle_allow_same_album"})->set_checked(s.playback.shuffle_allow_same_album);
+      checkboxes.at({"playback", "shuffle_allow_same_artist"})->set_checked(s.playback.shuffle_allow_same_artist);
+      checkboxes.at({"playback", "restart_on_previous"})->set_checked(s.playback.restart_on_previous);
 
-      for (auto& [key, checkbox] : checkboxes) {
-        if (json.contains(key.first) && json[key.first].contains(key.second) && json[key.first][key.second].isBool()) {
-          //
-          checkbox->set_checked(json[key.first][key.second].getBool());
-        }
-      }
-
-      changed_props = jt::Json();
+      combo_boxes.at({"interface", "theme"})->select_item_by_id(s.interface.theme);
+      combo_boxes.at({"interface", "language"})->select_item_by_id(s.interface.language);
+      spinners.at({"interface", "scale"})->set_value(s.interface.scale);
+      spinners.at({"interface", "font_size"})->set_value(s.interface.font_size);
+      spinners.at({"interface", "scrolling_speed"})->set_value(static_cast<i32>(s.interface.scrolling_speed));
     }
 
-    void save_settings(settings& settings) const {
-      auto settings_json = settings.to_json();
-      if (!changed_props.isObject()) { return; }
-      for (const auto& page : changed_props.getObject()) {
-        if (!page.second.isObject()) { continue; }
-        for (auto& prop : page.second.getObject()) {
-          settings_json[page.first][prop.first] = prop.second;
-        }
+    [[nodiscard]] Settings get_settings() const {
+      Settings s{};
+
+      if (combo_boxes.at({"general", "cover_preference"})->get_selected_item_id() == "album") {
+        s.general.cover_preference = Settings::CoverPreference::Album;
+      } else {
+        s.general.cover_preference = Settings::CoverPreference::Playlist;
       }
-      settings.from_json(settings_json);
+      s.general.volume_step = spinners.at({"general", "volume_step"})->get_value();
+
+      s.playback.shuffle_allow_same_album = checkboxes.at({"playback", "shuffle_allow_same_album"})->is_checked();
+      s.playback.shuffle_allow_same_artist = checkboxes.at({"playback", "shuffle_allow_same_artist"})->is_checked();
+      s.playback.restart_on_previous = checkboxes.at({"playback", "restart_on_previous"})->is_checked();
+
+      s.interface.theme = combo_boxes.at({"interface", "theme"})->get_selected_item_id();
+      s.interface.language = combo_boxes.at({"interface", "language"})->get_selected_item_id();
+      s.interface.scale = spinners.at({"interface", "scale"})->get_value();
+      s.interface.font_size = spinners.at({"interface", "font_size"})->get_value();
+      s.interface.scrolling_speed = static_cast<float>(spinners.at({"interface", "scrolling_speed"})->get_value());
+
+      s.clamp_values();
+      return s;
     }
 
   public:
-    std::function<void()> on_save{};
+    std::function<void(Settings)> on_save{};
     std::function<void()> on_cancel{};
 
   protected:
-    jt::Json changed_props;
     std::array<ScrollableView*, 3> pages{};
     std::array<Button*, 3> page_buttons{};
     std::map<std::pair<std::string, std::string>, ComboBox*> combo_boxes;

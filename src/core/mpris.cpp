@@ -2,9 +2,13 @@
 #include <string>
 #include <utility>
 #include "common/logger.hpp"
+#include "common/types.hpp"
 
 #ifndef _WIN32
 #include <map>
+#include <memory>
+#include <thread>
+#include <vector>
 #include <sdbus-c++/IConnection.h>
 #include <sdbus-c++/sdbus-c++.h>
 
@@ -100,14 +104,14 @@ void mpris::init() {
             []() { command_queue.push(Command{.type = CommandType::PAUSE}); }),
           sdbus::registerMethod("Stop").implementedAs([]() { command_queue.push(Command{.type = CommandType::STOP}); }),
 
-          sdbus::registerMethod("Seek").withInputParamNames("Offset").implementedAs([](int64_t us) {
+          sdbus::registerMethod("Seek").withInputParamNames("Offset").implementedAs([](i64 us) {
             i64 ms = us / 1000;
             command_queue.push(Command{.type = CommandType::SEEK, .value = ms});
           }),
 
           sdbus::registerMethod("SetPosition")
             .withInputParamNames("TrackId", "Position")
-            .implementedAs([](const sdbus::ObjectPath&, int64_t us) {
+            .implementedAs([](const sdbus::ObjectPath&, i64 us) {
               i64 ms = us / 1000;
               command_queue.push(Command{.type = CommandType::SET, .value = ms});
             }))

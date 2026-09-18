@@ -10,7 +10,6 @@
 #include <vector>
 #include "collection.hpp"
 #include "core/musicdb/types.hpp"
-#include "lib/json.cpp/json.h"
 #include "playlist.hpp"
 #include "track.hpp"
 
@@ -26,7 +25,9 @@ namespace db {
   void set_loved_tracks_playlist_name(std::u32string_view);
 
   // getters
-  std::optional<track_info> find_track_from_json(const jt::Json&);
+  std::optional<track_info> find_track(const std::string_view& artist, const std::string_view& title,
+                                       const std::string_view& collection_name, const std::string_view& playlist_name,
+                                       const std::string_view& path);
 
   // collection getters
   std::optional<std::reference_wrapper<const Collection>> collection_by_id(collection_id_t);

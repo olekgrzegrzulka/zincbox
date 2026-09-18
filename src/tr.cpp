@@ -1,10 +1,11 @@
 #include "tr.hpp"
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 #include <fmt/format.h>
+#include <glaze/glaze.hpp>
 #include "common/utf.hpp"
-#include "lib/json.cpp/json.h"
 
 namespace tr {
   static std::unordered_map<std::string, std::u32string> dictionary;
@@ -12,11 +13,12 @@ namespace tr {
   bool load_from_string(const std::string& json_content) {
     dictionary.clear();
 
-    auto [status, parsed_json] = jt::Json::parse(json_content);
-    if (status != jt::Json::success || !parsed_json.isObject()) { return false; }
+    glz::generic parsed_json{};
+    const auto ec = glz::read_json(parsed_json, json_content);
+    if (ec || !parsed_json.is_object()) { return false; }
 
-    for (const auto& [key, value] : parsed_json.getObject()) {
-      if (value.isString()) { dictionary[key] = utf8_to_utf32(value.getString()); }
+    for (const auto& [key, value] : parsed_json.get_object()) {
+      if (value.is_string()) { dictionary[key] = utf8_to_utf32(value.get_string()); }
     }
 
     return true;

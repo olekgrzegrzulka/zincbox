@@ -1,12 +1,13 @@
 #pragma once
 #include <algorithm>
-#include <glm/ext/vector_float2.hpp>
-#include "button.hpp"
+#include <functional>
+#include <string>
+#include <utility>
 #include "common/types.hpp"
-#include "sprite.hpp"
 #include "widget.hpp"
 
 class UI;
+class Sprite;
 
 enum class SliderOrientation : u8 { HORIZONTAL, VERTICAL };
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "common/types.hpp"
+#include "core/zincbox.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
 #include "ui.hpp"
@@ -12,7 +13,7 @@ class ToolTip : public Sprite {
   public:
     ToolTip(UI& ui_, std::u32string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16)
       : Sprite(ui_, "tooltip") {
-      float scale = settings::get().scale * 0.01f;
+      float scale = zincbox::ui_scale();
       pos = pos_;
       distance = distance_ * scale;
       set_ignore_parents_layout(true);

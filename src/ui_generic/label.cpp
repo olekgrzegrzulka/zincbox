@@ -1,13 +1,12 @@
 #include <algorithm>
 #include <string_view>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
+#include <stddef.h>
 #include "common/types.hpp"
 #include "opengl_includes.hpp"
+#include "theme_config.hpp"
 #include "ui/theme.hpp" // FIXME ui_generic should not depend on ui/theme.hpp
 #include "ui_generic/font_face.hpp"
 #include "ui_generic/label.hpp"
-#include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 

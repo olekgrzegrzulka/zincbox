@@ -2,9 +2,12 @@
 #include "track.hpp"
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <optional>
 #include <span>
+#include <sstream>
 #include <string>
+#include <utility>
 #include "common/serialize.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
@@ -58,20 +61,6 @@ void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old
 std::string db::Track::to_string() const {
   return std::to_string(track_number) + ". " + utf32_to_utf8(artist) + " - " + utf32_to_utf8(title) +
          (is_tombstone() ? " (tombstone)" : "");
-}
-
-jt::Json db::Track::to_json() const {
-  jt::Json json;
-  json["trackNumber"] = track_number;
-  json["title"] = utf32_to_utf8(title);
-  json["artist"] = utf32_to_utf8(artist);
-  json["albumArtist"] = utf32_to_utf8(album_artist);
-  json["genre"] = utf32_to_utf8(genre);
-  json["year"] = year;
-  json["bitrate"] = bitrate;
-  json["lengthSeconds"] = length_seconds;
-  json["path"] = utf32_to_utf8(path);
-  return json;
 }
 
 std::u32string db::Track::pretty_name() const {

@@ -1,10 +1,10 @@
 #include "player.hpp"
 #include <algorithm>
+#include <map>
 #include <optional>
 #include <set>
 #include <string_view>
 #include <vector>
-#include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/random.hpp"
 #include "common/utf.hpp"
@@ -13,6 +13,7 @@
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};
@@ -107,7 +108,8 @@ bool play_track() {
   mpris::notify_playback_status_playing();
   mpris::notify_volume(volume);
   std::u32string_view cover_path = playlist.art_file_path;
-  if (settings::get().cover_preference == settings::CoverPreference::Album && originating_album.has_value()) {
+  if (zincbox::settings().general.cover_preference == Settings::CoverPreference::Album &&
+      originating_album.has_value()) {
     cover_path = originating_album->get().art_file_path;
   }
   if (!track.title.empty() && !track.artist.empty()) {
@@ -464,8 +466,10 @@ void player::next_track(i32 tries) {
           std::u32string_view artist_prev = db::track_by_id(playing_queue.back().track_id)->get().artist;
           std::u32string_view artist_rand = db::track_by_id(rand_track_id_)->get().artist;
           bool same_artist_as_prev = artist_prev == artist_rand;
-          bool shuffle_allow_same_album_passed = !settings::get().shuffle_allow_same_album || !same_playlist_as_prev;
-          bool shuffle_allow_same_artist_passed = !settings::get().shuffle_allow_same_artist || !same_artist_as_prev;
+          bool shuffle_allow_same_album_passed =
+            !zincbox::settings().playback.shuffle_allow_same_album || !same_playlist_as_prev;
+          bool shuffle_allow_same_artist_passed =
+            !zincbox::settings().playback.shuffle_allow_same_artist || !same_artist_as_prev;
           if (shuffle_allow_same_album_passed) { score += 3; }
           if (shuffle_allow_same_artist_passed) { score += 3; }
 
@@ -518,8 +522,10 @@ void player::next_track(i32 tries) {
             std::u32string_view artist_rand = db::track_by_id(rand_track_id_)->get().artist;
             same_artist_as_prev = artist_prev == artist_rand;
           }
-          bool shuffle_allow_same_album_passed = settings::get().shuffle_allow_same_album || !same_playlist_as_prev;
-          bool shuffle_allow_same_artist_passed = settings::get().shuffle_allow_same_artist || !same_artist_as_prev;
+          bool shuffle_allow_same_album_passed =
+            zincbox::settings().playback.shuffle_allow_same_album || !same_playlist_as_prev;
+          bool shuffle_allow_same_artist_passed =
+            zincbox::settings().playback.shuffle_allow_same_artist || !same_artist_as_prev;
           if (shuffle_allow_same_album_passed) { score += 3; }
           if (shuffle_allow_same_artist_passed) { score += 3; }
           if (shuffle_allow_same_album_passed && shuffle_allow_same_artist_passed &&
@@ -566,7 +572,7 @@ void player::prev_track(i32 tries) {
     return;
   }
 
-  if (settings::get().restart_on_previous && get_current_time_ms() > 5000) {
+  if (zincbox::settings().playback.restart_on_previous && get_current_time_ms() > 5000) {
     seek_ms(0);
     return;
   }
@@ -679,75 +685,4 @@ void player::set_repeat_mode(RepeatMode r) {
   if (r == repeat_mode) { return; }
   repeat_mode = r;
   mpris::notify_loop_status(static_cast<i32>(r));
-}
-
-jt::Json player::to_json() {
-  auto st = ScopeTimer("player::to_json");
-  jt::Json json;
-  json.setObject();
-  json["repeat_mode"] = (i32)player::get_repeat_mode();
-  json["shuffle_mode"] = (i32)player::get_shuffle_mode();
-  json["volume"] = player::get_volume();
-  json["timestamp"] = player::get_current_time_ms();
-  if (player::get_playing_index().has_value()) {
-    json["queue_index"] = player::get_playing_index().value_or(-1);
-  } else {
-    json["queue_index"] = -1;
-  }
-  json["queue"].setArray();
-  auto& queue = json["queue"].getArray();
-  for (auto& elem : get_playing_queue()) {
-    auto track = db::track_by_id(elem.track_id);
-    auto playlist = db::playlist_by_id(elem.playlist_id);
-    auto collection = db::collection_by_id(elem.collection_id);
-    if (!collection.has_value() || !playlist.has_value() || !track.has_value()) { continue; }
-    queue.emplace_back(track->get().to_json());
-    jt::Json& json_track = queue.back();
-    json_track["playlist"] = utf32_to_utf8(playlist->get().name);
-    json_track["collection"] = utf32_to_utf8(collection->get().name());
-  }
-  return json;
-}
-
-void player::from_json(const jt::Json& json) {
-  auto st = ScopeTimer("player::from_json");
-  if (!json.isObject()) { return; }
-  i32 rep = (json.contains("repeat_mode") && json["repeat_mode"].isNumber()) ? json["repeat_mode"].getNumber() : 0;
-  rep = std::clamp(rep, 0, (i32)player::RepeatMode::REPEAT_MODE_SIZE - 1);
-  player::set_repeat_mode((player::RepeatMode)rep);
-  i32 shuf = (json.contains("shuffle_mode") && json["shuffle_mode"].isNumber()) ? json["shuffle_mode"].getNumber() : 0;
-  shuf = std::clamp(shuf, 0, (i32)player::ShuffleMode::SHUFFLE_MODE_SIZE - 1);
-  player::set_shuffle_mode((player::ShuffleMode)shuf);
-  float vol = (json.contains("volume") && json["volume"].isNumber()) ? json["volume"].getNumber() : 0;
-  player::set_volume(vol);
-
-  std::optional<size_t> queue_pos = (json.contains("queue_index") && json["queue_index"].isNumber())
-                                      ? std::make_optional(json["queue_index"].getNumber())
-                                      : std::nullopt;
-
-  if (json.contains("queue") && json["queue"].isArray()) {
-    auto& queue = json["queue"].getArray();
-    for (auto& json_track : queue) {
-      if (!json_track.isObject()) { continue; }
-      auto track = db::find_track_from_json(json_track);
-      if (!track.has_value()) {
-        if (queue_pos.has_value()) {
-          queue_pos = (queue_pos > 0 && queue_pos < player::get_playing_queue().size())
-                        ? std::make_optional(queue_pos.value() - 1)
-                        : std::nullopt;
-        }
-        continue;
-      }
-      player::enqueue(
-        {.collection_id = track->collection_id, .playlist_id = track->playlist_id, .track_id = track->track_id},
-        playing_queue.size());
-    }
-
-    player::set_playing_index(queue_pos);
-    i32 prog = (json.contains("timestamp") && json["timestamp"].isNumber()) ? json["timestamp"].getNumber() : 0;
-    player::seek_ms(prog);
-    player::pause();
-    player::signal_on_queue_changed.emit(false);
-    player::signal_on_track_changed.emit();
-  }
 }

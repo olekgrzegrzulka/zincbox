@@ -6,6 +6,7 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/sprite.hpp"
@@ -35,8 +36,8 @@ class WidgetTrack final : public Button {
     ~WidgetTrack() override { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
 
     void setup() {
-      static const float scale = settings::get().scale * 0.01f;
-      static const float font_size = settings::get().font_size;
+      static const float scale = zincbox::ui_scale();
+      static const float font_size = zincbox::settings().interface.font_size;
       static const i32 track_height = theme::config().panel_tracklist.track_height * scale;
       const auto track = db::track_by_id(m_track_id);
       const std::string txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";

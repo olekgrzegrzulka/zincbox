@@ -120,7 +120,7 @@ TabBar::TabBar(UI& ui_) : Widget(ui_) {
     if (on_add_tab_button_pressed) { on_add_tab_button_pressed(); };
   });
 
-  static const float scale = settings::get().scale * 0.01f;
+  static const float scale = zincbox::ui_scale();
 
   button_right = &add_child<Button>("");
   button_right->add_image("right");
@@ -320,7 +320,7 @@ void TabBar::update() {
 
   scroll_px = std::clamp<double>(scroll_px, 0, get_max_scroll_px());
 
-  static const float scale = settings::get().scale * 0.01f;
+  static const float scale = zincbox::ui_scale();
   button_right->set_size(height - 4 * scale, height - 4 * scale);
   button_left->set_size(height - 4 * scale, height - 4 * scale);
 

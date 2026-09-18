@@ -7,6 +7,7 @@
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
+#include "core/zincbox.hpp"
 #include "ui/theme.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
@@ -105,7 +106,7 @@ class PanelTracks final : public ColorRect {
         }
 
         i32 height() const {
-          static const float scale = settings::get().scale * 0.01f;
+          static const float scale = zincbox::ui_scale();
           static const i32 track_height = theme::config().panel_tracklist.track_height * scale;
           static const i32 header_height =
             (theme::config().panel_tracklist.header_height + 2 * theme::config().panel_tracklist.header_spacing) *

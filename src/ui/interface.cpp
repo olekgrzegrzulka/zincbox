@@ -7,8 +7,8 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include "common/config.hpp"
 #include "common/input.hpp"
+#include "common/serialized_state.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/io.hpp"
@@ -18,9 +18,9 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "interface.hpp"
 #include "interface_notifications.hpp"
-#include "lib/json.cpp/json.h"
 #include "panel_albums.hpp"
 #include "panel_controls.hpp"
 #include "panel_queue.hpp"
@@ -158,16 +158,8 @@ class ShortcutInterceptor : public Widget {
 
 void interface::init() {
   ui = std::make_unique<UI>(1, 1);
-  std::string language = config::json().contains("settings") && config::json()["settings"].contains("interface") &&
-                             config::json()["settings"]["interface"].contains("language") &&
-                             config::json()["settings"]["interface"]["language"].isString()
-                           ? config::json()["settings"]["interface"]["language"].getString()
-                           : "en-US";
-  std::string theme = config::json().contains("settings") && config::json()["settings"].contains("interface") &&
-                          config::json()["settings"]["interface"].contains("theme") &&
-                          config::json()["settings"]["interface"]["theme"].isString()
-                        ? config::json()["settings"]["interface"]["theme"].getString()
-                        : "default";
+  std::string language = zincbox::settings().interface.language;
+  std::string theme = zincbox::settings().interface.theme;
   theme::load_theme(theme, *ui.get(), language);
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));
   db::set_loved_tracks_playlist_name(tr::get("playlist.loved_tracks_playlist_name"));
@@ -225,6 +217,15 @@ void interface::init() {
   panel_top->on_queue_view_opened = [&]() { show_queue(); };
   panel_top->on_queue_rmb = show_popover_queue_actions;
   panel_top->on_show_collection_actions_popover = show_popover_collection_actions;
+  panel_top->on_minimize_button_pressed = []() -> void { zincbox::window()->minimize(); };
+  panel_top->on_maximize_button_pressed = []() -> void {
+    if (zincbox::window()->is_maximized()) {
+      zincbox::window()->restore();
+    } else {
+      zincbox::window()->maximize();
+    }
+  };
+  panel_top->on_close_button_pressed = []() -> void { zincbox::stop(); };
 
   panel_top->on_add_collection_button_pressed = [&](Widget*) {
     NFD::UniquePathSet out_paths;
@@ -496,87 +497,6 @@ interface::DecorationHover interface::get_decoration_hover() {
   }
 
   return DecorationHover::INSIDE;
-}
-
-void interface::on_minimize_button_pressed(std::function<void()> fn) {
-  panel_top->on_minimize_button_pressed = std::move(fn);
-}
-void interface::on_maximize_button_pressed(std::function<void()> fn) {
-  panel_top->on_maximize_button_pressed = std::move(fn);
-}
-void interface::on_close_button_pressed(std::function<void()> fn) {
-  panel_top->on_close_button_pressed = std::move(fn);
-}
-
-jt::Json interface::to_json() {
-  tabs_order.clear();
-  for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
-    tabs_order.push_back(tab->get_label().get_text());
-  }
-
-  auto json = jt::Json();
-  std::vector<jt::Json> tabs_order_utf8;
-  tabs_order_utf8.reserve(tabs_order.size());
-  for (const auto& tab : tabs_order) {
-    tabs_order_utf8.emplace_back(utf32_to_utf8(tab));
-  }
-  json["tabs_order"].setArray();
-  json["tabs_order"].getArray().clear();
-  json["tabs_order"].getArray() = tabs_order_utf8;
-
-  const Tab* selected_tab = panel_top->get_tab_bar()->get_selected_tab();
-  if (selected_tab) {
-    json["selected_tab"] = utf32_to_utf8(selected_tab->get_label().get_text());
-    if (active_collection_id) {
-      json["tracks_scroll_offset"] = panel_tracks->get_scroll_px();
-      json["playlists_scroll_offset"] = panel_albums->get_scroll_px();
-    }
-  }
-
-  json["mini_player"] = mini_player.value_or(false);
-
-  return json;
-}
-
-void interface::from_json(const jt::Json& json) {
-  // tabs order
-  if (json.contains("tabs_order") && json["tabs_order"].isArray()) {
-    auto& json_tabs_order = json["tabs_order"].getArray();
-    tabs_order.clear();
-    for (const auto& tab : json_tabs_order) {
-      if (tab.isString()) { tabs_order.emplace_back(utf8_to_utf32(tab.getString())); }
-    }
-  }
-  panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
-
-  // selected tab
-  if (json.contains("selected_tab") && json["selected_tab"].isString()) {
-    std::u32string selected_tab = utf8_to_utf32(json["selected_tab"].getString());
-    const Tab* tab = panel_top->get_tab_bar()->get_tab_by_label(selected_tab);
-    if (tab) {
-      panel_top->get_tab_bar()->unselect_all_tabs();
-      panel_top->get_tab_bar()->select_tab(tab->id);
-      if (tab->id < (i32)db::collection_count()) {
-        show_collection(tab->id);
-      } else {
-        show_queue();
-      }
-    } else {
-      show_queue();
-    }
-  }
-
-  // tracks scroll offset
-  if (json.contains("tracks_scroll_offset") && json["tracks_scroll_offset"].isNumber()) {
-    panel_tracks->set_scroll_px(json["tracks_scroll_offset"].getNumber());
-  }
-
-  // playlists scroll offset
-  if (json.contains("playlists_scroll_offset") && json["playlists_scroll_offset"].isNumber()) {
-    panel_albums->set_scroll_px(json["playlists_scroll_offset"].getNumber());
-  }
-
-  if (json.contains("mini_player") && json["mini_player"].isBool()) { set_mini_player(json["mini_player"].getBool()); }
 }
 
 static void init_atlas() {
@@ -1715,7 +1635,11 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                          [callback_close, playlist_id]() -> void {
                            if (callback_close) { callback_close(); }
                            auto& playlist = db::playlist_by_id(playlist_id)->get();
-                           auto json = playlist.to_json();
+                           std::string json;
+                           auto ec = glz::write<glz::opts{.prettify = true}>(PlaylistSerialized(playlist), json);
+                           if (ec) {
+                             return; // FIXME: handle errors
+                           }
                            NFD::UniquePathN outPath;
                            std::string json_filter_label = utf32_to_utf8(tr::get("dialog.filter.json_files"));
                            nfdfilteritem_t filterList[1] = {{json_filter_label.c_str(), "json"}};
@@ -1726,9 +1650,11 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                              nfdnchar_t* path = outPath.get();
                              std::string path_str(path);
                              std::ofstream out(path_str);
-                             out << json.toStringPretty();
+                             out << json;
                              out.flush();
                              out.close();
+                           } else {
+                             // FIXME: handle errors
                            }
                          },
                          "save_playlist_as_json");
@@ -2106,31 +2032,38 @@ static void show_search_popup() {
 
 static void show_settings_popup() {
   auto* popup = popup_controller->show_popup<PopupSettings>();
-  popup->load_settings(settings::get());
-  popup->on_save = [popup]() {
-    auto old_settings = settings::get();
-    popup->save_settings(settings::get());
-    bool must_reload = old_settings.must_reload(settings::get());
-
-    if (must_reload) {
+  popup->on_save = [](Settings new_settings) -> void {
+    if (zincbox::settings().must_reload(new_settings)) {
       auto* popup_close = popup_controller->show_popup<PopupConfirm>(tr::get("popup.reload_required.content"));
       popup_close->title->set_text(tr::get("popup.reload_required.title"));
       popup_close->content->update();
       popup_close->set_width(popup_close->content->get_width() + 32);
       popup_close->btn_ok->get_label().set_text(tr::get("dialog.action.reload"));
       popup_close->btn_cancel->get_label().set_text(tr::get("dialog.action.cancel"));
-      popup_close->on_ok_pressed = []() { std::raise(SIGINT); };
+      popup_close->on_ok_pressed = []() { zincbox::stop(); };
     }
+    zincbox::settings() = new_settings;
   };
 }
 
 static void show_about_popup() { popup_controller->show_popup<PopupAbout>(); }
 
-static void quit() { std::raise(SIGINT); }
+static void quit() { zincbox::stop(); }
 
 bool interface::get_mini_player() { return mini_player.value_or(false); }
 
-static void set_mini_player(bool state) {
+std::u32string interface::get_selected_tab() {
+  const Tab* selected_tab = panel_top->get_tab_bar()->get_selected_tab();
+  if (!selected_tab) { return U""; }
+  return selected_tab->get_label().get_text();
+}
+
+std::vector<std::u32string> interface::get_tabs_order() { return tabs_order; }
+
+i32 interface::get_tracks_scroll_offset() { return panel_tracks->get_scroll_px(); }
+i32 interface::get_playlists_scroll_offset() { return panel_albums->get_scroll_px(); }
+
+void interface::set_mini_player(bool state) {
   if (mini_player == state) { return; }
   mini_player = state;
   if (mini_player.value()) {
@@ -2142,6 +2075,8 @@ static void set_mini_player(bool state) {
     panel_queue->set_is_updated(false);
     splitter->set_is_drawn(false);
     splitter->set_is_updated(false);
+    panel_top->set_is_updated(false);
+    panel_top->set_is_drawn(false);
   } else {
     auto active_collection_id_ = active_collection_id;
     active_collection_id = std::nullopt;
@@ -2150,8 +2085,25 @@ static void set_mini_player(bool state) {
     } else {
       show_queue();
     }
+    panel_top->set_is_updated(true);
+    panel_top->set_is_drawn(true);
   }
 
   panel_controls->set_button_expand_player_visibility(mini_player.value_or(false));
   panel_controls->set_tooltip_visibility(!mini_player.value_or(false));
 }
+
+void interface::set_selected_tab(std::u32string tab_label) {
+  auto* tab = panel_top->get_tab_bar()->get_tab_by_label(tab_label);
+  if (!tab) { return; }
+  panel_top->get_tab_bar()->select_tab(tab->id);
+}
+
+void interface::set_tabs_order(std::vector<std::u32string> tabs_order_) {
+  tabs_order = std::move(tabs_order_);
+  panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
+}
+
+void interface::set_tracks_scroll_offset(i32 scroll_px) { panel_tracks->set_scroll_px(scroll_px); }
+
+void interface::set_playlists_scroll_offset(i32 scroll_px) { panel_albums->set_scroll_px(scroll_px); }

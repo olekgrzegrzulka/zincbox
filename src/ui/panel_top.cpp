@@ -2,6 +2,7 @@
 #include <string>
 #include "core/musicdb/musicdb.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "tr.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
@@ -15,7 +16,7 @@
 static constexpr size_t QUEUE_TAB_ID = 10000;
 
 PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
-  static const float scale = settings::get().scale * 0.01f;
+  static const float scale = zincbox::ui_scale();
   set_color(theme::config().top_bar.color);
   set_height(theme::config().top_bar.height * scale);
 

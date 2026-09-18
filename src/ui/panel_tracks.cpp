@@ -7,6 +7,7 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "theme.hpp"
 #include "tr.hpp"
 #include "ui/widget_track.hpp"
@@ -174,7 +175,7 @@ void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool imme
 void PanelTracks::input() {
   // scroll on the edges of view when dragging
   if (is_dragged && is_mouse_hovering()) {
-    static i32 THRESHOLD = 50 * settings::get().scale * 0.01f;
+    static i32 THRESHOLD = 50 * zincbox::ui_scale();
     i32 mouse_y = Input::get_mouse_y() - get_position().y;
 
     if (mouse_y < THRESHOLD) {

@@ -1,5 +1,6 @@
 #pragma once
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "theme_config.hpp"
 #include "ui_generic/button.hpp"
 #include "ui_generic/scrollbar.hpp"
@@ -43,7 +44,7 @@ class ZincboxSlider final : public Slider {
 class ZincboxScrollbar final : public ScrollBar {
   public:
     ZincboxScrollbar(UI& ui_) : ScrollBar(ui_) {
-      static const float scale = settings::get().scale * 0.01f;
+      static const float scale = zincbox::ui_scale();
       set_thumb_thickness(10 * scale);
       set_track_thickness(10 * scale);
       set_min_width(10 * scale);
@@ -52,7 +53,7 @@ class ZincboxScrollbar final : public ScrollBar {
     }
 
     void update() {
-      sensitivity = settings::get().scrolling_speed;
+      sensitivity = zincbox::settings().interface.scrolling_speed;
       ScrollBar::update();
     }
 };

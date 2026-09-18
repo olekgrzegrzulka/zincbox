@@ -204,31 +204,19 @@ void db::set_loved_tracks_playlist_name(std::u32string_view name) {
   if (!playlists.empty()) { playlists[0].name = name; }
 }
 
-std::optional<db::track_info> db::find_track_from_json(const jt::Json& json) {
-  bool has_artist = json.contains("artist") && json["artist"].isString();
-  bool has_title = json.contains("title") && json["title"].isString();
-  bool has_collection = json.contains("collection") && json["collection"].isString();
-  bool has_playlist = json.contains("playlist") && json["playlist"].isString();
-  bool has_path = json.contains("path") && json["path"].isString();
-  std::string artist_name = has_artist ? json["artist"].getString() : "";
-  std::string title_name = has_title ? json["title"].getString() : "";
-  std::string collection_name = has_collection ? json["collection"].getString() : "";
-  std::string playlist_name = has_playlist ? json["playlist"].getString() : "";
-  std::string path = has_path ? json["path"].getString() : "";
-
+std::optional<db::track_info> db::find_track(const std::string_view& artist, const std::string_view& title,
+                                             const std::string_view& collection_name,
+                                             const std::string_view& playlist_name, const std::string_view& path) {
   std::unordered_set<db::track_id_t> matches;
-  if (!artist_name.empty() && !title_name.empty()) {
-    matches = db::track_by_artist_title(utf8_to_utf32(artist_name), utf8_to_utf32(title_name));
+  if (!artist.empty() && !title.empty()) {
+    matches = db::track_by_artist_title(utf8_to_utf32(artist), utf8_to_utf32(title));
   } else if (auto track_id_by_path = db::track_by_path(utf8_to_utf32(path)); track_id_by_path.has_value()) {
     matches = {track_id_by_path.value()};
   }
 
   if (matches.size() == 0) { return std::nullopt; }
 
-  if (matches.size() > 1) {
-    out::debug_warn("db::find_track_from_json(): matched multiple tracks for '{} - {}'", json["artist"].getString(),
-                       json["title"].getString());
-  }
+  if (matches.size() > 1) { out::debug_warn("db::find_track(): matched multiple tracks for '{} - {}'", artist, title); }
 
   for (db::collection_id_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
     auto& collection = db::collection_by_id(collection_id)->get();

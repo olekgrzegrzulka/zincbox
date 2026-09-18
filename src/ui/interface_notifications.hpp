@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
-#include "core/settings.hpp"
+
+#include "core/zincbox.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/label.hpp"
 #include "ui_generic/sprite.hpp"
@@ -41,7 +42,7 @@ class Notification : public Sprite {
 class InterfaceNotifications : public Widget {
   public:
     InterfaceNotifications(UI& ui_) : Widget(ui_) {
-      static const float scale = settings::get().scale * 0.01f;
+      static const float scale = zincbox::ui_scale();
 
       set_is_drawn_on_top(true);
       set_parent_anchor(Anchor::BOTTOM_CENTER);
@@ -57,7 +58,7 @@ class InterfaceNotifications : public Widget {
     }
 
     void update() override {
-      static const float scale = settings::get().scale * 0.01f;
+      static const float scale = zincbox::ui_scale();
 
       i32 offset = 0;
       for (auto* w : notifications) {

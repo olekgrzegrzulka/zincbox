@@ -1,11 +1,12 @@
 #pragma once
 #include <bitset>
+#include <iosfwd>
 #include <optional>
 #include <span>
 #include <string>
+#include <stddef.h>
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
-#include "lib/json.cpp/json.h"
 
 namespace db {
 
@@ -38,7 +39,6 @@ namespace db {
       void serialize(std::ostream&,
                      std::optional<std::span<size_t>> old_playlist_id_to_new_playlist_id = std::nullopt) const;
       std::string to_string() const;
-      jt::Json to_json() const;
       std::u32string pretty_name() const;
       std::u32string pretty_length() const;
 

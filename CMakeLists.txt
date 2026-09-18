@@ -42,9 +42,6 @@ set(GLM_BUILD_TESTS OFF)
 set(SDBUSCPP_BUILD_DOCS OFF)
 set(BUILD_SHARED_LIBS OFF)
 
-# json.cpp
-set(JSON_CPP_BUILD_TESTS OFF)
-
 # SDL3
 set(SDL_STATIC ON)
 set(SDL_SHARED OFF)
@@ -122,7 +119,6 @@ add_subdirectory(lib/stb_image SYSTEM)
 add_subdirectory(lib/glad SYSTEM)
 add_subdirectory(lib/miniz SYSTEM)
 add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
-add_subdirectory(lib/json.cpp SYSTEM)
 add_subdirectory(lib/SDL SYSTEM)
 add_subdirectory(lib/glaze SYSTEM)
 add_subdirectory(lib/cmrc SYSTEM)
@@ -141,11 +137,12 @@ cmrc_add_resource_library(zincbox_resources NAMESPACE zincbox_resources)
 cmrc_add_resources(zincbox_resources WHENCE resources resources/theme.zip)
 
 set(SOURCES
-    ./src/main.cpp
+./src/main.cpp
+    ./src/sdl3_window.cpp
     ./lib/miniaudio/miniaudio.c
-    ./src/common/config.cpp
     ./src/common/input.cpp
     ./src/common/logger.cpp
+    ./src/core/zincbox.cpp
     ./src/core/musicdb/musicdb.cpp
     ./src/core/musicdb/collection.cpp
     ./src/core/musicdb/playlist.cpp
@@ -227,13 +224,10 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
 endif()
 
-
-
-
 target_link_libraries(${PROJECT_NAME} PRIVATE
   freetype nfd zlibstatic spng_static
   tag glm::glm stb_image glad
-  miniz fmt::fmt stdc++exp json
+  miniz fmt::fmt stdc++exp
   SDL3::SDL3-static glaze::glaze zincbox_resources
 )
 if(NOT WIN32)

@@ -2,14 +2,12 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <glm/vec3.hpp>
 #include "common/color.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "widget.hpp"
 
 class UI;
-class Sprite;
 
 struct vertex_label final {
     i32 type = 1;
@@ -26,7 +24,7 @@ class Label final : public Widget {
     u32 vao = 0;
     u32 vbo = 0;
     std::vector<vertex_label> vertices;
-    glm::vec3 text_color = {1.0, 1.0, 1.0};
+    vec3f text_color = {1.0f, 1.0f, 1.0f};
     vec2f text_extents{};
 
   public:
@@ -52,10 +50,10 @@ class Label final : public Widget {
       dirty = true;
     }
 
-    glm::vec3 get_text_color() const { return text_color; }
+    vec3f get_text_color() const { return text_color; }
 
     void set_text_color(rgba text_color_) {
-      set_text_color(glm::vec3{text_color_.r / 255.0, text_color_.g / 255.0, text_color_.b / 255.0});
+      set_text_color(vec3f{text_color_.r / 255.0, text_color_.g / 255.0, text_color_.b / 255.0});
     }
 
     void set_text_color(glm::vec3 text_color_) {

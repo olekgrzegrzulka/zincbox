@@ -5,16 +5,13 @@
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
-#include "lib/json.cpp/json.h"
 
 namespace player {
   enum class RepeatMode : u8 { OFF, TRACK, ALBUM, REPEAT_MODE_SIZE };
-
   enum class ShuffleMode : u8 { OFF, ON, SHUFFLE_MODE_SIZE };
 
   void init();
   void deinit();
-
   void update();
 
   bool play(db::track_info, bool clear_queue = true);
@@ -49,9 +46,6 @@ namespace player {
 
   RepeatMode get_repeat_mode();
   void set_repeat_mode(RepeatMode);
-
-  jt::Json to_json();
-  void from_json(const jt::Json&);
 
   extern const Signal<> signal_on_track_changed;
   extern const Signal<bool /* track_appended_to_back */> signal_on_queue_changed;

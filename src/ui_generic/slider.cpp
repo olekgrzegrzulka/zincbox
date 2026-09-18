@@ -1,9 +1,12 @@
 #include <algorithm>
+#include <cmath>
+#include <optional>
 #include "common/input.hpp"
 #include "common/types.hpp"
 #include "slider.hpp"
 #include "sprite.hpp"
 #include "ui.hpp"
+#include "ui_generic/texture_atlas.hpp"
 #include "widget.hpp"
 
 Slider::Slider(UI& ui_, SliderOrientation orientation_)

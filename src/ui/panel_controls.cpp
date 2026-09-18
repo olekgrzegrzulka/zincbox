@@ -8,6 +8,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "tr.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
@@ -20,7 +21,7 @@
 
 PanelControls::PanelControls(UI& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_controls.color);
-  static const float scale = settings::get().scale * 0.01f;
+  static const float scale = zincbox::ui_scale();
   set_anchor(Anchor::BOTTOM);
   set_parent_anchor(Anchor::BOTTOM);
   set_height(theme::config().panel_controls.height * scale);
@@ -264,7 +265,7 @@ void PanelControls::update() {
   seekbar->set_min_value(0);
   seekbar->set_max_value(player::get_total_duration_ms());
 
-  volume_bar->set_sensitivity(settings::get().volume_step * 0.01f);
+  volume_bar->set_sensitivity(zincbox::settings().general.volume_step * 0.01f);
   if (!volume_bar->is_being_dragged()) { volume_bar->set_value(player::get_volume(), false); }
 
   i32 progress_ms = seekbar->is_being_dragged() ? seekbar->get_value() : player::get_current_time_ms();

@@ -2,20 +2,8 @@
 #include <string>
 #include <glaze/glaze.hpp>
 #include "common/color.hpp"
+#include "common/serialized_state.hpp" // for glz::meta<rgba> specialization
 #include "common/types.hpp"
-
-template <> struct glz::meta<rgba> {
-    static constexpr auto write_rgb = [](const rgba& v) -> std::string {
-      return "rgb(" + std::to_string(static_cast<i32>(v.r)) + "," + std::to_string(static_cast<i32>(v.g)) + "," +
-             std::to_string(static_cast<i32>(v.b)) + ")";
-    };
-
-    static constexpr auto read_rgb = [](rgba& v, const std::string& s) {
-      if (auto c = color_utils::parse_color(s)) { v = c.value(); }
-    };
-
-    static constexpr auto value = glz::custom<read_rgb, write_rgb>;
-};
 
 struct ButtonConfig {
     bool visible{true};

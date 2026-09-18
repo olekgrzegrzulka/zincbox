@@ -3,6 +3,7 @@
 #include <string_view>
 #include <unordered_map>
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui_generic/button.hpp"
@@ -32,7 +33,7 @@ void PopupController::on_dimmer_enter_pressed() {}
 void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 
 void PopupController::create_popover(const popover_descriptor& d) {
-  static const float scale = settings::get().scale * 0.01f;
+  static const float scale = zincbox::ui_scale();
   i32 space_needed = (8 + (4 + 24) * d.buttons.size() + 12) * scale;
   bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 

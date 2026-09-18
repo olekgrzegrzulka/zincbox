@@ -9,9 +9,11 @@
 #include <glaze/glaze.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
+#include "common/serialized_state.hpp" // for glz::meta<rgba> specialization
 #include "common/types.hpp"
 #include "core/io.hpp"
 #include "core/settings.hpp"
+#include "core/zincbox.hpp"
 #include "lib/miniz/miniz.h"
 #include "theme.hpp"
 #include "theme_config.hpp"
@@ -171,7 +173,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       }
     }
     if (font_path != "") {
-      ui.set_font_face(font_path, settings::get().font_size);
+      ui.set_font_face(font_path, zincbox::settings().interface.font_size);
     } else {
       out::warn("no ttf file found in {}", std::string{theme_name});
       load_theme("", ui, language);
@@ -195,7 +197,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
       exit(1);
     }
     ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(),
-                               settings::get().font_size);
+                               zincbox::settings().interface.font_size);
   }
 
   load_translations(theme_name, language);
