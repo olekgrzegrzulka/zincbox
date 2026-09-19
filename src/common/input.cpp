@@ -36,6 +36,8 @@ namespace Input {
     case SDL_EVENT_MOUSE_MOTION: {
       InputEventMouseMove ev{.to = {static_cast<double>(event.motion.x), static_cast<double>(event.motion.y)}};
       detail::event_queue.emplace_back(ev);
+      detail::mouse_x = event.motion.x;
+      detail::mouse_y = event.motion.y;
       break;
     }
     case SDL_EVENT_MOUSE_BUTTON_DOWN: [[fallthrough]];
@@ -98,8 +100,18 @@ namespace Input {
   void update() {
     float x = 0.0f;
     float y = 0.0f;
+#if defined(_WIN32)
+    // query desktop coordinates on Windows to prevent mouse position freezing during modal window drag
+    float global_x = 0.0f;
+    float global_y = 0.0f;
+    SDL_MouseButtonFlags mouse_mask = SDL_GetGlobalMouseState(&global_x, &global_y);
     SDL_GetWindowPosition(detail::sdl_window, &detail::window_x, &detail::window_y);
+    x = global_x - static_cast<float>(detail::window_x);
+    y = global_y - static_cast<float>(detail::window_y);
+#else
+    // on Linux/Wayland global window and mouse queries return (0, 0); use local coordinates instead
     SDL_MouseButtonFlags mouse_mask = SDL_GetMouseState(&x, &y);
+#endif
     detail::last_mouse_x = detail::mouse_x;
     detail::last_mouse_y = detail::mouse_y;
     detail::mouse_x = static_cast<i32>(x);

@@ -226,11 +226,13 @@ class Widget {
     i32 get_width() const {
       i32 lo = min_width > 0 ? min_width : std::numeric_limits<i32>::min();
       i32 hi = max_width > 0 ? max_width : std::numeric_limits<i32>::max();
+      if (lo > hi) { std::swap(lo, hi); }
       return std::clamp(width, lo, hi);
     }
     i32 get_height() const {
       i32 lo = min_height > 0 ? min_height : std::numeric_limits<i32>::min();
       i32 hi = max_height > 0 ? max_height : std::numeric_limits<i32>::max();
+      if (lo > hi) { std::swap(lo, hi); }
       return std::clamp(height, lo, hi);
     }
     WIDGET_DEF_GETTER(min_width)

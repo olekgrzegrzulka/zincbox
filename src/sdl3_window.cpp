@@ -1,9 +1,9 @@
 #include "sdl3_window.hpp"
 #include <SDL3/SDL_video.h>
+#include <glad/glad.h>
 #include "common/input.hpp"
 #include "common/logger.hpp"
 #include "common/types.hpp"
-#include "glad.h"
 
 namespace zincbox {
   SDL3Window::SDL3Window() {

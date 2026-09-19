@@ -1,12 +1,14 @@
 #include "texture.hpp"
+#include <filesystem>
 #include <string>
-#include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
+#include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "opengl_includes.hpp"
 
-Texture::Texture(const std::string& file_name) {
-  std::string file_path = "./assets/" + file_name;
+Texture::Texture(const std::filesystem::path& file_name) {
+  std::string file_path = "./assets/" / file_name;
   texture = Texture::load_texture(file_path);
   sampler = Texture::create_sampler();
 }
@@ -17,12 +19,24 @@ void Texture::bind(u32 slot) const {
   glBindSampler(slot, sampler);
 }
 
-u32 Texture::load_texture(const std::string& file_path) {
+u32 Texture::load_texture(const std::filesystem::path& path) {
   int width, height, channels;
-  stbi_uc* data = stbi_load(file_path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+#if defined(_WIN32)
+  FILE* f = _wfopen(path.c_str(), L"rb");
+#else
+  FILE* f = fopen(path.c_str(), "rb");
+#endif
+  if (!f) {
+    out::critical("load_texture({}): {}", path_to_utf8(path), "fopen returned false");
+    exit(1);
+  }
+
+  stbi_uc* data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+  fclose(f);
 
   if (!data) {
-    out::critical("load_texture({}): {}", file_path, stbi_failure_reason());
+    out::critical("load_texture({}): {}", path_to_utf8(path), stbi_failure_reason());
     exit(1);
   }
 

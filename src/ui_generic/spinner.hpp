@@ -91,11 +91,15 @@ class Spinner : public TextInput {
       if (is_mouse_hovering()) {
         if (scroll.y > 0) {
           focused = true;
-          i32 new_value = std::clamp(value + button_step, min_value, max_value);
+          i32 lo = std::min(min_value, max_value);
+          i32 hi = std::max(min_value, max_value);
+          i32 new_value = std::clamp(value + button_step, lo, hi);
           set_value(new_value);
         } else if (scroll.y < 0) {
           focused = true;
-          i32 new_value = std::clamp(value - button_step, min_value, max_value);
+          i32 lo = std::min(min_value, max_value);
+          i32 hi = std::max(min_value, max_value);
+          i32 new_value = std::clamp(value - button_step, lo, hi);
           set_value(new_value);
         }
       }
@@ -156,7 +160,9 @@ class Spinner : public TextInput {
     }
 
     bool set_value(i32 value_) {
-      i32 new_value = std::clamp(value_, min_value, max_value);
+      i32 lo = std::min(min_value, max_value);
+      i32 hi = std::max(min_value, max_value);
+      i32 new_value = std::clamp(value_, lo, hi);
       if (value != new_value) {
         value = new_value;
         label.set_text(std::to_string(value));

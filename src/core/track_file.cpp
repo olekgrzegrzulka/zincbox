@@ -37,7 +37,7 @@ static Random rng{};
 
 TrackFile::TrackFile(const fs::path& path_, bool fetch_album_art) {
   path = path_;
-  ScopeTimer timer("TrackFile " + std::string(path_));
+  ScopeTimer timer("TrackFile " + path_to_utf8(path_));
 
   TagLib::FileStream fstream(path_.c_str(), true);
   TagLib::FileRef f(&fstream);
@@ -63,9 +63,9 @@ TrackFile::TrackFile(const fs::path& path_, bool fetch_album_art) {
   album_name = tag->album().to8Bit(true);
 
   track = db::Track{
-    (i32)tag->track(),      tag->title().to8Bit(true), tag->artist().to8Bit(true),
-    album_artist,           tag->genre().to8Bit(true), (i32)tag->year(),
-    audio_props->bitrate(), audio_props->lengthInSeconds(),           path_to_utf8(path_),
+    (i32)tag->track(),      tag->title().to8Bit(true),      tag->artist().to8Bit(true),
+    album_artist,           tag->genre().to8Bit(true),      (i32)tag->year(),
+    audio_props->bitrate(), audio_props->lengthInSeconds(), path_to_utf8(path_),
   };
 
   if (fetch_album_art) { this->fetch_album_art(&f); }
@@ -168,7 +168,12 @@ std::optional<fs::path> TrackFile::save_album_art(stbi_uc* img, i32 width, i32 h
   size_t filename = rng.next<size_t>(1000000000, 9999999999);
   std::filesystem::path file_path = std::filesystem::path(path) / (std::to_string(filename) + ".png");
 
+#if defined(_WIN32)
+  FILE* out_file = _wfopen(file_path.c_str(), L"wb");
+#else
   FILE* out_file = fopen(file_path.c_str(), "wb");
+#endif
+
   if (!out_file) { return std::nullopt; }
   spng_ctx* enc_ctx = spng_ctx_new(SPNG_CTX_ENCODER);
   if (!enc_ctx) {

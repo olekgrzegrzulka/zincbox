@@ -275,7 +275,7 @@ class PopupSetSources : public Popup {
 
     void update() override {
       content->set_width(
-        std::clamp<i32>(max_path_label_width + 60 + 24, 300, std::min(ui.get_window_width() - 100, 600)));
+        std::clamp<i32>(max_path_label_width + 60 + 24, 300, std::clamp(ui.get_window_width() - 100, 300, 600)));
 
       if (max_path_label_width != 0) {
         content->set_height(

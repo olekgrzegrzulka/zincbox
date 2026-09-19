@@ -14,6 +14,7 @@
 #include "common/logger.hpp"
 #include "common/serialized_state.hpp" // for glz::meta<rgba> specialization
 #include "common/types.hpp"
+#include "common/utf.hpp"
 #include "core/io.hpp"
 #include "core/settings.hpp"
 #include "core/zincbox.hpp"
@@ -39,7 +40,7 @@ static std::string resources_ttf_path;
 static std::set<std::string> languages;
 static ThemeConfig config_;
 
-static constexpr std::vector<uint8_t> NO_RESOURCE = {};
+static const std::vector<uint8_t> NO_RESOURCE = {};
 
 const std::vector<uint8_t>& theme::get_raw_resource(const std::string& path) {
   auto it = resources.find(path);
@@ -86,7 +87,7 @@ void load_resources() {
     if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
     if (filename.starts_with("lang/") && filename.ends_with(".json")) {
       fs::path file_path{file_stat.m_filename};
-      languages.insert(file_path.stem());
+      languages.insert(path_to_utf8(file_path.stem()));
     }
 
     resources[std::move(filename)] = std::move(buffer);
@@ -154,13 +155,13 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   if (!load_theme_from_resources) {
     // Check if the theme exists in the themes directory
     if (!fs::is_directory(theme_path)) {
-      out::warn("no theme found at {}", std::string{theme_path});
+      out::warn("no theme found at {}", path_to_utf8(theme_path));
       load_theme("", ui, language);
       return;
     }
 
     fs::path theme_json_path = io::get_themes_path() / theme_name / "theme.json";
-    auto error = glz::read_file_json(config_, theme_json_path.c_str(), std::string{});
+    auto error = glz::read_file_json(config_, path_to_utf8(theme_json_path).c_str(), std::string{});
     if (error) {
       out::warn("failed to load theme {} invalid or missing theme.json", theme_name);
       load_theme("", ui, language);
@@ -171,7 +172,7 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     std::string font_path = "";
     for (auto const& dir_entry : fs::recursive_directory_iterator(theme_path)) {
       if (dir_entry.is_regular_file() && dir_entry.path().extension() == ".ttf") {
-        font_path = dir_entry.path();
+        font_path = path_to_utf8(dir_entry.path());
         break;
       }
     }
@@ -215,10 +216,10 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
     if (!load_theme_from_resources) {
       for (const std::string& filename : filenames) {
         if (fs::is_regular_file((theme_path / (filename + ".png")))) {
-          atlas.add_texture(id, (theme_path / (filename + ".png")).c_str());
+          atlas.add_texture(id, path_to_utf8(theme_path / (filename + ".png")));
           return true;
         } else if (fs::is_regular_file((theme_path / (filename + ".PNG")))) {
-          atlas.add_texture(id, (theme_path / (filename + ".PNG")).c_str());
+          atlas.add_texture(id, path_to_utf8(theme_path / (filename + ".PNG")));
           return true;
         }
       }

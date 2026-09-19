@@ -197,7 +197,9 @@ std::optional<mpris::Command> mpris::command_pop() { return std::nullopt; }
 void mpris::notify_playback_status_playing() {}
 void mpris::notify_playback_status_paused() {}
 void mpris::notify_playback_status_stopped() {}
-void mpris::notify_track_change(std::string, std::string, std::string, i64) {}
+void mpris::notify_track_change(std::string, std::string, std::string, i64, std::string) {}
 void mpris::notify_volume(double) {}
 void mpris::notify_seeked(i64) {}
+void mpris::notify_loop_status(i32) {}
+void mpris::notify_shuffle(bool) {}
 #endif

@@ -98,7 +98,8 @@ void PanelTop::update() {
   container_drag_region->set_height(height);
   container_buttons->set_height(height);
 
-  tab_bar->set_x(std::clamp(tab_bar->get_x(), container_tabbar->get_width() - tab_bar->get_tab_container_width(), 0));
+  tab_bar->set_x(
+    std::clamp(tab_bar->get_x(), std::min(0, container_tabbar->get_width() - tab_bar->get_tab_container_width()), 0));
   ColorRect::update();
 }
 

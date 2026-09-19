@@ -4,17 +4,11 @@
 #include <signal.h>
 #include "common/logger.hpp"
 #include "core/zincbox.hpp"
+#include <fmt/format.h>
 
 extern "C" void handle_sigterm(int signal) {
   if (signal == SIGTERM) {
     out::warn("received SIGTERM, shutting down");
-    zincbox::stop();
-  }
-}
-
-extern "C" void handle_sighup(int signal) {
-  if (signal == SIGHUP) {
-    out::warn("received SIGHUP, shutting down");
     zincbox::stop();
   }
 }
@@ -40,7 +34,7 @@ extern "C" void handle_sigsegv(int) {
     if (desc.empty()) { desc = "<unresolved symbol>"; }
     if (file.empty()) { file = "<unknown file>"; }
 
-    formatted_trace += std::format("  #{:<2} {} \n      at {}:{}\n", frame_num++, desc, file, entry.source_line());
+    formatted_trace += fmt::format("  #{:<2} {} \n      at {}:{}\n", frame_num++, desc, file, entry.source_line());
   }
 
   out::critical("\n{}", formatted_trace);

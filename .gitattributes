@@ -1,1 +1,8 @@
 lib/** linguist-vendored
+
+* text=auto eol=lf
+
+*.png binary
+*.ttf binary
+*.ico binary
+*.obj binary

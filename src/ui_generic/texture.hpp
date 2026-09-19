@@ -1,15 +1,15 @@
 #pragma once
-#include <string>
+#include <filesystem>
 #include "common/types.hpp"
 
 class Texture {
   public:
-    Texture(const std::string& file_name);
+    Texture(const std::filesystem::path&);
 
     void bind(u32 slot) const;
 
   private:
-    static u32 load_texture(const std::string& file_path);
+    static u32 load_texture(const std::filesystem::path&);
 
     static u32 create_sampler();
 

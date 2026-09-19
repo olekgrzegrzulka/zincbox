@@ -227,7 +227,7 @@ std::optional<db::track_info> db::find_track(const std::string_view& artist, con
       for (auto& track_id : playlist.track_ids) {
         if (matches.contains(track_id)) {
           return std::make_optional<track_info>(
-            {.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id});
+            track_info{.collection_id = collection_id, .playlist_id = playlist_id, .track_id = track_id});
         }
       }
     }
@@ -282,13 +282,13 @@ void db::mark_collection_as_tombstone(size_t collection_id) {
   collection.set_tombstone(true);
 }
 
-void visit_directory(size_t collection_id, std::string_view path) {
+void visit_directory(size_t collection_id, fs::path path) {
   std::unordered_set<size_t> album_ids_visited;
   std::optional<fs::path> cover_file_path;
 
   for (auto& entry : fs::directory_iterator(path)) {
     if (entry.is_directory()) {
-      visit_directory(collection_id, path_to_utf8(entry.path()));
+      visit_directory(collection_id, entry.path());
     } else if (entry.is_regular_file()) {
       if (io::is_music_file(entry)) {
         TrackFile track_file(entry.path(), false);

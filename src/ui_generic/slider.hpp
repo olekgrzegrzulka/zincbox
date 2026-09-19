@@ -77,7 +77,9 @@ class Slider : public Widget {
 
     void set_value(float new_value, bool signal = true) {
       i32 old_value = value;
-      new_value = std::clamp(new_value, min_value, max_value);
+      float lo = std::min(min_value, max_value);
+      float hi = std::max(min_value, max_value);
+      new_value = std::clamp(new_value, lo, hi);
       if (value == new_value) { return; }
 
       value = new_value;

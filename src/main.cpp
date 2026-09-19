@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <SDL3/SDL.h>
 #include <nfd.hpp>
-#include <unistd.h>
 #include "common/input.hpp"
 #include "common/logger.hpp"
 #include "core/zincbox.hpp"
@@ -13,8 +12,8 @@
 #include "signal_handlers.hpp"
 #include "ui/interface.hpp"
 
-SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point*, void*) {
-  interface::DecorationHover decoration_hover = interface::get_decoration_hover();
+SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*) {
+  interface::DecorationHover decoration_hover = interface::get_decoration_hover(p->x, p->y);
 
   switch (decoration_hover) {
   case interface::DecorationHover::TOP_LEFT: return SDL_HITTEST_RESIZE_TOPLEFT;
@@ -37,7 +36,6 @@ int main() {
   // ----------------------------------------------------------------------
   if (std::signal(SIGINT, handle_sigint) == SIG_ERR) { out::critical("failed to set up signal handler for SIGINT"); }
   if (std::signal(SIGTERM, handle_sigterm) == SIG_ERR) { out::critical("failed to set up signal handler for SIGTERM"); }
-  if (std::signal(SIGHUP, handle_sighup) == SIG_ERR) { out::critical("failed to set up signal handler for SIGHUP"); }
   if (std::signal(SIGSEGV, handle_sigsegv) == SIG_ERR) { out::critical("failed to set up signal handler for SIGSEGV"); }
 
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {

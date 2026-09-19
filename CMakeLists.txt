@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
 
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -9,9 +11,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(BUILD_TESTS OFF)
 
-set(SPNG_USE_MINIZ ON)
 set(WITH_ZLIB OFF)
-set(FT_REQUIRE_ZLIB OFF)
 set(CMAKE_DISABLE_FIND_PACKAGE_ZLIB TRUE)
 
 # Native File Dialog Extended
@@ -21,10 +21,12 @@ set(utf8cpp_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/utfcpp/source" CACHE PA
 
 # Freetype
 set(BUILD_SHARED_LIBS OFF)
+set(FT_REQUIRE_ZLIB OFF)
 
 # libspng
 set(SPNG_SHARED OFF)
 set(SPNG_STATIC ON)
+set(SPNG_USE_MINIZ ON)
 set(BUILD_EXAMPLES OFF)
 
 # TagLib
@@ -80,6 +82,8 @@ include_directories(SYSTEM
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/taglib/taglib/toolkit
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/glaze/include
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/fmt/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/nativefiledialog-extended/src/include/
 )
 
 message(STATUS "------------------------------------------------")
@@ -185,8 +189,20 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-
-target_compile_options(${PROJECT_NAME} PRIVATE
+if(MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+        /W4              # -Wall
+        /we4456          # error on variable shadowing
+        /we4062          # error on unhandled switch enum cases
+        /we4834          # error on discarding [[nodiscard]] return values
+        /we4715          # error on missing return statement
+        /wd4838          # disable narrowing conversion warnings
+        /wd4244          # disable precision loss warnings
+        /utf-8           # UTF-8
+        /Zc:__cplusplus  # report correct C++ standard in __cplusplus macro
+    )
+else()
+  target_compile_options(${PROJECT_NAME} PRIVATE
     -Wall
     -Wextra
     -pedantic
@@ -196,42 +212,54 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Werror=return-type
     -Wno-narrowing
     -fdiagnostics-color=always
-    -fPIC
+    $<$<NOT:$<PLATFORM_ID:Windows>>:-fPIC>
 )
-
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+endif()
 
 if(ENABLE_ASAN)
-  target_compile_options(${PROJECT_NAME} PRIVATE
-    -fsanitize=address,undefined
-    -fno-omit-frame-pointer
-    -g
-    -O1
-    -D_GLIBCXX_ASSERTIONS
-  )
-  target_link_options(${PROJECT_NAME} PRIVATE
-  ${SANITIZER_FLAGS}
-    -fsanitize=address,undefined
-    -fno-omit-frame-pointer
-    -g
-  )
-else()
-  message(STATUS "AddressSanitizer disabled")
+  if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+      /fsanitize=address
+      /Oy-               # -fno-omit-frame-pointer
+      /Zi                # -g
+      /Od                # -O0
+    )
+  else()
+    target_compile_options(${PROJECT_NAME} PRIVATE
+      -fsanitize=address,undefined
+      -fno-omit-frame-pointer
+      -g
+      -O1
+      -D_GLIBCXX_ASSERTIONS
+    )
+    target_link_options(${PROJECT_NAME} PRIVATE
+      -fsanitize=address,undefined
+      -fno-omit-frame-pointer
+      -g
+    )
+  endif()
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+  if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /Zi /Od)
+  else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -g -O1)
+  endif()
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
+  if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /O2 /DNDEBUG)
+  else()
+    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG)
+  endif()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
   freetype nfd spng_static
-  tag glm::glm stb_image glad
-  miniz fmt::fmt stdc++exp
+  tag glm::glm stb_image
+  glad miniz fmt::fmt
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:stdc++exp>
+  $<$<NOT:$<PLATFORM_ID:Windows>>:sdbus-c++>
   SDL3::SDL3-static glaze::glaze zincbox_resources
 )
-if(NOT WIN32)
-  target_link_libraries(${PROJECT_NAME} PRIVATE sdbus-c++)
-endif()
 # target_link_libraries(${PROJECT_NAME} PRIVATE miniaudio)

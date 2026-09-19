@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <glaze/glaze.hpp>
+#include <nfd.hpp>
 #include "common/debug.hpp"
 #include "common/input.hpp"
 #include "common/serialized_state.hpp"
@@ -53,7 +54,6 @@
 #include "ui_generic/tooltip.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
-#include "lib/nativefiledialog-extended/src/include/nfd.hpp"
 
 static std::optional<size_t> active_collection_id;
 static std::vector<float> tracks_scroll_positions;
@@ -237,17 +237,16 @@ void interface::init() {
 
   panel_top->on_add_collection_button_pressed = [&](Widget*) {
     NFD::UniquePathSet out_paths;
-    auto result = NFD::PickFolderMultiple(out_paths, (const nfdnchar_t*)nullptr);
+    auto result = NFD::PickFolderMultiple(out_paths, (const nfdu8char_t*)nullptr);
     if (result == NFD_OKAY) {
       nfdpathsetsize_t numPaths;
       NFD::PathSet::Count(out_paths, numPaths);
       if (numPaths > 0) {
         nfdpathsetsize_t i;
-        std::string collection_name =
-          (tr::get("collection.default_name")) + std::to_string(db::collection_count() + 1);
+        std::string collection_name = (tr::get("collection.default_name")) + std::to_string(db::collection_count() + 1);
         auto collection_id = db::add_collection(collection_name);
         for (i = 0; i < numPaths; i += 1) {
-          NFD::UniquePathSetPath path;
+          NFD::UniquePathSetPathU8 path;
           NFD::PathSet::GetPath(out_paths, i, path);
           db::add_path_to_collection(collection_id, path.get());
         }
@@ -450,7 +449,7 @@ void interface::update(vec2i window_size) {
     panel_queue->set_height(content_height);
   } else {
     i32 width_tracks = (content_width * splitter->get_ratio()) - (i32)(splitter->get_width() / 2);
-    width_tracks = std::clamp(width_tracks, 200, content_width - 200);
+    width_tracks = std::clamp(width_tracks, 200, std::max(content_width - 200, 200));
     i32 width_albums = content_width - width_tracks - splitter->get_width();
 
     panel_tracks->set_pos(content_x, content_y);
@@ -476,10 +475,9 @@ static void draw() { ui->draw(); }
 
 void interface::deinit() { ui = nullptr; }
 
-interface::DecorationHover interface::get_decoration_hover() {
+interface::DecorationHover interface::get_decoration_hover(i32 mouse_x, i32 mouse_y) {
+  vec2i mouse_pos{mouse_x, mouse_y};
   if (!theme::config().custom_window_decoration.enabled) { return DecorationHover::INSIDE; }
-
-  vec2i mouse_pos = Input::get_mouse_pos();
   i32 border_size = theme::config().custom_window_decoration.border_size;
   if (border_size < 6) { border_size = 6; }
   i32 w = ui->get_window_width();
@@ -499,7 +497,7 @@ interface::DecorationHover interface::get_decoration_hover() {
   if (mouse_pos.x < border_size) { return DecorationHover::LEFT; }
   if (mouse_pos.x >= w - border_size) { return DecorationHover::RIGHT; }
   if (mini_player_disabled) {
-    if (panel_top->can_drag_window()) { return DecorationHover::TITLEBAR; }
+    if (panel_top->is_mouse_hovering() && panel_top->can_drag_window()) { return DecorationHover::TITLEBAR; }
   } else {
     if (panel_controls->can_drag_window()) { return DecorationHover::TITLEBAR; }
   }
@@ -656,8 +654,8 @@ static void handle_drag_and_drop() {
         return true;
       }
       if (selection_drag->size() > 1) {
-        tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist_plural", selection_drag->size(),
-                                          playlist->get().name));
+        tooltip_drag->set_text(
+          tr::format("tooltip.drag.add_to_playlist_plural", selection_drag->size(), playlist->get().name));
       } else {
         tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist", playlist->get().name));
       }
@@ -1022,8 +1020,7 @@ static void show_add_to_playlist_popup(db::track_id_t track_id) {
     } else if (db::add_track_id_to_playlist(playlist_id, track_id)) {
       auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      notifications->push(tr::format("notification.added_track_to_playlist", track_pretty_name,
-                                     playlist_name));
+      notifications->push(tr::format("notification.added_track_to_playlist", track_pretty_name, playlist_name));
       panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     }
@@ -1045,8 +1042,7 @@ static void show_add_to_playlist_popup(std::span<const db::track_id_t> track_ids
       if (db::add_track_id_to_playlist(playlist_id, track_id)) { tracks_added_count += 1; }
     }
     if (tracks_added_count != 0) {
-      notifications->push(
-        tr::format("notification.added_tracks_to_playlist", tracks_added_count, playlist_name));
+      notifications->push(tr::format("notification.added_tracks_to_playlist", tracks_added_count, playlist_name));
       panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     }
@@ -1064,8 +1060,8 @@ static void show_popup_delete_collection(db::collection_id_t collection_id) {
 
   popup->on_ok_pressed = [collection_id]() {
     delete_collection(collection_id);
-    notifications->push(tr::format("notification.deleted_collection",
-                                   std::string(db::collection_by_id(collection_id)->get().name())));
+    notifications->push(
+      tr::format("notification.deleted_collection", std::string(db::collection_by_id(collection_id)->get().name())));
   };
 }
 
@@ -1098,8 +1094,8 @@ static void show_popup_set_sources(db::collection_id_t collection_id) {
   };
 
   popup->on_add_dir_pressed = [collection_id]() -> void {
-    NFD::UniquePath out_path;
-    if (NFD::PickFolder(out_path, (const nfdnchar_t*)nullptr) == NFD_OKAY) {
+    NFD::UniquePathU8 out_path;
+    if (NFD::PickFolder(out_path, (const nfdu8char_t*)nullptr) == NFD_OKAY) {
       db::add_path_to_collection(collection_id, out_path.get());
       if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
         panel_tracks->recreate(active_collection_id);
@@ -1120,8 +1116,7 @@ static void show_popup_delete_playlist(db::playlist_id_t playlist_id) {
 
   popup->on_ok_pressed = [playlist_id]() {
     delete_playlist(playlist_id);
-    notifications->push(
-      tr::format("notification.deleted_playlist", db::playlist_by_id(playlist_id)->get().name));
+    notifications->push(tr::format("notification.deleted_playlist", db::playlist_by_id(playlist_id)->get().name));
   };
 }
 
@@ -1238,14 +1233,14 @@ static void show_popover_tracklist_track_actions(db::track_info ti, Widget* widg
           ensure(ti.track_id == playlist_.track_ids[ti.index]);
           if (db::remove_track_index_from_playlist(ti.playlist_id, ti.index)) {
             auto track_pretty_name = db::track_by_id(ti.track_id)->get().pretty_name();
-            notifications->push(tr::format("notification.removed_track_from_playlist", track_pretty_name,
-                                           playlist_.name));
+            notifications->push(
+              tr::format("notification.removed_track_from_playlist", track_pretty_name, playlist_.name));
           }
         } else {
           if (db::remove_track_id_from_playlist(ti.playlist_id, ti.track_id)) {
             auto track_pretty_name = db::track_by_id(ti.track_id)->get().pretty_name();
-            notifications->push(tr::format("notification.removed_track_from_playlist", track_pretty_name,
-                                           playlist_.name));
+            notifications->push(
+              tr::format("notification.removed_track_from_playlist", track_pretty_name, playlist_.name));
           }
         }
         panel_tracks->clear();
@@ -1361,8 +1356,8 @@ static void show_popover_tracklist_tracks_actions(WidgetTrack* widget, std::span
         auto& playlist_ = db::playlist_by_id(common_playlist_id.value())->get();
         db::remove_track_indices_from_playlist(common_playlist_id.value(), track_indices);
         if (track_indices.size() != 0) {
-          notifications->push(tr::format("notification.removed_tracks_from_playlist", track_indices.size(),
-                                         playlist_.name));
+          notifications->push(
+            tr::format("notification.removed_tracks_from_playlist", track_indices.size(), playlist_.name));
           panel_tracks->clear();
           panel_tracks->recreate(active_collection_id);
         }
@@ -1615,18 +1610,17 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                          },
                          "play_track");
 
-    buttons.emplace_back(
-      (tr::get("popover.playlist.play_next")),
-      [callback_close, playlist_id]() -> void {
-        if (callback_close) { callback_close(); }
-        if (panel_albums->get_collection_id().has_value()) {
-          if (player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false)) {
-            notifications->push(
-              tr::format("notification.appended_to_queue", db::playlist_by_id(playlist_id)->get().name));
-          }
-        }
-      },
-      "play_next");
+    buttons.emplace_back((tr::get("popover.playlist.play_next")),
+                         [callback_close, playlist_id]() -> void {
+                           if (callback_close) { callback_close(); }
+                           if (panel_albums->get_collection_id().has_value()) {
+                             if (player::play_playlist(*(panel_albums->get_collection_id()), playlist_id, false)) {
+                               notifications->push(tr::format("notification.appended_to_queue",
+                                                              db::playlist_by_id(playlist_id)->get().name));
+                             }
+                           }
+                         },
+                         "play_next");
   }
 
   if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
@@ -1648,14 +1642,14 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                            if (ec) {
                              return; // FIXME: handle errors
                            }
-                           NFD::UniquePathN outPath;
+                           NFD::UniquePathU8 outPath;
                            std::string json_filter_label = tr::get("dialog.filter.json_files");
                            nfdfilteritem_t filterList[1] = {{json_filter_label.c_str(), "json"}};
                            auto file_name_utf8 = playlist.name + ".json";
-                           const nfdnchar_t* defaultName = file_name_utf8.c_str();
+                           const nfdu8char_t* defaultName = file_name_utf8.c_str();
                            auto result = NFD::SaveDialog(outPath, filterList, 1, nullptr, defaultName);
                            if (result == NFD_OKAY) {
-                             nfdnchar_t* path = outPath.get();
+                             nfdu8char_t* path = outPath.get();
                              std::string path_str(path);
                              std::ofstream out(path_str);
                              out << json;
@@ -1671,14 +1665,14 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
   buttons.emplace_back((tr::get("dialog.action.pick_image_file")),
                        [callback_close, playlist_id]() -> void {
                          if (callback_close) { callback_close(); }
-                         NFD::UniquePathN out_path_n;
+                         NFD::UniquePathU8 out_path_n;
 
                          std::string image_filter_label = tr::get("dialog.filter.image_files");
                          nfdfilteritem_t filter_item[1] = {{image_filter_label.c_str(), "png,jpg,jpeg"}};
                          auto result = NFD::OpenDialog(out_path_n, filter_item, 1);
 
                          if (result == NFD_OKAY) {
-                           nfdnchar_t* path = out_path_n.get();
+                           nfdu8char_t* path = out_path_n.get();
                            std::string path_str(path);
                            db::set_playlist_image(playlist_id, path_str);
                            std::string playlist_id_str = std::to_string(playlist_id);
@@ -1841,8 +1835,7 @@ static void show_popover_queue_actions(Widget* w) {
           panel_albums->recreate();
           panel_tracks->recreate(active_collection_id);
         }
-        notifications->push(
-          tr::format("notification.saved_queue_as_playlist", popup->text_input->label.get_text()));
+        notifications->push(tr::format("notification.saved_queue_as_playlist", popup->text_input->label.get_text()));
       };
 
       popup->on_cancel_pressed = []() {};
@@ -1885,7 +1878,7 @@ static void show_popup_new_playlist(const std::function<void(std::optional<db::p
 static void show_popup_new_smart_playlist() { popup_controller->show_popup<PopupCreateSmartPlaylist>(); }
 
 static void show_dialog_new_playlist_from_json() {
-  NFD::UniquePath result;
+  NFD::UniquePathU8 result;
   std::string json_filter_label = tr::get("dialog.filter.json_files");
   nfdfilteritem_t filterList[1] = {{json_filter_label.c_str(), "json"}};
   nfdresult_t res = NFD::OpenDialog(result, filterList, 1);
@@ -1903,8 +1896,7 @@ static void add_track_to_playlist(db::playlist_id_t playlist_id, db::track_id_t 
       }
     } else {
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      notifications->push(tr::format("notification.added_track_to_playlist", track_pretty_name,
-                                     playlist_name));
+      notifications->push(tr::format("notification.added_track_to_playlist", track_pretty_name, playlist_name));
     }
   }
   if (active_collection_id.has_value()) {
@@ -1929,8 +1921,7 @@ static void add_tracks_to_playlist(db::playlist_id_t playlist_id, std::span<cons
       notifications->push(tr::format("notification.loved_tracks", added_count));
     } else {
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      notifications->push(
-        tr::format("notification.added_tracks_to_playlist", added_count, playlist_name));
+      notifications->push(tr::format("notification.added_tracks_to_playlist", added_count, playlist_name));
     }
     if (active_collection_id.has_value()) {
       panel_tracks->clear();
@@ -1950,8 +1941,7 @@ static void remove_track_from_playlist(db::playlist_id_t playlist_id, db::track_
       }
     } else {
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      notifications->push(tr::format("notification.removed_track_from_playlist", track_pretty_name,
-                                     playlist_name));
+      notifications->push(tr::format("notification.removed_track_from_playlist", track_pretty_name, playlist_name));
     }
   }
   if (active_collection_id.has_value()) {
@@ -1976,8 +1966,7 @@ static void remove_tracks_from_playlist(db::playlist_id_t playlist_id, std::span
       notifications->push(tr::format("notification.unloved_tracks", removed_count));
     } else {
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      notifications->push(
-        tr::format("notification.removed_tracks_from_playlist", removed_count, playlist_name));
+      notifications->push(tr::format("notification.removed_tracks_from_playlist", removed_count, playlist_name));
     }
 
     if (active_collection_id.has_value()) {

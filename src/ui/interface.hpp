@@ -32,5 +32,5 @@ namespace interface {
     TITLEBAR,
   };
 
-  DecorationHover get_decoration_hover();
+  DecorationHover get_decoration_hover(i32 mouse_x, i32 mouse_y);
 } // namespace interface

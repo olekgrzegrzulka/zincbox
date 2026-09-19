@@ -8,6 +8,7 @@
 #include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/types.hpp"
+#include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_write.h"
 #include "opengl_includes.hpp"
@@ -21,14 +22,30 @@ TextureAtlas::TextureAtlas(i32 atlas_size_px_, i32 margin_px_, i32 grid_size_px_
   occupied_grid_space.resize((u64)(atlas_size_px / grid_size_px) * (u64)(atlas_size_px / grid_size_px), false);
 }
 
-bool TextureAtlas::add_texture(std::string_view id, std::string path) {
+bool TextureAtlas::add_texture(std::string_view id, const std::filesystem::path& path) {
   if (textures.contains(id)) { return false; }
 
   i32 width, height, channels;
-  stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+#if defined(_WIN32)
+  FILE* f = _wfopen(path.c_str(), L"rb");
+#else
+  FILE* f = fopen(path.c_str(), "rb");
+#endif
+  if (!f) {
+    out::critical("load_texture({}): {}", path_to_utf8(path), "fopen returned false");
+    exit(1);
+  }
+
+  stbi_uc* data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+  fclose(f);
 
   if (!data) {
-    out::critical("failed to load texture {}", path);
+    out::critical("load_texture({}): {}", path_to_utf8(path), stbi_failure_reason());
+    exit(1);
+  }
+
+  if (!data) {
+    out::critical("failed to load texture {}", path_to_utf8(path));
     exit(1);
   }
 
@@ -91,16 +108,32 @@ bool TextureAtlas::add_texture(std::string_view id, const u8* data_, i32 width, 
   return true;
 }
 
-bool TextureAtlas::add_texture_row(std::span<const std::string> ids, std::string path) {
+bool TextureAtlas::add_texture_row(std::span<const std::string> ids, const std::filesystem::path& path) {
   for (const auto& id : ids) {
     if (textures.contains(id)) { return false; }
   }
 
   i32 width, height, channels;
-  stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+#if defined(_WIN32)
+  FILE* f = _wfopen(path.c_str(), L"rb");
+#else
+  FILE* f = fopen(path.c_str(), "rb");
+#endif
+  if (!f) {
+    out::critical("load_texture({}): {}", path_to_utf8(path), "fopen returned false");
+    exit(1);
+  }
+
+  stbi_uc* data = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+  fclose(f);
 
   if (!data) {
-    out::critical("failed to load texture {}", path);
+    out::critical("load_texture({}): {}", path_to_utf8(path), stbi_failure_reason());
+    exit(1);
+  }
+
+  if (!data) {
+    out::critical("failed to load texture {}", path_to_utf8(path));
     exit(1);
   }
 

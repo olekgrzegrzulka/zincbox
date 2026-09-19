@@ -70,8 +70,13 @@ bool play_track() {
 
   ma_result result;
 
-  result =
-    ma_sound_init_from_file(&engine, track.path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
+  auto fs_path = utf8_to_path(track.path);
+#if defined(_WIN32)
+    result = ma_sound_init_from_file_w(&engine, fs_path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
+#else
+    result = ma_sound_init_from_file(&engine, fs_path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
+#endif
+  
   if (result != MA_SUCCESS) {
     out::warn("player::play: ma_sound_init_from_file returned {} for {}", (i32)result, track.path);
     db::set_track_playback_error(playing->track_id, true);

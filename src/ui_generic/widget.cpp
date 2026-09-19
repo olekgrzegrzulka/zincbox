@@ -100,6 +100,7 @@ void Widget::update() {
       if (c->ignore_parents_layout || !c->is_drawn) { continue; }
       i32 min_s = get_size_min_major(*c) > 0 ? get_size_min_major(*c) : 0;
       i32 max_s = get_size_max_major(*c) > 0 ? get_size_max_major(*c) : std::numeric_limits<i32>::max();
+      if (min_s > max_s) { std::swap(min_s, max_s); }
       float c_weight = layout.fill ? c->weight : 0.0f;
       i32 size = c_weight > 0 ? 0 : std::clamp(get_size_major(*c), min_s, max_s);
       items.emplace_back(FlexItem{&*c, c_weight, min_s, max_s, size, c_weight == 0});
@@ -152,6 +153,7 @@ void Widget::update() {
       if (layout.expand_children) {
         i32 min_s = get_size_min_minor(*item.w) > 0 ? get_size_min_minor(*item.w) : 0;
         i32 max_s = get_size_max_minor(*item.w) > 0 ? get_size_max_minor(*item.w) : std::numeric_limits<i32>::max();
+        if (min_s > max_s) { std::swap(min_s, max_s); }
         set_size_minor(*item.w, std::clamp(container_size_minor, min_s, max_s));
       }
     }

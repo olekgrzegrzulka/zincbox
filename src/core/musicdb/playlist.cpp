@@ -119,7 +119,14 @@ void db::Playlist::sort_by_name_desc() {
 
 bool db::Playlist::fetch_cover_art(const fs::path& path) {
   i32 width, height, channels;
-  stbi_uc* img = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+#if defined(_WIN32)
+  FILE* f = _wfopen(path.c_str(), L"rb");
+#else
+  FILE* f = fopen(path.c_str(), "rb");
+#endif
+  if (!f) { return false; }
+  stbi_uc* img = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
+  fclose(f);
   if (img == NULL) {
     out::debug_error("Playlist::fetch_cover_art({}): {}", path_to_utf8(path), stbi_failure_reason());
     return false;

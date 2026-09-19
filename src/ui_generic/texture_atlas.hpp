@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <functional>
 #include <optional>
 #include <span>
@@ -27,10 +28,10 @@ class TextureAtlas {
       return (aliases.contains(id) && has_texture(aliases.at(std::string(id)), max_depth - 1));
     }
 
-    bool add_texture(std::string_view id, std::string path);
+    bool add_texture(std::string_view id, const std::filesystem::path&);
     bool add_texture(std::string_view id, const std::vector<u8>& data, i32 width, i32 height);
     bool add_texture(std::string_view id, const u8* data, i32 width, i32 height);
-    bool add_texture_row(std::span<const std::string> ids, std::string path);
+    bool add_texture_row(std::span<const std::string> ids, const std::filesystem::path&);
     bool add_texture_row(std::span<const std::string> ids, const u8* data, i32 width, i32 height);
     void add_texture_alias(std::string id, std::string to);
     bool remove_texture(std::string_view id);

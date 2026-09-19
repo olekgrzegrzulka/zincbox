@@ -115,7 +115,7 @@ void zincbox::deinit() {
 }
 
 void zincbox::load_state_from_json() {
-  auto ec = glz::read_file_json(s_loaded_state, io::get_cfg_path().c_str(), std::string{});
+  auto ec = glz::read_file_json(s_loaded_state, path_to_utf8(io::get_cfg_path()).c_str(), std::string{});
   if (ec) {
     out::error("failed to read zincbox.json: {}", ec.custom_error_message);
     return;
