@@ -5,21 +5,21 @@
 
 ### A versatile music player
 
-![Screenshot](screenshot.png)
+<img src="screenshot.png" alt="Screenshot" width="680px" />
 
 # Quick guide
 
-The top panel displays your file collections, alongside dedicated 'Playlists' view for user-created playlists and 'Queue' view for active playback.
+The top panel displays your file collections, alongside dedicated *Playlists* view for user-created playlists and *Queue* view for active playback.
 
-To add a new collection, click the **+** button on the top panel, or simply drag and drop folders directly into the application window. When adding multiple folders, you may choose to merge them into a single collection or keep them separate.
+When a collection or the *Playlists* view is opened, the main view splits into two areas: the left panel displays tracklists grouped by album or playlist, while the right panel provides a grid of covers. Selecting any album or playlist from the grid shows its tracks in the left panel.
 
-Press **Ctrl+F** to open the search window and quickly locate any track or playlist.
+To add a new collection, click the *+* button on the top panel, or simply drag and drop folders directly into the application window. When adding multiple folders, you may choose to merge them into a single collection or keep them separate.
 
-To access configuration such as playback settings or theme options, click the settings icon in the top-right corner of the panel.
+The menu button in the top-right corner provides quick access to search (also reachable via *Ctrl+F*), the mini-player toggle, and application settings such as playback configuration and theme options.
 
 # Building and Installation
 
-Zincbox is built with **CMake**. You will need a compiler (**Clang** or **GCC**) and a build system (**Make** or **Ninja**) installed on your system.
+Zincbox is built with *CMake*. You will need a compiler (*Clang* or *GCC*) and a build system (*Make* or *Ninja*) installed on your system.
 
 ## 1. Install Dependencies
 
@@ -73,6 +73,8 @@ wayland-devel wayland-protocols-devel libdecor-devel
 
 ## 2. Build
 
+### Linux
+
 Build using the provided script (`build.sh`) with optional flags:
 
 | Flag      | Description                   |
@@ -89,6 +91,13 @@ Build using the provided script (`build.sh`) with optional flags:
 
 For example
 `./build.sh release run`
+
+### Windows
+
+```cmd
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
 
 # Technical Details
 

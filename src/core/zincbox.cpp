@@ -38,11 +38,11 @@
 static std::atomic<bool> s_running = false;
 static Settings s_settings;
 static std::unique_ptr<zincbox::IWindow> s_window = nullptr;
-AppSerialized s_loaded_state;
+static AppSerialized s_loaded_state;
 
-void update_mini_player_state();
-void update_window_title();
-void check_opengl_errors();
+static void update_mini_player_state();
+static void update_window_title();
+static void check_opengl_errors();
 
 float zincbox::ui_scale() { return s_settings.interface.scale * 0.01f; }
 
@@ -222,7 +222,7 @@ void zincbox::save_db_to_file() {
 zincbox::IWindow* zincbox::window() { return s_window.get(); }
 Settings& zincbox::settings() { return s_settings; }
 
-void update_mini_player_state() {
+static void update_mini_player_state() {
   static std::optional<bool> is_mini_player = std::nullopt;
   if (is_mini_player != interface::get_mini_player()) {
 
@@ -243,7 +243,7 @@ void update_mini_player_state() {
   }
 }
 
-void update_window_title() {
+static void update_window_title() {
   static std::optional<db::track_info> prev_playing;
   auto playing = player::get_playing();
   if (playing == prev_playing) { return; }
@@ -260,7 +260,7 @@ void update_window_title() {
   s_window->title(window_title.c_str());
 }
 
-const char* get_opengl_error_string(GLenum err) {
+static const char* get_opengl_error_string(GLenum err) {
   switch (err) {
   case GL_NO_ERROR: return "No error";
   case GL_INVALID_ENUM: return "Invalid enum";
@@ -274,7 +274,7 @@ const char* get_opengl_error_string(GLenum err) {
   }
 }
 
-void check_opengl_errors() {
+static void check_opengl_errors() {
   GLenum error;
   while ((error = glGetError()) != GL_NO_ERROR) {
     std::stringstream error_hex;
