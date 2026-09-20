@@ -82,14 +82,19 @@
     "track_height": 22,
     "header_height": 28,
     "header_spacing": 10,
-    "header_author_color": "hsv(312, 0.30, 0.66)",
-    "header_name_color": "hsv(312, 0.30, 0.86)",
+    "header_author_color": "#a8769e",
+    "header_name_color": "#dc99ce",
     "track_color_odd": "#0c050b",
     "track_color_even": "#150913",
-    "track_artist_color": "hsv(312, 0.20, 0.50)",
-    "track_number_color": "hsv(312, 0.20, 0.65)",
-    "title_color": "hsv(312, 0.20, 0.80)",
-    "length_color": "hsv(312, 0.20, 0.50)"
+    "track_color_playing": "#2d1528",
+    "track_color_selected_odd": "#34132d",
+    "track_color_selected_even": "#3b1634",
+    "track_hovered": "#ad3594",
+    "track_hovered_opacity": 0.2,
+    "track_artist_color": "#80667a",
+    "track_number_color": "#a6859f",
+    "title_color": "#cca3c4",
+    "length_color": "#80667a"
   },
 
   "panel_playlists": {

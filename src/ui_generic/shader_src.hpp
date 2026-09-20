@@ -13,6 +13,7 @@ layout(location = 5) in uvec2 widget_size;
 layout(location = 6) in vec2 uv_start;
 layout(location = 7) in vec2 uv_end;
 layout(location = 8) in vec3 color;
+layout(location = 9) in float opacity;
 
 layout(location = 0) out flat int type_;
 layout(location = 1) out vec2 uv_;
@@ -22,6 +23,7 @@ layout(location = 4) out flat uvec2 widget_size_;
 layout(location = 5) out vec2 uv_start_;
 layout(location = 6) out vec2 uv_end_;
 layout(location = 7) out vec3 color_;
+layout(location = 8) out float opacity_;
 
 void main() {
   gl_Position = vec4(vertex, 0.0f, 1.0f) * matrix;
@@ -38,6 +40,7 @@ void main() {
     color_ = color;
   } else if (type == 2) {
     color_ = color;
+    opacity_ = opacity;
   }
 })";
 
@@ -56,6 +59,7 @@ layout(location = 4) in flat uvec2 widget_size;
 layout(location = 5) in vec2 uv_start;
 layout(location = 6) in vec2 uv_end;
 layout(location = 7) in vec3 color;
+layout(location = 8) in float opacity;
 
 out vec4 FragColor;
 
@@ -98,6 +102,6 @@ void main() {
     float a = texture(text_atlas, uv).a;
     FragColor = vec4(color, a);
   } else if (type == 2) {
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, opacity);
   }
 })";

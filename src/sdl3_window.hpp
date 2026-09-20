@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include <string>
+#include <string_view>
 #include <SDL3/SDL.h>
 #include "common/types.hpp"
 #include "core/i_window.hpp"

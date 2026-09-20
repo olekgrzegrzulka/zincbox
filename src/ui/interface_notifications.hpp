@@ -44,7 +44,6 @@ class InterfaceNotifications : public Widget {
     InterfaceNotifications(UI& ui_) : Widget(ui_) {
       static const float scale = zincbox::ui_scale();
 
-      set_is_drawn_on_top(true);
       set_parent_anchor(Anchor::BOTTOM_CENTER);
       set_y(NOTIFICATIONS_Y_OFFSET * scale);
       set_anchor(Anchor::BOTTOM_CENTER);

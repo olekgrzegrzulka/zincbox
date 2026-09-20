@@ -21,7 +21,8 @@ class Checkbox : public Widget {
       uv_checkbox_disabled = ui.get_texture_atlas().get("checkbox_disabled")->get();
       uv_checkbox_check = ui.get_texture_atlas().get("checkbox_check")->get();
 
-      set_layout("ltr fill fit s:4");
+      set_clip_children(true);
+      set_layout("ltr fill expand s:4");
 
       button = &add_child<Button>();
       button->set_ignore_parents_layout(true);
@@ -53,7 +54,6 @@ class Checkbox : public Widget {
     }
 
     void update() override {
-      button->set_size(width, height);
       sprite_check->set_is_drawn(checked);
 
       switch (button->get_state()) {

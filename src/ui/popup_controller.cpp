@@ -138,7 +138,10 @@ void PopupController::update() {
   set_size(ui.get_window_size());
   bool dimmer_block_events = (popovers.size() + popups.size()) > 0;
   bool dimmer_visible = popups.size() > 0;
+  float dimmer_opacity = dimmer_visible ? 0.6f : 0.0f;
   dimmer->set_is_active(dimmer_block_events);
-  dimmer->set_is_drawn(dimmer_visible);
+  dimmer->set_is_drawn(dimmer_visible || dimmer->get_opacity() > 0.01f);
+  dimmer->set_opacity(std::lerp(dimmer->get_opacity(), dimmer_opacity, 0.25f));
+
   Widget::update();
 }

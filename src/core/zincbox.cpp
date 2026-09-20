@@ -152,16 +152,11 @@ void zincbox::apply_loaded_state() {
   player::signal_on_queue_changed.emit(false);
   player::signal_on_track_changed.emit();
 
-  std::vector<std::string> tabs_order;
-  for (const auto& t : s_loaded_state.interface.tabs_order) {
-    tabs_order.emplace_back(t);
-  }
-
   interface::set_mini_player(s_loaded_state.interface.mini_player);
 
   interface::set_playlists_scroll_offset(s_loaded_state.interface.playlists_scroll_offset);
   interface::set_selected_tab(s_loaded_state.interface.selected_tab);
-  interface::set_tabs_order(tabs_order);
+  interface::set_tabs_order(s_loaded_state.interface.tabs_order);
   interface::set_tracks_scroll_offset(s_loaded_state.interface.tracks_scroll_offset);
   if (s_window) {
     s_window->resize(s_loaded_state.interface.window_width, s_loaded_state.interface.window_height);
@@ -191,16 +186,11 @@ void zincbox::save_state_to_json() {
 
   state.settings = s_settings;
 
-  std::vector<std::string> tabs_order;
-  for (const auto& t : interface::get_tabs_order()) {
-    tabs_order.emplace_back(t);
-  }
-
   state.interface = {
     .mini_player = interface::get_mini_player(),
     .playlists_scroll_offset = interface::get_playlists_scroll_offset(),
     .selected_tab = interface::get_selected_tab(),
-    .tabs_order = tabs_order,
+    .tabs_order = interface::get_tabs_order(),
     .tracks_scroll_offset = interface::get_tracks_scroll_offset(),
     .window_width = s_window ? s_window->width() : 0,
     .window_height = s_window ? s_window->height() : 0,

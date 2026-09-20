@@ -62,12 +62,14 @@ class PanelAlbums : public ColorRect {
     void clear();
     void input() override;
     void update() override;
+    void show();
+    void hide();
     void recreate();
     void scroll_to_playlist(size_t, bool immediate = false);
     using ColorRect::event;
     void event(Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
-    void set_scroll_px(float px);
+    void set_scroll_px(float px, bool immediate = false);
     vec2i get_content_size() const;
     std::optional<size_t> get_collection_id() const { return props.collection_id; }
 

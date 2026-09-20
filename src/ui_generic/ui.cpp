@@ -98,7 +98,7 @@ void UI::construct_traversal_order() {
   widget_traversal_order.clear();
 
   for (auto&& w : widgets) {
-    if (w->get_draw_behind_parent()) { construct_traversal_order(w.get()); }
+    if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
   }
   for (auto&& w : widgets) {
     if (!w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }

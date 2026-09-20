@@ -9,6 +9,7 @@
 #include "core/zincbox.hpp"
 #include "theme.hpp"
 #include "ui_generic/button.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/sprite.hpp"
 #include "ui_generic/ui.hpp"
 
@@ -40,19 +41,24 @@ class WidgetTrack final : public Button {
       static const float font_size = zincbox::settings().interface.font_size;
       static const i32 track_height = theme::config().panel_tracklist.track_height * scale;
       const auto track = db::track_by_id(m_track_id);
-      const std::string txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";
-
-      set_texture_idle(txt);
-      set_texture_hovered(txt);
-      set_texture_disabled(txt);
-      set_texture_pressed(txt);
-      set_texture(txt, false);
       set_nine_slice_margin(8.0f);
       set_height(track_height);
 
       set_layout("ltr mx:5 my:0 s:5 fill expand");
 
       label.set_is_drawn(false);
+
+      if (!bg) {
+        bg = &add_child<ColorRect>(theme::config().panel_tracklist.track_color_odd);
+        bg->set_ignore_parents_layout(true);
+      }
+
+      if (!hover) {
+        hover = &add_child<ColorRect>(theme::config().panel_tracklist.track_hovered);
+        hover->set_opacity(theme::config().panel_tracklist.track_hovered_opacity);
+        hover->set_ignore_parents_layout(true);
+        hover->set_is_drawn(false);
+      }
 
       if (!label_track_number) {
         label_track_number = &add_child<Label>();
@@ -124,11 +130,6 @@ class WidgetTrack final : public Button {
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
       }
 
-      if (!hover) {
-        hover = &add_child<Sprite>("track_hovered");
-        hover->set_ignore_parents_layout(true);
-      }
-
       set_playback_error(track.has_value() && track->get().is_playback_error());
       update_text_colors();
     }
@@ -150,18 +151,21 @@ class WidgetTrack final : public Button {
     void update_text_colors() {
       std::string txt;
       if (m_is_selected) {
-        txt = m_track_number % 2 == 0 ? "track_bg_selected2" : "track_bg_selected1";
+        if (m_track_number % 2 == 0) {
+          bg->set_color(theme::config().panel_tracklist.track_color_selected_odd);
+        } else {
+          bg->set_color(theme::config().panel_tracklist.track_color_selected_even);
+        }
       } else if (m_highlighted) {
-        txt = "track_bg_playing";
+        bg->set_color(theme::config().panel_tracklist.track_color_playing);
       } else {
-        txt = m_track_number % 2 == 0 ? "track_bg2" : "track_bg1";
+        if (m_track_number % 2 == 0) {
+          bg->set_color(theme::config().panel_tracklist.track_color_odd);
+        } else {
+          bg->set_color(theme::config().panel_tracklist.track_color_even);
+        }
       }
 
-      set_texture(txt, false);
-      set_texture_idle(txt);
-      set_texture_hovered(txt);
-      set_texture_disabled(txt);
-      set_texture_pressed(txt);
       label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
       label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
       label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
@@ -194,10 +198,16 @@ class WidgetTrack final : public Button {
         update_highlight_status_from_player();
         m_changed = false;
       }
+
       if (!is_mouse_hovering()) { m_is_hovered = false; }
+
       hover->set_width(width);
       hover->set_height(height);
       hover->set_is_drawn(m_is_hovered);
+
+      bg->set_width(width);
+      bg->set_height(height);
+
       Sprite::update();
     }
 
@@ -277,7 +287,8 @@ class WidgetTrack final : public Button {
     Label* label_track_artist{};
     Label* label_track_title{};
     Label* label_track_length{};
-    Sprite* hover{};
+    ColorRect* bg{};
+    ColorRect* hover{};
     Sprite* love_icon{};
     bool m_highlighted = false;
     bool m_playback_error = false;

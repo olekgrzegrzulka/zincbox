@@ -49,7 +49,7 @@ class UI final {
     std::span<Widget*> get_hovered_widgets() { return hovered_widgets; }
 
     void mark_dirty_recursive(Widget* w) {
-      w->mark_dirty();
+      w->dirty = true;
       for (auto& c : w->get_children()) {
         mark_dirty_recursive(c.get());
       }

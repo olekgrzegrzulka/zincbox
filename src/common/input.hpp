@@ -2,10 +2,8 @@
 #include <string>
 #include <variant>
 #include <vector>
-#include <glm/vec2.hpp>
-#include "common/types.hpp"
-
 #include <SDL3/SDL.h>
+#include "common/types.hpp"
 
 struct GLFWwindow;
 

@@ -15,7 +15,7 @@ class UI;
   void set_##field(decltype(field) field##_) {                                                                         \
     if ((field) == field##_) { return; }                                                                               \
     (field) = field##_;                                                                                                \
-    dirty = true;                                                                                                      \
+    mark_dirty();                                                                                                      \
   }
 
 #define WIDGET_DEF_SETTER(field)                                                                                       \
@@ -268,7 +268,7 @@ class Widget {
     void set_size(i32 w, i32 h);
     void set_size(vec2i);
 
-    void mark_dirty() { dirty = true; }
+    void mark_dirty();
 
     auto& get_children() { return children; }
 

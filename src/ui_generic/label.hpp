@@ -44,7 +44,7 @@ class Label final : public Widget {
       if (text == text_) { return; }
       text = text_;
       // text_dirty = true;
-      dirty = true;
+      mark_dirty();
     }
 
     vec3f get_text_color() const { return text_color; }
@@ -57,14 +57,14 @@ class Label final : public Widget {
       if (text_color == text_color_) { return; }
       text_color = text_color_;
       // text_dirty = true;
-      dirty = true;
+      mark_dirty();
     }
 
     void append_text(std::string_view append) {
       if (append.empty()) { return; }
       text += append;
       // text_dirty = true;
-      dirty = true;
+      mark_dirty();
     }
 
     bool erase_last_character() {
@@ -74,7 +74,7 @@ class Label final : public Widget {
       utf8::prior(it, text.begin());
       text.erase(it, text.end());
 
-      dirty = true;
+      mark_dirty();
       return true;
     }
 

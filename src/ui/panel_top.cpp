@@ -109,7 +109,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
     if (this->on_add_collection_button_pressed) { this->on_add_collection_button_pressed(tab_bar); }
   };
 
-  tab_bar->add_tab(TabBar::tab_info{
+  tab_bar->add_tab(tab_info{
                      .id = QUEUE_TAB_ID,
                      .is_draggable = false,
                      .label = tr::get("tab.queue"),
@@ -129,7 +129,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
     auto& collection = db::collection_by_id(collection_id)->get();
     if (collection.is_tombstone()) { continue; }
 
-    tab_bar->add_tab(TabBar::tab_info{
+    tab_bar->add_tab(tab_info{
                        .id = (i32)collection_id,
                        .is_draggable = true,
                        .label = std::string(collection.name()),
@@ -147,6 +147,7 @@ void PanelTop::recreate(std::optional<size_t> selected_collection_id) {
                      },
                      1000, collection_id == selected_collection_id);
   }
+  tab_bar->skip_anim();
 }
 
 void PanelTop::select(size_t selected_collection_id) { tab_bar->select_tab(selected_collection_id); }

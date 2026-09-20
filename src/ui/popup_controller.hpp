@@ -2,22 +2,22 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 #include "common/input.hpp"
-#include "ui_generic/sprite.hpp"
+#include "common/types.hpp"
+#include "ui_generic/color_rect.hpp"
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
-#include <type_traits>               
-#include <utility>                   
-#include <vector>                    
-#include "common/types.hpp"    
 
 class Popup;
 struct popover_descriptor;
 
-class Dimmer : public Sprite {
+class Dimmer : public ColorRect {
   public:
-    Dimmer(UI& ui_) : Sprite(ui_, "dim") {}
+    Dimmer(UI& ui_) : ColorRect(ui_, 0x00000000) {}
 
     void set_is_active(bool active) {
       set_is_updated(active);
@@ -31,7 +31,7 @@ class Dimmer : public Sprite {
         if (on_pressed) { on_pressed(); }
       }
       set_size(ui.get_window_size());
-      Sprite::update();
+      ColorRect::update();
     }
 
     void event(Input::InputEventMouseButton& ev) override {

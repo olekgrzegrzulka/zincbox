@@ -1,12 +1,12 @@
 #pragma once
 #include <cstddef>
 #include <functional>
+#include <optional>
+#include <span>
 #include "common/signal.hpp"
 #include "core/musicdb/types.hpp"
 #include "ui/panel_tracks.hpp"
 #include "ui_generic/widget.hpp"
-#include <optional>                
-#include <span>     
 
 class UI;
 class WidgetTrack;
@@ -19,6 +19,21 @@ class PanelQueue : public Widget {
     ~PanelQueue() override;
     void update() override;
     void draw() override;
+
+    void show() {
+      set_is_drawn(true);
+      set_is_updated(true);
+      recreate();
+      input();
+      update();
+      panel_tracks->show();
+    }
+
+    void hide() {
+      set_is_drawn(false);
+      set_is_updated(false);
+      panel_tracks->hide();
+    }
 
     void recreate();
     void clear();

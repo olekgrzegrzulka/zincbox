@@ -9,17 +9,17 @@
 
 # Quick guide
 
-The top panel displays your file collections, alongside dedicated *Playlists* view for user-created playlists and *Queue* view for active playback.
+The top panel displays your file collections, alongside dedicated _Playlists_ view for user-created playlists and _Queue_ view for active playback.
 
-When a collection or the *Playlists* view is opened, the main view splits into two areas: the left panel displays tracklists grouped by album or playlist, while the right panel provides a grid of covers. Selecting any album or playlist from the grid shows its tracks in the left panel.
+When a collection or the _Playlists_ view is opened, the main view splits into two areas: the left panel displays tracklists grouped by album or playlist, while the right panel provides a grid of covers. Selecting any album or playlist from the grid shows its tracks in the left panel.
 
-To add a new collection, click the *+* button on the top panel, or simply drag and drop folders directly into the application window. When adding multiple folders, you may choose to merge them into a single collection or keep them separate.
+To add a new collection, click the _+_ button on the top panel, or simply drag and drop folders directly into the application window. When adding multiple folders, you may choose to merge them into a single collection or keep them separate.
 
-The menu button in the top-right corner provides quick access to search (also reachable via *Ctrl+F*), the mini-player toggle, and application settings such as playback configuration and theme options.
+The menu button in the top-right corner provides quick access to search (also reachable via _Ctrl+F_), the mini-player toggle, and application settings such as playback configuration and theme options.
 
 # Building and Installation
 
-Zincbox is built with *CMake*. You will need a compiler (*Clang* or *GCC*) and a build system (*Make* or *Ninja*) installed on your system.
+Zincbox is built with _CMake_. You will need a C++20 compliant compiler (_Clang_ or _GCC_) and a build system (_Make_ or _Ninja_) installed on your system.
 
 ## 1. Install Dependencies
 
@@ -84,7 +84,7 @@ Build using the provided script (`build.sh`) with optional flags:
 | `clang`   | Use Clang (default)           |
 | `gcc`     | Use GCC                       |
 | `ninja`   | Use Ninja (default)           |
-| `make `   | Use Make                      |
+| `make`    | Use Make                      |
 | `asan`    | Build with AddressSanitizer   |
 | `run`     | Run the program after build   |
 | `clean`   | Remove the build directory    |

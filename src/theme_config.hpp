@@ -11,7 +11,7 @@ struct ButtonConfig {
 };
 
 struct TopBarConfig {
-    rgba color{0x1e0e1c};
+    rgba color{0x1e0e1cff};
     i32 height{26};
     ButtonConfig button_add_tab{};
 };
@@ -38,7 +38,7 @@ struct TimestampConfig {
 };
 
 struct PanelControlsConfig {
-    rgba color{0x1e0e1c};
+    rgba color{0x1e0e1cff};
     i32 height{44};
     i32 padding{4};
     ButtonConfig button_previous;
@@ -54,7 +54,7 @@ struct PanelControlsConfig {
 };
 
 struct PanelTracklistConfig {
-    rgba color{0x0f070c};
+    rgba color{0x0f070cff};
     i32 track_height{22};
     i32 header_height{28};
     i32 header_spacing{10};
@@ -62,6 +62,11 @@ struct PanelTracklistConfig {
     rgba header_name_color{0xdc99ceff};
     rgba track_color_odd{0x0c050bff};
     rgba track_color_even{0x150913ff};
+    rgba track_color_playing{0x2d1528ff};
+    rgba track_color_selected_odd{0x34132dff};
+    rgba track_color_selected_even{0x3b1634ff};
+    rgba track_hovered{0xad3594ff};
+    float track_hovered_opacity = 0.2f;
     rgba track_artist_color{0x80667aff};
     rgba track_number_color{0xa6859fff};
     rgba title_color{0xcca3c4ff};

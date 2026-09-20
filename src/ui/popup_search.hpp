@@ -2,8 +2,10 @@
 #include "common/input.hpp"
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/types.hpp"
 #include "tr.hpp"
 #include "ui/panel_albums.hpp"
+#include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui/widget_track.hpp"
@@ -99,6 +101,7 @@ class PopupSearch : public Popup {
         close();
       });
       checkbox_search_all_collections = &buttons->add_child<Checkbox>(tr::get("search.all_collections"));
+      checkbox_search_all_collections->set_checked(true);
     }
 
     void update_search_results() {
@@ -247,6 +250,8 @@ class PopupSearch : public Popup {
         e.handled = true;
       }
     }
+
+    void set_collection_id(db::collection_id_t collection_id_) { collection_id = collection_id_; }
 
   public:
     std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb{};

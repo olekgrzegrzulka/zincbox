@@ -21,10 +21,6 @@ void Sprite::update() { Widget::update(); }
 
 void Sprite::draw() {
   if (dirty) {
-    // FIXME: this can cause a 1 frame delay when children are updated BEFORE parent
-    for (auto&& c : children) {
-      c->mark_dirty();
-    }
     update_mesh();
     setup_buffers();
     dirty = false;

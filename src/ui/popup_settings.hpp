@@ -14,6 +14,7 @@
 #include "ui_generic/combo_box.hpp"
 #include "ui_generic/spinner.hpp"
 #include "ui_generic/ui.hpp"
+#include "ui_generic/widget.hpp"
 
 class PopupSettings : public Popup {
   public:
@@ -94,9 +95,10 @@ class PopupSettings : public Popup {
         label.set_resize_to_text_extents(false);
         label.set_height(16);
         label.set_text_color(text_color_muted);
+        label.set_label_anchor(Anchor::LEFT);
 
         auto& combo = parent_->add_child<ComboBox>();
-        combo.set_width(128);
+        combo.set_max_width(200);
 
         auto& pad = parent_->add_child<Widget>();
         pad.set_min_height(10);
@@ -113,9 +115,10 @@ class PopupSettings : public Popup {
         label.set_resize_to_text_extents(false);
         label.set_height(16);
         label.set_text_color(text_color_muted);
+        label.set_label_anchor(Anchor::LEFT);
 
         auto& spinner = parent_->add_child<Spinner>();
-        spinner.set_width(128);
+        spinner.set_max_width(200);
 
         auto& pad = parent_->add_child<Widget>();
         pad.set_min_height(10);
@@ -162,6 +165,7 @@ class PopupSettings : public Popup {
       shuffle_title.set_resize_to_text_extents(false);
       shuffle_title.set_height(16);
       shuffle_title.set_text_color(text_color_muted);
+      shuffle_title.set_label_anchor(Anchor::LEFT);
       create_widget_checkbox(page_playback.content(), std::pair{"playback", "shuffle_allow_same_album"},
                              tr::get("settings.playback.allow_same_album"));
       create_widget_checkbox(page_playback.content(), std::pair{"playback", "shuffle_allow_same_artist"},

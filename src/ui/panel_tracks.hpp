@@ -134,6 +134,8 @@ class PanelTracks final : public ColorRect {
     void update() override;
     void draw() override;
 
+    void show();
+    void hide();
     void recreate(std::optional<size_t> collection_id_);
     void recreate(std::span<const db::track_info> tracks);
     void insert_track(size_t, db::track_info);
@@ -145,7 +147,7 @@ class PanelTracks final : public ColorRect {
 
     void scroll_to_playlist(size_t playlist_id, bool immediate = false);
     void scroll_to_track(size_t playlist_id, size_t track_id, bool immediate = false);
-    void set_scroll_px(float px);
+    void set_scroll_px(float px, bool immediate = false);
     float get_scroll_px() const;
 
     std::span<const Item> get_items() const { return items; }

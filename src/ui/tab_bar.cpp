@@ -19,7 +19,12 @@
 #include "ui_generic/ui.hpp"
 #include "ui_generic/widget.hpp"
 
-Tab::Tab(UI& ui_) : Button(ui_) {
+Tab::Tab(UI& ui_, const tab_info& info) : Button(ui_) {
+  label.set_text(info.label);
+  label.update();
+  set_width(std::clamp((i32)get_label().get_width() + 2 * info.padding, 40, 200));
+  padding = info.padding;
+  is_draggable = info.is_draggable;
   label.set_anchor(Anchor::CENTER);
   label.set_parent_anchor(Anchor::CENTER);
   label.set_label_anchor(Anchor::CENTER);
@@ -147,13 +152,10 @@ void TabBar::add_tab(const tab_info& info, bool select) { add_tab(info, tabs.siz
 
 void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
   at = std::min(at, tabs.size());
-  Tab* t = &tab_container->add_child<Tab>();
+  Tab* t = &tab_container->add_child<Tab>(info);
   t->set_height(height);
-  t->get_label().set_text(info.label);
-  t->padding = info.padding;
-  t->is_draggable = info.is_draggable;
-  t->on_drag_start = [this](i32 id) { on_tab_drag_start(id); };
-  t->on_active = [this, info](Tab* tab) {
+  t->on_drag_start = [this](i32 id) -> void { on_tab_drag_start(id); };
+  t->on_active = [this, info](Tab* tab) -> void {
     i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - Input::get_mouse_x());
     if ((i32)tab->index == dragged_tab_index && mouse_drag_delta > 10) { return; }
 
@@ -263,50 +265,47 @@ void TabBar::update() {
 
   if (dragged_tab_index != -1 && mouse_drag_delta > 10) {
     if (dragged_tab_index < (i32)tabs.size() - 1) {
-      Tab* next = tabs[dragged_tab_index + 1];
-      i32 sum = 0;
-      for (i32 i = 0; i < dragged_tab_index; i += 1) {
-        sum += tabs[i]->get_width();
+      i32 target_idx = -1;
+      for (i32 i = dragged_tab_index + 1; i < (i32)tabs.size(); i += 1) {
+        if (tabs[i]->is_draggable) {
+          target_idx = i;
+          break;
+        }
       }
-      sum += next->get_width();
-      if (mouse_x > sum) {
-        if (swap_tabs(dragged_tab_index, dragged_tab_index + 1)) { dragged_tab_index += 1; }
+
+      if (target_idx != -1) {
+        i32 sum = 0;
+        for (i32 i = 0; i <= target_idx; i += 1) {
+          sum += tabs[i]->get_width();
+        }
+        if (mouse_x > sum - tabs[target_idx]->get_width()) {
+          if (swap_tabs(dragged_tab_index, target_idx)) { dragged_tab_index = target_idx; }
+        }
       }
     }
+
     if (dragged_tab_index > 0) {
-      Tab* prev = tabs[dragged_tab_index - 1];
-      i32 sum = 0;
-      for (i32 i = 0; i < dragged_tab_index - 1; i += 1) {
-        sum += tabs[i]->get_width();
+      i32 target_idx = -1;
+      for (i32 i = dragged_tab_index - 1; i >= 0; i -= 1) {
+        if (tabs[i]->is_draggable) {
+          target_idx = i;
+          break;
+        }
       }
-      if (mouse_x < sum + prev->get_width()) {
-        if (swap_tabs(dragged_tab_index, dragged_tab_index - 1)) { dragged_tab_index -= 1; }
+
+      if (target_idx != -1) {
+        i32 sum = 0;
+        for (i32 i = 0; i < target_idx; i += 1) {
+          sum += tabs[i]->get_width();
+        }
+        if (mouse_x < sum + tabs[target_idx]->get_width()) {
+          if (swap_tabs(dragged_tab_index, target_idx)) { dragged_tab_index = target_idx; }
+        }
       }
     }
   }
 
-  i32 tab_x = 0;
-  for (i32 id = 0; id < (i32)tabs.size(); id += 1) {
-    Tab* tab = tabs[id];
-    if (id != dragged_tab_index) {
-      tab->set_is_drawn_on_top(false);
-      // if (tab->just_added) {
-      //   tab->move(tab_x);
-      //   tab->just_added = false;
-      // } else {
-      tab->move_smooth(tab_x - scroll_px);
-      // }
-
-    } else {
-      tab->set_is_drawn_on_top(true);
-      i32 dragged_tab_x = drag_start_tab_pos + Input::get_mouse_x() - drag_start_mouse_pos;
-      tab->move(dragged_tab_x);
-    }
-
-    tab_x += tab->get_width() - 1;
-  }
-
-  tab_container->set_max_width(tab_x + 28); // FIXME
+  position_tabs(true);
 
   button_right->set_x(tab_container->get_width());
   button_left->set_is_drawn(target_scroll_px > 0);
@@ -333,6 +332,28 @@ void TabBar::update() {
   Widget::update();
 }
 
+void TabBar::position_tabs(bool smooth) {
+  i32 tab_x = 0;
+  for (i32 id = 0; id < (i32)tabs.size(); id += 1) {
+    Tab* tab = tabs[id];
+    if (id != dragged_tab_index) {
+      tab->set_is_drawn_on_top(false);
+      if (smooth) {
+        tab->move_smooth(tab_x - scroll_px);
+      } else {
+        tab->move(tab_x - scroll_px);
+      }
+    } else {
+      tab->set_is_drawn_on_top(true);
+      i32 dragged_tab_x = drag_start_tab_pos + Input::get_mouse_x() - drag_start_mouse_pos;
+      tab->move(dragged_tab_x);
+    }
+
+    tab_x += tab->get_width() - 1;
+  }
+  tab_container->set_max_width(tab_x + 28); // FIXME
+}
+
 void TabBar::update_tab_textures(i32 id) {
   for (Tab* t : tabs) {
     t->set_texture_inactive();
@@ -344,6 +365,8 @@ void TabBar::update_tab_textures(i32 id) {
     tabs[selected_tab_index]->set_draw_behind_parent(false);
   }
 }
+
+void TabBar::skip_anim() { position_tabs(false); }
 
 void TabBar::sort_tabs_by_label(std::span<const std::string> labels) {
   std::unordered_map<std::string, i32> label_priority;
@@ -363,6 +386,8 @@ void TabBar::sort_tabs_by_label(std::span<const std::string> labels) {
     tabs[i]->index = i;
   }
   selected_tab_index = -1;
+
+  skip_anim();
 }
 
 const Tab* TabBar::get_tab_by_label(const std::string& label) const {

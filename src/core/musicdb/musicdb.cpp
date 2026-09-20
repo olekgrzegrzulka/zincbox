@@ -726,7 +726,7 @@ std::vector<db::track_info> db::search_tracks(std::string_view search_text, size
     result.insert(result.end(), found_tracks.begin(), found_tracks.end());
     if (result.size() >= max_size) {
       result.resize(max_size);
-      break;
+      return result;
     }
   }
   return result;
@@ -753,10 +753,7 @@ std::vector<db::track_info> db::search_tracks(std::string_view search_text, size
           sanitize_and_contains(query_sanitized, path_to_utf8(std::filesystem::path(track.path).filename()))) {
 
         result.emplace_back(db::track_info{collection_id, playlist_id, track_id});
-        if (result.size() >= max_size) { break; }
-
-      } else {
-        continue;
+        if (result.size() >= max_size) { return result; }
       }
     }
   }

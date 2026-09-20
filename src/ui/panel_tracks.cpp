@@ -156,6 +156,20 @@ void PanelTracks::create_item_widget_if_null(Item& item) {
 
 void PanelTracks::draw() { ColorRect::draw(); }
 
+void PanelTracks::show() {
+  set_is_drawn(true);
+  set_is_updated(true);
+  input();
+  update();
+  scrollbar->input();
+  scrollbar->update();
+}
+
+void PanelTracks::hide() {
+  set_is_drawn(false);
+  set_is_updated(false);
+}
+
 void PanelTracks::scroll_to_playlist(size_t target_playlist_id, bool immediate) {
   i32 offset = 0;
   for (auto& item : items) {
@@ -165,8 +179,12 @@ void PanelTracks::scroll_to_playlist(size_t target_playlist_id, bool immediate) 
     offset += item.height();
   }
   target_scroll_px = offset;
+  target_scroll_px = std::clamp<double>(target_scroll_px, 0.0, std::max<double>(0.0, max_scroll_px - height));
   scrollbar->set_scroll_offset(target_scroll_px);
-  if (immediate) { scroll_px = target_scroll_px; }
+  if (immediate) {
+    scroll_px = target_scroll_px;
+    scrollbar->skip_anim();
+  }
 }
 
 void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool immediate) {
@@ -176,12 +194,18 @@ void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool imme
     if (item.type == ItemType::TRACK && ti.track_id == track_id && ti.playlist_id == playlist_id) { break; }
     offset += item.height();
   }
-  target_scroll_px = std::clamp(offset, 0, std::max(0, (max_scroll_px - get_height())));
+  target_scroll_px = std::clamp<double>(offset, 0.0, std::max<double>(0.0, max_scroll_px - height));
   scrollbar->set_scroll_offset(target_scroll_px);
-  if (immediate) { scroll_px = target_scroll_px; }
+  if (immediate) {
+    scroll_px = target_scroll_px;
+    scrollbar->skip_anim();
+  }
 }
 
 void PanelTracks::input() {
+  items_container->set_pos(scrollbar->get_width(), 0);
+  items_container->set_size(width - scrollbar->get_width(), height);
+
   // scroll on the edges of view when dragging
   if (is_dragged && is_mouse_hovering()) {
     static i32 THRESHOLD = 50 * zincbox::ui_scale();
@@ -247,9 +271,6 @@ void PanelTracks::input() {
 
 void PanelTracks::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
-
-  items_container->set_pos(scrollbar->get_width(), 0);
-  items_container->set_size(width - scrollbar->get_width(), height);
 
   std::optional<size_t> tooltip_visible_index;
 
@@ -347,10 +368,11 @@ void PanelTracks::clear() {
 
 float PanelTracks::get_scroll_px() const { return target_scroll_px; }
 
-void PanelTracks::set_scroll_px(float px) {
+void PanelTracks::set_scroll_px(float px, bool immediate) {
   scroll_px = px;
   target_scroll_px = px;
   scrollbar->set_scroll_offset(px);
+  if (immediate) { scrollbar->skip_anim(); }
 }
 
 void PanelTracks::recreate(std::optional<size_t> collection_id_) {

@@ -310,7 +310,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   atlas_add_texture("combobox_expand");
   add_custom_panel("panel_combobox");
   add_custom_button("combobox_item");
-  atlas_add_texture("dim");
   atlas_add_texture("red");
   add_custom_slider("slider");
   add_custom_slider("scrollbar");
@@ -342,12 +341,6 @@ void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view lan
   add_custom_panel("panel_playlist_header");
   add_custom_panel("panel_popup");
   add_custom_slider("seekbar");
-  atlas_add_texture("track_bg1");
-  atlas_add_texture("track_bg2");
-  atlas_add_texture("track_bg_playing");
-  atlas_add_texture("track_bg_selected1");
-  atlas_add_texture("track_bg_selected2");
-  atlas_add_texture("track_hovered");
   atlas_add_texture("playlist_hovered");
   atlas_add_texture_row(
     std::array{"tab_active_idle"s, "tab_active_hovered"s, "tab_active_pressed"s, "tab_active_disabled"s},

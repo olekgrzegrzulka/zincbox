@@ -42,6 +42,7 @@ int main() {
     out::critical("failed to initialize SDL3: {}", SDL_GetError());
     exit(1);
   }
+  SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 
   if (NFD::Init() == nfdresult_t::NFD_ERROR) {
     out::critical("failed to initialize NFD: {}", NFD::GetError());

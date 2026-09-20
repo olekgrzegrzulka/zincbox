@@ -3,7 +3,6 @@
 #include <array>
 #include <vector>
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_events.h>
 #include "common/types.hpp"
 #include "common/utf.hpp"
 
@@ -70,7 +69,7 @@ namespace Input {
       KeyAction key_action = KeyAction::RELEASE;
       if (event.type == SDL_EVENT_KEY_DOWN) { key_action = event.key.repeat ? KeyAction::REPEAT : KeyAction::PRESS; }
       InputEventKey ev = {
-        .key = static_cast<Key>(event.key.key),
+        .key = static_cast<Key>(event.key.scancode),
         .action = key_action,
         .scancode = static_cast<i32>(event.key.scancode),
       };

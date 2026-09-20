@@ -22,7 +22,28 @@ Slider::Slider(UI& ui_, SliderOrientation orientation_)
   set_texture_track_active("slider_track_active");
 }
 
-void Slider::update() {
+void Slider::skip_anim() {
+  using enum SliderOrientation;
+  i32 track_length = (orientation == HORIZONTAL) ? width : height;
+  float thumb_pos_target = 0.0f;
+  if ((max_value - min_value) != 0.0f) {
+    if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
+      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length);
+      thumb_pos_target -= thumb_length * 0.5f;
+    } else {
+      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length - thumb_length);
+    }
+  }
+  if (orientation == HORIZONTAL) {
+    thumb.set_x(thumb_pos_target);
+    track_active.set_width(thumb_pos_target + thumb.get_width() * 0.5);
+  } else if (orientation == VERTICAL) {
+    thumb.set_y(thumb_pos_target);
+    track_active.set_height(thumb_pos_target + thumb.get_height() * 0.5);
+  }
+}
+
+void Slider::input() {
   using enum Anchor;
   using enum Input::MouseButton;
   using enum SliderOrientation;
@@ -165,8 +186,13 @@ void Slider::update() {
     track_active.set_height(thumb_pos_lerped + thumb.get_height() * 0.5);
   }
 
-  Widget::update();
+  Widget::input();
 }
+
+void Slider::update() { Widget::update(); }
+
+void Slider::draw() { Widget::draw(); }
+
 void Slider::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 }

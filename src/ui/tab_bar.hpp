@@ -9,10 +9,20 @@
 #include "ui_generic/widget.hpp"
 
 class UI;
+class Tab;
+
+struct tab_info {
+    i32 id{};
+    bool is_draggable{};
+    std::string label{};
+    i32 padding = 0;
+    std::function<void()> on_open{};
+    std::function<void(Tab*)> on_right_click{};
+};
 
 class Tab : public Button {
   public:
-    Tab(UI& ui_);
+    Tab(UI& ui_, const tab_info& info);
 
     void set_texture_active();
     void set_texture_inactive();
@@ -43,15 +53,6 @@ class TabBar : public Widget {
     TabBar(UI& ui_);
     virtual void event(Input::InputEventMouseScroll&) override;
 
-    struct tab_info {
-        i32 id{};
-        bool is_draggable{};
-        std::string label{};
-        i32 padding = 0;
-        std::function<void()> on_open{};
-        std::function<void(Tab*)> on_right_click{};
-    };
-
     void add_tab(const tab_info& info, bool select = false);
     void add_tab(const tab_info& info, size_t at, bool select = false);
     void select_tab(i32 id);
@@ -60,6 +61,7 @@ class TabBar : public Widget {
     void close_all_tabs();
     void update() override;
     void update_tab_textures(i32 id);
+    void skip_anim();
     const std::vector<Tab*>& get_tabs() const { return tabs; }
     void sort_tabs_by_label(std::span<const std::string>);
     const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
@@ -71,6 +73,7 @@ class TabBar : public Widget {
     void scroll(double);
 
   protected:
+    void position_tabs(bool smooth);
     void on_tab_drag_start(i32 id);
     bool tab_valid(size_t index) const;
     bool swap_tabs(size_t index_a, size_t index_b);

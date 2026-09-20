@@ -19,6 +19,18 @@
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_resize2.h"
 #include "lib/stb_image/stb_image_write.h"
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <shellapi.h>
+#include <windows.h>
+#else
+#include <cstdlib>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -38,7 +50,7 @@ bool io::is_music_file(const fs::path& path) {
 
 void io::open_folder_in_file_manager(const fs::path& path) {
 #ifdef _WIN32
-  std::string command = "explorer \"" + path_to_utf8(path) + "\"";
+  ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #elif __APPLE__
   std::string command = "open \"" + path_to_utf8(path) + "\"";
 #else

@@ -274,7 +274,10 @@ void PanelAlbums::scroll_to_playlist(size_t playlist_id, bool immediate) {
       target_scroll_px = album_widget->get_y();
       target_scroll_px = std::clamp(target_scroll_px, 0.0, std::max(0.0, (double)(content_height - height)));
       scrollbar->set_scroll_offset(target_scroll_px);
-      if (immediate) { scroll_px = target_scroll_px; }
+      if (immediate) {
+        scroll_px = target_scroll_px;
+        scrollbar->skip_anim();
+      }
       break;
     }
   }
@@ -346,6 +349,21 @@ void PanelAlbums::input() {
 
 void PanelAlbums::update() { ColorRect::update(); }
 
+void PanelAlbums::show() {
+  set_is_drawn(true);
+  set_is_updated(true);
+  input();
+  update();
+  scrollbar->input();
+  scrollbar->update();
+}
+
+void PanelAlbums::hide() {
+  props.collection_id = std::nullopt;
+  set_is_drawn(false);
+  set_is_updated(false);
+}
+
 void PanelAlbums::draw() { ColorRect::draw(); }
 
 void PanelAlbums::event(Input::InputEventMouseScroll& e) {
@@ -360,10 +378,11 @@ float PanelAlbums::get_scroll_px() const {
   return target_scroll_px;
 }
 
-void PanelAlbums::set_scroll_px(float px) {
+void PanelAlbums::set_scroll_px(float px, bool immediate) {
   scroll_px = px;
   target_scroll_px = px;
   scrollbar->set_scroll_offset(px);
+  if (immediate) { scrollbar->skip_anim(); }
 }
 
 vec2i PanelAlbums::get_content_size() const { return {width, content_height}; }

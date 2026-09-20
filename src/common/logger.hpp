@@ -1,10 +1,15 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <utility>
 #include <fmt/base.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <stddef.h>
 #include "common/types.hpp"
+namespace out {
+  enum class LogLevel : u8 { INFO, WARNING, ERROR, CRITICAL };
+}
 
 #define DEFINE_LOG_FUNC(FUNC_NAME, LEVEL, TAG)                                                                         \
   template <typename... Args> void FUNC_NAME(fmt::format_string<Args...> fmt, Args&&... args) {                        \
@@ -28,8 +33,6 @@
 namespace out {
   void add_file_to_blacklist(std::string_view filename);
   void remove_file_from_blacklist(const std::string& filename);
-
-  enum class LogLevel : u8 { INFO, WARNING, ERROR, CRITICAL };
 
   namespace detail {
     void print_log(LogLevel level, std::string_view tag, std::string_view message);

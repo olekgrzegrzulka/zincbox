@@ -56,9 +56,11 @@ class Slider : public Widget {
     void on_value_changed(std::function<void(float, float)> lambda) { lambda_value_changed = std::move(lambda); }
     void on_drag_ended(std::function<void(float, float)> lambda) { lambda_drag_end = std::move(lambda); }
     bool is_being_dragged() { return is_dragged; }
+    void skip_anim();
 
+    void input() override;
     void update() override;
-    void draw() override { Widget::draw(); }
+    void draw() override;
 
     void event(Input::InputEventMouseButton&) override;
     void event(Input::InputEventMouseMove&) override;

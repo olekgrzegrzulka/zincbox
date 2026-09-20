@@ -114,42 +114,42 @@ class Button : public Sprite {
     void set_uv_start_idle(vec2f to) {
       if (uv_start_idle == to) { return; }
       uv_start_idle = to;
-      if (state == ButtonState::IDLE) { dirty = true; }
+      if (state == ButtonState::IDLE) { mark_dirty(); }
     }
     void set_uv_end_idle(vec2f to) {
       if (uv_end_idle == to) { return; }
       uv_end_idle = to;
-      if (state == ButtonState::IDLE) { dirty = true; }
+      if (state == ButtonState::IDLE) { mark_dirty(); }
     }
     void set_uv_start_hovered(vec2f to) {
       if (uv_start_hovered == to) { return; }
       uv_start_hovered = to;
-      if (state == ButtonState::HOVERED) { dirty = true; }
+      if (state == ButtonState::HOVERED) { mark_dirty(); }
     }
     void set_uv_end_hovered(vec2f to) {
       if (uv_end_hovered == to) { return; }
       uv_end_hovered = to;
-      if (state == ButtonState::HOVERED) { dirty = true; }
+      if (state == ButtonState::HOVERED) { mark_dirty(); }
     }
     void set_uv_start_pressed(vec2f to) {
       if (uv_start_pressed == to) { return; }
       uv_start_pressed = to;
-      if (state == ButtonState::PRESSED) { dirty = true; }
+      if (state == ButtonState::PRESSED) { mark_dirty(); }
     }
     void set_uv_end_pressed(vec2f to) {
       if (uv_end_pressed == to) { return; }
       uv_end_pressed = to;
-      if (state == ButtonState::PRESSED) { dirty = true; }
+      if (state == ButtonState::PRESSED) { mark_dirty(); }
     }
     void set_uv_start_disabled(vec2f to) {
       if (uv_start_disabled == to) { return; }
       uv_start_disabled = to;
-      if (state == ButtonState::DISABLED) { dirty = true; }
+      if (state == ButtonState::DISABLED) { mark_dirty(); }
     }
     void set_uv_end_disabled(vec2f to) {
       if (uv_end_disabled == to) { return; }
       uv_end_disabled = to;
-      if (state == ButtonState::DISABLED) { dirty = true; }
+      if (state == ButtonState::DISABLED) { mark_dirty(); }
     }
 
     void set_texture_idle(std::string id);

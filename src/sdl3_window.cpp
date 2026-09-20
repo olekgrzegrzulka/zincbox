@@ -1,6 +1,7 @@
 #include "sdl3_window.hpp"
-#include <SDL3/SDL_video.h>
+#include <SDL3/SDL.h>
 #include <glad/glad.h>
+#include <stdlib.h>
 #include "common/input.hpp"
 #include "common/logger.hpp"
 #include "common/types.hpp"

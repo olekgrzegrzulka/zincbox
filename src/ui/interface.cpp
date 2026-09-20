@@ -132,7 +132,6 @@ static void show_search_popup();
 static void show_settings_popup();
 static void show_about_popup();
 static void quit();
-static void set_mini_player(bool);
 
 static void recreate_panel_top(bool order = true) {
   if (order) {
@@ -177,8 +176,8 @@ void interface::init() {
   shortcut_interceptor = &ui->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 
-  notifications = &ui->add_widget<InterfaceNotifications>();
   bg = &ui->add_widget<ColorRect>(theme::config().top_bar.color);
+  panel_controls = &ui->add_widget<PanelControls>();
   panel_top = &ui->add_widget<PanelTop>();
   panel_tracks = &ui->add_widget<PanelTracks>();
   panel_queue = &ui->add_widget<PanelQueue>();
@@ -188,15 +187,12 @@ void interface::init() {
   tooltip_drag->set_anchor(Anchor::TOP);
   tooltip_drag->set_clamp(false);
   panel_albums = &ui->add_widget<PanelAlbums>();
-  panel_controls = &ui->add_widget<PanelControls>();
   popup_controller = &ui->add_widget<PopupController>();
+  notifications = &ui->add_widget<InterfaceNotifications>();
 
-  panel_queue->set_is_updated(false);
-  panel_queue->set_is_drawn(false);
-  panel_tracks->set_is_updated(false);
-  panel_tracks->set_is_drawn(false);
-  panel_albums->set_is_updated(false);
-  panel_albums->set_is_drawn(false);
+  panel_queue->hide();
+  panel_tracks->hide();
+  panel_albums->hide();
   splitter->set_is_updated(false);
   splitter->set_is_drawn(false);
 
@@ -443,26 +439,24 @@ void interface::update(vec2i window_size) {
 
   bg->set_size(window_size);
 
-  if (panel_queue->get_is_drawn()) {
-    panel_queue->set_pos(content_x, content_y);
-    panel_queue->set_width(content_width);
-    panel_queue->set_height(content_height);
-  } else {
-    i32 width_tracks = (content_width * splitter->get_ratio()) - (i32)(splitter->get_width() / 2);
-    width_tracks = std::clamp(width_tracks, 200, std::max(content_width - 200, 200));
-    i32 width_albums = content_width - width_tracks - splitter->get_width();
+  panel_queue->set_pos(content_x, content_y);
+  panel_queue->set_width(content_width);
+  panel_queue->set_height(content_height);
 
-    panel_tracks->set_pos(content_x, content_y);
-    panel_tracks->set_width(width_tracks);
-    panel_tracks->set_height(content_height);
+  i32 width_tracks = (content_width * splitter->get_ratio()) - (i32)(splitter->get_width() / 2);
+  width_tracks = std::clamp(width_tracks, 200, std::max(content_width - 200, 200));
+  i32 width_albums = content_width - width_tracks - splitter->get_width();
 
-    splitter->set_pos(content_x + width_tracks, content_y);
-    splitter->set_height(content_height);
+  panel_tracks->set_pos(content_x, content_y);
+  panel_tracks->set_width(width_tracks);
+  panel_tracks->set_height(content_height);
 
-    panel_albums->set_pos(content_x + width_tracks + splitter->get_width(), content_y);
-    panel_albums->set_width(width_albums);
-    panel_albums->set_height(content_height);
-  }
+  splitter->set_pos(content_x + width_tracks, content_y);
+  splitter->set_height(content_height);
+
+  panel_albums->set_pos(content_x + width_tracks + splitter->get_width(), content_y);
+  panel_albums->set_width(width_albums);
+  panel_albums->set_height(content_height);
 
   panel_controls->set_pos(content_x, -border);
   panel_controls->set_width(content_width);
@@ -972,23 +966,16 @@ static void show_collection(db::collection_id_t collection_id) {
 
   panel_top->select(collection_id);
 
-  panel_tracks->clear();
   panel_tracks->recreate(active_collection_id);
-  panel_tracks->set_is_drawn(true);
-  panel_tracks->set_scroll_px(tracks_scroll_positions[collection_id]);
-  panel_tracks->set_is_updated(true);
-  panel_tracks->input();
-  panel_tracks->update();
+  panel_tracks->set_scroll_px(tracks_scroll_positions[collection_id], true);
+  panel_tracks->show();
 
-  panel_albums->set_is_drawn(true);
-  panel_albums->set_is_updated(true);
   panel_albums->props.collection_id = active_collection_id;
   panel_albums->recreate();
-  panel_albums->set_scroll_px(playlists_scroll_positions[collection_id]);
-  panel_albums->update();
+  panel_albums->set_scroll_px(playlists_scroll_positions[collection_id], true);
+  panel_albums->show();
 
-  panel_queue->set_is_drawn(false);
-  panel_queue->set_is_updated(false);
+  panel_queue->hide();
 
   splitter->set_is_drawn(true);
   splitter->set_is_updated(true);
@@ -996,18 +983,13 @@ static void show_collection(db::collection_id_t collection_id) {
 
 static void show_queue() {
   active_collection_id = std::nullopt;
-  panel_tracks->set_is_drawn(false);
-  panel_tracks->set_is_updated(false);
-  panel_albums->set_is_drawn(false);
-  panel_albums->set_is_updated(false);
-  panel_queue->set_is_drawn(true);
-  panel_queue->set_is_updated(true);
-  panel_queue->recreate();
-  panel_queue->update();
+  panel_tracks->hide();
+  panel_albums->hide();
+  panel_queue->show();
 
   splitter->set_is_drawn(false);
   splitter->set_is_updated(false);
-  panel_albums->props.collection_id = std::nullopt;
+
   panel_top->select(panel_top->get_queue_tab()->id);
 }
 
@@ -1021,7 +1003,6 @@ static void show_add_to_playlist_popup(db::track_id_t track_id) {
       auto track_pretty_name = db::track_by_id(track_id)->get().pretty_name();
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
       notifications->push(tr::format("notification.added_track_to_playlist", track_pretty_name, playlist_name));
-      panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     }
   };
@@ -1043,7 +1024,6 @@ static void show_add_to_playlist_popup(std::span<const db::track_id_t> track_ids
     }
     if (tracks_added_count != 0) {
       notifications->push(tr::format("notification.added_tracks_to_playlist", tracks_added_count, playlist_name));
-      panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     }
   };
@@ -1243,7 +1223,6 @@ static void show_popover_tracklist_track_actions(db::track_info ti, Widget* widg
               tr::format("notification.removed_track_from_playlist", track_pretty_name, playlist_.name));
           }
         }
-        panel_tracks->clear();
         panel_tracks->recreate(active_collection_id);
         if (callback_close) { callback_close(); }
       },
@@ -1358,7 +1337,6 @@ static void show_popover_tracklist_tracks_actions(WidgetTrack* widget, std::span
         if (track_indices.size() != 0) {
           notifications->push(
             tr::format("notification.removed_tracks_from_playlist", track_indices.size(), playlist_.name));
-          panel_tracks->clear();
           panel_tracks->recreate(active_collection_id);
         }
         if (callback_close) { callback_close(); }
@@ -1740,7 +1718,6 @@ static void show_popover_playlist_sort_options(db::playlist_id_t playlist_id, Wi
     [playlist_id]() -> void {
       db::sort_playlist_by_artist_asc(playlist_id);
       panel_albums->recreate();
-      panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     },
     "artist_asc");
@@ -1750,7 +1727,6 @@ static void show_popover_playlist_sort_options(db::playlist_id_t playlist_id, Wi
     [playlist_id]() -> void {
       db::sort_playlist_by_artist_desc(playlist_id);
       panel_albums->recreate();
-      panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     },
     "artist_desc");
@@ -1760,7 +1736,6 @@ static void show_popover_playlist_sort_options(db::playlist_id_t playlist_id, Wi
     [playlist_id]() -> void {
       db::sort_playlist_by_name_asc(playlist_id);
       panel_albums->recreate();
-      panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     },
     "title_asc");
@@ -1770,7 +1745,6 @@ static void show_popover_playlist_sort_options(db::playlist_id_t playlist_id, Wi
     [playlist_id]() -> void {
       db::sort_playlist_by_name_desc(playlist_id);
       panel_albums->recreate();
-      panel_tracks->clear();
       panel_tracks->recreate(active_collection_id);
     },
     "title_desc");
@@ -1900,8 +1874,9 @@ static void add_track_to_playlist(db::playlist_id_t playlist_id, db::track_id_t 
     }
   }
   if (active_collection_id.has_value()) {
-    panel_tracks->clear();
     panel_tracks->recreate(active_collection_id);
+  } else {
+    panel_queue->recreate();
   }
 }
 
@@ -1923,10 +1898,7 @@ static void add_tracks_to_playlist(db::playlist_id_t playlist_id, std::span<cons
       auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
       notifications->push(tr::format("notification.added_tracks_to_playlist", added_count, playlist_name));
     }
-    if (active_collection_id.has_value()) {
-      panel_tracks->clear();
-      panel_tracks->recreate(active_collection_id);
-    }
+    if (active_collection_id.has_value()) { panel_tracks->recreate(active_collection_id); }
   }
 }
 
@@ -1945,8 +1917,9 @@ static void remove_track_from_playlist(db::playlist_id_t playlist_id, db::track_
     }
   }
   if (active_collection_id.has_value()) {
-    panel_tracks->clear();
     panel_tracks->recreate(active_collection_id);
+  } else {
+    panel_queue->recreate();
   }
 }
 
@@ -1969,10 +1942,7 @@ static void remove_tracks_from_playlist(db::playlist_id_t playlist_id, std::span
       notifications->push(tr::format("notification.removed_tracks_from_playlist", removed_count, playlist_name));
     }
 
-    if (active_collection_id.has_value()) {
-      panel_tracks->clear();
-      panel_tracks->recreate(active_collection_id);
-    }
+    if (active_collection_id.has_value()) { panel_tracks->recreate(active_collection_id); }
   }
 }
 
@@ -1998,6 +1968,7 @@ static void show_search_popup() {
     popup->close();
     if (popup->on_closed) { popup->on_closed(); }
   };
+  popup->set_collection_id(active_collection_id.value_or(0));
   search_popup_visible = true;
   popup->on_playlist_lmb = [popup](size_t playlist_id, Widget*) -> void {
     auto collection_id = db::collection_of_playlist(playlist_id);
@@ -2055,7 +2026,13 @@ std::string interface::get_selected_tab() {
   return selected_tab->get_label().get_text();
 }
 
-std::vector<std::string> interface::get_tabs_order() { return tabs_order; }
+std::vector<std::string> interface::get_tabs_order() {
+  std::vector<std::string> ret;
+  for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
+    ret.emplace_back(tab->get_label().get_text());
+  }
+  return ret;
+}
 
 i32 interface::get_tracks_scroll_offset() { return panel_tracks->get_scroll_px(); }
 i32 interface::get_playlists_scroll_offset() { return panel_albums->get_scroll_px(); }
@@ -2064,12 +2041,9 @@ void interface::set_mini_player(bool state) {
   if (mini_player == state) { return; }
   mini_player = state;
   if (mini_player.value()) {
-    panel_tracks->set_is_drawn(false);
-    panel_tracks->set_is_updated(false);
-    panel_albums->set_is_drawn(false);
-    panel_albums->set_is_updated(false);
-    panel_queue->set_is_drawn(false);
-    panel_queue->set_is_updated(false);
+    panel_tracks->hide();
+    panel_albums->hide();
+    panel_queue->hide();
     splitter->set_is_drawn(false);
     splitter->set_is_updated(false);
     panel_top->set_is_updated(false);

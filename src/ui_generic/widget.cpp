@@ -297,7 +297,7 @@ void Widget::set_size(vec2i size_) {
 void Widget::set_width(i32 width_) {
   if (width_ != width) {
     width = width_;
-    dirty = true;
+    mark_dirty();
     if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
@@ -305,7 +305,9 @@ void Widget::set_width(i32 width_) {
 void Widget::set_height(i32 height_) {
   if (height_ != height) {
     height = height_;
-    dirty = true;
+    mark_dirty();
     if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
+
+void Widget::mark_dirty() { ui.mark_dirty_recursive(this); }

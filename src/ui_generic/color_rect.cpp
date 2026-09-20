@@ -20,10 +20,6 @@ void ColorRect::update() { Widget::update(); }
 
 void ColorRect::draw() {
   if (dirty) {
-    // FIXME: this can cause a 1 frame delay when children are updated BEFORE parent
-    for (auto&& c : children) {
-      c->mark_dirty();
-    }
     update_mesh();
     setup_buffers();
     dirty = false;
@@ -48,10 +44,10 @@ void ColorRect::update_mesh() {
   end = end * vec2f(2.0) - vec2f(1.0);
 
   vertices = {
-    ColorRect::vertex(vec2f{start.x, end.y}, color),
-    ColorRect::vertex(vec2f{end.x, end.y}, color),
-    ColorRect::vertex(vec2f{start.x, start.y}, color),
-    ColorRect::vertex(vec2f{end.x, start.y}, color),
+    ColorRect::vertex(vec2f{start.x, end.y}, color, opacity),
+    ColorRect::vertex(vec2f{end.x, end.y}, color, opacity),
+    ColorRect::vertex(vec2f{start.x, start.y}, color, opacity),
+    ColorRect::vertex(vec2f{end.x, start.y}, color, opacity),
   };
 }
 
@@ -80,6 +76,10 @@ void ColorRect::setup_buffers() {
   glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, sizeof(ColorRect::vertex),
                         (void*)(offsetof(ColorRect::vertex, color)));
   glEnableVertexAttribArray(8);
+
+  glVertexAttribPointer(9, 1, GL_FLOAT, GL_FALSE, sizeof(ColorRect::vertex),
+                        (void*)offsetof(ColorRect::vertex, opacity));
+  glEnableVertexAttribArray(9);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
