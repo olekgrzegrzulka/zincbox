@@ -20,14 +20,16 @@ class ZincboxButton final : public zincgui::Button {
       set_nine_slice_margin(config.nine_slice_margin);
     }
 
-  private:
-    void init() {
-      set_texture_disabled(name + "_disabled");
-      set_texture_hovered(name + "_hovered");
-      set_texture_idle(name + "_idle");
-      set_texture_pressed(name + "_pressed");
-      set_texture(name + "_idle", true);
+    void set_texture_all(std::string texture_name) {
+      set_texture_disabled(texture_name + "_disabled");
+      set_texture_hovered(texture_name + "_hovered");
+      set_texture_idle(texture_name + "_idle");
+      set_texture_pressed(texture_name + "_pressed");
+      set_texture(texture_name + "_idle", true);
     }
+
+  private:
+    void init() { set_texture_all(name); }
 };
 
 class ZincboxSlider final : public zincgui::Slider {

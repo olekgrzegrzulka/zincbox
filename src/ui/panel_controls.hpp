@@ -2,6 +2,7 @@
 #include <functional>
 #include "common/signal.hpp"
 #include "common/types.hpp"
+#include "ui/zb_widgets.hpp"
 #include "ui/zincgui/color_rect.hpp"
 namespace zincgui {
   class Button;
@@ -29,6 +30,7 @@ class PanelControls : public zincgui::ColorRect {
   public:
     std::function<void(Widget*)> on_playing_track_lmb{};
     std::function<void(Widget*)> on_playing_track_rmb{};
+    std::function<void()> on_love_button_pressed{};
     void on_button_expand_player_pressed(std::function<void()>);
 
   protected:
@@ -47,7 +49,7 @@ class PanelControls : public zincgui::ColorRect {
     zincgui::Slider* volume_bar{};
     zincgui::Label* label_progress{};
     zincgui::Label* label_track{};
-    zincgui::Sprite* love_icon{};
+    ZincboxButton* love_button{};
     zincgui::Sprite* label_track_underline{};
 
     bool tooltip_visibility = true;

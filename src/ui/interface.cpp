@@ -44,7 +44,6 @@
 #include "ui/tr.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
-#include "zincbox.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/input.hpp"
@@ -54,6 +53,7 @@
 #include "ui/zincgui/tooltip.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
 using namespace zincgui;
 
@@ -215,6 +215,23 @@ void zincbox::ui::init() {
     if (mini_player.value_or(false)) { return; }
     auto playing = player::get_playing();
     if (playing.has_value()) { show_popover_tracklist_track_actions(playing.value(), w, false); }
+  };
+
+  panel_controls->on_love_button_pressed = []() -> void {
+    if (auto playing = player::get_playing()) {
+      if (db::playlist_by_id(0)->get().has_track_id(playing->track_id)) {
+        unlove_track(playing->track_id);
+      } else {
+        love_track(playing->track_id);
+      }
+
+      // FIXME: hack to prevent flicker
+      if (active_collection_id) {
+        panel_tracks->show();
+      } else {
+        panel_queue->show();
+      }
+    }
   };
 
   panel_controls->on_button_expand_player_pressed([]() -> void { set_mini_player(false); });

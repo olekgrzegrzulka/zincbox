@@ -356,6 +356,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   atlas_add_texture("add_tab_icon");
   add_custom_button("button_popover");
   atlas_add_texture("notification");
+  add_custom_button("panel_controls_love");
+  add_custom_button("panel_controls_unlove");
   // icons
   atlas_add_texture("left", {"icons/left"});
   atlas_add_texture("right", {"icons/right"});

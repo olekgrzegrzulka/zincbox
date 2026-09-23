@@ -1,7 +1,6 @@
 #include "panel_controls.hpp"
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
 #include <iomanip>
 #include <optional>
 #include <sstream>
@@ -16,8 +15,8 @@
 #include "core/player.hpp"
 #include "core/settings.hpp"
 #include "theme_config.hpp"
-#include "ui/tr.hpp"
 #include "ui/theme.hpp"
+#include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
@@ -86,14 +85,17 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   auto& label_track_container = panel_middle.add_child<Widget>();
   label_track_container.set_layout("ltr s:4 fill");
 
-  love_icon = &label_track_container.add_child<Sprite>("love");
-  love_icon->set_anchor(Anchor::RIGHT);
-  love_icon->set_parent_anchor(Anchor::LEFT);
-  love_icon->set_size(12, 12);
-  love_icon->set_min_width(12);
-  love_icon->set_max_width(12);
-  love_icon->set_nine_slice_margin(0.0f);
-  love_icon->set_is_drawn(false);
+  love_button = &label_track_container.add_child<ZincboxButton>("panel_controls_love");
+  love_button->set_anchor(Anchor::RIGHT);
+  love_button->set_parent_anchor(Anchor::LEFT);
+  love_button->set_size(12, 12);
+  love_button->set_min_width(12);
+  love_button->set_max_width(12);
+  love_button->set_nine_slice_margin(0.0f);
+
+  love_button->on_press([this]() -> void {
+    if (on_love_button_pressed) { on_love_button_pressed(); }
+  });
 
   label_track = &label_track_container.add_child<Label>();
   label_track->set_label_anchor(Anchor::LEFT);
@@ -414,7 +416,13 @@ void PanelControls::update_shuffle_mode() {
   }
 }
 
-void PanelControls::update_love_state(bool is_loved) { love_icon->set_is_drawn(is_loved); }
+void PanelControls::update_love_state(bool is_loved) {
+  if (is_loved) {
+    love_button->set_texture_all("panel_controls_unlove");
+  } else {
+    love_button->set_texture_all("panel_controls_love");
+  }
+}
 
 void PanelControls::set_button_expand_player_visibility(bool state) {
   button_expand_player->set_is_drawn(theme::config().panel_controls.button_expand_player.visible && state);
@@ -440,5 +448,5 @@ bool PanelControls::can_drag_window() const {
           !button_shuffle->is_mouse_hovering() && !button_repeat->is_mouse_hovering() &&
           !button_expand_player->is_mouse_hovering() && !seekbar->is_mouse_hovering() &&
           !volume_bar->get_thumb().is_mouse_hovering() && !volume_bar->get_track().is_mouse_hovering() &&
-          !label_track->is_mouse_hovering() && !love_icon->is_mouse_hovering());
+          !label_track->is_mouse_hovering() && !love_button->is_mouse_hovering());
 }
