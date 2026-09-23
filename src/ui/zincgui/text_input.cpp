@@ -4,6 +4,9 @@
 #include "common/types.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
+#include "theme_config.hpp"
+#include "ui/theme.hpp"
+#include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/input.hpp"
 #include "widget.hpp"
 
@@ -11,7 +14,7 @@ namespace zincgui {
   class Root;
 } // namespace zincgui
 
-zincgui::TextInput::TextInput(Root& ui_) : Sprite(ui_), label(add_child<Label>()), caret(add_child<Sprite>()) {
+zincgui::TextInput::TextInput(Root& ui_) : Sprite(ui_), label(add_child<Label>()), caret(add_child<ColorRect>()) {
   set_size(64, 24);
   set_nine_slice_margin(4);
   set_clip_children(true);
@@ -21,7 +24,7 @@ zincgui::TextInput::TextInput(Root& ui_) : Sprite(ui_), label(add_child<Label>()
   label.set_pos({2, 0});
   caret.set_parent_anchor(Anchor::CENTER_LEFT);
   caret.set_anchor(Anchor::CENTER_CENTER);
-  caret.set_texture("text_input_caret");
+  caret.set_color(theme::config().text_caret_color);
   caret.set_size({1, 14});
 }
 

@@ -37,8 +37,8 @@ struct StringHash {
 };
 
 static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> resources;
+static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> languages;
 static std::string resources_ttf_path;
-static std::set<std::string> languages;
 static ThemeConfig config_;
 
 static const std::vector<uint8_t> NO_RESOURCE = {};
@@ -57,7 +57,6 @@ const ThemeConfig& theme::config() { return config_; }
 void load_resources() {
   if (!resources.empty()) { return; }
 
-  mz_zip_archive zip_archive{};
   resources.clear();
   resources_ttf_path.clear();
 
@@ -68,32 +67,57 @@ void load_resources() {
     exit(1);
   }
 
-  auto file = cmrc_fs.open("theme.zip");
-
-  if (!mz_zip_reader_init_mem(&zip_archive, file.begin(), file.size(), 0)) {
-    out::critical("failed to load resources from memory");
-    exit(1);
-  }
-
-  for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
-    mz_zip_archive_file_stat file_stat;
-    if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
-    if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
-
-    std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
-    mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
-
-    std::string filename(file_stat.m_filename);
-
-    if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
-    if (filename.starts_with("lang/") && filename.ends_with(".json")) {
-      fs::path file_path{file_stat.m_filename};
-      languages.insert(path_to_utf8(file_path.stem()));
+  {
+    auto theme_zip = cmrc_fs.open("theme.zip");
+    mz_zip_archive zip_archive{};
+    if (!mz_zip_reader_init_mem(&zip_archive, theme_zip.begin(), theme_zip.size(), 0)) {
+      out::critical("failed to load resources from memory");
+      exit(1);
     }
 
-    resources[std::move(filename)] = std::move(buffer);
+    for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
+      mz_zip_archive_file_stat file_stat;
+      if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
+      if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
+
+      std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
+      mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
+
+      std::string filename(file_stat.m_filename);
+
+      if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
+
+      resources[std::move(filename)] = std::move(buffer);
+    }
+    mz_zip_reader_end(&zip_archive);
   }
-  mz_zip_reader_end(&zip_archive);
+
+  {
+    auto lang_zip = cmrc_fs.open("lang.zip");
+    mz_zip_archive zip_archive{};
+    if (!mz_zip_reader_init_mem(&zip_archive, lang_zip.begin(), lang_zip.size(), 0)) {
+      out::critical("failed to load languages from memory");
+      exit(1);
+    }
+
+    for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
+      mz_zip_archive_file_stat file_stat;
+      if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
+      if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
+
+      std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
+      mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
+
+      std::string filename(file_stat.m_filename);
+
+      if (filename.ends_with(".json")) {
+        fs::path file_path{file_stat.m_filename};
+        out::warn(file_path.stem().c_str());
+        languages[file_path.stem().c_str()] = std::move(buffer);
+      }
+    }
+    mz_zip_reader_end(&zip_archive);
+  }
 }
 
 std::set<std::string> theme::get_themes() {
@@ -111,13 +135,16 @@ std::set<std::string> theme::get_themes() {
 
 std::set<std::string> theme::get_languages() {
   load_resources();
-  return languages;
+  std::set<std::string> ret;
+  for (auto& [lang, _] : languages) {
+    ret.emplace(lang);
+  }
+  return ret;
 }
 
 static bool load_language_from_resource(std::string_view language) {
   load_resources();
-  std::string resource_name = std::string("lang/") + std::string(language) + ".json";
-  auto it = resources.find(resource_name);
+  auto it = languages.find(language);
   if (it == resources.end()) { return false; }
 
   std::string content(reinterpret_cast<const char*>(it->second.data()), it->second.size());
@@ -211,29 +238,27 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
   auto& atlas = ui.get_texture_atlas();
 
+  // please based on this git diff adjust this code block. then tell me what id's i have to internally change
+
   auto atlas_add_texture = [&load_theme_from_resources, &theme_path,
-                            &atlas](const std::string& id, std::vector<std::string> filenames = {}) -> bool {
-    if (filenames.size() == 0) { filenames = {id}; }
+                            &atlas](const std::string& id, std::vector<std::string> paths = {}) -> bool {
+    if (paths.empty()) { return false; }
+
     if (!load_theme_from_resources) {
-      for (const std::string& filename : filenames) {
-        if (fs::is_regular_file((theme_path / (filename + ".png")))) {
-          atlas.add_texture(id, path_to_utf8(theme_path / (filename + ".png")));
-          return true;
-        } else if (fs::is_regular_file((theme_path / (filename + ".PNG")))) {
-          atlas.add_texture(id, path_to_utf8(theme_path / (filename + ".PNG")));
+      for (const std::string& path : paths) {
+        if (fs::is_regular_file((theme_path / path))) {
+          atlas.add_texture(id, path_to_utf8(theme_path / path));
           return true;
         }
       }
     }
 
-    out::debug_warn("theme has no {}.png, loading from default theme", filenames[0]);
+    out::debug_warn("theme has no {}, loading from default theme", paths[0]);
     load_resources();
-    for (const std::string& filename : filenames) {
-      auto it = resources.find(filename + ".png");
-      if (it == resources.end()) {
-        it = resources.find(filename + ".PNG");
-        if (it == resources.end()) { continue; }
-      }
+    for (const std::string& path : paths) {
+      auto it = resources.find(path);
+      if (it == resources.end()) { continue; }
+
       i32 w, h, channels;
       u8* img = stbi_load_from_memory(it->second.data(), it->second.size(), &w, &h, &channels, STBI_rgb_alpha);
       if (!img) { continue; }
@@ -245,31 +270,23 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
     return false;
   };
 
-  auto atlas_add_texture_row = [&load_theme_from_resources, &theme_path,
-                                &atlas](std::span<const std::string> ids,
-                                        std::span<const std::string> filenames = {}) -> bool {
-    if (filenames.empty()) { return false; }
+  auto atlas_add_texture_row = [&](std::span<const std::string> ids, std::span<const std::string> paths = {}) -> bool {
+    if (paths.empty()) { return false; }
 
     if (!load_theme_from_resources) {
-      for (const std::string& filename : filenames) {
-        if (fs::is_regular_file((theme_path / (filename + ".png")))) {
-          atlas.add_texture_row(ids, path_to_utf8(theme_path / (filename + ".png")));
-          return true;
-        } else if (fs::is_regular_file((theme_path / (filename + ".PNG")))) {
-          atlas.add_texture_row(ids, path_to_utf8(theme_path / (filename + ".PNG")));
+      for (const std::string& path : paths) {
+        if (fs::is_regular_file((theme_path / path))) {
+          atlas.add_texture_row(ids, path_to_utf8(theme_path / path));
           return true;
         }
       }
     }
 
-    out::debug_warn("theme has no {}.png, loading from default theme", filenames[0]);
+    out::debug_warn("theme has no {}, loading from default theme", paths[0]);
     load_resources();
-    for (const std::string& filename : filenames) {
-      auto it = resources.find(filename + ".png");
-      if (it == resources.end()) {
-        it = resources.find(filename + ".PNG");
-        if (it == resources.end()) { continue; }
-      }
+    for (const std::string& path : paths) {
+      auto it = resources.find(path);
+      if (it == resources.end()) { continue; }
 
       i32 w, h, channels;
       u8* img = stbi_load_from_memory(it->second.data(), it->second.size(), &w, &h, &channels, STBI_rgb_alpha);
@@ -284,144 +301,157 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
   using namespace std::string_literals;
 
-  auto add_custom_button = [&atlas_add_texture, &atlas_add_texture_row](const std::string& name) {
-    std::array<std::string, 4> ids = {name + "_idle", name + "_hovered", name + "_pressed", name + "_disabled"};
-    if (!atlas_add_texture_row(ids, std::array{name, "button"s})) {
-      atlas_add_texture(name + "_disabled", {name + "_disabled", name, "button_disabled"});
-      atlas_add_texture(name + "_hovered", {name + "_hovered", name, "button_hovered"});
-      atlas_add_texture(name + "_idle", {name + "_idle", name, "button_idle"});
-      atlas_add_texture(name + "_pressed", {name + "_pressed", name, "button_pressed"});
+  auto add_custom_button = [&](const std::string& id, const std::string& path) {
+    std::array<std::string, 4> ids = {id + "_idle", id + "_hovered", id + "_pressed", id + "_disabled"};
+
+    std::vector<std::string> paths = {path, "ui/button.png"};
+
+    if (!atlas_add_texture_row(ids, paths)) {
+      atlas_add_texture(id + "_disabled", {id + "_disabled.png", id + ".png", "ui/button_disabled.png"});
+      atlas_add_texture(id + "_hovered", {id + "_hovered.png", id + ".png", "ui/button_hovered.png"});
+      atlas_add_texture(id + "_idle", {id + "_idle.png", id + ".png", "ui/button_idle.png"});
+      atlas_add_texture(id + "_pressed", {id + "_pressed.png", id + ".png", "ui/button_pressed.png"});
     }
   };
 
-  auto add_custom_slider = [&atlas_add_texture_row](const std::string& name) {
+  auto add_custom_slider = [&](const std::string& name, const std::string& path_track,
+                               const std::string& path_thumb) -> void {
     std::array<std::string, 3> thumb_ids = {name + "_thumb_idle", name + "_thumb_hovered", name + "_thumb_pressed"};
     std::array<std::string, 2> track_ids = {name + "_track_inactive", name + "_track_active"};
-    atlas_add_texture_row(thumb_ids, std::array{name + "_thumb"s, "slider_thumb"s});
-    atlas_add_texture_row(track_ids, std::array{name + "_track"s, "slider_track"s});
+
+    std::vector<std::string> paths_track = {path_track, "ui/slider_track.png"};
+    std::vector<std::string> paths_thumb = {path_thumb, "ui/slider_thumb.png"};
+
+    atlas_add_texture_row(thumb_ids, paths_thumb);
+    atlas_add_texture_row(track_ids, paths_track);
   };
 
-  auto add_custom_panel = [&atlas_add_texture](const std::string& name) { atlas_add_texture(name, {name, "panel"}); };
+  auto add_custom_panel = [&](const std::string& id, const std::string& path) -> void {
+    std::vector<std::string> paths = {path, "ui/panel.png"};
+    atlas_add_texture(id, paths);
+  };
 
+  atlas_add_texture("cover_unknown", {"cover_unknown.png"});
   // ui
   atlas_add_texture_row(std::array{"button_idle"s, "button_hovered"s, "button_pressed"s, "button_disabled"s},
-                        std::array{"button"s});
-  add_custom_button("combobox");
-  atlas_add_texture("combobox_contract");
-  atlas_add_texture("combobox_expand");
-  add_custom_panel("panel_combobox");
-  add_custom_button("combobox_item");
-  atlas_add_texture("red");
-  add_custom_slider("slider");
-  add_custom_slider("scrollbar");
-  add_custom_slider("volume_bar");
-  add_custom_button("spinner_decrease");
-  add_custom_button("spinner_increase");
-  atlas_add_texture("text_input_caret");
-  atlas_add_texture("text_input_focused");
-  atlas_add_texture("text_input_idle");
-  atlas_add_texture("splitter");
-  atlas_add_texture("tooltip");
-  add_custom_button("checkbox");
-  atlas_add_texture("checkbox_check");
-  // player
-  add_custom_button("play_pause");
-  add_custom_button("prev");
-  add_custom_button("next");
-  add_custom_button("stop");
-  add_custom_button("repeat");
-  add_custom_button("shuffle");
-  add_custom_button("expand_player");
-  add_custom_button("inline_play");
-  add_custom_button("inline_play_next");
-  add_custom_button("inline_sort");
-  add_custom_button("inline_more");
-  atlas_add_texture("panel");
-  atlas_add_texture("panel_dark");
-  add_custom_panel("panel_albums_searchbar");
-  add_custom_panel("panel_playlist_header");
-  add_custom_panel("panel_popup");
-  add_custom_slider("seekbar");
-  atlas_add_texture("playlist_hovered");
+                        std::array{"ui/button.png"s});
+  atlas_add_texture("panel", {"ui/panel.png"});
+  atlas_add_texture("panel_dark", {"ui/panel_dark.png"});
+  add_custom_panel("panel_popup", "ui/panel_popup.png");
+  add_custom_button("combobox", "ui/combobox.png");
+  atlas_add_texture("combobox_contract", {"ui/combobox_contract.png"});
+  atlas_add_texture("combobox_expand", {"ui/combobox_expand.png"});
+  add_custom_panel("panel_combobox", "ui/panel_combobox.png");
+  add_custom_button("combobox_item", "ui/combobox_item.png");
+  add_custom_slider("slider", "ui/slider_track.png", "ui/slider_thumb.png");
+  add_custom_slider("scrollbar", "ui/scrollbar_track.png", "ui/scrollbar_thumb.png");
+  add_custom_slider("volume_bar", "ui/volume_bar_track.png", "ui/volume_bar_thumb.png");
+  add_custom_button("spinner_decrease", "ui/spinner_decrease.png");
+  add_custom_button("spinner_increase", "ui/spinner_increase.png");
+  atlas_add_texture("text_input_focused", {"ui/text_input_focused.png"});
+  atlas_add_texture("text_input_idle", {"ui/text_input_idle.png"});
+  atlas_add_texture("tooltip", {"ui/tooltip.png"});
+  add_custom_button("checkbox", "ui/checkbox.png");
+  atlas_add_texture("checkbox_check", {"ui/checkbox_check.png"});
   atlas_add_texture_row(
     std::array{"tab_active_idle"s, "tab_active_hovered"s, "tab_active_pressed"s, "tab_active_disabled"s},
-    std::array{"tab_active"s});
+    std::array{"ui/tab_active.png"s});
   atlas_add_texture_row(
     std::array{"tab_inactive_idle"s, "tab_inactive_hovered"s, "tab_inactive_pressed"s, "tab_inactive_disabled"s},
-    std::array{"tab_inactive"s});
-  atlas_add_texture("popover_panel");
-  atlas_add_texture("popover_arrow");
-  atlas_add_texture("popover_arrow_inverted");
-  add_custom_button("add_tab");
-  atlas_add_texture("add_tab_icon");
-  add_custom_button("button_popover");
-  atlas_add_texture("notification");
-  add_custom_button("panel_controls_love");
-  add_custom_button("panel_controls_unlove");
-  // icons
-  atlas_add_texture("left", {"icons/left"});
-  atlas_add_texture("right", {"icons/right"});
-  atlas_add_texture("love", {"icons/love"});
-  atlas_add_texture("play", {"icons/play"});
-  atlas_add_texture("pause", {"icons/pause"});
-  atlas_add_texture("stop", {"icons/stop"});
-  atlas_add_texture("next", {"icons/next"});
-  atlas_add_texture("prev", {"icons/prev"});
-  atlas_add_texture("expand_player", {"icons/expand_player"});
-  atlas_add_texture("mini_player", {"icons/mini_player"});
+    std::array{"ui/tab_inactive.png"s});
+  atlas_add_texture("popover_panel", {"ui/popover_panel.png"});
+  atlas_add_texture("popover_arrow", {"ui/popover_arrow.png"});
+  atlas_add_texture("popover_arrow_inverted", {"ui/popover_arrow_inverted.png"});
+  add_custom_button("button_popover", "ui/button_popover.png");
+  atlas_add_texture("notification", {"ui/notification.png"});
+
+  // panel_controls
+  add_custom_button("play_pause", "panel_controls/button_play_pause.png");
+  add_custom_button("prev", "panel_controls/button_prev.png");
+  add_custom_button("next", "panel_controls/button_next.png");
+  add_custom_button("stop", "panel_controls/button_stop.png");
+  add_custom_button("repeat", "panel_controls/button_repeat.png");
+  add_custom_button("shuffle", "panel_controls/button_shuffle.png");
+  add_custom_button("expand_player", "panel_controls/button_expand_player.png");
+  add_custom_slider("seekbar", "panel_controls/seekbar_track.png", "panel_controls/seekbar_thumb.png");
+  atlas_add_texture("play", {"panel_controls/play.png"});
+  atlas_add_texture("pause", {"panel_controls/pause.png"});
+  atlas_add_texture("stop", {"panel_controls/stop.png"});
+  atlas_add_texture("next", {"panel_controls/next.png"});
+  atlas_add_texture("prev", {"panel_controls/prev.png"});
   atlas_add_texture_row(std::array{"repeat_off"s, "repeat"s, "repeat_album"s, "repeat_track"s},
-                        std::array{"icons/repeat"s});
-  atlas_add_texture_row(std::array{"shuffle_off"s, "shuffle"s}, std::array{"icons/shuffle"s});
-  atlas_add_texture("hamburger", {"icons/hamburger"});
-  atlas_add_texture("search", {"icons/actions/search"});
+                        std::array{"panel_controls/repeat.png"s});
+  atlas_add_texture_row(std::array{"shuffle_off"s, "shuffle"s}, std::array{"panel_controls/shuffle.png"s});
+  atlas_add_texture("expand_player", {"panel_controls/expand_player.png"});
+  add_custom_button("panel_controls_love", "panel_controls/love.png");
+  add_custom_button("panel_controls_unlove", "panel_controls/unlove.png");
+
+  // panel_tracklist
+  add_custom_button("inline_play", "panel_tracklist/inline_play.png");
+  add_custom_button("inline_play_next", "panel_tracklist/inline_play_next.png");
+  add_custom_button("inline_sort", "panel_tracklist/inline_sort.png");
+  add_custom_button("inline_more", "panel_tracklist/inline_more.png");
+  atlas_add_texture("love", {"panel_tracklist/love.png"});
+  atlas_add_texture("sort_by", {"panel_tracklist/sort_by.png"});
+
+  // panel_playlists
+  add_custom_panel("panel_playlists_searchbar", "panel_playlists/searchbar.png");
+  add_custom_panel("panel_playlists_header", "panel_playlists/header.png");
+  atlas_add_texture("playlist_hovered", {"panel_playlists/playlist_hovered.png"});
   atlas_add_texture_row(
     std::array{"clear_search_idle"s, "clear_search_hovered"s, "clear_search_pressed"s, "clear_search_disabled"s},
-    std::array{"icons/clear_search"s});
-  atlas_add_texture("sort_by", {"icons/sort_by"});
-  atlas_add_texture("button_add_playlist", {"icons/actions/button_add_playlist"});
-  atlas_add_texture("about", {"icons/actions/about"});
-  atlas_add_texture("add_to_playlist", {"icons/actions/add_to_playlist"});
-  atlas_add_texture("quit", {"icons/actions/quit"});
-  atlas_add_texture("love_track", {"icons/actions/love_track"});
-  atlas_add_texture("play_next", {"icons/actions/play_next"});
-  atlas_add_texture("delete_collection", {"icons/actions/delete_collection"});
-  atlas_add_texture("remove_from_queue", {"icons/actions/remove_from_queue"});
-  atlas_add_texture("rename_collection", {"icons/actions/rename_collection"});
-  atlas_add_texture("rescan", {"icons/actions/rescan"});
-  atlas_add_texture("set_sources", {"icons/actions/set_sources"});
-  atlas_add_texture("show_playlist_directory", {"icons/actions/show_playlist_directory"});
-  atlas_add_texture("show_in_album", {"icons/actions/show_in_album"});
-  atlas_add_texture("show_in_playlist", {"icons/actions/show_in_playlist"});
-  atlas_add_texture("unlove_track", {"icons/actions/unlove_track"});
-  atlas_add_texture("clear_queue", {"icons/actions/clear_queue"});
-  atlas_add_texture("save_queue_as_playlist", {"icons/actions/save_queue_as_playlist"});
-  atlas_add_texture("remove_from_playlist", {"icons/actions/remove_from_playlist"});
-  atlas_add_texture("play_track", {"icons/actions/play_track"});
-  atlas_add_texture("append_to_queue", {"icons/actions/append_to_queue"});
-  atlas_add_texture("name_asc", {"icons/actions/name_asc"});
-  atlas_add_texture("name_desc", {"icons/actions/name_desc"});
-  atlas_add_texture("artist_asc", {"icons/actions/artist_asc"});
-  atlas_add_texture("artist_desc", {"icons/actions/artist_desc"});
-  atlas_add_texture("title_asc", {"icons/actions/title_asc"});
-  atlas_add_texture("title_desc", {"icons/actions/title_desc"});
-  atlas_add_texture("settings", {"icons/actions/settings"});
-  atlas_add_texture("rename_playlist", {"icons/actions/rename_playlist"});
-  atlas_add_texture("delete_playlist", {"icons/actions/delete_playlist"});
-  atlas_add_texture("save_playlist_as_json", {"icons/actions/save_playlist_as_json"});
-  atlas_add_texture("pick_playlist_cover", {"icons/actions/pick_playlist_cover"});
-  atlas_add_texture("reset_playlist_cover", {"icons/actions/reset_playlist_cover"});
-  atlas_add_texture("add_playlist", {"icons/actions/add_playlist"});
-  atlas_add_texture("add_playlist_from_json", {"icons/actions/add_playlist_from_json"});
-  atlas_add_texture("add_smart_playlist", {"icons/actions/add_smart_playlist"});
-  add_custom_button("button_decor_minimize");
-  add_custom_button("button_decor_maximize");
-  add_custom_button("button_decor_close");
-  atlas_add_texture("icon_decor_minimize", {"icons/icon_decor_minimize"});
-  atlas_add_texture("icon_decor_maximize", {"icons/icon_decor_maximize"});
-  atlas_add_texture("icon_decor_close", {"icons/icon_decor_close"});
+    std::array{"panel_playlists/clear_search.png"s});
+  atlas_add_texture("playlist_playing", {"panel_playlists/playlist_playing.png"});
+  atlas_add_texture("button_add_playlist", {"panel_playlists/button_add_playlist.png"});
 
-  atlas_add_texture("cover_unknown");
-  atlas_add_texture("playlist_playing");
-  atlas_add_texture("insert_cursor");
-  atlas.set_fallback_texture("cover_unknown");
+  // panel_top
+  add_custom_button("add_tab", "panel_top/add_tab.png");
+  atlas_add_texture("add_tab_icon", {"panel_top/add_tab_icon.png"});
+  atlas_add_texture("left", {"panel_top/left.png"});
+  atlas_add_texture("right", {"panel_top/right.png"});
+  add_custom_button("button_decor_minimize", "panel_top/button_minimize.png");
+  add_custom_button("button_decor_maximize", "panel_top/button_maximize.png");
+  add_custom_button("button_decor_close", "panel_top/button_close.png");
+  atlas_add_texture("icon_decor_minimize", {"panel_top/minimize.png"});
+  atlas_add_texture("icon_decor_maximize", {"panel_top/maximize.png"});
+  atlas_add_texture("icon_decor_close", {"panel_top/close.png"});
+  atlas_add_texture("hamburger", {"panel_top/hamburger.png"});
+
+  // actions
+  atlas_add_texture("mini_player", {"actions/mini_player.png"});
+  atlas_add_texture("search", {"actions/search.png"});
+  atlas_add_texture("about", {"actions/about.png"});
+  atlas_add_texture("add_to_playlist", {"actions/add_to_playlist.png"});
+  atlas_add_texture("quit", {"actions/quit.png"});
+  atlas_add_texture("love_track", {"actions/love_track.png"});
+  atlas_add_texture("play_next", {"actions/play_next.png"});
+  atlas_add_texture("delete_collection", {"actions/delete_collection.png"});
+  atlas_add_texture("remove_from_queue", {"actions/remove_from_queue.png"});
+  atlas_add_texture("rename_collection", {"actions/rename_collection.png"});
+  atlas_add_texture("rescan", {"actions/rescan.png"});
+  atlas_add_texture("set_sources", {"actions/set_sources.png"});
+  atlas_add_texture("show_playlist_directory", {"actions/show_playlist_directory.png"});
+  atlas_add_texture("show_in_album", {"actions/show_in_album.png"});
+  atlas_add_texture("show_in_playlist", {"actions/show_in_playlist.png"});
+  atlas_add_texture("unlove_track", {"actions/unlove_track.png"});
+  atlas_add_texture("clear_queue", {"actions/clear_queue.png"});
+  atlas_add_texture("save_queue_as_playlist", {"actions/save_queue_as_playlist.png"});
+  atlas_add_texture("remove_from_playlist", {"actions/remove_from_playlist.png"});
+  atlas_add_texture("play_track", {"actions/play_track.png"});
+  atlas_add_texture("append_to_queue", {"actions/append_to_queue.png"});
+  atlas_add_texture("name_asc", {"actions/name_asc.png"});
+  atlas_add_texture("name_desc", {"actions/name_desc.png"});
+  atlas_add_texture("artist_asc", {"actions/artist_asc.png"});
+  atlas_add_texture("artist_desc", {"actions/artist_desc.png"});
+  atlas_add_texture("title_asc", {"actions/title_asc.png"});
+  atlas_add_texture("title_desc", {"actions/title_desc.png"});
+  atlas_add_texture("settings", {"actions/settings.png"});
+  atlas_add_texture("rename_playlist", {"actions/rename_playlist.png"});
+  atlas_add_texture("delete_playlist", {"actions/delete_playlist.png"});
+  atlas_add_texture("save_playlist_as_json", {"actions/save_playlist_as_json.png"});
+  atlas_add_texture("pick_playlist_cover", {"actions/pick_playlist_cover.png"});
+  atlas_add_texture("reset_playlist_cover", {"actions/reset_playlist_cover.png"});
+  atlas_add_texture("add_playlist", {"actions/add_playlist.png"});
+  atlas_add_texture("add_playlist_from_json", {"actions/add_playlist_from_json.png"});
+  atlas_add_texture("add_smart_playlist", {"actions/add_smart_playlist.png"});
 }

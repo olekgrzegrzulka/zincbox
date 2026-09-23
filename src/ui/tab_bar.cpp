@@ -125,7 +125,7 @@ TabBar::TabBar(Root& ui_) : Widget(ui_) {
   pad.set_min_width(6);
   pad.set_max_width(6);
 
-  button_add = &add_child<ZincboxButton>("add_tab", theme::config().top_bar.button_add_tab);
+  button_add = &add_child<ZincboxButton>("add_tab", theme::config().panel_top.button_add_tab);
   button_add->add_image("add_tab_icon");
   button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
   button_add->set_anchor(Anchor::BOTTOM_LEFT);

@@ -29,7 +29,7 @@ class WidgetPlaylistHeader : public zincgui::Widget {
       header_container.get_layout().margin.x = 4 * scale;
       header_container.get_layout().margin.y = header_spacing;
 
-      auto& header = header_container.add_child<zincgui::Sprite>("panel_playlist_header");
+      auto& header = header_container.add_child<zincgui::Sprite>("panel_playlists_header");
       // header.set_anchor(Anchor::CENTER);
       // header.set_parent_anchor(Anchor::CENTER);
       header.set_layout("ltr fit fill");

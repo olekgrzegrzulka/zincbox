@@ -2,8 +2,10 @@
   "text_color": "hsv(312, 0.20, 0.95)",
   "text_color_muted": "hsv(312, 0.24, 0.7)",
   "text_color_disabled": "hsv(312, 0.10, 0.60)",
+  "text_caret_color": "#d48dc9",
+  "splitter_color": "#1e0e1c",
 
-  "top_bar": {
+  "panel_top": {
     "color": "#1e0e1c",
     "height": 26
   },
@@ -94,7 +96,8 @@
     "track_artist_color": "#80667a",
     "track_number_color": "#a6859f",
     "title_color": "#cca3c4",
-    "length_color": "#80667a"
+    "length_color": "#80667a",
+    "insert_cursor_color": "#77376e"
   },
 
   "panel_playlists": {

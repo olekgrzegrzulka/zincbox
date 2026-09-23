@@ -1,5 +1,6 @@
 # Resources
 file(GLOB_RECURSE THEME_FILES "${CMAKE_SOURCE_DIR}/resources/theme/*")
+file(GLOB_RECURSE LANGUAGE_FILES "${CMAKE_SOURCE_DIR}/resources/lang/*")
 
 add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/resources/theme.zip
@@ -8,8 +9,19 @@ add_custom_command(
     DEPENDS ${THEME_FILES}
 )
 
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/resources/lang.zip
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_SOURCE_DIR}/resources/lang.zip" --format=zip "."
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/resources/lang
+    DEPENDS ${LANGUAGE_FILES}
+)
+
 cmrc_add_resource_library(zincbox_resources NAMESPACE zincbox_resources)
-cmrc_add_resources(zincbox_resources WHENCE ${CMAKE_SOURCE_DIR}/resources ${CMAKE_SOURCE_DIR}/resources/theme.zip)
+cmrc_add_resources(zincbox_resources
+    WHENCE ${CMAKE_SOURCE_DIR}/resources
+    ${CMAKE_SOURCE_DIR}/resources/theme.zip
+    ${CMAKE_SOURCE_DIR}/resources/lang.zip
+)
 
 set(UI_SOURCES
     sdl3_window.cpp

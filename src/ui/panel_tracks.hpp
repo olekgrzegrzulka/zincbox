@@ -188,7 +188,7 @@ class PanelTracks final : public zincgui::ColorRect {
     bool just_recreated = false;
     bool selection_modified = false;
     zincgui::ScrollBar* scrollbar{};
-    zincgui::Sprite* insert_cursor{};
+    zincgui::ColorRect* insert_cursor{};
     InsertCursorPos insert_cursor_pos = InsertCursorPos::BELOW;
     std::optional<db::track_info> insert_cursor_track_info{};
     zincgui::ToolTip* button_play_tooltip{};

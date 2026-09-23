@@ -50,7 +50,7 @@ class PanelControls : public zincgui::ColorRect {
     zincgui::Label* label_progress{};
     zincgui::Label* label_track{};
     ZincboxButton* love_button{};
-    zincgui::Sprite* label_track_underline{};
+    zincgui::ColorRect* label_track_underline{};
 
     bool tooltip_visibility = true;
     bool label_track_underline_lmb = false;

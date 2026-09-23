@@ -6,11 +6,11 @@
 #include <vector>
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
-#include "ui/tr.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
+#include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
 #include "zincbox.hpp"
@@ -241,7 +241,7 @@ class PopupSetSources : public Popup {
 
       if (!collection.paths().empty()) {
         for (i32 num = 1; const auto& path : collection.paths()) {
-          std::string str = std::to_string(num) + ". " + path;
+          std::string str = std::to_string(num) + ". " + path_to_utf8(path);
 
           auto color_odd = theme::config().panel_tracklist.track_color_odd;
           auto color_even = theme::config().panel_tracklist.track_color_even;

@@ -178,7 +178,7 @@ void zincbox::ui::init() {
   shortcut_interceptor = &root->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 
-  bg = &root->add_widget<ColorRect>(theme::config().top_bar.color);
+  bg = &root->add_widget<ColorRect>(theme::config().panel_top.color);
   panel_controls = &root->add_widget<PanelControls>();
   panel_top = &root->add_widget<PanelTop>();
   panel_tracks = &root->add_widget<PanelTracks>();

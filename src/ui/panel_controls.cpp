@@ -100,7 +100,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   label_track = &label_track_container.add_child<Label>();
   label_track->set_label_anchor(Anchor::LEFT);
 
-  label_track_underline = &label_track->add_child<Sprite>("text_input_caret");
+  label_track_underline = &label_track->add_child<ColorRect>(theme::config().text_caret_color);
   label_track_underline->set_width(1);
   label_track_underline->set_height(1);
   label_track_underline->set_parent_anchor(Anchor::CENTER);

@@ -10,7 +10,7 @@ struct ButtonConfig {
     i32 nine_slice_margin{0};
 };
 
-struct TopBarConfig {
+struct PanelTopConfig {
     rgba color{0x1e0e1cff};
     i32 height{26};
     ButtonConfig button_add_tab{};
@@ -71,6 +71,7 @@ struct PanelTracklistConfig {
     rgba track_number_color{0xa6859fff};
     rgba title_color{0xcca3c4ff};
     rgba length_color{0x80667aff};
+    rgba insert_cursor_color{0x77376eff};
 };
 
 struct PanelPlaylistsConfig {
@@ -87,7 +88,7 @@ struct NotificationConfig {
 
 struct CustomWindowDecorationConfig {
     bool enabled = true;
-    // color and size are based on top_bar.color and top_bar.height
+    // color and size are based on panel_top.color and panel_top.height
     bool show_minimize_button = true;
     bool show_maximize_button = true;
     bool show_close_button = true;
@@ -98,7 +99,9 @@ struct ThemeConfig {
     rgba text_color{0xf2c2e9ff};
     rgba text_color_muted{0xb388aaff};
     rgba text_color_disabled{0x998a96ff};
-    TopBarConfig top_bar;
+    rgba text_caret_color{0xd48dc9ff};
+    rgba splitter_color{0x1e0e1cff};
+    PanelTopConfig panel_top;
     PanelControlsConfig panel_controls;
     PanelTracklistConfig panel_tracklist;
     PanelPlaylistsConfig panel_playlists;

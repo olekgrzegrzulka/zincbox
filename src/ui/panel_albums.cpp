@@ -30,7 +30,12 @@
 using namespace zincgui;
 
 SpriteAlbumCover::SpriteAlbumCover(Root& ui_, const std::string& id, vec2i cover_size_) : Sprite(ui_) {
-  set_texture(id);
+  bool has_texture = ui_.get_texture_atlas().has_texture(id, 1);
+  if (has_texture) {
+    set_texture(id);
+  } else {
+    set_texture("cover_unknown");
+  }
   set_size(cover_size_);
   set_nine_slice_margin(0.0f);
 }
@@ -148,7 +153,7 @@ PanelAlbums::PanelAlbums(Root& ui_) : ColorRect(ui_) {
   albums_container = &add_child<Widget>();
   albums_container->set_pos(0, PANEL_SEARCH_HEIGHT + 2 * PANEL_SEARCH_PADDING);
 
-  panel_search = &add_child<Sprite>("panel_albums_searchbar");
+  panel_search = &add_child<Sprite>("panel_playlists_searchbar");
   panel_search->set_pos(PANEL_SEARCH_PADDING, PANEL_SEARCH_PADDING);
   panel_search->set_height(PANEL_SEARCH_HEIGHT);
   panel_search->set_layout("m:6 s:6 ltr fill expand");

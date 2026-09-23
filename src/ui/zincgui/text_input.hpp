@@ -2,6 +2,7 @@
 #include <functional>
 #include <utility>
 #include "sprite.hpp"
+#include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -19,7 +20,7 @@ namespace zincgui {
       void event(Input::InputEventKey&) override;
       void set_on_text_changed(std::function<void()> lambda) { lambda_on_text_changed = std::move(lambda); }
       Label& label;
-      Sprite& caret;
+      ColorRect& caret;
 
     protected:
       std::function<void()> lambda_on_text_changed;

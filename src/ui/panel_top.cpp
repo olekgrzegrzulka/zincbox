@@ -23,8 +23,8 @@ static constexpr size_t QUEUE_TAB_ID = 10000;
 
 PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
   static const float scale = zincbox::ui_scale();
-  set_color(theme::config().top_bar.color);
-  set_height(theme::config().top_bar.height * scale);
+  set_color(theme::config().panel_top.color);
+  set_height(theme::config().panel_top.height * scale);
 
   container_tabbar = &add_child<Widget>();
   container_tabbar->set_parent_anchor(zincgui::Anchor::TOP_LEFT);

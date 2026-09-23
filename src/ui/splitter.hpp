@@ -1,15 +1,16 @@
 #pragma once
+#include "theme_config.hpp"
+#include "ui/theme.hpp"
+#include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/input.hpp"
-#include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
 
-class Splitter final : public zincgui::Sprite {
+class Splitter final : public zincgui::ColorRect {
   public:
-    Splitter(zincgui::Root& ui_) : Sprite(ui_) {
-      set_texture("splitter", false);
+    Splitter(zincgui::Root& ui_) : ColorRect(ui_) {
+      set_color(theme::config().splitter_color);
       set_width(6);
-      set_nine_slice_margin(2.0f);
     }
 
     double get_ratio() const { return ratio; }
@@ -25,7 +26,7 @@ class Splitter final : public zincgui::Sprite {
         ratio = std::clamp(zincgui::Input::get_mouse_x() / (double)ui.get_window_width(), 0.01, 0.99);
       }
 
-      Sprite::input();
+      ColorRect::input();
     }
 
     void event(zincgui::Input::InputEventMouseButton& ev) override {

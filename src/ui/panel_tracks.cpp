@@ -58,7 +58,7 @@ PanelTracks::PanelTracks(Root& ui_) : ColorRect(ui_) {
 
   items_container = &add_child<Widget>();
 
-  insert_cursor = &add_child<Sprite>("insert_cursor");
+  insert_cursor = &add_child<ColorRect>(theme::config().panel_tracklist.insert_cursor_color);
   insert_cursor->set_height(2);
   insert_cursor->set_anchor(Anchor::CENTER_LEFT);
   insert_cursor->set_is_drawn(false);
