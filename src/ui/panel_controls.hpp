@@ -2,23 +2,24 @@
 #include <functional>
 #include "common/signal.hpp"
 #include "common/types.hpp"
-#include "ui_generic/color_rect.hpp"
+#include "ui/zincgui/color_rect.hpp"
+namespace zincgui {
+  class Button;
+  class Label;
+  class Slider;
+  class Sprite;
+  class ToolTip;
+  class Root;
+  class Widget;
+} // namespace zincgui
 
-class Button;
-class Label;
-class Slider;
-class Sprite;
-class ToolTip;
-class UI;
-class Widget;
-
-class PanelControls : public ColorRect {
+class PanelControls : public zincgui::ColorRect {
   public:
-    PanelControls(UI& ui_);
+    PanelControls(zincgui::Root& ui_);
     ~PanelControls() override;
     using ColorRect::event;
-    void event(Input::InputEventMouseButton&) override;
-    void event(Input::InputEventKey&) override;
+    void event(zincgui::Input::InputEventMouseButton&) override;
+    void event(zincgui::Input::InputEventKey&) override;
     void update() override;
     void update_love_state(bool);
     void set_button_expand_player_visibility(bool);
@@ -31,23 +32,23 @@ class PanelControls : public ColorRect {
     void on_button_expand_player_pressed(std::function<void()>);
 
   protected:
-    Button* button_play_pause{};
-    Button* button_stop{};
-    Button* button_next{};
-    Button* button_prev{};
-    Button* button_shuffle{};
-    Button* button_repeat{};
-    Button* button_expand_player{};
-    ToolTip* tooltip_button_shuffle{};
-    ToolTip* tooltip_button_repeat{};
-    ToolTip* tooltip_timestamp{};
-    ToolTip* tooltip_volume{};
-    Slider* seekbar{};
-    Slider* volume_bar{};
-    Label* label_progress{};
-    Label* label_track{};
-    Sprite* love_icon{};
-    Sprite* label_track_underline{};
+    zincgui::Button* button_play_pause{};
+    zincgui::Button* button_stop{};
+    zincgui::Button* button_next{};
+    zincgui::Button* button_prev{};
+    zincgui::Button* button_shuffle{};
+    zincgui::Button* button_repeat{};
+    zincgui::Button* button_expand_player{};
+    zincgui::ToolTip* tooltip_button_shuffle{};
+    zincgui::ToolTip* tooltip_button_repeat{};
+    zincgui::ToolTip* tooltip_timestamp{};
+    zincgui::ToolTip* tooltip_volume{};
+    zincgui::Slider* seekbar{};
+    zincgui::Slider* volume_bar{};
+    zincgui::Label* label_progress{};
+    zincgui::Label* label_track{};
+    zincgui::Sprite* love_icon{};
+    zincgui::Sprite* label_track_underline{};
 
     bool tooltip_visibility = true;
     bool label_track_underline_lmb = false;

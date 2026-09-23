@@ -1,60 +1,60 @@
 #include <functional>
-#include "common/input.hpp"
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
-#include "tr.hpp"
+#include "ui/tr.hpp"
 #include "ui/panel_albums.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui/widget_track.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/checkbox.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/scrollbar.hpp"
-#include "ui_generic/text_input.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/checkbox.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/scrollbar.hpp"
+#include "ui/zincgui/text_input.hpp"
+#include "ui/zincgui/widget.hpp"
 
 class PopupSearch : public Popup {
     using Widget::event;
 
   public:
-    PopupSearch(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+    PopupSearch(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
       : Popup(ui_, controller_, std::move(on_close_)) {
       playlist_ids.reserve(MAX_PLAYLISTS);
       found_tracks.reserve(MAX_TRACKS);
 
       get_layout().enabled = false;
 
-      search_bar = &add_child<TextInput>();
+      search_bar = &add_child<zincgui::TextInput>();
       search_bar->set_on_text_changed([this]() { update_search_results(); });
       search_bar->set_height(22);
       search_bar->set_min_height(22);
       search_bar->set_max_height(22);
-      search_bar->set_anchor(Anchor::TOP);
-      search_bar->set_parent_anchor(Anchor::TOP);
+      search_bar->set_anchor(zincgui::Anchor::TOP);
+      search_bar->set_parent_anchor(zincgui::Anchor::TOP);
       search_bar->set_pos(0, 8);
       search_bar->set_focused(true);
 
-      search_results = &add_child<ColorRect>(theme::config().panel_playlists.color);
+      search_results = &add_child<zincgui::ColorRect>(theme::config().panel_playlists.color);
       search_results->set_layout("ltr fill expand");
       search_results->set_clip_children(true);
-      search_results->set_anchor(Anchor::TOP);
-      search_results->set_parent_anchor(Anchor::TOP);
+      search_results->set_anchor(zincgui::Anchor::TOP);
+      search_results->set_parent_anchor(zincgui::Anchor::TOP);
       search_results->set_pos(0, 8 + search_bar->get_height() + 8);
 
       scrollable_content = &search_results->add_child<Widget>();
       scrollable_content->set_clip_children(true);
 
       scrollbar = &search_results->add_child<ZincboxScrollbar>();
-      scrollbar->set_anchor(Anchor::TOP_RIGHT);
-      scrollbar->set_parent_anchor(Anchor::TOP_RIGHT);
-      scrollbar->set_orientation(SliderOrientation::VERTICAL);
+      scrollbar->set_anchor(zincgui::Anchor::TOP_RIGHT);
+      scrollbar->set_parent_anchor(zincgui::Anchor::TOP_RIGHT);
+      scrollbar->set_orientation(zincgui::SliderOrientation::VERTICAL);
       scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
 
-      label_playlists = &scrollable_content->add_child<Label>(tr::get("search.results_albums_playlists"));
+      label_playlists = &scrollable_content->add_child<zincgui::Label>(tr::get("search.results_albums_playlists"));
       label_playlists->set_text_color(theme::config().text_color_muted);
       label_playlists->set_resize_to_text_extents(false);
       label_playlists->set_x(8);
@@ -69,15 +69,15 @@ class PopupSearch : public Popup {
       playlists_container->props.cover_min_horizontal_spacing = 12;
       playlists_container->props.cover_min_vertical_spacing = 44;
 
-      label_no_results = &scrollable_content->add_child<Label>(tr::get("search.no_results"));
+      label_no_results = &scrollable_content->add_child<zincgui::Label>(tr::get("search.no_results"));
       label_no_results->set_text_color(theme::config().text_color_muted);
       label_no_results->set_resize_to_text_extents(false);
-      label_no_results->set_label_anchor(Anchor::CENTER);
-      label_no_results->set_parent_anchor(Anchor::CENTER);
-      label_no_results->set_anchor(Anchor::CENTER);
+      label_no_results->set_label_anchor(zincgui::Anchor::CENTER);
+      label_no_results->set_parent_anchor(zincgui::Anchor::CENTER);
+      label_no_results->set_anchor(zincgui::Anchor::CENTER);
       label_no_results->set_is_drawn(false);
 
-      label_tracks = &scrollable_content->add_child<Label>(tr::get("search.results_tracks"));
+      label_tracks = &scrollable_content->add_child<zincgui::Label>(tr::get("search.results_tracks"));
       label_tracks->set_text_color(theme::config().text_color_muted);
       label_tracks->set_resize_to_text_extents(false);
       label_tracks->set_x(8);
@@ -92,15 +92,15 @@ class PopupSearch : public Popup {
       buttons->set_height(32);
       buttons->set_min_height(32);
       buttons->set_max_height(32);
-      buttons->set_anchor(Anchor::BOTTOM);
-      buttons->set_parent_anchor(Anchor::BOTTOM);
+      buttons->set_anchor(zincgui::Anchor::BOTTOM);
+      buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
       buttons->set_pos(8, -8);
-      button_close = &buttons->add_child<Button>(tr::get("dialog.action.close"));
+      button_close = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.close"));
       button_close->on_press([this]() {
         if (on_closed) { on_closed(); }
         close();
       });
-      checkbox_search_all_collections = &buttons->add_child<Checkbox>(tr::get("search.all_collections"));
+      checkbox_search_all_collections = &buttons->add_child<zincgui::Checkbox>(tr::get("search.all_collections"));
       checkbox_search_all_collections->set_checked(true);
     }
 
@@ -236,15 +236,15 @@ class PopupSearch : public Popup {
       Popup::update();
     }
 
-    void event(Input::InputEventKey& e) override {
-      if (e.key == Input::Key::KEY_ESCAPE && e.action == Input::KeyAction::RELEASE) {
+    void event(zincgui::Input::InputEventKey& e) override {
+      if (e.key == zincgui::Input::Key::KEY_ESCAPE && e.action == zincgui::Input::KeyAction::RELEASE) {
         if (on_closed) { on_closed(); }
         close();
         e.handled = true;
       }
     }
 
-    void event(Input::InputEventMouseScroll& e) override {
+    void event(zincgui::Input::InputEventMouseScroll& e) override {
       if (is_mouse_hovering()) {
         scrollbar->scroll(e.offset.y);
         e.handled = true;
@@ -261,18 +261,18 @@ class PopupSearch : public Popup {
     std::function<void()> on_closed{};
 
   protected:
-    TextInput* search_bar{};
+    zincgui::TextInput* search_bar{};
     Widget* search_results{};
     Widget* scrollable_content{};
-    ScrollBar* scrollbar{};
+    zincgui::ScrollBar* scrollbar{};
     PanelAlbums* playlists_container{};
     Widget* tracks_container{};
     Widget* buttons{};
-    Button* button_close{};
-    Checkbox* checkbox_search_all_collections{};
-    Label* label_playlists{};
-    Label* label_tracks{};
-    Label* label_no_results{};
+    zincgui::Button* button_close{};
+    zincgui::Checkbox* checkbox_search_all_collections{};
+    zincgui::Label* label_playlists{};
+    zincgui::Label* label_tracks{};
+    zincgui::Label* label_no_results{};
     bool checkbox_search_all_collections_state_old = true;
 
     size_t collection_id{};

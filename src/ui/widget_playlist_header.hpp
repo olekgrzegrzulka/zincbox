@@ -3,16 +3,16 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
-#include "core/zincbox.hpp"
 #include "theme.hpp"
 #include "theme_config.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
-class WidgetPlaylistHeader : public Widget {
+class WidgetPlaylistHeader : public zincgui::Widget {
   public:
-    WidgetPlaylistHeader(UI& ui_, size_t collection_id, size_t playlist_id_) : Widget(ui_) {
+    WidgetPlaylistHeader(zincgui::Root& ui_, size_t collection_id, size_t playlist_id_) : Widget(ui_) {
       static const float scale = zincbox::ui_scale();
 
       playlist_id = playlist_id_;
@@ -23,13 +23,13 @@ class WidgetPlaylistHeader : public Widget {
       i32 header_height = theme::config().panel_tracklist.header_height;
       i32 header_spacing = theme::config().panel_tracklist.header_spacing;
 
-      auto& header_container = add_child<Widget>();
+      auto& header_container = add_child<zincgui::Widget>();
       header_container.set_height((header_height + 2 * header_spacing) * scale);
       header_container.set_layout("s:0 fit fill expand");
       header_container.get_layout().margin.x = 4 * scale;
       header_container.get_layout().margin.y = header_spacing;
 
-      auto& header = header_container.add_child<Sprite>("panel_playlist_header");
+      auto& header = header_container.add_child<zincgui::Sprite>("panel_playlist_header");
       // header.set_anchor(Anchor::CENTER);
       // header.set_parent_anchor(Anchor::CENTER);
       header.set_layout("ltr fit fill");
@@ -38,22 +38,22 @@ class WidgetPlaylistHeader : public Widget {
       header.set_nine_slice_margin(8.0f);
       header.set_y(6 * scale);
 
-      auto& label_author = header.add_child<Label>();
+      auto& label_author = header.add_child<zincgui::Label>();
       label_author.set_text(playlist.has_value() ? playlist->get().author_pretty() : "");
       label_author.set_text_color(theme::config().panel_tracklist.header_author_color);
-      label_author.set_label_anchor(Anchor::LEFT);
+      label_author.set_label_anchor(zincgui::Anchor::LEFT);
       label_author.set_is_drawn(!label_author.get_text().empty());
       label_author.update();
       label_author.set_max_width(label_author.get_text_extents().x);
-      auto& label_name = header.add_child<Label>();
+      auto& label_name = header.add_child<zincgui::Label>();
       label_name.set_text(playlist.has_value() ? playlist->get().name : "?");
       label_name.set_text_color(theme::config().panel_tracklist.header_name_color);
-      label_name.set_label_anchor(Anchor::LEFT);
+      label_name.set_label_anchor(zincgui::Anchor::LEFT);
 
-      std::pair<Button**, std::string> button_configs[] = {{&button_more, "inline_more"},
-                                                           {&button_play_next, "inline_play_next"},
-                                                           {&button_play, "inline_play"},
-                                                           {&button_sort, "inline_sort"}};
+      std::pair<zincgui::Button**, std::string> button_configs[] = {{&button_more, "inline_more"},
+                                                                    {&button_play_next, "inline_play_next"},
+                                                                    {&button_play, "inline_play"},
+                                                                    {&button_sort, "inline_sort"}};
       for (auto& [target, name_] : button_configs) {
         *target = &header.add_child<ZincboxButton>(name_);
         (*target)->set_min_width((*target)->get_width());
@@ -67,11 +67,11 @@ class WidgetPlaylistHeader : public Widget {
 
     ~WidgetPlaylistHeader() override {}
 
-    void update() override { Widget::update(); }
+    void update() override { zincgui::Widget::update(); }
 
     size_t playlist_id = db::INVALID_ID;
-    Button* button_sort{};
-    Button* button_play{};
-    Button* button_play_next{};
-    Button* button_more{};
+    zincgui::Button* button_sort{};
+    zincgui::Button* button_play{};
+    zincgui::Button* button_play_next{};
+    zincgui::Button* button_more{};
 };

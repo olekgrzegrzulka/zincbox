@@ -5,10 +5,13 @@
 #include <vector>
 #include <stddef.h>
 #include "common/types.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/widget.hpp"
 
-class UI;
+namespace zincgui {
+  class Root;
+} // namespace zincgui
+
 class Tab;
 
 struct tab_info {
@@ -20,16 +23,16 @@ struct tab_info {
     std::function<void(Tab*)> on_right_click{};
 };
 
-class Tab : public Button {
+class Tab : public zincgui::Button {
   public:
-    Tab(UI& ui_, const tab_info& info);
+    Tab(zincgui::Root& ui_, const tab_info& info);
 
     void set_texture_active();
     void set_texture_inactive();
     void move_smooth(i32 to);
     void move(i32 to);
     void update() override;
-    void event(Input::InputEventMouseButton& ev) override;
+    void event(zincgui::Input::InputEventMouseButton& ev) override;
 
   public:
     bool active = false;
@@ -48,10 +51,10 @@ class Tab : public Button {
     bool just_added = true;
 };
 
-class TabBar : public Widget {
+class TabBar : public zincgui::Widget {
   public:
-    TabBar(UI& ui_);
-    virtual void event(Input::InputEventMouseScroll&) override;
+    TabBar(zincgui::Root& ui_);
+    virtual void event(zincgui::Input::InputEventMouseScroll&) override;
 
     void add_tab(const tab_info& info, bool select = false);
     void add_tab(const tab_info& info, size_t at, bool select = false);
@@ -66,7 +69,7 @@ class TabBar : public Widget {
     void sort_tabs_by_label(std::span<const std::string>);
     const Tab* get_selected_tab() const { return tab_valid(selected_tab_index) ? tabs[selected_tab_index] : nullptr; }
     const Tab* get_tab_by_label(const std::string& label) const;
-    Button* get_button_add() { return button_add; }
+    zincgui::Button* get_button_add() { return button_add; }
     i32 get_tab_container_width();
     double get_scroll_px() { return scroll_px; }
     double get_max_scroll_px();
@@ -83,10 +86,10 @@ class TabBar : public Widget {
     std::function<void()> on_add_tab_button_pressed{};
 
   protected:
-    Widget* tab_container{};
-    Button* button_add{};
-    Button* button_left{};
-    Button* button_right{};
+    zincgui::Widget* tab_container{};
+    zincgui::Button* button_add{};
+    zincgui::Button* button_left{};
+    zincgui::Button* button_right{};
     i32 selected_tab_index = -1;
     std::vector<Tab*> tabs;
     i32 dragged_tab_index = -1;

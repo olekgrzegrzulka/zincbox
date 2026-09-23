@@ -3,7 +3,7 @@
 #include <vector>
 #include "common/types.hpp"
 
-namespace interface {
+namespace zincbox::ui {
   void init();
   void deinit();
   void update(vec2i window_size);
@@ -33,4 +33,4 @@ namespace interface {
   };
 
   DecorationHover get_decoration_hover(i32 mouse_x, i32 mouse_y);
-} // namespace interface
+} // namespace zincbox::ui

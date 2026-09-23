@@ -12,14 +12,11 @@
 #include <glaze/glaze.hpp>
 #include <nfd.hpp>
 #include "common/debug.hpp"
-#include "common/input.hpp"
 #include "common/logger.hpp"
 #include "common/serialized_state.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
-#include "core/i_window.hpp"
 #include "core/io.hpp"
-#include "core/mpris.hpp"
 #include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
@@ -28,7 +25,6 @@
 #include "core/player.hpp"
 #include "core/scanner.hpp"
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
 #include "interface.hpp"
 #include "interface_notifications.hpp"
 #include "panel_albums.hpp"
@@ -40,22 +36,26 @@
 #include "splitter.hpp"
 #include "theme.hpp"
 #include "theme_config.hpp"
-#include "tr.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_definitions.hpp"
 #include "ui/popup_search.hpp"
 #include "ui/popup_settings.hpp"
 #include "ui/tab_bar.hpp"
+#include "ui/tr.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/text_input.hpp"
-#include "ui_generic/texture_atlas.hpp"
-#include "ui_generic/tooltip.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "zincbox.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/text_input.hpp"
+#include "ui/zincgui/texture_atlas.hpp"
+#include "ui/zincgui/tooltip.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
+
+using namespace zincgui;
 
 static std::optional<size_t> active_collection_id;
 static std::vector<float> tracks_scroll_positions;
@@ -73,7 +73,7 @@ static i32 selection_drag_tab_id = -1;
 static i32 selection_drag_tab_timer = 0;
 static constexpr i32 SELECTION_DRAG_TAB_TIMER = 15;
 
-static std::unique_ptr<UI> ui;
+static std::unique_ptr<Root> root;
 static class ShortcutInterceptor* shortcut_interceptor{};
 static PopupController* popup_controller{};
 static InterfaceNotifications* notifications{};
@@ -148,7 +148,7 @@ static void recreate_panel_top(bool order = true) {
 
 class ShortcutInterceptor : public Widget {
   public:
-    ShortcutInterceptor(UI& ui_) : Widget(ui_) {}
+    ShortcutInterceptor(Root& ui_) : Widget(ui_) {}
 
     void event(Input::InputEventKey& ev) override {
       if (ev.action != Input::KeyAction::RELEASE) { return; }
@@ -165,32 +165,32 @@ class ShortcutInterceptor : public Widget {
     std::function<void(void)> search_popup_invoked{};
 };
 
-void interface::init() {
-  ui = std::make_unique<UI>(1, 1);
+void zincbox::ui::init() {
+  root = std::make_unique<Root>(1, 1);
   std::string language = zincbox::settings().interface.language;
   std::string theme = zincbox::settings().interface.theme;
-  theme::load_theme(theme, *ui.get(), language);
+  theme::load_theme(theme, *root.get(), language);
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));
   db::set_loved_tracks_playlist_name(tr::get("playlist.loved_tracks_playlist_name"));
 
   init_atlas();
 
-  shortcut_interceptor = &ui->add_widget<ShortcutInterceptor>();
+  shortcut_interceptor = &root->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 
-  bg = &ui->add_widget<ColorRect>(theme::config().top_bar.color);
-  panel_controls = &ui->add_widget<PanelControls>();
-  panel_top = &ui->add_widget<PanelTop>();
-  panel_tracks = &ui->add_widget<PanelTracks>();
-  panel_queue = &ui->add_widget<PanelQueue>();
-  splitter = &ui->add_widget<Splitter>();
-  tooltip_drag = &ui->add_widget<ToolTip>("", ToolTipPosition::MANUAL);
+  bg = &root->add_widget<ColorRect>(theme::config().top_bar.color);
+  panel_controls = &root->add_widget<PanelControls>();
+  panel_top = &root->add_widget<PanelTop>();
+  panel_tracks = &root->add_widget<PanelTracks>();
+  panel_queue = &root->add_widget<PanelQueue>();
+  splitter = &root->add_widget<Splitter>();
+  tooltip_drag = &root->add_widget<ToolTip>("", ToolTipPosition::MANUAL);
   tooltip_drag->set_is_drawn(false);
   tooltip_drag->set_anchor(Anchor::TOP);
   tooltip_drag->set_clamp(false);
-  panel_albums = &ui->add_widget<PanelAlbums>();
-  popup_controller = &ui->add_widget<PopupController>();
-  notifications = &ui->add_widget<InterfaceNotifications>();
+  panel_albums = &root->add_widget<PanelAlbums>();
+  popup_controller = &root->add_widget<PopupController>();
+  notifications = &root->add_widget<InterfaceNotifications>();
 
   panel_queue->hide();
   panel_tracks->hide();
@@ -357,66 +357,14 @@ void interface::init() {
 }
 
 static void input(vec2i window_size) {
-  while (auto cmd = mpris::command_pop()) {
-    switch (cmd->type) {
-    case mpris::CommandType::PLAY: player::resume(); break;
-
-    case mpris::CommandType::PAUSE: player::pause(); break;
-
-    case mpris::CommandType::PLAY_PAUSE:
-      if (player::is_playing()) {
-        player::pause();
-      } else {
-        player::resume();
-      }
-      break;
-
-    case mpris::CommandType::NEXT: player::next_track(); break;
-
-    case mpris::CommandType::PREVIOUS: player::prev_track(); break;
-
-    case mpris::CommandType::STOP: player::stop(); break;
-
-    case mpris::CommandType::SEEK: {
-      i32 target = player::get_current_time_ms() + (i32)(cmd->value);
-      player::seek_ms(target);
-      break;
-    }
-
-    case mpris::CommandType::SET: {
-      // Absolute seek
-      player::seek_ms(static_cast<i32>(cmd->value));
-      break;
-    }
-
-    case mpris::CommandType::LOOP:
-      switch (static_cast<mpris::LoopStatus>(cmd->value)) {
-      case mpris::LoopStatus::NONE: player::set_repeat_mode(player::RepeatMode::OFF); break;
-      case mpris::LoopStatus::TRACK: player::set_repeat_mode(player::RepeatMode::TRACK); break;
-      case mpris::LoopStatus::PLAYLIST: player::set_repeat_mode(player::RepeatMode::ALBUM); break;
-      }
-      break;
-
-    case mpris::CommandType::SHUFFLE:
-      player::set_shuffle_mode(static_cast<bool>(cmd->value) ? player::ShuffleMode::ON : player::ShuffleMode::OFF);
-      break;
-    }
-  }
-
-  static i32 t = 0;
-  if (t++ >= 120) {
-    t = 0;
-    mpris::notify_seeked(player::get_current_time_ms());
-  }
-
   handle_dropped_files();
   handle_drag_and_drop();
-  ui->input(window_size.x, window_size.y);
+  root->input(window_size.x, window_size.y);
 }
 
-static void rebuild() { ui->rebuild(); }
+static void rebuild() { root->rebuild(); }
 
-void interface::update(vec2i window_size) {
+void zincbox::ui::update(vec2i window_size) {
 
   auto scan_progress = zincbox::scanner::get_progress();
   if (scan_progress) {
@@ -489,21 +437,21 @@ void interface::update(vec2i window_size) {
   panel_controls->set_pos(content_x, -border);
   panel_controls->set_width(content_width);
 
-  ui->update();
+  root->update();
   draw();
 }
 
-static void draw() { ui->draw(); }
+static void draw() { root->draw(); }
 
-void interface::deinit() { ui = nullptr; }
+void zincbox::ui::deinit() { root = nullptr; }
 
-interface::DecorationHover interface::get_decoration_hover(i32 mouse_x, i32 mouse_y) {
+zincbox::ui::DecorationHover zincbox::ui::get_decoration_hover(i32 mouse_x, i32 mouse_y) {
   vec2i mouse_pos{mouse_x, mouse_y};
   if (!theme::config().custom_window_decoration.enabled) { return DecorationHover::INSIDE; }
   i32 border_size = theme::config().custom_window_decoration.border_size;
   if (border_size < 6) { border_size = 6; }
-  i32 w = ui->get_window_width();
-  i32 h = ui->get_window_height();
+  i32 w = root->get_window_width();
+  i32 h = root->get_window_height();
 
   bool mini_player_disabled = !mini_player.value_or(false);
 
@@ -528,7 +476,7 @@ interface::DecorationHover interface::get_decoration_hover(i32 mouse_x, i32 mous
 }
 
 static void init_atlas() {
-  auto& atlas = ui->get_texture_atlas();
+  auto& atlas = root->get_texture_atlas();
 
   for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
     add_playlist_art_to_texture_atlas(collection_id);
@@ -545,14 +493,14 @@ static void add_playlist_art_to_texture_atlas(db::collection_id_t collection_id)
   for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids()) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     std::string playlist_id_str = std::to_string(playlist_id);
-    if (ui->get_texture_atlas().has_texture(playlist_id_str, 1)) {
-      ui->get_texture_atlas().remove_texture(playlist_id_str);
+    if (root->get_texture_atlas().has_texture(playlist_id_str, 1)) {
+      root->get_texture_atlas().remove_texture(playlist_id_str);
     }
-    ui->get_texture_atlas().add_texture(playlist_id_str, playlist.art_64x64, 64, 64);
+    root->get_texture_atlas().add_texture(playlist_id_str, playlist.art_64x64, 64, 64);
     if (count++ >= 1023) { break; }
   }
 #ifndef NDEBUG
-  ui->get_texture_atlas().save_to_file("atlas.png");
+  root->get_texture_atlas().save_to_file("atlas.png");
 #endif
 }
 
@@ -613,7 +561,7 @@ static void handle_drag_and_drop() {
   bool hovered_queue_panel = false;
   Tab* hovered_tab = nullptr;
   if (lmb) {
-    for (Widget* hovered_widget : ui->get_hovered_widgets()) {
+    for (Widget* hovered_widget : root->get_hovered_widgets()) {
       if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
       if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
       if (hovered_playlist_header = dynamic_cast<WidgetPlaylistHeader*>(hovered_widget); hovered_playlist_header) {
@@ -1680,8 +1628,8 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                            std::string path_str(path);
                            db::set_playlist_image(playlist_id, path_str);
                            std::string playlist_id_str = std::to_string(playlist_id);
-                           ui->get_texture_atlas().remove_texture(playlist_id_str);
-                           ui->get_texture_atlas().add_texture(
+                           root->get_texture_atlas().remove_texture(playlist_id_str);
+                           root->get_texture_atlas().add_texture(
                              playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64, 64);
                            panel_albums->recreate();
                          }
@@ -1694,8 +1642,8 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                            if (callback_close) { callback_close(); }
                            db::reset_playlist_image(playlist_id);
                            std::string playlist_id_str = std::to_string(playlist_id);
-                           ui->get_texture_atlas().remove_texture(playlist_id_str);
-                           ui->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
+                           root->get_texture_atlas().remove_texture(playlist_id_str);
+                           root->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
                            panel_albums->recreate();
                          },
                          "reset_playlist_cover");
@@ -2042,15 +1990,15 @@ static void show_about_popup() { popup_controller->show_popup<PopupAbout>(); }
 
 static void quit() { zincbox::stop(); }
 
-bool interface::get_mini_player() { return mini_player.value_or(false); }
+bool zincbox::ui::get_mini_player() { return mini_player.value_or(false); }
 
-std::string interface::get_selected_tab() {
+std::string zincbox::ui::get_selected_tab() {
   const Tab* selected_tab = panel_top->get_tab_bar()->get_selected_tab();
   if (!selected_tab) { return ""; }
   return selected_tab->get_label().get_text();
 }
 
-std::vector<std::string> interface::get_tabs_order() {
+std::vector<std::string> zincbox::ui::get_tabs_order() {
   std::vector<std::string> ret;
   for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
     ret.emplace_back(tab->get_label().get_text());
@@ -2058,10 +2006,10 @@ std::vector<std::string> interface::get_tabs_order() {
   return ret;
 }
 
-i32 interface::get_tracks_scroll_offset() { return panel_tracks->get_scroll_px(); }
-i32 interface::get_playlists_scroll_offset() { return panel_albums->get_scroll_px(); }
+i32 zincbox::ui::get_tracks_scroll_offset() { return panel_tracks->get_scroll_px(); }
+i32 zincbox::ui::get_playlists_scroll_offset() { return panel_albums->get_scroll_px(); }
 
-void interface::set_mini_player(bool state) {
+void zincbox::ui::set_mini_player(bool state) {
   if (mini_player == state) { return; }
   mini_player = state;
   if (mini_player.value()) {
@@ -2088,17 +2036,17 @@ void interface::set_mini_player(bool state) {
   panel_controls->set_tooltip_visibility(!mini_player.value_or(false));
 }
 
-void interface::set_selected_tab(std::string tab_label) {
+void zincbox::ui::set_selected_tab(std::string tab_label) {
   auto* tab = panel_top->get_tab_bar()->get_tab_by_label(tab_label);
   if (!tab) { return; }
   panel_top->get_tab_bar()->select_tab(tab->id);
 }
 
-void interface::set_tabs_order(std::vector<std::string> tabs_order_) {
+void zincbox::ui::set_tabs_order(std::vector<std::string> tabs_order_) {
   tabs_order = std::move(tabs_order_);
   panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
 }
 
-void interface::set_tracks_scroll_offset(i32 scroll_px) { panel_tracks->set_scroll_px(scroll_px); }
+void zincbox::ui::set_tracks_scroll_offset(i32 scroll_px) { panel_tracks->set_scroll_px(scroll_px); }
 
-void interface::set_playlists_scroll_offset(i32 scroll_px) { panel_albums->set_scroll_px(scroll_px); }
+void zincbox::ui::set_playlists_scroll_offset(i32 scroll_px) { panel_albums->set_scroll_px(scroll_px); }

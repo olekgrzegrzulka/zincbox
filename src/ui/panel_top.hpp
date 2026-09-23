@@ -2,28 +2,31 @@
 #include <functional>
 #include <optional>
 #include <stddef.h>
-#include "ui_generic/color_rect.hpp"
+#include "ui/zincgui/color_rect.hpp"
 
-class Button;
+namespace zincgui {
+  class Button;
+  class Root;
+  class Widget;
+} // namespace zincgui
+
 class Tab;
 class TabBar;
-class UI;
-class Widget;
 
-class PanelTop : public ColorRect {
+class PanelTop : public zincgui::ColorRect {
   public:
-    PanelTop(UI& ui_);
+    PanelTop(zincgui::Root& ui_);
     void update() override;
     void recreate(std::optional<size_t> selected_collection_id);
     void select(size_t selected_collection_id);
     bool can_drag_window();
 
   public:
-    std::function<void(Widget*)> on_hamburger_button_pressed{};
+    std::function<void(zincgui::Widget*)> on_hamburger_button_pressed{};
     std::function<void()> on_minimize_button_pressed{};
     std::function<void()> on_maximize_button_pressed{};
     std::function<void()> on_close_button_pressed{};
-    std::function<void(Widget*)> on_add_collection_button_pressed{};
+    std::function<void(zincgui::Widget*)> on_add_collection_button_pressed{};
     std::function<void(size_t collection_id)> on_collection_opened{};
     std::function<void()> on_queue_view_opened{};
     std::function<void(Tab*)> on_queue_rmb{};
@@ -32,12 +35,12 @@ class PanelTop : public ColorRect {
     const Tab* get_queue_tab() const;
 
   protected:
-    Widget* container_tabbar{};
-    Widget* container_drag_region{};
-    Widget* container_buttons{};
+    zincgui::Widget* container_tabbar{};
+    zincgui::Widget* container_drag_region{};
+    zincgui::Widget* container_buttons{};
     TabBar* tab_bar{};
-    Button* button_hamburger{};
-    Button* button_decor_minimize{};
-    Button* button_decor_maximize{};
-    Button* button_decor_close{};
+    zincgui::Button* button_hamburger{};
+    zincgui::Button* button_decor_minimize{};
+    zincgui::Button* button_decor_maximize{};
+    zincgui::Button* button_decor_close{};
 };

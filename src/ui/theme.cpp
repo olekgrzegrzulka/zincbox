@@ -17,16 +17,17 @@
 #include "common/utf.hpp"
 #include "core/io.hpp"
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
 #include "lib/miniz/miniz.h"
 #include "stb_image.h"
 #include "theme.hpp"
 #include "theme_config.hpp"
-#include "tr.hpp"
-#include "ui_generic/texture_atlas.hpp"
-#include "ui_generic/ui.hpp"
+#include "ui/tr.hpp"
+#include "ui/zincgui/texture_atlas.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "zincbox.hpp"
 
 namespace fs = std::filesystem;
+using namespace zincgui;
 
 CMRC_DECLARE(zincbox_resources);
 
@@ -144,9 +145,9 @@ static void load_translations(std::string_view theme_name, std::string_view lang
   }
 }
 
-void theme::load_default_theme(UI& ui, std::string_view language) { load_theme("", ui, language); }
+void theme::load_default_theme(Root& ui, std::string_view language) { load_theme("", ui, language); }
 
-void theme::load_theme(std::string_view theme_name, UI& ui, std::string_view language) {
+void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view language) {
   const bool load_theme_from_resources = theme_name == "";
   if (load_theme_from_resources) { load_resources(); }
 

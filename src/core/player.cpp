@@ -13,7 +13,7 @@
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
+#include "zincbox.hpp"
 #include "lib/miniaudio/miniaudio.h"
 
 static Random rng{};

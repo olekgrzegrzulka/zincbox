@@ -5,34 +5,36 @@
 #include "common/types.hpp"
 #include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
-#include "core/zincbox.hpp"
 #include "theme_config.hpp"
-#include "tr.hpp"
+#include "ui/tr.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
-class UI;
+namespace zincgui {
+  class Root;
+} // namespace zincgui
 
 static constexpr size_t QUEUE_TAB_ID = 10000;
 
-PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
+PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
   static const float scale = zincbox::ui_scale();
   set_color(theme::config().top_bar.color);
   set_height(theme::config().top_bar.height * scale);
 
   container_tabbar = &add_child<Widget>();
-  container_tabbar->set_parent_anchor(Anchor::TOP_LEFT);
-  container_tabbar->set_anchor(Anchor::TOP_LEFT);
+  container_tabbar->set_parent_anchor(zincgui::Anchor::TOP_LEFT);
+  container_tabbar->set_anchor(zincgui::Anchor::TOP_LEFT);
   // container_tabbar->set_clip_children(true);
   container_tabbar->set_layout("expand fill");
 
   container_drag_region = &add_child<Widget>();
-  container_drag_region->set_parent_anchor(Anchor::TOP_LEFT);
-  container_drag_region->set_anchor(Anchor::TOP_LEFT);
+  container_drag_region->set_parent_anchor(zincgui::Anchor::TOP_LEFT);
+  container_drag_region->set_anchor(zincgui::Anchor::TOP_LEFT);
   container_drag_region->set_is_self_drawn(false);
   container_drag_region->set_min_width(100 * scale);
   container_drag_region->set_max_width(9999 * scale);
@@ -41,8 +43,8 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
   container_buttons->set_layout("rtl expand fit");
   container_buttons->get_layout().margin = {scale, scale};
   container_buttons->get_layout().spacing = scale;
-  container_buttons->set_parent_anchor(Anchor::TOP_RIGHT);
-  container_buttons->set_anchor(Anchor::TOP_RIGHT);
+  container_buttons->set_parent_anchor(zincgui::Anchor::TOP_RIGHT);
+  container_buttons->set_anchor(zincgui::Anchor::TOP_RIGHT);
 
   tab_bar = &container_tabbar->add_child<TabBar>();
   tab_bar->set_height(height);
@@ -73,7 +75,7 @@ PanelTop::PanelTop(UI& ui_) : ColorRect(ui_) {
     if (on_minimize_button_pressed) { on_minimize_button_pressed(); }
   });
 
-  button_hamburger = &container_buttons->add_child<Button>("");
+  button_hamburger = &container_buttons->add_child<zincgui::Button>("");
   button_hamburger->add_image("hamburger");
   button_hamburger->set_size(height - 4 * scale, height - 4 * scale);
   button_hamburger->on_press([this]() {

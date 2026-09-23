@@ -9,29 +9,29 @@
 #include <utility>
 #include <stdlib.h>
 #include "common/color.hpp"
-#include "common/input.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
 #include "theme_config.hpp"
-#include "tr.hpp"
+#include "ui/tr.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/slider.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/tooltip.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/slider.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/tooltip.hpp"
+#include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
-class UI;
+using namespace zincgui;
 
-PanelControls::PanelControls(UI& ui_) : ColorRect(ui_) {
+PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_controls.color);
   static const float scale = zincbox::ui_scale();
   set_anchor(Anchor::BOTTOM);

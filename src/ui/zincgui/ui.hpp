@@ -1,0 +1,81 @@
+#pragma once
+#include <memory>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
+#include <glm/mat4x4.hpp>
+#include <stddef.h>
+#include "common/types.hpp"
+#include "font_face.hpp"
+#include "freetype/freetype.h"
+#include "shader.hpp"
+#include "texture_atlas.hpp"
+#include "widget.hpp"
+
+namespace zincgui {
+  class Root final {
+    public:
+      Root(i32 window_width_, i32 window_height_);
+      ~Root() = default;
+
+      template <class T, class... Args> T& add_widget(Args&&... args) {
+        widgets_to_add.emplace_back(std::make_unique<T>(*this, std::forward<Args>(args)...));
+        T& widget = static_cast<T&>(*widgets_to_add.back().get());
+        widget.set_window_width(window_width);
+        widget.set_window_height(window_height);
+        return widget;
+      }
+
+      void input(i32 window_width_, i32 window_height_);
+      void rebuild();
+      void update();
+      void draw();
+
+      void set_font_face(const std::string& location, i32 pixel_height) {
+        font_face = FontFace(freetype_lib, location, pixel_height);
+      }
+
+      void set_font_face_from_data(void* data, size_t data_size, i32 pixel_height) {
+        font_face = FontFace(freetype_lib, data, data_size, pixel_height);
+      }
+
+      i32 get_window_width() const { return window_width; }
+      i32 get_window_height() const { return window_height; }
+      vec2i get_window_size() const { return vec2i{window_width, window_height}; }
+      const glm::mat4& get_matrix() const { return matrix; }
+      const FontFace& get_font_face() const { return font_face; }
+      const Shader& get_shader() const { return shader; }
+      TextureAtlas& get_texture_atlas() { return texture_atlas; }
+      std::span<Widget*> get_hovered_widgets() { return hovered_widgets; }
+
+      void mark_dirty_recursive(Widget* w) {
+        w->dirty = true;
+        for (auto& c : w->get_children()) {
+          mark_dirty_recursive(c.get());
+        }
+      }
+
+    public:
+    protected:
+      void update_hovered_widgets_recursive(Widget* widget);
+      bool rebuild_tree(Widget*, bool tree_changed = false);
+      bool rebuild_tree();
+      void construct_traversal_order(Widget*, i32 always_on_top_layer = 0);
+      void construct_traversal_order();
+
+    protected:
+      glm::mat4 matrix;
+      std::vector<std::unique_ptr<Widget>> widgets;
+      std::vector<std::unique_ptr<Widget>> widgets_to_add;
+      std::vector<std::vector<Widget*>> widget_traversal_order;
+      std::vector<Widget*> hovered_widgets;
+      FT_Library freetype_lib;
+      Shader shader;
+      FontFace font_face;
+      TextureAtlas texture_atlas;
+      i32 window_width = 0;
+      i32 window_height = 0;
+  };
+
+} // namespace zincgui

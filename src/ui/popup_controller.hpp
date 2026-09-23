@@ -6,18 +6,18 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "common/input.hpp"
 #include "common/types.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 
 class Popup;
 struct popover_descriptor;
 
-class Dimmer : public ColorRect {
+class Dimmer : public zincgui::ColorRect {
   public:
-    Dimmer(UI& ui_) : ColorRect(ui_, 0x00000000) {}
+    Dimmer(zincgui::Root& ui_) : ColorRect(ui_, 0x00000000) {}
 
     void set_is_active(bool active) {
       set_is_updated(active);
@@ -34,25 +34,25 @@ class Dimmer : public ColorRect {
       ColorRect::update();
     }
 
-    void event(Input::InputEventMouseButton& ev) override {
-      if (ev.action == Input::MouseAction::PRESS) {
+    void event(zincgui::Input::InputEventMouseButton& ev) override {
+      if (ev.action == zincgui::Input::MouseAction::PRESS) {
         ev.handled = true;
         if (on_pressed) { on_pressed(); }
       }
     }
 
-    void event(Input::InputEventMouseScroll& ev) override {
+    void event(zincgui::Input::InputEventMouseScroll& ev) override {
       ev.handled = true;
       if (on_pressed) { on_pressed(); }
     }
 
-    void event(Input::InputEventMouseMove& ev) override { ev.handled = true; }
+    void event(zincgui::Input::InputEventMouseMove& ev) override { ev.handled = true; }
 
-    void event(Input::InputEventKey& ev) override {
-      if (ev.action == Input::KeyAction::RELEASE && ev.key == Input::Key::KEY_ENTER) {
+    void event(zincgui::Input::InputEventKey& ev) override {
+      if (ev.action == zincgui::Input::KeyAction::RELEASE && ev.key == zincgui::Input::Key::KEY_ENTER) {
         if (on_enter_pressed) { on_enter_pressed(); }
         ev.handled = true;
-      } else if (ev.action == Input::KeyAction::RELEASE && ev.key == Input::Key::KEY_ESCAPE) {
+      } else if (ev.action == zincgui::Input::KeyAction::RELEASE && ev.key == zincgui::Input::Key::KEY_ESCAPE) {
         if (on_escape_pressed) { on_escape_pressed(); }
         ev.handled = true;
       }
@@ -65,9 +65,9 @@ class Dimmer : public ColorRect {
     std::function<void()> on_escape_pressed{};
 };
 
-class PopupController : public Widget {
+class PopupController : public zincgui::Widget {
   public:
-    PopupController(UI& ui_);
+    PopupController(zincgui::Root& ui_);
     void input() override;
     void update() override;
 
@@ -92,7 +92,7 @@ class PopupController : public Widget {
 
   protected:
     void on_popup_closed(Popup* popup);
-    UI& ui;
+    zincgui::Root& ui;
     Dimmer* dimmer{};
     std::vector<Widget*> popups{};
     std::unordered_map<std::string, Widget*> popovers{};

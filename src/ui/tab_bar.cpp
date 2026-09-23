@@ -9,17 +9,19 @@
 #include <vector>
 #include <stdlib.h>
 #include "common/color.hpp"
-#include "common/input.hpp"
-#include "core/zincbox.hpp"
+#include "ui/zincgui/input.hpp"
+#include "zincbox.hpp"
 #include "theme_config.hpp"
 #include "ui/theme.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 
-Tab::Tab(UI& ui_, const tab_info& info) : Button(ui_) {
+using namespace zincgui;
+
+Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
   label.set_text(info.label);
   label.update();
   set_width(std::clamp((i32)get_label().get_width() + 2 * info.padding, 40, 200));
@@ -112,7 +114,7 @@ void Tab::event(Input::InputEventMouseButton& ev) {
   }
 }
 
-TabBar::TabBar(UI& ui_) : Widget(ui_) {
+TabBar::TabBar(Root& ui_) : Widget(ui_) {
   set_layout("ltr expand fill");
   // set_clip_children(true);
 

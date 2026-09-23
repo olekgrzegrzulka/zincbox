@@ -6,16 +6,19 @@
 #include "common/signal.hpp"
 #include "core/musicdb/types.hpp"
 #include "ui/panel_tracks.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
-class UI;
+namespace zincgui {
+  class Root;
+} // namespace zincgui
+
 class WidgetTrack;
 
-class PanelQueue : public Widget {
+class PanelQueue : public zincgui::Widget {
     using Widget::event;
 
   public:
-    PanelQueue(UI& ui_);
+    PanelQueue(zincgui::Root& ui_);
     ~PanelQueue() override;
     void update() override;
     void draw() override;

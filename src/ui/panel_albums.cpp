@@ -5,29 +5,31 @@
 #include <string_view>
 #include <tuple>
 #include <vector>
-#include "common/input.hpp"
 #include "common/search_utils.hpp"
 #include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
-#include "core/zincbox.hpp"
 #include "panel_albums.hpp"
 #include "theme.hpp"
 #include "theme_config.hpp"
-#include "tr.hpp"
+#include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/scrollbar.hpp"
-#include "ui_generic/slider.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/text_input.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/scrollbar.hpp"
+#include "ui/zincgui/slider.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/text_input.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
-SpriteAlbumCover::SpriteAlbumCover(UI& ui_, const std::string& id, vec2i cover_size_) : Sprite(ui_) {
+using namespace zincgui;
+
+SpriteAlbumCover::SpriteAlbumCover(Root& ui_, const std::string& id, vec2i cover_size_) : Sprite(ui_) {
   set_texture(id);
   set_size(cover_size_);
   set_nine_slice_margin(0.0f);
@@ -45,7 +47,7 @@ void WidgetAlbumCover::update_highlight_status_from_player() {
   }
 }
 
-WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_,
+WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_, vec2i total_size_, vec2i cover_size_,
                                    bool is_add_button_)
   : Button(ui_), playlist_id(playlist_id_), total_size(total_size_), cover_size(cover_size_) {
   m_is_add_button = is_add_button_;
@@ -133,7 +135,7 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
   Button::event(ev);
 }
 
-PanelAlbums::PanelAlbums(UI& ui_) : ColorRect(ui_) {
+PanelAlbums::PanelAlbums(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_playlists.color);
   set_clip_children(true);
 

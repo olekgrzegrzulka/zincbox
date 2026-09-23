@@ -4,10 +4,13 @@
 #include <tuple>
 #include <vector>
 #include "common/types.hpp"
-#include "ui_generic/sprite.hpp"
+#include "ui/zincgui/sprite.hpp"
+
+namespace zincgui {
+  class Root;
+} // namespace zincgui
 
 class PopupController;
-class UI;
 
 struct popover_descriptor {
     std::string id;
@@ -18,9 +21,9 @@ struct popover_descriptor {
     bool show_arrow = true;
 };
 
-class Popup : public Sprite {
+class Popup : public zincgui::Sprite {
   public:
-    Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_);
+    Popup(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_);
 
   public:
     void close() {
@@ -28,7 +31,7 @@ class Popup : public Sprite {
     }
 
     void update() override;
-    void event(Input::InputEventMouseButton&) override;
+    void event(zincgui::Input::InputEventMouseButton&) override;
 
   protected:
     PopupController& controller;
@@ -38,9 +41,9 @@ class Popup : public Sprite {
     vec2i drag_start_mouse_pos{};
 };
 
-class Popover : public Sprite {
+class Popover : public zincgui::Sprite {
   public:
-    Popover(UI& ui_, bool arrow_on_top);
+    Popover(zincgui::Root& ui_, bool arrow_on_top);
     void update() override;
     void draw() override;
 

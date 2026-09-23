@@ -7,17 +7,17 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
 #include "theme.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/ui.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "zincbox.hpp"
 
-class WidgetTrack final : public Button {
+class WidgetTrack final : public zincgui::Button {
   public:
     enum class TrackHighlightMode : u8 { TRACK_INFO, QUEUE_INDEX, OFF };
-    WidgetTrack(UI& ui_) : Button(ui_) {
+    WidgetTrack(zincgui::Root& ui_) : Button(ui_) {
       setup();
 
       slot_on_track_changed =
@@ -50,20 +50,20 @@ class WidgetTrack final : public Button {
       label.set_is_drawn(false);
 
       if (!bg) {
-        bg = &add_child<ColorRect>(theme::config().panel_tracklist.track_color_odd);
+        bg = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_color_odd);
         bg->set_ignore_parents_layout(true);
       }
 
       if (!hover) {
-        hover = &add_child<ColorRect>(theme::config().panel_tracklist.track_hovered);
+        hover = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_hovered);
         hover->set_opacity(theme::config().panel_tracklist.track_hovered_opacity);
         hover->set_ignore_parents_layout(true);
         hover->set_is_drawn(false);
       }
 
       if (!label_track_number) {
-        label_track_number = &add_child<Label>();
-        label_track_number->set_label_anchor(Anchor::LEFT);
+        label_track_number = &add_child<zincgui::Label>();
+        label_track_number->set_label_anchor(zincgui::Anchor::LEFT);
         label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
       }
       label_track_number->set_text(std::to_string(m_track_number));
@@ -72,8 +72,8 @@ class WidgetTrack final : public Button {
       label_track_number->set_max_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
 
       if (!label_track_artist) {
-        label_track_artist = &add_child<Label>();
-        label_track_artist->set_label_anchor(Anchor::LEFT);
+        label_track_artist = &add_child<zincgui::Label>();
+        label_track_artist->set_label_anchor(zincgui::Anchor::LEFT);
         label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
       }
       if (track.has_value()) {
@@ -91,8 +91,8 @@ class WidgetTrack final : public Button {
         }
       }
       if (!label_track_title) {
-        label_track_title = &add_child<Label>();
-        label_track_title->set_label_anchor(Anchor::LEFT);
+        label_track_title = &add_child<zincgui::Label>();
+        label_track_title->set_label_anchor(zincgui::Anchor::LEFT);
         label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
       }
       if (track.has_value()) {
@@ -111,7 +111,7 @@ class WidgetTrack final : public Button {
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(m_track_id));
 
       if (!label_track_length) {
-        label_track_length = &add_child<Label>();
+        label_track_length = &add_child<zincgui::Label>();
         label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
       }
 
@@ -208,7 +208,7 @@ class WidgetTrack final : public Button {
       Sprite::update();
     }
 
-    void event(Input::InputEventMouseMove& ev) override {
+    void event(zincgui::Input::InputEventMouseMove& ev) override {
       m_is_hovered = is_mouse_hovering();
       Button::event(ev);
     }
@@ -280,12 +280,12 @@ class WidgetTrack final : public Button {
     TrackHighlightMode m_highlight_mode = TrackHighlightMode::TRACK_INFO;
     bool m_changed = true;
     Signal<>::slot_key slot_on_track_changed;
-    Label* label_track_number{};
-    Label* label_track_artist{};
-    Label* label_track_title{};
-    Label* label_track_length{};
-    ColorRect* bg{};
-    ColorRect* hover{};
+    zincgui::Label* label_track_number{};
+    zincgui::Label* label_track_artist{};
+    zincgui::Label* label_track_title{};
+    zincgui::Label* label_track_length{};
+    zincgui::ColorRect* bg{};
+    zincgui::ColorRect* hover{};
     Sprite* love_icon{};
     bool m_highlighted = false;
     bool m_playback_error = false;

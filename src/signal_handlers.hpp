@@ -3,7 +3,7 @@
 #include <string>
 #include <signal.h>
 #include "common/logger.hpp"
-#include "core/zincbox.hpp"
+#include "zincbox.hpp"
 #include <fmt/format.h>
 
 extern "C" void handle_sigterm(int signal) {

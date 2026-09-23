@@ -1,14 +1,16 @@
 #include <algorithm>
 #include <string>
 #include <utility>
-#include "common/input.hpp"
 #include "common/types.hpp"
 #include "ui/popup.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 
-Popup::Popup(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+using namespace zincgui;
+
+Popup::Popup(Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
   : Sprite(ui_, "panel_popup"), controller(controller_), on_close(std::move(on_close_)) {
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
@@ -50,7 +52,7 @@ void Popup::event(Input::InputEventMouseButton& e) {
 
   if (!e.handled) { Sprite::event(e); }
 }
-Popover::Popover(UI& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
+Popover::Popover(Root& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
   arrow = &add_child<Sprite>(arrow_on_top ? "popover_arrow" : "popover_arrow_inverted");
   arrow->set_ignore_parents_layout(true);
   arrow->set_parent_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);

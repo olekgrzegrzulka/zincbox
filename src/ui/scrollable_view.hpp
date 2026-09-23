@@ -1,30 +1,33 @@
 #pragma once
 #include "common/types.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
-class UI;
-class Sprite;
-class ScrollBar;
-namespace Input {
-  struct InputEventMouseScroll;
-}
+namespace zincgui {
+  class Root;
+  class Sprite;
+  class ScrollBar;
 
-class ScrollableView : public Widget {
+  namespace Input {
+    struct InputEventMouseScroll;
+  }
+} // namespace zincgui
+
+class ScrollableView : public zincgui::Widget {
   public:
-    ScrollableView(UI& ui_);
+    ScrollableView(zincgui::Root& ui_);
     virtual void input() override;
     virtual void update() override;
-    virtual void event(Input::InputEventMouseScroll& ev) override;
+    virtual void event(zincgui::Input::InputEventMouseScroll& ev) override;
 
-    Widget* content() { return m_content; }
-    Sprite* background() { return m_background; }
-    ScrollBar* scrollbar() { return m_scrollbar; }
+    zincgui::Widget* content() { return m_content; }
+    zincgui::Sprite* background() { return m_background; }
+    zincgui::ScrollBar* scrollbar() { return m_scrollbar; }
 
   protected:
     i32 m_scroll_px = 0;
     i32 m_target_scroll_px = 0;
-    Sprite* m_background{};
-    Widget* m_container{};
-    Widget* m_content{};
-    ScrollBar* m_scrollbar{};
+    zincgui::Sprite* m_background{};
+    zincgui::Widget* m_container{};
+    zincgui::Widget* m_content{};
+    zincgui::ScrollBar* m_scrollbar{};
 };

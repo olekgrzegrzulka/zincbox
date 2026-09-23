@@ -1,12 +1,12 @@
 #pragma once
-#include "common/input.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 
-class Splitter final : public Sprite {
+class Splitter final : public zincgui::Sprite {
   public:
-    Splitter(UI& ui_) : Sprite(ui_) {
+    Splitter(zincgui::Root& ui_) : Sprite(ui_) {
       set_texture("splitter", false);
       set_width(6);
       set_nine_slice_margin(2.0f);
@@ -15,20 +15,22 @@ class Splitter final : public Sprite {
     double get_ratio() const { return ratio; }
     void set_ratio(double r) { ratio = r; }
 
-    void event(Input::InputEventMouseMove&) override {}
+    void event(zincgui::Input::InputEventMouseMove&) override {}
 
     void input() override {
-      bool lmb = Input::mouse_pressed(Input::MouseButton::MOUSE_BUTTON_LEFT);
+      bool lmb = zincgui::Input::mouse_pressed(zincgui::Input::MouseButton::MOUSE_BUTTON_LEFT);
       if (!is_mouse_hovering() && !lmb) { is_dragged = false; }
 
-      if (is_dragged && lmb) { ratio = std::clamp(Input::get_mouse_x() / (double)ui.get_window_width(), 0.01, 0.99); }
+      if (is_dragged && lmb) {
+        ratio = std::clamp(zincgui::Input::get_mouse_x() / (double)ui.get_window_width(), 0.01, 0.99);
+      }
 
       Sprite::input();
     }
 
-    void event(Input::InputEventMouseButton& ev) override {
-      if (is_mouse_hovering() && ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT &&
-          ev.action == Input::MouseAction::PRESS) {
+    void event(zincgui::Input::InputEventMouseButton& ev) override {
+      if (is_mouse_hovering() && ev.button == zincgui::Input::MouseButton::MOUSE_BUTTON_LEFT &&
+          ev.action == zincgui::Input::MouseAction::PRESS) {
         is_dragged = true;
         ev.handled = true;
       }

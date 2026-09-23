@@ -1,20 +1,20 @@
 #pragma once
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
 #include "theme_config.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/scrollbar.hpp"
-#include "ui_generic/slider.hpp"
-#include "ui_generic/ui.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/scrollbar.hpp"
+#include "ui/zincgui/slider.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "zincbox.hpp"
 
-class ZincboxButton final : public Button {
+class ZincboxButton final : public zincgui::Button {
   public:
-    ZincboxButton(UI& ui_, const std::string& name_) : Button(ui_) {
+    ZincboxButton(zincgui::Root& ui_, const std::string& name_) : Button(ui_) {
       name = name_;
       init();
     }
 
-    ZincboxButton(UI& ui_, const std::string& name_, const ButtonConfig& config) : Button(ui_) {
+    ZincboxButton(zincgui::Root& ui_, const std::string& name_, const ButtonConfig& config) : Button(ui_) {
       name = name_;
       init();
       set_nine_slice_margin(config.nine_slice_margin);
@@ -30,9 +30,9 @@ class ZincboxButton final : public Button {
     }
 };
 
-class ZincboxSlider final : public Slider {
+class ZincboxSlider final : public zincgui::Slider {
   public:
-    ZincboxSlider(UI& ui_, const std::string& name_) : Slider(ui_) {
+    ZincboxSlider(zincgui::Root& ui_, const std::string& name_) : Slider(ui_) {
       set_texture_thumb_pressed(name_ + "_thumb_pressed");
       set_texture_thumb_hovered(name_ + "_thumb_hovered");
       set_texture_thumb_idle(name_ + "_thumb_idle");
@@ -41,9 +41,9 @@ class ZincboxSlider final : public Slider {
     }
 };
 
-class ZincboxScrollbar final : public ScrollBar {
+class ZincboxScrollbar final : public zincgui::ScrollBar {
   public:
-    ZincboxScrollbar(UI& ui_) : ScrollBar(ui_) {
+    ZincboxScrollbar(zincgui::Root& ui_) : ScrollBar(ui_) {
       static const float scale = zincbox::ui_scale();
       set_thumb_thickness(10 * scale);
       set_track_thickness(10 * scale);

@@ -3,11 +3,13 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "ui/panel_tracks.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 #include "widget_track.hpp"
 
-PanelQueue::PanelQueue(UI& ui_) : Widget(ui_) {
+using namespace zincgui;
+
+PanelQueue::PanelQueue(Root& ui_) : Widget(ui_) {
   set_clip_children(true);
 
   panel_tracks = &add_child<PanelTracks>();

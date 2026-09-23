@@ -6,28 +6,30 @@
 #include <string>
 #include "common/color.hpp"
 #include "common/debug.hpp"
-#include "common/input.hpp"
 #include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
-#include "core/zincbox.hpp"
 #include "theme.hpp"
-#include "tr.hpp"
+#include "ui/tr.hpp"
 #include "ui/widget_track.hpp"
 #include "ui/zb_widgets.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/scrollbar.hpp"
-#include "ui_generic/slider.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/tooltip.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/scrollbar.hpp"
+#include "ui/zincgui/slider.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/tooltip.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 #include "widget_playlist_header.hpp"
+#include "zincbox.hpp"
 
-PanelTracks::PanelTracks(UI& ui_) : ColorRect(ui_) {
+using namespace zincgui;
+
+PanelTracks::PanelTracks(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_tracklist.color);
   set_clip_children(true);
 

@@ -8,18 +8,20 @@
 #include <vector>
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/zincbox.hpp"
 #include "theme_config.hpp"
 #include "ui/theme.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
-#include "ui_generic/color_rect.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "zincbox.hpp"
 
-class Sprite;
-class ToolTip;
-class UI;
-class Widget;
-class ScrollBar;
+namespace zincgui {
+  class Sprite;
+  class ToolTip;
+  class Root;
+  class Widget;
+  class ScrollBar;
+} // namespace zincgui
 
 class PanelTracksSelection {
   public:
@@ -74,7 +76,7 @@ class PanelTracksSelection {
     std::vector<db::track_info> selection_vector;
 };
 
-class PanelTracks final : public ColorRect {
+class PanelTracks final : public zincgui::ColorRect {
   public:
     using ColorRect::event;
 
@@ -125,11 +127,11 @@ class PanelTracks final : public ColorRect {
     };
 
     enum class InsertCursorPos : u8 { BELOW, ABOVE };
-    PanelTracks(UI& ui_);
+    PanelTracks(zincgui::Root& ui_);
     ~PanelTracks();
 
-    void event(Input::InputEventMouseScroll&) override;
-    void event(Input::InputEventMouseButton&) override;
+    void event(zincgui::Input::InputEventMouseScroll&) override;
+    void event(zincgui::Input::InputEventMouseButton&) override;
     void input() override;
     void update() override;
     void draw() override;
@@ -185,14 +187,14 @@ class PanelTracks final : public ColorRect {
     bool is_dragged = false;
     bool just_recreated = false;
     bool selection_modified = false;
-    ScrollBar* scrollbar{};
-    Sprite* insert_cursor{};
+    zincgui::ScrollBar* scrollbar{};
+    zincgui::Sprite* insert_cursor{};
     InsertCursorPos insert_cursor_pos = InsertCursorPos::BELOW;
     std::optional<db::track_info> insert_cursor_track_info{};
-    ToolTip* button_play_tooltip{};
-    ToolTip* button_play_next_tooltip{};
-    ToolTip* button_sort_tooltip{};
-    ToolTip* button_more_tooltip{};
+    zincgui::ToolTip* button_play_tooltip{};
+    zincgui::ToolTip* button_play_next_tooltip{};
+    zincgui::ToolTip* button_sort_tooltip{};
+    zincgui::ToolTip* button_more_tooltip{};
 
     void create_item_widget_if_null(Item&);
     std::vector<Item> items;

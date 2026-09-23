@@ -1,12 +1,14 @@
 #include "ui/scrollable_view.hpp"
-#include "common/input.hpp"
 #include "common/types.hpp"
-#include "ui_generic/scrollbar.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/input.hpp"
+#include "ui/zincgui/scrollbar.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
 
-ScrollableView::ScrollableView(UI& ui_) : Widget(ui_) {
+using namespace zincgui;
+
+ScrollableView::ScrollableView(Root& ui_) : Widget(ui_) {
   m_background = &add_child<Sprite>();
   m_container = &add_child<Widget>();
   m_scrollbar = &add_child<ScrollBar>();

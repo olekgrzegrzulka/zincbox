@@ -7,29 +7,31 @@
 #include "common/color.hpp"
 #include "common/signal.hpp"
 #include "common/types.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/color_rect.hpp"
-#include "ui_generic/sprite.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/sprite.hpp"
 
-class Label;
-class ScrollBar;
-class TextInput;
-class UI;
-class Widget;
+namespace zincgui {
+  class Label;
+  class ScrollBar;
+  class TextInput;
+  class Root;
+  class Widget;
+} // namespace zincgui
 
-class SpriteAlbumCover : public Sprite {
+class SpriteAlbumCover : public zincgui::Sprite {
   public:
-    SpriteAlbumCover(UI& ui_, const std::string& id, vec2i cover_size_);
+    SpriteAlbumCover(zincgui::Root& ui_, const std::string& id, vec2i cover_size_);
 };
 
-class WidgetAlbumCover : public Button {
+class WidgetAlbumCover : public zincgui::Button {
   public:
-    WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_,
+    WidgetAlbumCover(zincgui::Root& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_,
                      bool is_add_button_ = false);
     ~WidgetAlbumCover();
     void draw() override;
     void update() override;
-    void event(Input::InputEventMouseMove& ev) override;
+    void event(zincgui::Input::InputEventMouseMove& ev) override;
     bool is_add_button() const { return m_is_add_button; }
 
   protected:
@@ -37,11 +39,11 @@ class WidgetAlbumCover : public Button {
 
   public:
     const std::optional<size_t> playlist_id = 0;
-    Sprite* hover{};
-    Sprite* sprite_playing{};
+    zincgui::Sprite* hover{};
+    zincgui::Sprite* sprite_playing{};
     bool is_hovered = false;
-    Label* label_title{};
-    Label* label_author{};
+    zincgui::Label* label_title{};
+    zincgui::Label* label_author{};
     vec2i total_size{};
     vec2i cover_size{};
 
@@ -52,12 +54,12 @@ class WidgetAlbumCover : public Button {
     rgba label_author_text_color{};
 };
 
-class PanelAlbums : public ColorRect {
+class PanelAlbums : public zincgui::ColorRect {
   public:
     enum class SortBy : u8 { NAME_AZ, NAME_ZA, AUTHOR_AZ, AUTHOR_ZA };
 
   public:
-    PanelAlbums(UI& ui_);
+    PanelAlbums(zincgui::Root& ui_);
     void draw() override;
     void clear();
     void input() override;
@@ -67,7 +69,7 @@ class PanelAlbums : public ColorRect {
     void recreate();
     void scroll_to_playlist(size_t, bool immediate = false);
     using ColorRect::event;
-    void event(Input::InputEventMouseScroll&) override;
+    void event(zincgui::Input::InputEventMouseScroll&) override;
     float get_scroll_px() const;
     void set_scroll_px(float px, bool immediate = false);
     vec2i get_content_size() const;
@@ -84,13 +86,13 @@ class PanelAlbums : public ColorRect {
     i32 content_height = 0;
 
     std::vector<WidgetAlbumCover*> album_widgets;
-    ScrollBar* scrollbar{};
+    zincgui::ScrollBar* scrollbar{};
 
-    Sprite* panel_search{};
-    Widget* albums_container{};
-    TextInput* search_bar{};
-    Button* button_clear_search{};
-    Button* button_sort_by{};
+    zincgui::Sprite* panel_search{};
+    zincgui::Widget* albums_container{};
+    zincgui::TextInput* search_bar{};
+    zincgui::Button* button_clear_search{};
+    zincgui::Button* button_sort_by{};
 
   public:
     struct Props {

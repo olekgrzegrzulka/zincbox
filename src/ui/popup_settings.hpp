@@ -4,55 +4,55 @@
 #include <map>
 #include "common/utf.hpp"
 #include "core/settings.hpp"
-#include "core/zincbox.hpp"
-#include "tr.hpp"
+#include "ui/tr.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/scrollable_view.hpp"
 #include "ui/theme.hpp"
-#include "ui_generic/checkbox.hpp"
-#include "ui_generic/combo_box.hpp"
-#include "ui_generic/spinner.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "ui/zincgui/checkbox.hpp"
+#include "ui/zincgui/combo_box.hpp"
+#include "ui/zincgui/spinner.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
 class PopupSettings : public Popup {
   public:
-    PopupSettings(UI& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+    PopupSettings(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
       : Popup(ui_, controller_, std::move(on_close_)) {
 
       static constexpr i32 TITLE_BAR_HEIGHT = 32;
 
       set_size(600, 400);
 
-      auto& buttons = add_child<Widget>();
-      buttons.set_anchor(Anchor::BOTTOM);
-      buttons.set_parent_anchor(Anchor::BOTTOM);
+      auto& buttons = add_child<zincgui::Widget>();
+      buttons.set_anchor(zincgui::Anchor::BOTTOM);
+      buttons.set_parent_anchor(zincgui::Anchor::BOTTOM);
       buttons.set_width(width);
       buttons.set_layout("ltr fill fit expand m:8 s:8");
       buttons.set_height(48);
 
-      auto& content = add_child<Widget>();
+      auto& content = add_child<zincgui::Widget>();
       content.set_layout("ltr expand fill mx:8 my:0 s:8");
-      content.set_anchor(Anchor::TOP);
-      content.set_parent_anchor(Anchor::TOP);
+      content.set_anchor(zincgui::Anchor::TOP);
+      content.set_parent_anchor(zincgui::Anchor::TOP);
       content.set_size(width, height - (48 + TITLE_BAR_HEIGHT));
       content.set_y(TITLE_BAR_HEIGHT);
 
-      auto& title = add_child<Label>(tr::get("settings.title"));
+      auto& title = add_child<zincgui::Label>(tr::get("settings.title"));
       title.set_resize_to_text_extents(false);
       title.set_height(TITLE_BAR_HEIGHT);
-      title.set_anchor(Anchor::TOP);
-      title.set_parent_anchor(Anchor::TOP);
+      title.set_anchor(zincgui::Anchor::TOP);
+      title.set_parent_anchor(zincgui::Anchor::TOP);
       title.set_width(width);
 
-      auto& btn_cancel = buttons.add_child<Button>(tr::get("dialog.action.cancel"));
+      auto& btn_cancel = buttons.add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
       btn_cancel.on_press([this]() -> void {
         if (on_cancel) { on_cancel(); }
         close();
       });
 
-      auto& btn_save = buttons.add_child<Button>(tr::get("dialog.action.save"));
+      auto& btn_save = buttons.add_child<zincgui::Button>(tr::get("dialog.action.save"));
       btn_save.on_press([this]() -> void {
         if (on_save) { on_save(get_settings()); }
         close();
@@ -72,7 +72,7 @@ class PopupSettings : public Popup {
         pages[i]->set_is_drawn(false);
         pages[i]->set_is_updated(false);
 
-        page_buttons[i] = &sidebar.add_child<Button>(page_names[i]);
+        page_buttons[i] = &sidebar.add_child<zincgui::Button>(page_names[i]);
         page_buttons[i]->set_switch_mode(true);
         page_buttons[i]->on_press([this, i]() -> void {
           for (size_t j = 0; j < pages.size(); j += 1) {
@@ -90,17 +90,17 @@ class PopupSettings : public Popup {
 
       auto create_widget_combobox = [this, &text_color_muted](Widget* parent_,
                                                               std::pair<std::string, std::string> json_key,
-                                                              std::string_view label_) -> ComboBox* {
-        auto& label = parent_->add_child<Label>(label_);
+                                                              std::string_view label_) -> zincgui::ComboBox* {
+        auto& label = parent_->add_child<zincgui::Label>(label_);
         label.set_resize_to_text_extents(false);
         label.set_height(16);
         label.set_text_color(text_color_muted);
-        label.set_label_anchor(Anchor::LEFT);
+        label.set_label_anchor(zincgui::Anchor::LEFT);
 
-        auto& combo = parent_->add_child<ComboBox>();
+        auto& combo = parent_->add_child<zincgui::ComboBox>();
         combo.set_max_width(200);
 
-        auto& pad = parent_->add_child<Widget>();
+        auto& pad = parent_->add_child<zincgui::Widget>();
         pad.set_min_height(10);
         pad.set_max_height(10);
 
@@ -110,17 +110,17 @@ class PopupSettings : public Popup {
 
       auto create_widget_spinner = [this, &text_color_muted](Widget* parent_,
                                                              std::pair<std::string, std::string> json_key,
-                                                             std::string_view label_) -> Spinner* {
-        auto& label = parent_->add_child<Label>(label_);
+                                                             std::string_view label_) -> zincgui::Spinner* {
+        auto& label = parent_->add_child<zincgui::Label>(label_);
         label.set_resize_to_text_extents(false);
         label.set_height(16);
         label.set_text_color(text_color_muted);
-        label.set_label_anchor(Anchor::LEFT);
+        label.set_label_anchor(zincgui::Anchor::LEFT);
 
-        auto& spinner = parent_->add_child<Spinner>();
+        auto& spinner = parent_->add_child<zincgui::Spinner>();
         spinner.set_max_width(200);
 
-        auto& pad = parent_->add_child<Widget>();
+        auto& pad = parent_->add_child<zincgui::Widget>();
         pad.set_min_height(10);
         pad.set_max_height(10);
 
@@ -129,8 +129,8 @@ class PopupSettings : public Popup {
       };
 
       auto create_widget_checkbox = [this](Widget* parent_, std::pair<std::string, std::string> json_key,
-                                           std::string_view label_) -> Checkbox* {
-        auto& checkbox = parent_->add_child<Checkbox>(label_);
+                                           std::string_view label_) -> zincgui::Checkbox* {
+        auto& checkbox = parent_->add_child<zincgui::Checkbox>(label_);
         checkbox.set_width(128);
         checkbox.set_height(24);
 
@@ -161,17 +161,17 @@ class PopupSettings : public Popup {
       // -----------------------------------------------
       //                    PLAYBACK
       // -----------------------------------------------
-      auto& shuffle_title = page_playback.content()->add_child<Label>(tr::get("settings.playback.shuffle"));
+      auto& shuffle_title = page_playback.content()->add_child<zincgui::Label>(tr::get("settings.playback.shuffle"));
       shuffle_title.set_resize_to_text_extents(false);
       shuffle_title.set_height(16);
       shuffle_title.set_text_color(text_color_muted);
-      shuffle_title.set_label_anchor(Anchor::LEFT);
+      shuffle_title.set_label_anchor(zincgui::Anchor::LEFT);
       create_widget_checkbox(page_playback.content(), std::pair{"playback", "shuffle_allow_same_album"},
                              tr::get("settings.playback.allow_same_album"));
       create_widget_checkbox(page_playback.content(), std::pair{"playback", "shuffle_allow_same_artist"},
                              tr::get("settings.playback.allow_same_artist"));
 
-      auto& pad = page_playback.content()->add_child<Widget>();
+      auto& pad = page_playback.content()->add_child<zincgui::Widget>();
       pad.set_min_height(10);
       pad.set_max_height(10);
 
@@ -267,8 +267,8 @@ class PopupSettings : public Popup {
 
   protected:
     std::array<ScrollableView*, 3> pages{};
-    std::array<Button*, 3> page_buttons{};
-    std::map<std::pair<std::string, std::string>, ComboBox*> combo_boxes;
-    std::map<std::pair<std::string, std::string>, Spinner*> spinners;
-    std::map<std::pair<std::string, std::string>, Checkbox*> checkboxes;
+    std::array<zincgui::Button*, 3> page_buttons{};
+    std::map<std::pair<std::string, std::string>, zincgui::ComboBox*> combo_boxes;
+    std::map<std::pair<std::string, std::string>, zincgui::Spinner*> spinners;
+    std::map<std::pair<std::string, std::string>, zincgui::Checkbox*> checkboxes;
 };

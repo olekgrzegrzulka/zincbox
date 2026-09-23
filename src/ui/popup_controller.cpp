@@ -4,16 +4,18 @@
 #include <string>
 #include <unordered_map>
 #include "common/color.hpp"
-#include "core/zincbox.hpp"
 #include "theme_config.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
-#include "ui_generic/button.hpp"
-#include "ui_generic/label.hpp"
-#include "ui_generic/sprite.hpp"
-#include "ui_generic/ui.hpp"
-#include "ui_generic/widget.hpp"
+#include "zincbox.hpp"
+#include "ui/zincgui/button.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/widget.hpp"
+
+using namespace zincgui;
 
 void PopupController::on_popup_closed(Popup* popup) {
   close_all_popovers();
@@ -22,7 +24,7 @@ void PopupController::on_popup_closed(Popup* popup) {
   if (it != popups.end()) { popups.erase(it); }
 }
 
-PopupController::PopupController(UI& ui_) : Widget(ui_), ui(ui_) {
+PopupController::PopupController(Root& ui_) : Widget(ui_), ui(ui_) {
   dimmer = &add_child<Dimmer>();
   dimmer->on_pressed = [this]() { on_dimmer_pressed(); };
   dimmer->on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };

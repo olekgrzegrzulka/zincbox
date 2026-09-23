@@ -144,36 +144,37 @@ cmrc_add_resources(zincbox_resources WHENCE resources resources/theme.zip)
 
 set(SOURCES
 ./src/main.cpp
-    ./src/sdl3_window.cpp
+    ./src/ui/sdl3_window.cpp
     ./lib/miniaudio/miniaudio.c
-    ./src/common/input.cpp
+    ./src/ui/zincgui/input.cpp
     ./src/common/logger.cpp
-    ./src/core/zincbox.cpp
+    ./src/zincbox.cpp
     ./src/core/musicdb/musicdb.cpp
     ./src/core/musicdb/collection.cpp
     ./src/core/musicdb/playlist.cpp
     ./src/core/musicdb/track.cpp
-    ./src/core/tray.cpp
-    ./src/tr.cpp
+    ./src/ui/tray.cpp
+    ./src/ui/tr.cpp
     ./src/core/player.cpp
     ./src/core/mpris.cpp
     ./src/core/io.cpp
     ./src/core/track_file.cpp
     ./src/core/scanner.cpp
-    ./src/ui_generic/texture.cpp
-    ./src/ui_generic/texture_atlas.cpp
-    ./src/ui_generic/shader.cpp
-    ./src/ui_generic/ui.cpp
-    ./src/ui_generic/font_face.cpp
-    ./src/ui_generic/button.cpp
-    ./src/ui_generic/label.cpp
-    ./src/ui_generic/slider.cpp
-    ./src/ui_generic/sprite.cpp
-    ./src/ui_generic/widget.cpp
-    ./src/ui_generic/text_input.cpp
-    ./src/ui_generic/scrollbar.cpp
-    ./src/ui_generic/color_rect.cpp
+    ./src/ui/zincgui/texture.cpp
+    ./src/ui/zincgui/texture_atlas.cpp
+    ./src/ui/zincgui/shader.cpp
+    ./src/ui/zincgui/ui.cpp
+    ./src/ui/zincgui/font_face.cpp
+    ./src/ui/zincgui/button.cpp
+    ./src/ui/zincgui/label.cpp
+    ./src/ui/zincgui/slider.cpp
+    ./src/ui/zincgui/sprite.cpp
+    ./src/ui/zincgui/widget.cpp
+    ./src/ui/zincgui/text_input.cpp
+    ./src/ui/zincgui/scrollbar.cpp
+    ./src/ui/zincgui/color_rect.cpp
     ./src/ui/interface.cpp
+    ./src/ui/interface_notifications.cpp
     ./src/ui/panel_albums.cpp
     ./src/ui/panel_controls.cpp
     ./src/ui/panel_tracks.cpp
