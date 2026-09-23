@@ -155,11 +155,7 @@ PanelControls::PanelControls(UI& ui_) : ColorRect(ui_) {
       update_love_state(false);
     } else {
       auto& track = db::track_by_id(playing->track_id)->get();
-      if (track.artist.empty() || track.title.empty()) {
-        label_track->set_text(path_to_utf8(std::filesystem::path{track.path}.filename()));
-      } else {
-        label_track->set_text(track.artist + " - " + track.title);
-      }
+      label_track->set_text(track.pretty_name());
       bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
       update_love_state(is_loved);
     }

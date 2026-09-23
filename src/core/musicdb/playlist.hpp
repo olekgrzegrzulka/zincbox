@@ -1,5 +1,4 @@
 #pragma once
-#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <span>
@@ -9,17 +8,13 @@
 #include "common/types.hpp"
 
 namespace db {
-  enum class PlaylistType : u8 {
-    Album,
-    User,
-    Smart,
-  };
+  enum class PlaylistType : u8 { Album, User, Smart };
 
   struct Playlist final {
     public:
       std::string name;
       std::string album_path;
-      std::string author;
+      std::vector<std::string> author;
       std::vector<u8> art_64x64;
       PlaylistType type;
       bool tombstone = false;
@@ -28,9 +23,9 @@ namespace db {
 
     public:
       Playlist(std::ifstream&);
-      Playlist(std::string_view name_, std::string_view author_, PlaylistType type_) {
+      Playlist(std::string_view name_, std::vector<std::string> author_, PlaylistType type_) {
         name = name_;
-        author = author_;
+        author = std::move(author_);
         type = type_;
       }
       bool add_track(size_t);
@@ -45,7 +40,7 @@ namespace db {
       void sort_by_name_desc();
       void set_tombstone(bool t) { tombstone = t; }
       bool is_tombstone() const { return tombstone; }
-      bool fetch_cover_art(const std::filesystem::path&);
+      std::string author_pretty() const;
 
       std::optional<size_t> next_track_id(size_t track_id) const;
       std::optional<size_t> prev_track_id(size_t track_id) const;

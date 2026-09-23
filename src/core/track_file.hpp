@@ -1,37 +1,29 @@
 #pragma once
 #include <filesystem>
-#include <optional>
 #include <string>
-#include <vector>
-#include "common/types.hpp"
-#include "core/musicdb/track.hpp"
-#include "lib/stb_image/stb_image.h"
+#include "core/musicdb/track_metadata.hpp"
 
-namespace TagLib {
-  class FileRef;
-}
+namespace zincbox {
+  namespace scanner {
+    namespace fs = std::filesystem;
 
-class TrackFile final {
-  public:
-    TrackFile(const std::filesystem::path& path, bool fetch_album_art);
-    bool fetch_album_art(TagLib::FileRef* ref = nullptr);
+    struct TrackFile {
+        bool error{};
+        zincbox::TrackMetadata metadata;
+        fs::path file_path;
+        fs::path file_name_without_extension() const { return file_path.stem(); }
+        fs::path file_extension() const { return file_path.extension(); }
+        fs::path parent_directory_name() const { return file_path.parent_path().stem(); }
+        std::string hash{};
 
-    TrackFile(TrackFile&& other) = delete;
-    TrackFile& operator=(TrackFile&& other) = delete;
-    TrackFile(const TrackFile&) = delete;
-    TrackFile& operator=(const TrackFile&) = delete;
+        TrackFile(const fs::path& path);
 
-  public:
-    static std::optional<std::filesystem::path> save_album_art(const u8* data, size_t size);
-    static std::optional<std::filesystem::path> save_album_art(stbi_uc* img, i32 width, i32 height, i32 channels);
-    static std::vector<u8> resize_album_art_to_64x64(const u8* data, size_t size);
-    static std::vector<u8> resize_album_art_to_64x64(stbi_uc* img, i32 width, i32 height, i32 channels);
+        TrackFile() = default;
+        TrackFile(const TrackFile&) = delete;
+        TrackFile& operator=(const TrackFile&) = delete;
+        TrackFile(TrackFile&&) noexcept = default;
+        TrackFile& operator=(TrackFile&&) noexcept = default;
+    };
 
-  public:
-    std::filesystem::path path;
-    std::optional<db::Track> track;
-    std::vector<u8> art_64x64;
-    std::optional<std::filesystem::path> art_file_path;
-    std::string album_name;
-    std::string album_artist;
-};
+  } // namespace scanner
+} // namespace zincbox

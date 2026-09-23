@@ -4,20 +4,30 @@
 #include <vector>
 #include "common/logger.hpp"
 #include "common/serialize.hpp"
-#include "common/types.hpp"
-#include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
-#include "core/track_file.hpp"
 #include "lib/stb_image/stb_image.h"
 
 db::Playlist::Playlist(std::ifstream& is) {
   read_str(is, name);
-  read_str(is, author);
+  size_t author_size = 0;
+  read_bin(is, author_size);
+  if (author_size > 1024) {
+    out::critical("Database corrupted: invalid author_size");
+    exit(1);
+  }
+  author.resize(author_size);
+  for (size_t i = 0; i < author_size; i += 1) {
+    read_str(is, author[i]);
+  }
 
   read_blob(is, art_64x64);
   read_bin(is, type);
   size_t track_ids_size = 0;
   read_bin(is, track_ids_size);
+  if (track_ids_size > 16384) {
+    out::critical("Database corrupted: invalid track_ids_size");
+    exit(1);
+  }
   track_ids.resize(track_ids_size);
   for (size_t i = 0; i < track_ids_size; i += 1) {
     size_t value;
@@ -75,10 +85,11 @@ void db::Playlist::sort_by_track_number() {
   std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
-    if (lhs.track_number != rhs.track_number) {
-      return lhs.track_number < rhs.track_number;
-    } else if (!lhs.artist.empty() && !rhs.artist.empty() && !lhs.title.empty() && !rhs.title.empty()) {
-      return std::tie(lhs.artist, lhs.title) < std::tie(rhs.artist, rhs.title);
+    if (lhs.metadata.track_number != rhs.metadata.track_number) {
+      return lhs.metadata.track_number < rhs.metadata.track_number;
+    } else if (!lhs.metadata.artist.empty() && !rhs.metadata.artist.empty() && !lhs.metadata.title.empty() &&
+               !rhs.metadata.title.empty()) {
+      return std::tie(lhs.metadata.artist, lhs.metadata.title) < std::tie(rhs.metadata.artist, rhs.metadata.title);
     } else {
       return lhs.pretty_name() < rhs.pretty_name();
     }
@@ -89,7 +100,7 @@ void db::Playlist::sort_by_artist_asc() {
   std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
-    return std::tie(lhs.artist, lhs.title) < std::tie(rhs.artist, rhs.title);
+    return std::tie(lhs.metadata.artist, lhs.metadata.title) < std::tie(rhs.metadata.artist, rhs.metadata.title);
   });
 }
 
@@ -97,7 +108,7 @@ void db::Playlist::sort_by_artist_desc() {
   std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
-    return std::tie(lhs.artist, lhs.title) > std::tie(rhs.artist, rhs.title);
+    return std::tie(lhs.metadata.artist, lhs.metadata.title) > std::tie(rhs.metadata.artist, rhs.metadata.title);
   });
 }
 
@@ -105,7 +116,7 @@ void db::Playlist::sort_by_name_asc() {
   std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
-    return std::tie(lhs.title, lhs.artist) < std::tie(rhs.title, rhs.artist);
+    return std::tie(lhs.metadata.title, lhs.metadata.artist) < std::tie(rhs.metadata.title, rhs.metadata.artist);
   });
 }
 
@@ -113,33 +124,19 @@ void db::Playlist::sort_by_name_desc() {
   std::sort(track_ids.begin(), track_ids.end(), [](size_t lhs_id, size_t rhs_id) -> bool {
     auto& lhs = db::track_by_id(lhs_id)->get();
     auto& rhs = db::track_by_id(rhs_id)->get();
-    return std::tie(lhs.title, lhs.artist) > std::tie(rhs.title, rhs.artist);
+    return std::tie(lhs.metadata.title, lhs.metadata.artist) > std::tie(rhs.metadata.title, rhs.metadata.artist);
   });
 }
 
-bool db::Playlist::fetch_cover_art(const fs::path& path) {
-  i32 width, height, channels;
-#if defined(_WIN32)
-  FILE* f = _wfopen(path.c_str(), L"rb");
-#else
-  FILE* f = fopen(path.c_str(), "rb");
-#endif
-  if (!f) { return false; }
-  stbi_uc* img = stbi_load_from_file(f, &width, &height, &channels, STBI_rgb_alpha);
-  fclose(f);
-  if (img == NULL) {
-    out::debug_error("Playlist::fetch_cover_art({}): {}", path_to_utf8(path), stbi_failure_reason());
-    return false;
+std::string db::Playlist::author_pretty() const {
+  std::string ret;
+  for (auto& a : author) {
+    if (a.empty()) { continue; }
+    ret += a + ", ";
   }
-  art_64x64 = TrackFile::resize_album_art_to_64x64(img, width, height, channels);
-  auto path_art = TrackFile::save_album_art(img, width, height, channels);
-  stbi_image_free(img);
-  if (path_art.has_value()) {
-    art_file_path = path_to_utf8(*path_art);
-  } else {
-    path_art->clear();
-  }
-  return !art_64x64.empty() && !art_file_path.empty();
+  if (!ret.empty()) { ret.pop_back(); }
+  if (!ret.empty()) { ret.pop_back(); }
+  return ret;
 }
 
 std::optional<size_t> db::Playlist::next_track_id(size_t track_id) const {
@@ -178,7 +175,10 @@ std::optional<size_t> db::Playlist::find_track_index(size_t track_id) const {
 
 void db::Playlist::serialize(std::ostream& os) const {
   write_str(os, name);
-  write_str(os, author);
+  write_bin(os, author.size());
+  for (auto& a : author) {
+    write_str(os, a);
+  }
   write_blob(os, art_64x64);
   write_bin(os, type);
   write_bin(os, track_ids.size());
@@ -190,7 +190,10 @@ void db::Playlist::serialize(std::ostream& os) const {
 
 void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_track_id_to_new_track_id) const {
   write_str(os, name);
-  write_str(os, author);
+  write_bin(os, author.size());
+  for (auto& a : author) {
+    write_str(os, a);
+  }
   write_blob(os, art_64x64);
   write_bin(os, type);
   write_bin(os, track_ids.size());

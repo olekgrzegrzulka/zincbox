@@ -1,53 +1,56 @@
 #pragma once
 #include <bitset>
+#include <filesystem>
 #include <iosfwd>
 #include <optional>
 #include <span>
 #include <string>
 #include <stddef.h>
 #include "common/types.hpp"
+#include "core/musicdb/track_metadata.hpp"
 #include "core/musicdb/types.hpp"
 
 namespace db {
 
-  enum TrackFlag : u8 { TOMBSTONE = 1, NOT_FOUND_DURING_RESCAN = 2, PLAYBACK_ERROR = 3, MAX = 4 };
+  namespace fs = std::filesystem;
+
+  enum TrackFlag : u8 {
+    ORPHANED = 1,
+    NEW = 2,
+    TOMBSTONE = 3,
+    NOT_FOUND_DURING_RESCAN = 4,
+    PLAYBACK_ERROR = 5,
+    MAX = 16
+  };
 
   struct Track final {
       using enum TrackFlag;
 
-      Track(i32 track_number, std::string title, std::string artist, std::string album_artist, std::string genre,
-            i32 year, i32 bitrate, i32 length_seconds, std::string path);
-
+      Track();
       Track(std::ifstream&);
 
-    public:
-      i32 track_number;
-      std::string title;
-      std::string artist;
-      std::string album_artist;
-      std::string genre;
-      i32 year;
-      i32 bitrate;
-      i32 length_seconds;
-      std::string path;
-      size_t originating_album_id = db::INVALID_ID;
-
-    protected:
+      zincbox::TrackMetadata metadata;
       std::bitset<TrackFlag::MAX> flags;
+      fs::path file_path;
+      fs::path file_name_with_extension() const { return file_path.filename(); }
+      fs::path file_name_without_extension() const { return file_path.stem(); }
+      fs::path file_extension() const { return file_path.extension(); }
+      fs::path parent_directory_name() const { return file_path.parent_path().stem(); }
+      std::string hash{};
+      size_t originating_album_id = db::INVALID_ID;
 
     public:
       void serialize(std::ostream&,
                      std::optional<std::span<size_t>> old_playlist_id_to_new_playlist_id = std::nullopt) const;
       std::string to_string() const;
+      std::string pretty_title() const;
       std::string pretty_name() const;
       std::string pretty_length() const;
+      std::string pretty_album_artist() const;
 
-      void set_tombstone(bool t) { flags.set(TOMBSTONE, t); }
-      bool is_tombstone() const { return flags.test(TOMBSTONE); }
-      void set_not_found_during_rescan(bool t) { flags.set(NOT_FOUND_DURING_RESCAN, t); }
-      bool is_not_found_during_rescan() const { return flags.test(NOT_FOUND_DURING_RESCAN); }
-      void set_playback_error(bool t) { flags.set(PLAYBACK_ERROR, t); }
-      bool is_playback_error() const { return flags.test(PLAYBACK_ERROR); }
+      void set_flag(TrackFlag flag) { flags.set(flag, true); }
+      void unset_flag(TrackFlag flag) { flags.set(flag, false); }
+      bool get_flag(TrackFlag flag) const { return flags.test(flag); }
 
       bool operator==(const Track&) const = default;
   };

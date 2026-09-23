@@ -37,14 +37,14 @@ template <> struct glz::meta<player::ShuffleMode> {
 struct QueueTrackSerialized {
     std::string collection;
     std::string playlist;
-    i32 track_number;
+    std::optional<i32> track_number;
     std::string title;
     std::string artist;
-    std::string album_artist;
+    std::vector<std::string> album_artist;
     std::string genre;
-    i32 year;
-    i32 bitrate;
-    i32 length_seconds;
+    std::optional<i32> year;
+    i32 bitrate_kb_s;
+    i32 duration_ms;
     std::string path;
 
     QueueTrackSerialized() = default;
@@ -57,15 +57,15 @@ struct QueueTrackSerialized {
 
       collection = collection_->get().name();
       playlist = playlist_->get().name;
-      track_number = track.track_number;
-      title = track.title;
-      artist = track.artist;
-      album_artist = track.album_artist;
-      genre = track.genre;
-      year = track.year;
-      bitrate = track.bitrate;
-      length_seconds = track.length_seconds;
-      path = track.path;
+      track_number = track.metadata.track_number;
+      title = track.metadata.title;
+      artist = track.metadata.artist;
+      album_artist = track.metadata.album_artist;
+      genre = track.metadata.genre;
+      year = track.metadata.year;
+      bitrate_kb_s = track.metadata.bitrate_kb_s;
+      duration_ms = track.metadata.duration_ms;
+      path = path_to_utf8(track.file_path);
     }
 };
 
@@ -74,31 +74,31 @@ template <> struct glz::meta<QueueTrackSerialized> {
     static constexpr auto value =
       glz::object("collection", &T::collection, "playlist", &T::playlist, "track_number", &T::track_number, "title",
                   &T::title, "artist", &T::artist, "album_artist", &T::album_artist, "genre", &T::genre, "year",
-                  &T::year, "bitrate", &T::bitrate, "length_seconds", &T::length_seconds, "path", &T::path);
+                  &T::year, "bitrate_kb_s", &T::bitrate_kb_s, "duration_ms", &T::duration_ms, "path", &T::path);
 };
 
 struct PlaylistTrackSerialized {
-    i32 track_number;
+    std::optional<i32> track_number;
     std::string title;
     std::string artist;
-    std::string album_artist;
+    std::vector<std::string> album_artist;
     std::string genre;
-    i32 year;
-    i32 bitrate;
-    i32 length_seconds;
+    std::optional<i32> year;
+    i32 bitrate_kb_s;
+    i32 duration_ms;
     std::string path;
 
     PlaylistTrackSerialized() = default;
     PlaylistTrackSerialized(const db::Track& track) {
-      track_number = track.track_number;
-      title = track.title;
-      artist = track.artist;
-      album_artist = track.album_artist;
-      genre = track.genre;
-      year = track.year;
-      bitrate = track.bitrate;
-      length_seconds = track.length_seconds;
-      path = track.path;
+      track_number = track.metadata.track_number;
+      title = track.metadata.title;
+      artist = track.metadata.artist;
+      album_artist = track.metadata.album_artist;
+      genre = track.metadata.genre;
+      year = track.metadata.year;
+      bitrate_kb_s = track.metadata.bitrate_kb_s;
+      duration_ms = track.metadata.duration_ms;
+      path = path_to_utf8(track.file_path);
     }
 };
 
@@ -106,8 +106,8 @@ template <> struct glz::meta<PlaylistTrackSerialized> {
     using T = PlaylistTrackSerialized;
     static constexpr auto value =
       glz::object("track_number", &T::track_number, "title", &T::title, "artist", &T::artist, "album_artist",
-                  &T::album_artist, "genre", &T::genre, "year", &T::year, "bitrate", &T::bitrate, "length_seconds",
-                  &T::length_seconds, "path", &T::path);
+                  &T::album_artist, "genre", &T::genre, "year", &T::year, "bitrate_kb_s", &T::bitrate_kb_s,
+                  "duration_ms", &T::duration_ms, "path", &T::path);
 };
 
 struct PlaylistSerialized {

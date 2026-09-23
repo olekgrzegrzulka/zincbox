@@ -7,7 +7,8 @@ namespace db {
 
 namespace TagLib {
   class FileRef;
-}
+  class File;
+} // namespace TagLib
 
 namespace io {
   namespace fs = std::filesystem;

@@ -10,7 +10,7 @@ namespace db {
   using playlist_id_t = size_t;
   using track_id_t = size_t;
 
-  struct track_info {
+  struct track_info final {
       size_t collection_id = INVALID_ID;
       size_t playlist_id = INVALID_ID;
       size_t track_id = INVALID_ID;
@@ -18,8 +18,8 @@ namespace db {
       std::strong_ordering operator<=>(const track_info&) const = default;
   };
 
-  struct playlist_info {
-      size_t collection_id;
-      size_t playlist_id;
+  struct playlist_info final {
+      size_t collection_id = INVALID_ID;
+      size_t playlist_id = INVALID_ID;
   };
 } // namespace db

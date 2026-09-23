@@ -117,6 +117,7 @@ add_subdirectory(lib/fmt EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(lib/SDL SYSTEM)
 add_subdirectory(lib/glaze SYSTEM)
 add_subdirectory(lib/cmrc SYSTEM)
+add_subdirectory(lib/xxHash SYSTEM)
 # add_subdirectory(lib/miniaudio SYSTEM)
 
 if (TARGET miniz AND NOT TARGET miniz::miniz)
@@ -158,6 +159,7 @@ set(SOURCES
     ./src/core/mpris.cpp
     ./src/core/io.cpp
     ./src/core/track_file.cpp
+    ./src/core/scanner.cpp
     ./src/ui_generic/texture.cpp
     ./src/ui_generic/texture_atlas.cpp
     ./src/ui_generic/shader.cpp
@@ -258,7 +260,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
   freetype nfd spng_static
   tag glm::glm stb_image
-  glad miniz fmt::fmt
+  glad miniz fmt::fmt xxHash
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:stdc++exp>
   $<$<NOT:$<PLATFORM_ID:Windows>>:sdbus-c++>
   SDL3::SDL3-static glaze::glaze zincbox_resources

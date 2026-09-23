@@ -2,23 +2,9 @@
 #include <filesystem>
 #include <optional>
 #include <string>
-#include <spng.h>
-#include <taglib/fileref.h>
-#include <taglib/flac/flacfile.h>
-#include <taglib/mp4/mp4file.h>
-#include <taglib/mpeg/id3v2/frames/attachedpictureframe.h>
-#include <taglib/mpeg/mpegfile.h>
-#include <taglib/ogg/vorbis/vorbisfile.h>
-#include <taglib/tag.h>
-#include <taglib/toolkit/tbytevector.h>
-#include <taglib/toolkit/tfilestream.h>
-#include <taglib/toolkit/tpropertymap.h>
-#include <taglib/toolkit/tstring.h>
 #include "common/logger.hpp"
 #include "common/utf.hpp"
-#include "lib/stb_image/stb_image.h"
-#include "lib/stb_image/stb_image_resize2.h"
-#include "lib/stb_image/stb_image_write.h"
+
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -53,10 +39,11 @@ void io::open_folder_in_file_manager(const fs::path& path) {
   ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 #elif __APPLE__
   std::string command = "open \"" + path_to_utf8(path) + "\"";
+  std::system(command.c_str());
 #else
   std::string command = "xdg-open \"" + path_to_utf8(path) + "\"";
-#endif
   std::system(command.c_str());
+#endif
 }
 
 fs::path io::get_user_data_path() {

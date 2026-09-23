@@ -13,6 +13,7 @@
 #include <nfd.hpp>
 #include "common/debug.hpp"
 #include "common/input.hpp"
+#include "common/logger.hpp"
 #include "common/serialized_state.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
@@ -25,6 +26,7 @@
 #include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
+#include "core/scanner.hpp"
 #include "core/settings.hpp"
 #include "core/zincbox.hpp"
 #include "interface.hpp"
@@ -242,11 +244,12 @@ void interface::init() {
         std::string collection_name = (tr::get("collection.default_name")) + std::to_string(db::collection_count() + 1);
         auto collection_id = db::add_collection(collection_name);
         for (i = 0; i < numPaths; i += 1) {
-          NFD::UniquePathSetPathU8 path;
-          NFD::PathSet::GetPath(out_paths, i, path);
-          db::add_path_to_collection(collection_id, path.get());
+          NFD::UniquePathSetPathU8 path_utf8;
+          NFD::PathSet::GetPath(out_paths, i, path_utf8);
+          auto path = utf8_to_path(path_utf8.get());
+          db::add_path_to_collection(collection_id, path);
+          zincbox::scanner::scan_directory(path, collection_id);
         }
-        add_playlist_art_to_texture_atlas(collection_id);
         recreate_panel_top();
         notifications->push(tr::format("notification.added_collection", collection_name));
       }
@@ -414,6 +417,31 @@ static void input(vec2i window_size) {
 static void rebuild() { ui->rebuild(); }
 
 void interface::update(vec2i window_size) {
+
+  auto scan_progress = zincbox::scanner::get_progress();
+  if (scan_progress) {
+    out::info("Scanned {} files and {} directories", scan_progress->files_scanned, scan_progress->directories_scanned);
+  }
+
+  auto scan_summary = zincbox::scanner::import();
+  if (scan_summary) {
+
+    add_playlist_art_to_texture_atlas(scan_summary->collection_id);
+    if (active_collection_id.has_value() && active_collection_id.value() == scan_summary->collection_id) {
+      panel_tracks->recreate(active_collection_id);
+      panel_albums->props.collection_id = scan_summary->collection_id;
+      panel_albums->recreate();
+    }
+
+    out::info(" Import for collection '{}' (id = {}) finished",
+              db::collection_by_id(scan_summary->collection_id)->get().name(), scan_summary->collection_id);
+    out::info("added tracks:      {}", scan_summary->added_tracks.size());
+    out::info("changed tracks:    {}", scan_summary->modified_tracks.size());
+    out::info("unchanged tracks:  {}", scan_summary->skipped_tracks.size());
+    out::info("tracks not found:  {}", scan_summary->not_found_tracks.size());
+    if (scan_summary->errors.size() > 0) { out::error("errors:            {}", scan_summary->errors.size()); }
+  }
+
   input(window_size);
   rebuild();
 
@@ -534,19 +562,19 @@ static void create_collection(std::vector<std::string> directories) {
   auto collection_id = db::add_collection(collection_name);
   for (auto& str : directories) {
     fs::path path = str;
-    db::add_path_to_collection(collection_id, path_to_utf8(path));
+    db::add_path_to_collection(collection_id, path);
+    zincbox::scanner::scan_directory(path, collection_id);
   }
-  add_playlist_art_to_texture_atlas(collection_id);
   recreate_panel_top();
 }
 
 static void create_multiple_collections(const std::vector<std::string>& directories) {
   for (auto& str : directories) {
-    fs::path path = str;
+    fs::path path = utf8_to_path(str);
     std::string collection_name = path_to_utf8(path.filename());
     auto collection_id = db::add_collection(collection_name);
-    db::add_path_to_collection(collection_id, path_to_utf8(path));
-    add_playlist_art_to_texture_atlas(collection_id);
+    db::add_path_to_collection(collection_id, path);
+    zincbox::scanner::scan_directory(path, collection_id);
   }
   recreate_panel_top();
 }
@@ -1065,7 +1093,11 @@ static void show_popup_set_sources(db::collection_id_t collection_id) {
   auto* popup = popup_controller->show_popup<PopupSetSources>(collection_id);
 
   popup->on_remove_path_pressed = [collection_id](const std::string& path) -> void {
-    db::remove_path_from_collection(collection_id, path);
+    db::remove_path_from_collection(collection_id, utf8_to_path(path));
+    for (auto& path_ : db::collection_by_id(collection_id)->get().paths()) {
+      zincbox::scanner::scan_directory(path_, collection_id);
+    }
+
     if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
       panel_tracks->recreate(active_collection_id);
       panel_albums->props.collection_id = collection_id;
@@ -1076,11 +1108,8 @@ static void show_popup_set_sources(db::collection_id_t collection_id) {
   popup->on_add_dir_pressed = [collection_id]() -> void {
     NFD::UniquePathU8 out_path;
     if (NFD::PickFolder(out_path, (const nfdu8char_t*)nullptr) == NFD_OKAY) {
-      db::add_path_to_collection(collection_id, out_path.get());
-      if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-        panel_tracks->recreate(active_collection_id);
-        panel_albums->props.collection_id = collection_id;
-      }
+      fs::path dir = utf8_to_path(out_path.get());
+      zincbox::scanner::scan_directory(dir, collection_id);
     }
   };
 }
@@ -1370,11 +1399,8 @@ static void show_popover_collection_actions(db::collection_id_t collection_id, W
   buttons.emplace_back(
     tr::get("dialog.action.rescan"),
     [collection_id]() {
-      db::rescan_collection(collection_id);
-      add_playlist_art_to_texture_atlas(collection_id);
-      if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-        panel_tracks->recreate(active_collection_id);
-        panel_albums->recreate();
+      for (auto& path : db::collection_by_id(collection_id)->get().paths()) {
+        zincbox::scanner::scan_directory(utf8_to_path(path), collection_id);
       }
     },
     "rescan");
@@ -1682,9 +1708,7 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                            auto& playlist = db::playlist_by_id(playlist_id)->get();
                            if (playlist.get_tracks_count() > 0) {
                              auto& track = db::track_by_id(playlist.get_track_ids()[0])->get();
-                             fs::path path(track.path);
-                             std::string dir_str = path_to_utf8(path.parent_path());
-                             io::open_folder_in_file_manager(dir_str);
+                             io::open_folder_in_file_manager(track.file_path.parent_path());
                            }
                          },
                          "show_playlist_directory");
@@ -1800,7 +1824,7 @@ static void show_popover_queue_actions(Widget* w) {
 
       popup->on_ok_pressed = [popup]() {
         auto playlist_id = db::add_playlist_to_collection(
-          0, db::Playlist{popup->text_input->label.get_text(), "", db::PlaylistType::User});
+          0, db::Playlist{popup->text_input->label.get_text(), {""}, db::PlaylistType::User});
         for (const auto& play : player::get_playing_queue()) {
           db::add_track_id_to_playlist(playlist_id, play.track_id);
         }
@@ -1834,8 +1858,8 @@ static void show_popup_new_playlist(const std::function<void(std::optional<db::p
   popup->text_input->set_focused(true);
 
   popup->on_ok_pressed = [popup, callback_close]() {
-    auto playlist_id =
-      db::add_playlist_to_collection(0, db::Playlist{popup->text_input->label.get_text(), "", db::PlaylistType::User});
+    auto playlist_id = db::add_playlist_to_collection(
+      0, db::Playlist{popup->text_input->label.get_text(), {""}, db::PlaylistType::User});
     if (active_collection_id == 0) {
       panel_albums->props.collection_id = 0;
       panel_albums->recreate();

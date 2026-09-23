@@ -70,15 +70,14 @@ bool play_track() {
 
   ma_result result;
 
-  auto fs_path = utf8_to_path(track.path);
 #if defined(_WIN32)
-    result = ma_sound_init_from_file_w(&engine, fs_path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
+  result = ma_sound_init_from_file_w(&engine, track.file_path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
 #else
-    result = ma_sound_init_from_file(&engine, fs_path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
+  result = ma_sound_init_from_file(&engine, track.file_path.c_str(), MA_SOUND_FLAG_NO_PITCH, NULL, NULL, &sound);
 #endif
-  
+
   if (result != MA_SUCCESS) {
-    out::warn("player::play: ma_sound_init_from_file returned {} for {}", (i32)result, track.path);
+    out::warn("player::play: ma_sound_init_from_file returned {} for {}", (i32)result, path_to_utf8(track.file_path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -87,7 +86,7 @@ bool play_track() {
   result = ma_sound_get_length_in_seconds(&sound, &ret);
   if (result != MA_SUCCESS) {
     out::warn("player::play: ma_sound_get_length_in_seconds returned {} for {}", (i32)result,
-              track.path);
+              path_to_utf8(track.file_path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -95,7 +94,7 @@ bool play_track() {
 
   result = ma_sound_start(&sound);
   if (result != MA_SUCCESS) {
-    out::warn("player::play: ma_sound_start returned {} for {}", (i32)result, track.path);
+    out::warn("player::play: ma_sound_start returned {} for {}", (i32)result, path_to_utf8(track.file_path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -103,7 +102,7 @@ bool play_track() {
   result = ma_engine_start(&engine);
   if (result != MA_SUCCESS) {
     ma_sound_stop(&sound);
-    out::warn("player::play: ma_engine_start returned {} for {}", (i32)result, track.path);
+    out::warn("player::play: ma_engine_start returned {} for {}", (i32)result, path_to_utf8(track.file_path));
     db::set_track_playback_error(playing->track_id, true);
     return false;
   }
@@ -117,12 +116,12 @@ bool play_track() {
       originating_album.has_value()) {
     cover_path = originating_album->get().art_file_path;
   }
-  if (!track.title.empty() && !track.artist.empty()) {
-    mpris::notify_track_change(track.title, track.artist, playlist.name,
-                               (u64)track.length_seconds * 1000, std::string(cover_path));
-  }else {
-    mpris::notify_track_change(track.pretty_name(), "", playlist.name,
-                               (u64)track.length_seconds * 1000, std::string(cover_path));
+  if (!track.metadata.title.empty() && !track.metadata.artist.empty()) {
+    mpris::notify_track_change(track.metadata.title, track.metadata.artist, playlist.name,
+                               (u64)track.metadata.duration_ms, std::string(cover_path));
+  } else {
+    mpris::notify_track_change(track.pretty_name(), "", playlist.name, (u64)track.metadata.duration_ms,
+                               std::string(cover_path));
   }
 
   db::set_track_playback_error(playing->track_id, false);
@@ -468,8 +467,8 @@ void player::next_track(i32 tries) {
         };
         if (playing_queue.size() > 0) {
           bool same_playlist_as_prev = playing_queue.back().playlist_id == rand_playlist_id_;
-          std::string_view artist_prev = db::track_by_id(playing_queue.back().track_id)->get().artist;
-          std::string_view artist_rand = db::track_by_id(rand_track_id_)->get().artist;
+          std::string_view artist_prev = db::track_by_id(playing_queue.back().track_id)->get().metadata.artist;
+          std::string_view artist_rand = db::track_by_id(rand_track_id_)->get().metadata.artist;
           bool same_artist_as_prev = artist_prev == artist_rand;
           bool shuffle_allow_same_album_passed =
             !zincbox::settings().playback.shuffle_allow_same_album || !same_playlist_as_prev;
@@ -523,8 +522,8 @@ void player::next_track(i32 tries) {
             auto prev_originating_album_id = track.originating_album_id;
             auto rand_originating_album_id = db::track_by_id(rand_track_id_)->get().originating_album_id;
             same_playlist_as_prev = prev_originating_album_id == rand_originating_album_id;
-            std::string_view artist_prev = track.artist;
-            std::string_view artist_rand = db::track_by_id(rand_track_id_)->get().artist;
+            std::string_view artist_prev = track.metadata.artist;
+            std::string_view artist_rand = db::track_by_id(rand_track_id_)->get().metadata.artist;
             same_artist_as_prev = artist_prev == artist_rand;
           }
           bool shuffle_allow_same_album_passed =

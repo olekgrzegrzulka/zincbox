@@ -327,11 +327,7 @@ class PopupAddToPlaylist : public Popup {
       std::string pretty_track;
       if (track_id.has_value() && db::track_by_id(track_id.value()).has_value()) {
         auto& track = db::track_by_id(track_id.value())->get();
-        if (track.artist.empty() || track.title.empty()) {
-          pretty_track = path_to_utf8(std::filesystem::path{track.path}.filename());
-        } else {
-          pretty_track = track.artist + " - " + track.title;
-        }
+        pretty_track = track.pretty_name();
       }
 
       set_layout("ttb fill fit expand m:8 s:8");

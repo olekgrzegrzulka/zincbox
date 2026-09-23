@@ -71,7 +71,7 @@ WidgetAlbumCover::WidgetAlbumCover(UI& ui_, std::optional<size_t> playlist_id_, 
   if (playlist_id.has_value()) {
     auto& playlist = db::playlist_by_id(playlist_id.value())->get();
     label_title->set_text(playlist.name);
-    label_author->set_text(playlist.author);
+    label_author->set_text(playlist.author_pretty());
   } else if (m_is_add_button) {
     label_title->set_text(tr::get("playlist.add_new_placeholder"));
   }

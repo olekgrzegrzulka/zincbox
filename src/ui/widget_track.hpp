@@ -3,6 +3,7 @@
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
@@ -76,14 +77,14 @@ class WidgetTrack final : public Button {
         label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
       }
       if (track.has_value()) {
-        if (track->get().artist.empty() || track->get().title.empty()) {
+        if (track->get().metadata.artist.empty() || track->get().metadata.title.empty()) {
           label_track_artist->set_is_drawn(false);
           label_track_artist->set_text("");
           label_track_artist->set_min_width(0);
           label_track_artist->set_max_width(0);
         } else {
           label_track_artist->set_is_drawn(true);
-          label_track_artist->set_text(track->get().artist);
+          label_track_artist->set_text(track->get().metadata.artist);
           label_track_artist->update();
           label_track_artist->set_min_width(0);
           label_track_artist->set_max_width(label_track_artist->get_text_extents().x);
@@ -95,11 +96,7 @@ class WidgetTrack final : public Button {
         label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
       }
       if (track.has_value()) {
-        if (track->get().artist.empty() || track->get().title.empty()) {
-          label_track_title->set_text(path_to_utf8(std::filesystem::path{track->get().path}.filename()));
-        } else {
-          label_track_title->set_text(track->get().title);
-        }
+        label_track_title->set_text(track->get().pretty_title());
         label_track_title->update();
       }
 
@@ -123,14 +120,14 @@ class WidgetTrack final : public Button {
       label_track_length->set_min_width(std::max<i32>(font_size * 2.2f, label_track_length->get_text_extents().x));
       label_track_length->set_max_width(std::max<i32>(font_size * 2.2f, label_track_length->get_text_extents().x));
 
-      if (track.has_value() && track->get().is_tombstone()) {
+      if (track.has_value() && track->get().get_flag(db::TOMBSTONE)) {
         label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
         label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
         label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
         label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
       }
 
-      set_playback_error(track.has_value() && track->get().is_playback_error());
+      set_playback_error(track.has_value() && track->get().get_flag(db::PLAYBACK_ERROR));
       update_text_colors();
     }
 
@@ -178,7 +175,7 @@ class WidgetTrack final : public Button {
           label_track_artist->set_text_color(label_track_artist->get_text_color() * 5.0f);
           label_track_title->set_text_color(label_track_title->get_text_color() * 5.0f);
           label_track_length->set_text_color(label_track_length->get_text_color() * 5.0f);
-        } else if (track->get().is_tombstone() || m_playback_error) {
+        } else if (track->get().get_flag(db::TOMBSTONE) || m_playback_error) {
           label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
           label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
           label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
