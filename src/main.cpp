@@ -1,17 +1,22 @@
-#include "opengl_includes.hpp"
 
 #include <csignal>
+
+#include "common/logger.hpp"
+#include "signal_handlers.hpp"
+#include "zincbox.hpp"
+
+#ifdef ZINCBOX_HAS_GUI
 #include <cstddef>
 #include <cstdlib>
 #include <SDL3/SDL.h>
 #include <nfd.hpp>
-#include "common/logger.hpp"
-#include "ui/sdl3_window.hpp"
-#include "signal_handlers.hpp"
+#include "opengl_includes.hpp"
 #include "ui/interface.hpp"
+#include "ui/sdl3_window.hpp"
 #include "ui/zincgui/input.hpp"
-#include "zincbox.hpp"
+#endif
 
+#ifdef ZINCBOX_HAS_GUI
 SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*) {
   zincbox::ui::DecorationHover decoration_hover = zincbox::ui::get_decoration_hover(p->x, p->y);
 
@@ -29,6 +34,7 @@ SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, voi
   default: return SDL_HITTEST_NORMAL;
   }
 }
+#endif
 
 int main() {
   // ----------------------------------------------------------------------
@@ -38,6 +44,7 @@ int main() {
   if (std::signal(SIGTERM, handle_sigterm) == SIG_ERR) { out::critical("failed to set up signal handler for SIGTERM"); }
   if (std::signal(SIGSEGV, handle_sigsegv) == SIG_ERR) { out::critical("failed to set up signal handler for SIGSEGV"); }
 
+#ifdef ZINCBOX_HAS_GUI
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
     out::critical("failed to initialize SDL3: {}", SDL_GetError());
     exit(1);
@@ -48,17 +55,20 @@ int main() {
     out::critical("failed to initialize NFD: {}", NFD::GetError());
     exit(1);
   }
+#endif
 
   // ----------------------------------------------------------------------
   //               Initialize zincbox submodules, deserialize
   // ----------------------------------------------------------------------
   zincbox::load_state_from_json();
   zincbox::init(zincbox::InitFlags::WINDOW | zincbox::InitFlags::MPRIS);
+#ifdef ZINCBOX_HAS_GUI
   SDL_Window* sdl_window = zincbox::window()->native_handle();
   SDL_SetWindowHitTest(sdl_window, hit_test_callback, NULL);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   zincgui::Input::init(sdl_window);
+#endif
   zincbox::apply_loaded_state();
 
   // ----------------------------------------------------------------------
@@ -72,6 +82,8 @@ int main() {
   zincbox::save_state_to_json();
   zincbox::save_db_to_file();
   zincbox::deinit();
+#ifdef ZINCBOX_HAS_GUI
   NFD_Quit();
   SDL_Quit();
+#endif
 }

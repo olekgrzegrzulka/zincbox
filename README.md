@@ -19,7 +19,7 @@ The menu button in the top-right corner provides quick access to search (also re
 
 # Building and Installation
 
-Zincbox is built with _CMake_. You will need a C++20 compliant compiler (_Clang_ or _GCC_) and a build system (_Make_ or _Ninja_) installed on your system.
+Zincbox is built with _CMake_. You will need a C++23 compliant compiler (_Clang_ or _GCC_) and a build system (_Make_ or _Ninja_) installed on your system.
 
 ## 1. Install Dependencies
 

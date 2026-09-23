@@ -1,8 +1,8 @@
 #pragma once
 #include <mutex>
+#include <optional>
 #include <queue>
 #include <string>
-#include <optional>
 #include "common/types.hpp"
 
 namespace mpris {

@@ -27,6 +27,7 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
+#ifdef ZINCBOX_HAS_GUI
 #include "opengl_includes.hpp"
 #include "theme_config.hpp"
 #include "ui/interface.hpp"
@@ -34,16 +35,19 @@
 #include "ui/theme.hpp"
 #include "ui/tray.hpp"
 #include "ui/zincgui/input.hpp"
+#endif
 
 static std::atomic<bool> s_running = false;
 static Settings s_settings;
-static std::unique_ptr<zincbox::SDL3Window> s_window = nullptr;
 static AppSerialized s_loaded_state;
+static void update_mpris();
 
+#ifdef ZINCBOX_HAS_GUI
+static std::unique_ptr<zincbox::SDL3Window> s_window = nullptr;
 static void update_mini_player_state();
 static void update_window_title();
 static void check_opengl_errors();
-static void update_mpris();
+#endif
 
 float zincbox::ui_scale() { return s_settings.interface.scale * 0.01f; }
 
@@ -61,6 +65,7 @@ void zincbox::init(u64 flags) {
 
   if (flags & zincbox::MPRIS) { mpris::init(); }
 
+#ifdef ZINCBOX_HAS_GUI
   if (flags & zincbox::TRAY) { tray::init(); }
 
   if (flags & zincbox::WINDOW) {
@@ -76,9 +81,11 @@ void zincbox::init(u64 flags) {
 
     zincbox::ui::init();
   }
+#endif
 }
 
 void zincbox::run() {
+#ifdef ZINCBOX_HAS_GUI
   s_window->make_current();
   if (s_running) { return; }
   s_running = true;
@@ -104,10 +111,26 @@ void zincbox::run() {
     long sleep_us = std::max(1000.0, 16666.0 - delta_us);
     if (!window()->vsync()) { std::this_thread::sleep_for(microseconds(sleep_us)); }
   }
+#else
+  if (s_running) { return; }
+  s_running = true;
+  while (s_running) {
+    using namespace std::chrono;
+    auto t1 = high_resolution_clock::now();
+    update_mpris();
+    player::update();
+
+    auto t2 = high_resolution_clock::now();
+    long delta_us = duration_cast<microseconds>(t2 - t1).count();
+    long sleep_us = std::max(1000.0, 16666.0 - delta_us);
+    std::this_thread::sleep_for(microseconds(sleep_us));
+  }
+#endif
 }
 
 void zincbox::stop() { s_running = false; }
 
+#ifdef ZINCBOX_HAS_GUI
 void zincbox::deinit() {
   tray::deinit();
   zincbox::ui::deinit();
@@ -115,6 +138,12 @@ void zincbox::deinit() {
   mpris::deinit();
   s_window = nullptr;
 }
+#else
+void zincbox::deinit() {
+  player::deinit();
+  mpris::deinit();
+}
+#endif
 
 void zincbox::load_state_from_json() {
   auto ec = glz::read_file_json(s_loaded_state, path_to_utf8(io::get_cfg_path()).c_str(), std::string{});
@@ -154,6 +183,7 @@ void zincbox::apply_loaded_state() {
   player::signal_on_queue_changed.emit(false);
   player::signal_on_track_changed.emit();
 
+#ifdef ZINCBOX_HAS_GUI
   zincbox::ui::set_mini_player(s_loaded_state.interface.mini_player);
 
   zincbox::ui::set_playlists_scroll_offset(s_loaded_state.interface.playlists_scroll_offset);
@@ -165,6 +195,7 @@ void zincbox::apply_loaded_state() {
     if (s_loaded_state.interface.window_maximized) { s_window->maximize(); }
     s_window->set_decoration(!theme::config().custom_window_decoration.enabled);
   }
+#endif
 }
 
 void zincbox::save_state_to_json() {
@@ -188,6 +219,7 @@ void zincbox::save_state_to_json() {
 
   state.settings = s_settings;
 
+#ifdef ZINCBOX_HAS_GUI
   state.interface = {
     .mini_player = zincbox::ui::get_mini_player(),
     .playlists_scroll_offset = zincbox::ui::get_playlists_scroll_offset(),
@@ -198,6 +230,9 @@ void zincbox::save_state_to_json() {
     .window_height = s_window ? s_window->height() : 0,
     .window_maximized = s_window ? s_window->is_maximized() : false,
   };
+#else
+  state.interface = s_loaded_state.interface;
+#endif
 
   auto ec =
     glz::write_file_json<glz::opts{.prettify = true}>(state, path_to_utf8(io::get_cfg_path()).c_str(), std::string{});
@@ -211,9 +246,12 @@ void zincbox::save_db_to_file() {
   s.flush();
 }
 
+#ifdef ZINCBOX_HAS_GUI
 zincbox::SDL3Window* zincbox::window() { return s_window.get(); }
+#endif
 Settings& zincbox::settings() { return s_settings; }
 
+#ifdef ZINCBOX_HAS_GUI
 static void update_mini_player_state() {
   static std::optional<bool> is_mini_player = std::nullopt;
   if (is_mini_player != zincbox::ui::get_mini_player()) {
@@ -251,6 +289,7 @@ static void update_window_title() {
 
   s_window->title(window_title.c_str());
 }
+#endif
 
 static void update_mpris() {
   while (auto cmd = mpris::command_pop()) {
@@ -306,6 +345,7 @@ static void update_mpris() {
   }
 }
 
+#ifdef ZINCBOX_HAS_GUI
 static const char* get_opengl_error_string(GLenum err) {
   switch (err) {
   case GL_NO_ERROR: return "No error";
@@ -328,3 +368,4 @@ static void check_opengl_errors() {
     out::debug_error("GL error 0x{}", error_hex.str());
   }
 }
+#endif

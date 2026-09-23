@@ -1,13 +1,13 @@
 #pragma once
-#include <concepts>
-#include <memory>
-#include <utility>
 #include "common/types.hpp"
+
+#ifdef ZINCBOX_HAS_GUI
 #include "ui/sdl3_window.hpp"
 
 namespace zincbox {
   class SDL3Window;
 }
+#endif
 
 struct Settings;
 
@@ -27,6 +27,8 @@ namespace zincbox {
   void save_state_to_json();
   void save_db_to_file();
 
+#ifdef ZINCBOX_HAS_GUI
   SDL3Window* window();
+#endif
   Settings& settings();
 } // namespace zincbox

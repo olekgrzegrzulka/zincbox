@@ -1,14 +1,15 @@
 #include "core/mpris.hpp"
+#include <optional>
 #include <string>
-#include <utility>
-#include "common/logger.hpp"
 #include "common/types.hpp"
 
-#ifndef _WIN32
+#ifdef ZINCBOX_HAS_MPRIS
 #include <map>
 #include <memory>
 #include <thread>
+#include <utility>
 #include <vector>
+#include "common/logger.hpp"
 #include <sdbus-c++/IConnection.h>
 #include <sdbus-c++/sdbus-c++.h>
 
