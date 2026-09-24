@@ -9,8 +9,8 @@
 #include <span>
 #include <string>
 #include <utility>
+#include <variant>
 #include <glaze/glaze.hpp>
-#include <nfd.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/serialized_state.hpp"
@@ -36,6 +36,7 @@
 #include "splitter.hpp"
 #include "theme.hpp"
 #include "theme_config.hpp"
+#include "ui/file_dialog.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_definitions.hpp"
 #include "ui/popup_search.hpp"
@@ -86,6 +87,17 @@ static PanelControls* panel_controls{};
 static Splitter* splitter{};
 static ToolTip* tooltip_drag{};
 static Notification* notification_scan_progress{};
+
+static enum class FileDialogOpen : u8 {
+  NONE,
+  CREATE_COLLECTION,
+  ADD_PATH_TO_COLLECTION,
+  SAVE_JSON,
+  PICK_PLAYLIST_IMAGE
+} file_dialog_type = FileDialogOpen::NONE;
+
+static std::future<std::vector<std::filesystem::path>> file_dialog_future_path;
+static std::variant<size_t, std::string, std::monostate> file_dialog_data = std::monostate{};
 
 static void input(vec2i window_size);
 static void rebuild();
@@ -251,26 +263,11 @@ void zincbox::ui::init() {
   };
   panel_top->on_close_button_pressed = []() -> void { zincbox::stop(); };
 
-  panel_top->on_add_collection_button_pressed = [&](Widget*) {
-    NFD::UniquePathSet out_paths;
-    auto result = NFD::PickFolderMultiple(out_paths, (const nfdu8char_t*)nullptr);
-    if (result == NFD_OKAY) {
-      nfdpathsetsize_t numPaths;
-      NFD::PathSet::Count(out_paths, numPaths);
-      if (numPaths > 0) {
-        nfdpathsetsize_t i;
-        std::string collection_name = (tr::get("collection.default_name")) + std::to_string(db::collection_count() + 1);
-        auto collection_id = db::add_collection(collection_name);
-        for (i = 0; i < numPaths; i += 1) {
-          NFD::UniquePathSetPathU8 path_utf8;
-          NFD::PathSet::GetPath(out_paths, i, path_utf8);
-          auto path = utf8_to_path(path_utf8.get());
-          if (db::add_path_to_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
-        }
-        recreate_panel_top();
-        notifications->push(tr::format("notification.added_collection", collection_name));
-      }
-    }
+  panel_top->on_add_collection_button_pressed = [&](Widget*) -> void {
+    if (file_dialog_type != FileDialogOpen::NONE) { return; }
+    file_dialog_type = FileDialogOpen::CREATE_COLLECTION;
+    file_dialog_data = std::monostate{};
+    file_dialog_future_path = file_dialog::pick_folder_multiple();
   };
 
   panel_top->on_hamburger_button_pressed = [&](Widget* w) -> void {
@@ -406,6 +403,73 @@ void zincbox::ui::update(vec2i window_size) {
       panel_albums->props.collection_id = scan_summary->collection_id;
       panel_albums->recreate();
     }
+  }
+
+  if (file_dialog::is_ready(file_dialog_future_path)) {
+    auto paths = file_dialog_future_path.get();
+
+    if (!paths.empty()) {
+      switch (file_dialog_type) {
+      case FileDialogOpen::CREATE_COLLECTION: {
+        std::string collection_name = (tr::get("collection.default_name")) + std::to_string(db::collection_count() + 1);
+        auto collection_id = db::add_collection(collection_name);
+        bool added = false;
+
+        for (auto&& path : paths) {
+          added |= db::add_path_to_collection(collection_id, path);
+        }
+
+        if (added) { zincbox::scanner::scan_collection(collection_id); }
+
+        recreate_panel_top();
+        notifications->push(tr::format("notification.added_collection", collection_name));
+        break;
+      }
+
+      case FileDialogOpen::ADD_PATH_TO_COLLECTION: {
+        auto collection_id = std::get<db::collection_id_t>(file_dialog_data);
+        if (db::collection_count() <= collection_id) { break; }
+        if (db::add_path_to_collection(collection_id, paths.front())) {
+          zincbox::scanner::scan_collection(collection_id);
+        }
+        break;
+      }
+
+      case FileDialogOpen::SAVE_JSON: {
+        const auto& json_data = std::get<std::string>(file_dialog_data);
+        std::ofstream out(paths.front());
+        if (out.is_open()) {
+          out << json_data;
+          out.flush();
+          out.close();
+        } else {
+          std::string err_msg = std::generic_category().message(errno);
+          notifications->push_error(tr::format("notification.save_playlist_to_json_error", err_msg));
+        }
+        break;
+      }
+
+      case FileDialogOpen::PICK_PLAYLIST_IMAGE: {
+        auto playlist_id = std::get<db::playlist_id_t>(file_dialog_data);
+        if (db::collection_count() <= playlist_id) { break; }
+        db::set_playlist_image(playlist_id, paths.front().string());
+        std::string playlist_id_str = std::to_string(playlist_id);
+
+        root->get_texture_atlas().remove_texture(playlist_id_str);
+        root->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64,
+                                              64);
+        panel_albums->recreate();
+        break;
+      }
+
+      default: {
+        break;
+      }
+      }
+    }
+
+    file_dialog_type = FileDialogOpen::NONE;
+    file_dialog_data = std::monostate{};
   }
 
   input(window_size);
@@ -1069,11 +1133,10 @@ static void show_popup_set_sources(db::collection_id_t collection_id) {
   };
 
   popup->on_add_dir_pressed = [collection_id]() -> void {
-    NFD::UniquePathU8 out_path;
-    if (NFD::PickFolder(out_path, (const nfdu8char_t*)nullptr) == NFD_OKAY) {
-      fs::path dir = utf8_to_path(out_path.get());
-      if (db::add_path_to_collection(collection_id, dir)) { zincbox::scanner::scan_collection(collection_id); }
-    }
+    if (file_dialog_type != FileDialogOpen::NONE) { return; }
+    file_dialog_type = FileDialogOpen::ADD_PATH_TO_COLLECTION;
+    file_dialog_data = collection_id;
+    file_dialog_future_path = zincbox::ui::file_dialog::pick_folder();
   };
 }
 
@@ -1594,101 +1657,88 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
   }
 
   if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album) {
-    buttons.emplace_back((tr::get("dialog.action.save_as_json")),
+
+    buttons.emplace_back(
+      (tr::get("dialog.action.save_as_json")),
+      [callback_close, playlist_id]() -> void {
+        if (callback_close) { callback_close(); }
+        if (file_dialog_type != FileDialogOpen::NONE) { return; }
+
+        auto& playlist = db::playlist_by_id(playlist_id)->get();
+        std::string json;
+        auto ec = glz::write<glz::opts{.prettify = true}>(PlaylistSerialized(playlist), json);
+        if (ec) {
+          notifications->push_error(tr::format("notification.save_playlist_to_json_error", ec.custom_error_message));
+          return;
+        }
+
+        file_dialog_type = FileDialogOpen::SAVE_JSON;
+        file_dialog_data = std::move(json);
+        std::string json_filter_label = tr::get("dialog.filter.json_files");
+        auto file_name_utf8 = playlist.name + ".json";
+
+        file_dialog_future_path = zincbox::ui::file_dialog::save_json_dialog(file_name_utf8, json_filter_label);
+      },
+      "save_playlist_as_json");
+
+    buttons.emplace_back((tr::get("dialog.action.pick_image_file")),
                          [callback_close, playlist_id]() -> void {
                            if (callback_close) { callback_close(); }
-                           auto& playlist = db::playlist_by_id(playlist_id)->get();
-                           std::string json;
-                           auto ec = glz::write<glz::opts{.prettify = true}>(PlaylistSerialized(playlist), json);
-                           if (ec) {
-                             return; // FIXME: handle errors
-                           }
-                           NFD::UniquePathU8 outPath;
-                           std::string json_filter_label = tr::get("dialog.filter.json_files");
-                           nfdfilteritem_t filterList[1] = {{json_filter_label.c_str(), "json"}};
-                           auto file_name_utf8 = playlist.name + ".json";
-                           const nfdu8char_t* defaultName = file_name_utf8.c_str();
-                           auto result = NFD::SaveDialog(outPath, filterList, 1, nullptr, defaultName);
-                           if (result == NFD_OKAY) {
-                             nfdu8char_t* path = outPath.get();
-                             std::string path_str(path);
-                             std::ofstream out(path_str);
-                             out << json;
-                             out.flush();
-                             out.close();
-                           } else {
-                             // FIXME: handle errors
-                           }
+                           if (file_dialog_type != FileDialogOpen::NONE) { return; }
+
+                           file_dialog_type = FileDialogOpen::PICK_PLAYLIST_IMAGE;
+                           file_dialog_data = playlist_id;
+                           std::string image_filter_label = tr::get("dialog.filter.image_files");
+
+                           file_dialog_future_path = zincbox::ui::file_dialog::pick_image_dialog(image_filter_label);
                          },
-                         "save_playlist_as_json");
+                         "pick_playlist_cover");
+
+    if (!db::playlist_by_id(playlist_id)->get().art_64x64.empty()) {
+      buttons.emplace_back((tr::get("dialog.action.reset_image")),
+                           [callback_close, playlist_id]() -> void {
+                             if (callback_close) { callback_close(); }
+                             db::reset_playlist_image(playlist_id);
+                             std::string playlist_id_str = std::to_string(playlist_id);
+                             root->get_texture_atlas().remove_texture(playlist_id_str);
+                             root->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
+                             panel_albums->recreate();
+                           },
+                           "reset_playlist_cover");
+    }
+
+    if (db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album) {
+      buttons.emplace_back((tr::get("dialog.action.show_directory")),
+                           [callback_close, playlist_id]() -> void {
+                             if (callback_close) { callback_close(); }
+                             auto& playlist = db::playlist_by_id(playlist_id)->get();
+                             if (playlist.get_tracks_count() > 0) {
+                               auto& track = db::track_by_id(playlist.get_track_ids()[0])->get();
+                               io::open_folder_in_file_manager(track.file_path.parent_path());
+                             }
+                           },
+                           "show_playlist_directory");
+    }
+
+    if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
+      buttons.emplace_back((tr::get("dialog.action.remove")),
+                           [callback_close, playlist_id]() -> void {
+                             if (callback_close) { callback_close(); }
+                             show_popup_delete_playlist(playlist_id);
+                           },
+                           "delete_playlist");
+    }
+
+    vec2i at = widget->get_position(Anchor::CENTER);
+    popover_descriptor d{
+      .id = "playlist_actions",
+      .title = "",
+      .at = at,
+      .distance = 16,
+      .buttons = buttons,
+    };
+    popup_controller->create_popover(d);
   }
-
-  buttons.emplace_back((tr::get("dialog.action.pick_image_file")),
-                       [callback_close, playlist_id]() -> void {
-                         if (callback_close) { callback_close(); }
-                         NFD::UniquePathU8 out_path_n;
-
-                         std::string image_filter_label = tr::get("dialog.filter.image_files");
-                         nfdfilteritem_t filter_item[1] = {{image_filter_label.c_str(), "png,jpg,jpeg"}};
-                         auto result = NFD::OpenDialog(out_path_n, filter_item, 1);
-
-                         if (result == NFD_OKAY) {
-                           nfdu8char_t* path = out_path_n.get();
-                           std::string path_str(path);
-                           db::set_playlist_image(playlist_id, path_str);
-                           std::string playlist_id_str = std::to_string(playlist_id);
-                           root->get_texture_atlas().remove_texture(playlist_id_str);
-                           root->get_texture_atlas().add_texture(
-                             playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64, 64);
-                           panel_albums->recreate();
-                         }
-                       },
-                       "pick_playlist_cover");
-
-  if (!db::playlist_by_id(playlist_id)->get().art_64x64.empty()) {
-    buttons.emplace_back((tr::get("dialog.action.reset_image")),
-                         [callback_close, playlist_id]() -> void {
-                           if (callback_close) { callback_close(); }
-                           db::reset_playlist_image(playlist_id);
-                           std::string playlist_id_str = std::to_string(playlist_id);
-                           root->get_texture_atlas().remove_texture(playlist_id_str);
-                           root->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
-                           panel_albums->recreate();
-                         },
-                         "reset_playlist_cover");
-  }
-
-  if (db::playlist_by_id(playlist_id)->get().type == db::PlaylistType::Album) {
-    buttons.emplace_back((tr::get("dialog.action.show_directory")),
-                         [callback_close, playlist_id]() -> void {
-                           if (callback_close) { callback_close(); }
-                           auto& playlist = db::playlist_by_id(playlist_id)->get();
-                           if (playlist.get_tracks_count() > 0) {
-                             auto& track = db::track_by_id(playlist.get_track_ids()[0])->get();
-                             io::open_folder_in_file_manager(track.file_path.parent_path());
-                           }
-                         },
-                         "show_playlist_directory");
-  }
-
-  if (db::playlist_by_id(playlist_id)->get().type != db::PlaylistType::Album && playlist_id != 0) {
-    buttons.emplace_back((tr::get("dialog.action.remove")),
-                         [callback_close, playlist_id]() -> void {
-                           if (callback_close) { callback_close(); }
-                           show_popup_delete_playlist(playlist_id);
-                         },
-                         "delete_playlist");
-  }
-
-  vec2i at = widget->get_position(Anchor::CENTER);
-  popover_descriptor d{
-    .id = "playlist_actions",
-    .title = "",
-    .at = at,
-    .distance = 16,
-    .buttons = buttons,
-  };
-  popup_controller->create_popover(d);
 }
 
 static void show_popover_playlist_sort_options(db::playlist_id_t playlist_id, Widget* widget) {
@@ -1832,13 +1882,7 @@ static void show_popup_new_playlist(const std::function<void(std::optional<db::p
 
 static void show_popup_new_smart_playlist() { popup_controller->show_popup<PopupCreateSmartPlaylist>(); }
 
-static void show_dialog_new_playlist_from_json() {
-  NFD::UniquePathU8 result;
-  std::string json_filter_label = tr::get("dialog.filter.json_files");
-  nfdfilteritem_t filterList[1] = {{json_filter_label.c_str(), "json"}};
-  nfdresult_t res = NFD::OpenDialog(result, filterList, 1);
-  if (res == NFD_OKAY) {}
-}
+static void show_dialog_new_playlist_from_json() {}
 
 static void add_track_to_playlist(db::playlist_id_t playlist_id, db::track_id_t track_id) {
   bool loved_tracks = playlist_id == db::playlist_loved_tracks_id();

@@ -8,6 +8,10 @@ db::Collection::Collection(std::ifstream& is) {
 
   size_t paths_size = 0;
   read_bin(is, paths_size);
+  if (paths_size > 4096) {
+    out::critical("Database corrupted: invalid paths_size");
+    exit(1);
+  }
   for (size_t i = 0; i < paths_size; i += 1) {
     std::string path_utf8;
     read_str(is, path_utf8);
@@ -16,6 +20,10 @@ db::Collection::Collection(std::ifstream& is) {
 
   size_t playlist_ids_size = 0;
   read_bin(is, playlist_ids_size);
+  if (playlist_ids_size > 65536) {
+    out::critical("Database corrupted: invalid paths_size");
+    exit(1);
+  }
   m_playlist_ids.resize(playlist_ids_size);
   for (size_t i = 0; i < playlist_ids_size; i += 1) {
     size_t value;

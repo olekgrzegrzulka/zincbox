@@ -41,6 +41,7 @@
   "notification.removed_track_from_playlist": "Usunięto '{}' z '{}'",
   "notification.removed_tracks_from_playlist": "Usunięto {} utwory(-ów) z '{}'",
   "notification.renamed_playlist": "Playlista zmieniona na '{}'",
+  "notification.save_playlist_to_json_error": "Nie udało się zapisać playlisty jako JSON: {}",
   "notification.saved_queue_as_playlist": "Zapisano kolejkę jako playlistę '{}'",
   "notification.scan_progress": "Znaleziono {} pliki(-ów) w {} katalogu(-ach)",
   "notification.unloved_track": "Usunięto '{}' z ulubionych",

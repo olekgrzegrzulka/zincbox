@@ -12,7 +12,7 @@ namespace zincgui {
 
 class Notification : public zincgui::Sprite {
   public:
-    Notification(zincgui::Root& ui_);
+    Notification(zincgui::Root& ui_, bool error = false);
 
     void update() override;
 
@@ -27,7 +27,7 @@ class InterfaceNotifications : public zincgui::Widget {
     InterfaceNotifications(zincgui::Root& ui_);
 
     void push(std::string_view);
-
+    void push_error(std::string_view);
     Notification* push_persistent(std::string_view);
     void dismiss(Notification*);
     void dismiss_after(Notification*, i32);
