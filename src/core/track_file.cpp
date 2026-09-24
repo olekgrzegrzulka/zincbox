@@ -1,22 +1,14 @@
 #include "track_file.hpp"
 #include <filesystem>
-#include <optional>
 #include <string>
-#include <vector>
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 #include <taglib/toolkit/tpropertymap.h>
 #include <tfile.h>
 #include <tfilestream.h>
-#include "common/debug.hpp"
-#include "core/io.hpp"
-
-#define XXH_INLINE_ALL
-#include <lib/xxHash/xxhash.h>
 
 namespace fs = std::filesystem;
-static std::string hash_taglib_file(TagLib::File* file);
 
 zincbox::scanner::TrackFile::TrackFile(const fs::path& path) {
   file_path = path;
@@ -52,66 +44,7 @@ zincbox::scanner::TrackFile::TrackFile(const fs::path& path) {
     metadata.bitrate_kb_s = audio_props->bitrate();
   }
 
-  hash = hash_taglib_file(f.file());
-}
-
-class TrackHasher {
-  public:
-    TrackHasher() {
-      state_ = XXH3_createState();
-      ensure(state_);
-    }
-
-    ~TrackHasher() {
-      if (state_) { XXH3_freeState(state_); }
-    }
-
-    TrackHasher(const TrackHasher&) = delete;
-    TrackHasher& operator=(const TrackHasher&) = delete;
-
-    std::string hash_file(TagLib::File* file) {
-      if (!file || !file->isValid()) { return ""; }
-
-      XXH3_128bits_reset(state_);
-
-      file->seek(0, TagLib::File::Beginning);
-
-      constexpr unsigned long buffer_size = 128 * 1024;
-      TagLib::ByteVector buffer;
-
-      while (true) {
-        buffer = file->readBlock(buffer_size);
-        if (buffer.isEmpty()) { break; }
-        XXH3_128bits_update(state_, buffer.data(), buffer.size());
-      }
-
-      XXH128_hash_t hash = XXH3_128bits_digest(state_);
-
-      return to_hex(hash);
-    }
-
-  private:
-    XXH3_state_t* state_{nullptr};
-
-    std::string to_hex(const XXH128_hash_t& hash) {
-      static const char hex_digits[] = "0123456789abcdef";
-      std::string result(32, '0');
-
-      auto write64 = [&](uint64_t val, char* dest) {
-        for (int i = 15; i >= 0; --i) {
-          dest[i] = hex_digits[val & 0x0F];
-          val >>= 4;
-        }
-      };
-
-      write64(hash.high64, &result[0]);
-      write64(hash.low64, &result[16]);
-
-      return result;
-    }
-};
-
-static std::string hash_taglib_file(TagLib::File* file) {
-  thread_local TrackHasher hasher;
-  return hasher.hash_file(file);
+  file_size = static_cast<u64>(fs::file_size(file_path));
+  auto ftime = fs::last_write_time(file_path);
+  last_modified = std::chrono::duration_cast<std::chrono::milliseconds>(ftime.time_since_epoch()).count();
 }

@@ -15,7 +15,6 @@ add_subdirectory(taglib SYSTEM)
 add_subdirectory(miniz SYSTEM)
 add_subdirectory(fmt EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(glaze SYSTEM)
-add_subdirectory(xxHash SYSTEM)
 
 if(TARGET miniz AND NOT TARGET miniz::miniz)
   add_library(miniz::miniz ALIAS miniz)

@@ -74,7 +74,6 @@ namespace db {
   // track getters
   std::optional<std::reference_wrapper<const Track>> track_by_id(track_id_t);
   std::unordered_set<track_id_t> track_by_title(std::string_view);
-  std::unordered_set<track_id_t> track_by_hash(const std::string&);
   std::unordered_set<track_id_t> track_by_file_name(const std::filesystem::path&);
   std::unordered_set<track_id_t> track_by_artist_title(std::string_view, std::string_view);
   std::optional<track_id_t> track_by_path(const std::filesystem::path&);
@@ -87,7 +86,8 @@ namespace db {
   void set_track_playback_error(track_id_t, bool playback_error);
   void mark_track_as_tombstone(track_id_t);
   void set_track_flag(track_id_t, TrackFlag, bool);
-  void set_track_hash(track_id_t, std::string);
+  void set_track_file_size(track_id_t, u64);
+  void set_track_last_modified(track_id_t, i64);
   void set_track_file_path(track_id_t, fs::path);
   void set_track_metadata(track_id_t, zincbox::TrackMetadata);
 

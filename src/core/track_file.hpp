@@ -1,6 +1,6 @@
 #pragma once
 #include <filesystem>
-#include <string>
+#include "common/types.hpp"
 #include "core/musicdb/track_metadata.hpp"
 
 namespace zincbox {
@@ -14,7 +14,8 @@ namespace zincbox {
         fs::path file_name_without_extension() const { return file_path.stem(); }
         fs::path file_extension() const { return file_path.extension(); }
         fs::path parent_directory_name() const { return file_path.parent_path().stem(); }
-        std::string hash{};
+        u64 file_size{};
+        i64 last_modified{};
 
         TrackFile(const fs::path& path);
 

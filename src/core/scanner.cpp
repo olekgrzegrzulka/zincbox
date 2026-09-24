@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "common/debug.hpp"
 #include "common/types.hpp"
 #include "common/worker.hpp"
 #include "core/io.hpp"
@@ -87,21 +88,6 @@ std::optional<db::track_id_t> match_track(db::collection_id_t c_id, const sc::Tr
     if (same_collection && not_found_yet) { return track_at_same_path.value(); }
   }
 
-  std::unordered_set<db::track_id_t> track_with_same_hash = db::track_by_hash(track_file.hash);
-  for (auto track : track_with_same_hash) {
-    bool not_found_yet = db::track_by_id(track)->get().get_flag(db::NOT_FOUND_DURING_RESCAN);
-    std::optional<std::pair<db::track_id_t, i32>> best_track;
-
-    if (db::collection_of_track(track) == c_id && not_found_yet) {
-      i32 score = compute_similiarity_index(db::track_by_id(track)->get(), track_file);
-      score += (i32)(track_file.metadata.title == db::track_by_id(track)->get().metadata.title);
-      score += (i32)(track_file.metadata.artist == db::track_by_id(track)->get().metadata.artist);
-      if (!best_track || best_track->second < score) { best_track = {track, score}; }
-    }
-
-    if (best_track) { return best_track->first; }
-  }
-
   auto tracks_with_same_title_and_artist =
     db::track_by_artist_title(track_file.metadata.artist, track_file.metadata.title);
   auto tracks_with_same_file_name = db::track_by_file_name(track_file.file_name_without_extension());
@@ -178,21 +164,24 @@ std::optional<sc::ScanProgress> sc::get_progress() {
         auto& track = db::track_by_id(*track_id)->get();
         bool same_metadata = track.metadata == track_file.metadata;
         bool same_file_path = track.file_path == track_file.file_path;
-        bool same_hash = track.hash == track_file.hash;
-        if (same_metadata && same_file_path && same_hash) {
+        bool same_file_size_and_last_modified =
+          track.file_size == track_file.file_size && track.last_modified == track_file.last_modified;
+        if (same_metadata && same_file_path && same_file_size_and_last_modified) {
           db::set_track_flag(*track_id, db::NOT_FOUND_DURING_RESCAN, false);
           import_summary.skipped_tracks.emplace_back(*track_id);
         } else {
           db::set_track_flag(*track_id, db::NOT_FOUND_DURING_RESCAN, false);
           import_summary.modified_tracks.emplace_back(*track_id);
-          db::set_track_hash(*track_id, track_file.hash);
-          db::set_track_file_path(*track_id, track_file.file_path);
           db::set_track_metadata(*track_id, std::move(track_file.metadata));
+          db::set_track_file_path(*track_id, track_file.file_path);
+          db::set_track_file_size(*track_id, track_file.file_size);
+          db::set_track_last_modified(*track_id, track_file.last_modified);
         }
       } else {
         db::Track track;
         track.metadata = std::move(track_file.metadata);
-        track.hash = track_file.hash;
+        track.file_size = track_file.file_size;
+        track.last_modified = track_file.last_modified;
         track.file_path = track_file.file_path;
         auto track_id_new = db::add_orphaned_track(collection_id, std::move(track));
         import_summary.added_tracks.emplace_back(track_id_new);
