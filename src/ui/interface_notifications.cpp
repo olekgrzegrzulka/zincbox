@@ -54,22 +54,40 @@ void InterfaceNotifications::push(std::string_view message) {
   notifications.emplace_back(&w);
 }
 
+Notification* InterfaceNotifications::push_persistent(std::string_view message) {
+  auto& w = add_child<Notification>();
+  w.label->set_text(message);
+  w.label->update();
+  w.timer = -1;
+  notifications.emplace_back(&w);
+  return &w;
+}
+
+void InterfaceNotifications::dismiss(Notification* w) { dismiss_after(w, 0); }
+
+void InterfaceNotifications::dismiss_after(Notification* w, i32 frames) {
+  if (w && !w->dismissed) {
+    w->timer = frames + HIDE_TIMER_THRESHOLD;
+    w->dismissed = true;
+  }
+}
+
 void InterfaceNotifications::update() {
   static const float scale = zincbox::ui_scale();
 
   i32 offset = 0;
   for (auto* w : notifications) {
-    float target_y =
-      w->timer > HIDE_TIMER_THRESHOLD ? -(theme::config().notification.height + offset) : OFFSCREEN_Y_POSITION;
+    bool visible = w->timer > HIDE_TIMER_THRESHOLD || w->timer < 0;
+    float target_y = visible ? -(theme::config().notification.height + offset) : OFFSCREEN_Y_POSITION;
     w->y_lerped = w->y_lerped * LERP_FACTOR + target_y * (1.0f - LERP_FACTOR);
     w->set_y(w->y_lerped);
-    if (w->timer > HIDE_TIMER_THRESHOLD) { offset += w->get_height() + theme::config().notification.spacing * scale; }
+    if (visible) { offset += w->get_height() + theme::config().notification.spacing * scale; }
 
-    if (w->timer <= 0) { w->set_marked_for_deletion(true); }
+    if (w->timer == 0) { w->set_marked_for_deletion(true); }
   }
 
   notifications.erase(
-    std::remove_if(notifications.begin(), notifications.end(), [](Notification* w) { return w->timer <= 0; }),
+    std::remove_if(notifications.begin(), notifications.end(), [](Notification* w) -> bool { return w->timer == 0; }),
     notifications.end());
 
   Widget::update();

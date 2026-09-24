@@ -30,6 +30,7 @@ ScrollableView::ScrollableView(Root& ui_) : Widget(ui_) {
   m_content = &m_container->add_child<Widget>();
   m_content->set_layout("ttb m:8 s:8 left fit expand");
 
+  m_background->set_texture("panel_dark");
   m_background->set_ignore_parents_layout(true);
 }
 

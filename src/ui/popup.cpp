@@ -52,6 +52,33 @@ void Popup::event(Input::InputEventMouseButton& e) {
 
   if (!e.handled) { Sprite::event(e); }
 }
+
+i32 Popup::get_max_content_width() const {
+  constexpr float MIN_WINDOW_W = 480.0f;
+  constexpr float NORMAL_WINDOW_W = 1200.0f;
+  constexpr float MIN_MARGIN = 16.0f;
+  constexpr float NORMAL_MARGIN = 160.0f;
+
+  float window_w = static_cast<float>(ui.get_window_width());
+  float t = std::clamp((window_w - MIN_WINDOW_W) / (NORMAL_WINDOW_W - MIN_WINDOW_W), 0.0f, 1.0f);
+  i32 margin = static_cast<i32>(std::lerp(MIN_MARGIN, NORMAL_MARGIN, t));
+
+  return std::max<i32>(200, ui.get_window_width() - margin);
+}
+
+i32 Popup::get_max_content_height() const {
+  constexpr float MIN_WINDOW_H = 300.0f;
+  constexpr float NORMAL_WINDOW_H = 800.0f;
+  constexpr float MIN_MARGIN = 16.0f;
+  constexpr float NORMAL_MARGIN = 120.0f;
+
+  float window_h = static_cast<float>(ui.get_window_height());
+  float t = std::clamp((window_h - MIN_WINDOW_H) / (NORMAL_WINDOW_H - MIN_WINDOW_H), 0.0f, 1.0f);
+  i32 margin = static_cast<i32>(std::lerp(MIN_MARGIN, NORMAL_MARGIN, t));
+
+  return std::max<i32>(100, ui.get_window_height() - margin);
+}
+
 Popover::Popover(Root& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
   arrow = &add_child<Sprite>(arrow_on_top ? "popover_arrow" : "popover_arrow_inverted");
   arrow->set_ignore_parents_layout(true);
