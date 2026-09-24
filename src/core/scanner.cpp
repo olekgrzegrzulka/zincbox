@@ -2,6 +2,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "common/types.hpp"
@@ -17,55 +18,55 @@
 namespace sc = zincbox::scanner;
 namespace fs = std::filesystem;
 
-void task_scan_directory(fs::path scanned_directory, JobContext<sc::ScanProgress, sc::ScanResult> ctx);
+void task_scan_directory(std::unordered_set<fs::path>, JobContext<sc::ScanProgress, sc::ScanResult>);
 using ScannerWorker = Worker<task_scan_directory, sc::ScanProgress, sc::ScanResult>;
 
 static ScannerWorker s_worker;
-static std::unordered_map<fs::path, std::pair<ScannerWorker::job_id_t, db::collection_id_t>> s_scanned_paths;
+static std::unordered_map<db::collection_id_t, ScannerWorker::job_id_t> s_scanned_collections;
 static std::vector<std::pair<std::unique_ptr<zincbox::scanner::ScanResult>, db::collection_id_t>> s_scan_results;
 
-void task_scan_directory(fs::path root, JobContext<sc::ScanProgress, sc::ScanResult> ctx) {
-  if (!fs::is_directory(root)) {
-    ctx.set_result(sc::ScanResult{});
-    return;
-  }
-
+void task_scan_directory(std::unordered_set<fs::path> paths, JobContext<sc::ScanProgress, sc::ScanResult> ctx) {
   ctx.set_progress(sc::ScanProgress{.files_scanned = 0});
 
   sc::ScanProgress prog;
   sc::ScanResult res;
 
-  for (auto& file : fs::recursive_directory_iterator(root)) {
-    if (!file.path().has_root_directory()) { continue; }
-    auto parent_directory = file.path().root_directory();
-    if (file.is_regular_file()) {
-      if (io::is_cover_file(file)) {
-        res.files[parent_directory].image_files.emplace_back(file.path());
-        prog.files_scanned += 1;
-      } else if (io::is_music_file(file)) {
-        auto track_file = sc::TrackFile(file.path());
-        if (track_file.error) {
-          res.errors.emplace_back(track_file.file_path);
-        } else {
-          res.files[parent_directory].track_files.emplace_back(std::move(track_file));
+  for (auto& root : paths) {
+    if (!fs::is_directory(root)) { continue; }
+    for (auto& file : fs::recursive_directory_iterator(root)) {
+      if (!file.path().has_root_directory()) { continue; }
+      auto parent_directory = file.path().root_directory();
+      if (file.is_regular_file()) {
+        if (io::is_cover_file(file)) {
+          res.files[parent_directory].image_files.emplace_back(file.path());
+          prog.files_scanned += 1;
+        } else if (io::is_music_file(file)) {
+          auto track_file = sc::TrackFile(file.path());
+          if (track_file.error) {
+            res.errors.emplace_back(track_file.file_path);
+          } else {
+            res.files[parent_directory].track_files.emplace_back(std::move(track_file));
+          }
+          prog.files_scanned += 1;
         }
-        prog.files_scanned += 1;
+      } else if (file.is_directory()) {
+        prog.directories_scanned += 1;
       }
-    } else if (file.is_directory()) {
-      prog.directories_scanned += 1;
-    }
 
-    ctx.set_progress(prog);
+      ctx.set_progress(prog);
+    }
   }
 
   ctx.set_result(std::move(res));
   return;
 }
 
-void sc::scan_directory(fs::path dir, db::collection_id_t collection_id) {
+void sc::scan_collection(db::collection_id_t collection_id) {
   if (collection_id == 0) { return; }
-  if (s_scanned_paths.contains(dir)) { return; }
-  s_scanned_paths[dir] = {s_worker.run(dir), collection_id};
+  if (collection_id >= db::collection_count()) { return; }
+  if (s_scanned_collections.contains(collection_id)) { return; }
+  auto dirs = db::collection_by_id(collection_id)->get().paths();
+  s_scanned_collections[collection_id] = s_worker.run(std::move(dirs));
 }
 
 i32 compute_similiarity_index(const db::Track& a, const zincbox::scanner::TrackFile& b) {
@@ -126,9 +127,8 @@ std::optional<db::track_id_t> match_track(db::collection_id_t c_id, const sc::Tr
 
 std::optional<sc::ScanProgress> sc::get_progress() {
   sc::ScanProgress total_progress{};
-  std::vector<fs::path> to_erase;
-  for (const auto& [path, s] : s_scanned_paths) {
-    auto [job_id, collection_id] = s;
+  std::vector<db::collection_id_t> scanned_collections_to_erase;
+  for (const auto& [collection_id, job_id] : s_scanned_collections) {
     auto job_status = s_worker.get(job_id);
     auto* progress = job_status.get_progress();
     total_progress.directories_scanned += progress ? progress->directories_scanned : 0;
@@ -136,12 +136,12 @@ std::optional<sc::ScanProgress> sc::get_progress() {
 
     if (job_status.is_result()) {
       s_scan_results.emplace_back(job_status.result(), collection_id);
-      to_erase.emplace_back(path);
+      scanned_collections_to_erase.emplace_back(collection_id);
     }
   }
 
-  for (auto& path : to_erase) {
-    s_scanned_paths.erase(path);
+  for (auto& path : scanned_collections_to_erase) {
+    s_scanned_collections.erase(path);
   }
 
   if (total_progress == sc::ScanProgress{0, 0}) {

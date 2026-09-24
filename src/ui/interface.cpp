@@ -264,8 +264,7 @@ void zincbox::ui::init() {
           NFD::UniquePathSetPathU8 path_utf8;
           NFD::PathSet::GetPath(out_paths, i, path_utf8);
           auto path = utf8_to_path(path_utf8.get());
-          db::add_path_to_collection(collection_id, path);
-          zincbox::scanner::scan_directory(path, collection_id);
+          if (db::add_path_to_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
         }
         recreate_panel_top();
         notifications->push(tr::format("notification.added_collection", collection_name));
@@ -525,11 +524,11 @@ static void create_collection(std::vector<std::string> directories) {
   if (directories.size() == 0) { return; }
   std::string collection_name = path_to_utf8(fs::path{directories[0]}.filename());
   auto collection_id = db::add_collection(collection_name);
-  for (auto& str : directories) {
-    fs::path path = str;
-    db::add_path_to_collection(collection_id, path);
-    zincbox::scanner::scan_directory(path, collection_id);
+  bool added = false;
+  for (auto& path_utf8 : directories) {
+    added |= db::add_path_to_collection(collection_id, utf8_to_path(path_utf8));
   }
+  if (added) { zincbox::scanner::scan_collection(collection_id); }
   recreate_panel_top();
 }
 
@@ -538,8 +537,7 @@ static void create_multiple_collections(const std::vector<std::string>& director
     fs::path path = utf8_to_path(str);
     std::string collection_name = path_to_utf8(path.filename());
     auto collection_id = db::add_collection(collection_name);
-    db::add_path_to_collection(collection_id, path);
-    zincbox::scanner::scan_directory(path, collection_id);
+    if (db::add_path_to_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
   }
   recreate_panel_top();
 }
@@ -920,8 +918,8 @@ static void handle_drag_and_drop() {
 
 static void delete_collection(db::collection_id_t collection_id) {
   db::mark_collection_as_tombstone(collection_id);
-
-  if (db::collection_by_id(*active_collection_id)->get().is_tombstone() || !active_collection_id.has_value()) {
+  bool change_view = !active_collection_id || db::collection_by_id(*active_collection_id)->get().is_tombstone();
+  if (change_view) {
     active_collection_id = std::nullopt;
     recreate_panel_top();
     panel_albums->props.collection_id = active_collection_id;
@@ -1058,11 +1056,9 @@ static void show_popup_set_sources(db::collection_id_t collection_id) {
   auto* popup = popup_controller->show_popup<PopupSetSources>(collection_id);
 
   popup->on_remove_path_pressed = [collection_id](const std::string& path) -> void {
-    db::remove_path_from_collection(collection_id, utf8_to_path(path));
-    for (auto& path_ : db::collection_by_id(collection_id)->get().paths()) {
-      zincbox::scanner::scan_directory(path_, collection_id);
+    if (db::remove_path_from_collection(collection_id, utf8_to_path(path))) {
+      zincbox::scanner::scan_collection(collection_id);
     }
-
     if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
       panel_tracks->recreate(active_collection_id);
       panel_albums->props.collection_id = collection_id;
@@ -1074,7 +1070,7 @@ static void show_popup_set_sources(db::collection_id_t collection_id) {
     NFD::UniquePathU8 out_path;
     if (NFD::PickFolder(out_path, (const nfdu8char_t*)nullptr) == NFD_OKAY) {
       fs::path dir = utf8_to_path(out_path.get());
-      zincbox::scanner::scan_directory(dir, collection_id);
+      if (db::add_path_to_collection(collection_id, dir)) { zincbox::scanner::scan_collection(collection_id); }
     }
   };
 }
@@ -1362,13 +1358,7 @@ static void show_popover_collection_actions(db::collection_id_t collection_id, W
     tr::get("dialog.action.set_sources"), [collection_id]() { show_popup_set_sources(collection_id); }, "set_sources");
 
   buttons.emplace_back(
-    tr::get("dialog.action.rescan"),
-    [collection_id]() {
-      for (auto& path : db::collection_by_id(collection_id)->get().paths()) {
-        zincbox::scanner::scan_directory(utf8_to_path(path), collection_id);
-      }
-    },
-    "rescan");
+    tr::get("dialog.action.rescan"), [collection_id]() { zincbox::scanner::scan_collection(collection_id); }, "rescan");
 
   buttons.emplace_back(
     tr::get("dialog.action.delete"), [collection_id]() { show_popup_delete_collection(collection_id); },

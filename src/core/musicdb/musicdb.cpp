@@ -589,6 +589,7 @@ void db::assign_orphaned_tracks() {
     std::string album_artist = track.pretty_album_artist();
     auto album_id = db::get_album_id(collection_id, track.metadata.album, album_artist, track.parent_directory_name());
     add_track_id_to_playlist(album_id, track_id);
+    tracks[track_id].originating_album_id = album_id;
     album_ids.insert(album_id);
   }
 
