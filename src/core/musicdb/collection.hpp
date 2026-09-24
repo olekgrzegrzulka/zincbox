@@ -7,7 +7,6 @@
 #include <string_view>
 #include <unordered_set>
 #include <vector>
-#include "common/utf.hpp"
 
 namespace fs = std::filesystem;
 
@@ -18,16 +17,16 @@ namespace db {
       std::string m_name;
       std::vector<size_t> m_playlist_ids;
       bool m_tombstone = false;
-      std::unordered_set<std::string> m_paths;
+      std::unordered_set<fs::path> m_paths;
 
     public:
       Collection(std::string_view name_) { m_name = name_; }
       Collection(std::ifstream&);
       std::string_view name() const { return m_name; }
       const std::vector<size_t>& playlist_ids() const { return m_playlist_ids; }
-      const std::unordered_set<std::string>& paths() const { return m_paths; }
+      const std::unordered_set<fs::path>& paths() const { return m_paths; }
       void set_name(std::string_view name_) { m_name = name_; }
-      bool has_path(const fs::path& path) const { return m_paths.find(path_to_utf8(path)) != m_paths.end(); }
+      bool has_path(const fs::path& path) const { return m_paths.find(path) != m_paths.end(); }
       bool add_path(const fs::path&);
       bool remove_path(const fs::path&);
       size_t add_playlist(size_t playlist_id) {

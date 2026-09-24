@@ -40,7 +40,7 @@ namespace zincbox::scanner {
       ImportSummary& operator=(ImportSummary&&) noexcept = default;
   };
 
-  void scan_directory(std::filesystem::path, db::collection_id_t);
+  void scan_collection(db::collection_id_t);
   std::optional<ScanProgress> get_progress();
   std::optional<ImportSummary> import();
 } // namespace zincbox::scanner

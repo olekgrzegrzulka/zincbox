@@ -238,8 +238,6 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
   auto& atlas = ui.get_texture_atlas();
 
-  // please based on this git diff adjust this code block. then tell me what id's i have to internally change
-
   auto atlas_add_texture = [&load_theme_from_resources, &theme_path,
                             &atlas](const std::string& id, std::vector<std::string> paths = {}) -> bool {
     if (paths.empty()) { return false; }

@@ -9,9 +9,9 @@ db::Collection::Collection(std::ifstream& is) {
   size_t paths_size = 0;
   read_bin(is, paths_size);
   for (size_t i = 0; i < paths_size; i += 1) {
-    std::string path;
-    read_str(is, path);
-    m_paths.emplace(path);
+    std::string path_utf8;
+    read_str(is, path_utf8);
+    m_paths.emplace(utf8_to_path(path_utf8));
   }
 
   size_t playlist_ids_size = 0;
@@ -26,13 +26,13 @@ db::Collection::Collection(std::ifstream& is) {
 
 bool db::Collection::add_path(const fs::path& path) {
   if (m_playlist_ids.size() > 0 && m_playlist_ids[0] == 0) { return false; }
-  m_paths.emplace(path_to_utf8(path));
+  m_paths.emplace(path);
   return true;
 }
 
 bool db::Collection::remove_path(const fs::path& path) {
   if (m_playlist_ids.size() > 0 && m_playlist_ids[0] == 0) { return false; }
-  return m_paths.erase(path_to_utf8(path)) > 0;
+  return m_paths.erase(path) > 0;
 }
 
 std::optional<size_t> db::Collection::next_playlist_id(size_t playlist_id) const {
@@ -58,7 +58,7 @@ void db::Collection::serialize(std::ofstream& os) const {
 
   write_bin(os, m_paths.size());
   for (const auto& path : m_paths) {
-    write_str(os, path);
+    write_str(os, path_to_utf8(path));
   }
 
   std::vector<size_t> nontombstoned_playlist_ids;
@@ -78,7 +78,7 @@ void db::Collection::serialize(std::ofstream& os, const std::vector<size_t>& old
 
   write_bin(os, m_paths.size());
   for (const auto& path : m_paths) {
-    write_str(os, path);
+    write_str(os, path_to_utf8(path));
   }
 
   std::vector<size_t> nontombstoned_playlist_ids;
