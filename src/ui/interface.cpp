@@ -85,6 +85,7 @@ static PanelAlbums* panel_albums{};
 static PanelControls* panel_controls{};
 static Splitter* splitter{};
 static ToolTip* tooltip_drag{};
+static Notification* notification_scan_progress{};
 
 static void input(vec2i window_size);
 static void rebuild();
@@ -384,11 +385,20 @@ void zincbox::ui::update(vec2i window_size) {
 
   auto scan_progress = zincbox::scanner::get_progress();
   if (scan_progress) {
-    out::info("Scanned {} files and {} directories", scan_progress->files_scanned, scan_progress->directories_scanned);
+    if (!notification_scan_progress) { notification_scan_progress = notifications->push_persistent(""); }
+    auto msg =
+      tr::format("notification.scan_progress", scan_progress->files_scanned, scan_progress->directories_scanned);
+    notification_scan_progress->label->set_text(msg);
+  } else {
+    if (notification_scan_progress) {
+      notifications->dismiss_after(notification_scan_progress, 10);
+      notification_scan_progress = nullptr;
+    }
   }
 
   auto scan_summary = zincbox::scanner::import();
   if (scan_summary) {
+    popup_controller->show_popup<PopupScanSummary>(*scan_summary);
 
     add_playlist_art_to_texture_atlas(scan_summary->collection_id);
     if (active_collection_id.has_value() && active_collection_id.value() == scan_summary->collection_id) {
@@ -396,14 +406,6 @@ void zincbox::ui::update(vec2i window_size) {
       panel_albums->props.collection_id = scan_summary->collection_id;
       panel_albums->recreate();
     }
-
-    out::info(" Import for collection '{}' (id = {}) finished",
-              db::collection_by_id(scan_summary->collection_id)->get().name(), scan_summary->collection_id);
-    out::info("added tracks:      {}", scan_summary->added_tracks.size());
-    out::info("changed tracks:    {}", scan_summary->modified_tracks.size());
-    out::info("unchanged tracks:  {}", scan_summary->skipped_tracks.size());
-    out::info("tracks not found:  {}", scan_summary->not_found_tracks.size());
-    if (scan_summary->errors.size() > 0) { out::error("errors:            {}", scan_summary->errors.size()); }
   }
 
   input(window_size);

@@ -4,23 +4,26 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/scanner.hpp"
 #include "ui/panel_albums.hpp"
+#include "ui/panel_tracks.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
+#include "ui/scrollable_view.hpp"
 #include "ui/theme.hpp"
 #include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
-#include "zincbox.hpp"
-
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/text_input.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
 class PopupInput : public Popup {
   public:
@@ -483,4 +486,141 @@ class PopupWelcome : public Popup {
       auto& btn_ok = buttons.add_child<zincgui::Button>(tr::get("dialog.action.ok"));
       btn_ok.on_press([this]() -> void { close(); });
     }
+};
+
+class PopupScanSummary : public Popup {
+  public:
+    PopupScanSummary(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
+                     const zincbox::scanner::ImportSummary& summary)
+      : Popup(ui_, controller_, std::move(on_close_)) {
+
+      set_layout("ttb fit expand m:12 s:8");
+
+      title = &add_child<zincgui::Label>(tr::get("popup.scan_summary.title"));
+      title->set_height(32 * zincbox::ui_scale());
+      title->set_min_height(32 * zincbox::ui_scale());
+      title->set_anchor(zincgui::Anchor::TOP);
+      title->set_parent_anchor(zincgui::Anchor::TOP);
+
+      std::string collection_name = "";
+      if (auto c = db::collection_by_id(summary.collection_id)) { collection_name = c->get().name(); }
+
+      header = &add_child<zincgui::Label>(tr::format("popup.scan_summary.header", collection_name));
+      header->set_height(24 * zincbox::ui_scale());
+      header->set_text_color(theme::config().text_color_muted);
+
+      scroll_view = &add_child<ScrollableView>();
+      scroll_view->content()->set_layout("ttb fit expand mx:6 my:6 s:12");
+
+      auto add_category = [&](std::string_view key, const std::vector<db::track_id_t>& ids) {
+        auto& wrapper = scroll_view->content()->add_child<zincgui::Widget>();
+        wrapper.set_layout("ttb fit expand m:0 s:4");
+
+        auto& row = wrapper.add_child<zincgui::Widget>();
+        row.set_layout("ltr fill expand");
+        row.set_height(20 * zincbox::ui_scale());
+
+        auto& label_key = row.add_child<zincgui::Label>(key);
+        label_key.set_label_anchor(zincgui::Anchor::LEFT);
+
+        auto& label_val = row.add_child<zincgui::Label>(std::to_string(ids.size()));
+        label_val.set_label_anchor(zincgui::Anchor::RIGHT);
+        label_val.set_max_width(80 * zincbox::ui_scale());
+
+        if (ids.empty()) {
+          label_key.set_text_color(theme::config().text_color_muted);
+          label_val.set_text_color(theme::config().text_color_muted);
+        } else {
+          std::vector<db::track_info> ti_vec;
+          ti_vec.reserve(ids.size());
+          size_t idx = 1;
+          for (auto id : ids) {
+            db::track_info ti;
+            ti.track_id = id;
+            ti.index = idx++;
+            ti_vec.emplace_back(ti);
+          }
+          display_tracks_storage.emplace_back(std::move(ti_vec));
+
+          auto& pt = wrapper.add_child<PanelTracks>();
+
+          i32 target_panel_h = std::clamp<i32>(ids.size() * 28, 40, 200) * zincbox::ui_scale();
+          pt.set_height(target_panel_h);
+          pt.set_min_height(target_panel_h);
+          pt.set_max_height(target_panel_h);
+          pt.recreate(display_tracks_storage.back());
+        }
+      };
+
+      add_category(tr::get("popup.scan_summary.added"), summary.added_tracks);
+      add_category(tr::get("popup.scan_summary.changed"), summary.modified_tracks);
+      add_category(tr::get("popup.scan_summary.unchanged"), summary.skipped_tracks);
+      add_category(tr::get("popup.scan_summary.not_found"), summary.not_found_tracks);
+
+      if (!summary.errors.empty()) {
+        auto& wrapper = scroll_view->content()->add_child<zincgui::Widget>();
+        wrapper.set_layout("ttb fit expand m:0 s:4");
+
+        auto& row = wrapper.add_child<zincgui::Widget>();
+        row.set_layout("ltr fit expand m:0 s:0");
+        row.set_height(20 * zincbox::ui_scale());
+
+        auto& label_key = row.add_child<zincgui::Label>(tr::get("popup.scan_summary.errors"));
+        label_key.set_label_anchor(zincgui::Anchor::LEFT);
+        label_key.set_width(280 * zincbox::ui_scale());
+        label_key.set_text_color(vec3f{0.9f, 0.4f, 0.4f});
+
+        auto& label_val = row.add_child<zincgui::Label>(std::to_string(summary.errors.size()));
+        label_val.set_label_anchor(zincgui::Anchor::RIGHT);
+        label_val.set_width(80 * zincbox::ui_scale());
+        label_val.set_text_color(vec3f{0.9f, 0.4f, 0.4f});
+      }
+      buttons = &add_child<Widget>();
+      buttons->set_height(32 * zincbox::ui_scale());
+      buttons->set_min_height(32 * zincbox::ui_scale());
+      buttons->set_layout("ltr fill fit expand m:0 s:8");
+      buttons->set_anchor(zincgui::Anchor::BOTTOM);
+      buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
+
+      btn_ok = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.ok"));
+      btn_ok->on_press([this]() {
+        if (on_ok_pressed) { on_ok_pressed(); }
+        close();
+      });
+    }
+
+    void update() override {
+      scroll_view->content()->update();
+      i32 content_h = scroll_view->content()->get_height();
+
+      i32 max_popup_h = get_max_content_height();
+
+      bool show_headers = ui.get_window_height() > 400;
+      title->set_is_drawn(show_headers);
+      header->set_is_drawn(show_headers);
+
+      i32 title_h = show_headers ? title->get_height() : 0;
+      i32 header_h = show_headers ? header->get_height() : 0;
+      i32 non_scroll_h = title_h + header_h + buttons->get_height() + static_cast<i32>(48 * zincbox::ui_scale());
+
+      i32 max_scroll_h = std::max<i32>(20, max_popup_h - non_scroll_h);
+      i32 target_scroll_h = std::clamp<i32>(content_h, 20, max_scroll_h);
+
+      scroll_view->set_height(target_scroll_h);
+      scroll_view->set_min_height(target_scroll_h);
+      scroll_view->set_max_height(target_scroll_h);
+
+      set_width(std::min<i32>(get_max_content_width(), 550 * zincbox::ui_scale()));
+
+      Popup::update();
+    }
+
+    std::vector<std::vector<db::track_info>> display_tracks_storage;
+    zincgui::Label* title{};
+    zincgui::Label* header{};
+    ScrollableView* scroll_view{};
+    zincgui::Widget* buttons{};
+    zincgui::Button* btn_ok{};
+
+    std::function<void()> on_ok_pressed{};
 };

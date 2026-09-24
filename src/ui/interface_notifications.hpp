@@ -18,6 +18,7 @@ class Notification : public zincgui::Sprite {
 
     float y_lerped{};
     i32 timer{};
+    bool dismissed = false;
     zincgui::Label* label{};
 };
 
@@ -25,7 +26,11 @@ class InterfaceNotifications : public zincgui::Widget {
   public:
     InterfaceNotifications(zincgui::Root& ui_);
 
-    void push(std::string_view message);
+    void push(std::string_view);
+
+    Notification* push_persistent(std::string_view);
+    void dismiss(Notification*);
+    void dismiss_after(Notification*, i32);
 
     void update() override;
 
