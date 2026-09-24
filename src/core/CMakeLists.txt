@@ -40,7 +40,6 @@ target_link_libraries(zincbox_core PUBLIC
     glaze::glaze
     miniz::miniz
     fmt::fmt
-    xxHash
 )
 
 if(ZINCBOX_MPRIS)

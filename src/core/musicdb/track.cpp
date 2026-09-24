@@ -7,7 +7,6 @@
 #include <span>
 #include <sstream>
 #include <string>
-#include <utility>
 #include "common/serialize.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
@@ -22,7 +21,8 @@ db::Track::Track(std::ifstream& is) {
   read_bin(is, originating_album_id);
   read_str(is, file_path_utf8);
   file_path = utf8_to_path(file_path_utf8);
-  read_str(is, hash);
+  read_bin(is, file_size);
+  read_bin(is, last_modified);
   read_str(is, metadata.title);
   read_str(is, metadata.artist);
   read_str(is, metadata.album);
@@ -65,7 +65,8 @@ void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old
 
   write_bin(os, origin);
   write_str(os, file_path_utf8);
-  write_str(os, hash);
+  write_bin(os, file_size);
+  write_bin(os, last_modified);
   write_str(os, metadata.title);
   write_str(os, metadata.artist);
   write_str(os, metadata.album);

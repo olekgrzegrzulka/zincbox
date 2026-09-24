@@ -32,7 +32,6 @@ static std::vector<db::Playlist> playlists;
 static std::vector<db::Track> tracks;
 static std::unordered_map<std::filesystem::path, size_t> path_to_track_id;
 static std::unordered_map<std::string, std::unordered_set<db::track_id_t>> title_to_track_ids;
-static std::unordered_map<std::string, std::unordered_set<db::track_id_t>> hash_to_track_ids;
 static std::unordered_map<std::filesystem::path, std::unordered_set<db::track_id_t>> file_name_to_track_ids;
 static std::vector<std::pair<db::collection_id_t, db::track_id_t>> orphaned_tracks;
 
@@ -46,7 +45,6 @@ void db::create_empty_db() {
   tracks.clear();
   path_to_track_id.clear();
   title_to_track_ids.clear();
-  hash_to_track_ids.clear();
   file_name_to_track_ids.clear();
   orphaned_tracks.clear();
   db::add_collection("Playlists");
@@ -146,7 +144,6 @@ void db::deserialize(std::ifstream& is) {
   tracks.clear();
   path_to_track_id.clear();
   title_to_track_ids.clear();
-  hash_to_track_ids.clear();
   file_name_to_track_ids.clear();
   orphaned_tracks.clear();
 
@@ -182,7 +179,6 @@ void db::deserialize(std::ifstream& is) {
     track_id_t track_id = tracks.size() - 1;
     title_to_track_ids[t.metadata.title].insert(track_id);
     path_to_track_id[t.file_path] = track_id;
-    hash_to_track_ids[t.hash].insert(track_id);
     file_name_to_track_ids[t.file_name_without_extension()].insert(track_id);
   }
 
@@ -489,12 +485,6 @@ std::unordered_set<size_t> db::track_by_title(std::string_view title) {
   return it->second;
 }
 
-std::unordered_set<db::track_id_t> db::track_by_hash(const std::string& hash) {
-  auto it = hash_to_track_ids.find(hash);
-  if (it == hash_to_track_ids.end()) { return {}; }
-  return it->second;
-}
-
 std::unordered_set<db::track_id_t> db::track_by_file_name(const std::filesystem::path& file_name) {
   auto it = file_name_to_track_ids.find(file_name);
   if (it == file_name_to_track_ids.end()) { return {}; }
@@ -532,7 +522,6 @@ db::track_id_t db::add_orphaned_track(db::collection_id_t collection_id, db::Tra
   auto& track = tracks.back();
   path_to_track_id[track.file_path] = tracks.size() - 1;
   title_to_track_ids[track.metadata.title].insert(tracks.size() - 1);
-  hash_to_track_ids[track.hash].insert(tracks.size() - 1);
   file_name_to_track_ids[track.file_name_without_extension()].insert(tracks.size() - 1);
 
   return tracks.size() - 1;
@@ -621,14 +610,14 @@ void db::set_track_flag(track_id_t track_id, TrackFlag track_flag, bool state) {
   }
 }
 
-void db::set_track_hash(track_id_t track_id, std::string hash) {
+void db::set_track_file_size(track_id_t track_id, u64 file_size) {
   if (track_id >= tracks.size()) { return; }
-  auto& track = tracks[track_id];
-  auto old_hash = track.hash;
-  if (hash == old_hash) { return; }
-  hash_to_track_ids[old_hash].erase(track_id);
-  track.hash = hash;
-  hash_to_track_ids[hash].insert(track_id);
+  tracks[track_id].file_size = file_size;
+}
+
+void db::set_track_last_modified(track_id_t track_id, i64 last_modified) {
+  if (track_id >= tracks.size()) { return; }
+  tracks[track_id].last_modified = last_modified;
 }
 
 void db::set_track_file_path(track_id_t track_id, fs::path file_path) {
