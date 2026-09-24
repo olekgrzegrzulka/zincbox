@@ -112,7 +112,6 @@ void load_resources() {
 
       if (filename.ends_with(".json")) {
         fs::path file_path{file_stat.m_filename};
-        out::warn(file_path.stem().c_str());
         languages[file_path.stem().c_str()] = std::move(buffer);
       }
     }
@@ -364,6 +363,7 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   atlas_add_texture("popover_arrow_inverted", {"ui/popover_arrow_inverted.png"});
   add_custom_button("button_popover", "ui/button_popover.png");
   atlas_add_texture("notification", {"ui/notification.png"});
+  atlas_add_texture("notification_error", {"ui/notification_error.png"});
 
   // panel_controls
   add_custom_button("play_pause", "panel_controls/button_play_pause.png");

@@ -41,6 +41,7 @@
   "notification.removed_track_from_playlist": "Removed '{}' from '{}'",
   "notification.removed_tracks_from_playlist": "Removed {} tracks from '{}'",
   "notification.renamed_playlist": "Playlist renamed to '{}'",
+  "notification.save_playlist_to_json_error": "Failed to save playlist to JSON: {}",
   "notification.saved_queue_as_playlist": "Saved queue as playlist '{}'",
   "notification.scan_progress": "Found {} files in {} directories",
   "notification.unloved_track": "Un-loved '{}'",

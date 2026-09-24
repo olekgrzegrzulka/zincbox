@@ -16,11 +16,14 @@ constexpr auto OFFSCREEN_Y_POSITION = 120.0f;
 constexpr auto FRAMES_PER_SECOND = 60;
 constexpr auto NOTIFICATION_DURATION_SECONDS = 4.0f;
 constexpr auto INITIAL_TIMER = FRAMES_PER_SECOND * NOTIFICATION_DURATION_SECONDS;
+constexpr auto ERROR_DURATION_SECONDS = 8.0f;
+constexpr auto INITIAL_TIMER_ERROR = FRAMES_PER_SECOND * ERROR_DURATION_SECONDS;
 constexpr auto NOTIFICATIONS_Y_OFFSET = -30;
 constexpr auto HIDE_TIMER_THRESHOLD = 20;
 constexpr auto LERP_FACTOR = 0.75f;
 
-Notification::Notification(zincgui::Root& ui_) : Sprite(ui_, "notification") {
+Notification::Notification(zincgui::Root& ui_, bool error)
+  : Sprite(ui_, error ? "notification_error" : "notification") {
   set_nine_slice_margin(theme::config().notification.nine_slice_margin);
   label = &add_child<Label>();
   set_parent_anchor(Anchor::CENTER);
@@ -30,7 +33,7 @@ Notification::Notification(zincgui::Root& ui_) : Sprite(ui_, "notification") {
   label->set_label_anchor(Anchor::CENTER);
 
   y_lerped = OFFSCREEN_Y_POSITION;
-  timer = INITIAL_TIMER;
+  timer = error ? INITIAL_TIMER_ERROR : INITIAL_TIMER;
 }
 
 void Notification::update() {
@@ -49,6 +52,13 @@ InterfaceNotifications::InterfaceNotifications(zincgui::Root& ui_) : Widget(ui_)
 
 void InterfaceNotifications::push(std::string_view message) {
   auto& w = add_child<Notification>();
+  w.label->set_text(message);
+  w.label->update();
+  notifications.emplace_back(&w);
+}
+
+void InterfaceNotifications::push_error(std::string_view message) {
+  auto& w = add_child<Notification>(true);
   w.label->set_text(message);
   w.label->update();
   notifications.emplace_back(&w);
