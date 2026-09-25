@@ -1,10 +1,10 @@
 #include <cstdlib>
 #include <stacktrace>
 #include <string>
+#include <fmt/format.h>
 #include <signal.h>
 #include "common/logger.hpp"
 #include "zincbox.hpp"
-#include <fmt/format.h>
 
 extern "C" void handle_sigterm(int signal) {
   if (signal == SIGTERM) {

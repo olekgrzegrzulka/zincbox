@@ -20,7 +20,7 @@
 #include "lib/miniz/miniz.h"
 #include "stb_image.h"
 #include "theme.hpp"
-#include "theme_config.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/tr.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 #include "ui/zincgui/ui.hpp"

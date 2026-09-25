@@ -14,8 +14,8 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "core/settings.hpp"
-#include "theme_config.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
@@ -426,6 +426,7 @@ void PanelControls::update_love_state(bool is_loved) {
 
 void PanelControls::set_button_expand_player_visibility(bool state) {
   button_expand_player->set_is_drawn(theme::config().panel_controls.button_expand_player.visible && state);
+  button_expand_player->set_is_updated(button_expand_player->get_is_drawn());
 }
 
 void PanelControls::on_button_expand_player_pressed(std::function<void()> fn) {

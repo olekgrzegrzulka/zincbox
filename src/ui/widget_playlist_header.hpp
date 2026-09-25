@@ -4,7 +4,7 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "theme.hpp"
-#include "theme_config.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"

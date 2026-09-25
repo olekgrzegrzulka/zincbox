@@ -1,10 +1,10 @@
 #include <fstream>
 #include <string>
+#include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/types.hpp"
-#include "opengl_includes.hpp"
 #include "shader.hpp"
 
 zincgui::Shader::Shader(const std::string& file_name) {

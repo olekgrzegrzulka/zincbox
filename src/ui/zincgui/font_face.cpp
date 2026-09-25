@@ -3,11 +3,11 @@
 #include <string>
 #include <unordered_map>
 #include <ft2build.h>
+#include <glad/glad.h>
 #include <glm/vec2.hpp>
 #include <stdlib.h>
 #include "common/debug.hpp"
 #include "common/types.hpp"
-#include "opengl_includes.hpp"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H

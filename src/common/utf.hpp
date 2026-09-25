@@ -27,7 +27,5 @@ inline std::string path_to_utf8(const std::filesystem::path& p) {
 }
 
 inline std::filesystem::path utf8_to_path(std::string_view utf8_str) {
-  return std::filesystem::path(
-    std::u8string_view(reinterpret_cast<const char8_t*>(utf8_str.data()), utf8_str.size())
-  );
+  return std::filesystem::path(std::u8string_view(reinterpret_cast<const char8_t*>(utf8_str.data()), utf8_str.size()));
 }

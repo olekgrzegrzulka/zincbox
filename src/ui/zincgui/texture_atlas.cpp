@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <glad/glad.h>
 #include <glm/vec3.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
@@ -11,7 +12,6 @@
 #include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "lib/stb_image/stb_image_write.h"
-#include "opengl_includes.hpp"
 #include "texture_atlas.hpp"
 
 zincgui::TextureAtlas::TextureAtlas(i32 atlas_size_px_, i32 margin_px_, i32 grid_size_px_) {

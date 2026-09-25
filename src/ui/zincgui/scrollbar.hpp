@@ -8,7 +8,6 @@ namespace zincgui {
 
   class Root;
 
-
   class ScrollBar : public Slider {
     protected:
       i32 page_size = 25;

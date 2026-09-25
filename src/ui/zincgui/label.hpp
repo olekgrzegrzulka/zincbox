@@ -11,7 +11,6 @@ namespace zincgui {
 
   class Root;
 
-
   struct vertex_label final {
       i32 type = 1;
       vec2f pos;

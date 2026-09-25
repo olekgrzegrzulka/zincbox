@@ -8,8 +8,8 @@
 #include <vector>
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
-#include "theme_config.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/widget_playlist_header.hpp"
 #include "ui/widget_track.hpp"
 #include "ui/zincgui/color_rect.hpp"
@@ -23,7 +23,7 @@ namespace zincgui {
   class ScrollBar;
 } // namespace zincgui
 
-class PanelTracksSelection {
+class PanelTracklistSelection {
   public:
     bool has(db::track_info s) const { return selection_set.contains(s); }
     void insert(db::track_info s) {
@@ -76,7 +76,7 @@ class PanelTracksSelection {
     std::vector<db::track_info> selection_vector;
 };
 
-class PanelTracks final : public zincgui::ColorRect {
+class PanelTracklist final : public zincgui::ColorRect {
   public:
     using ColorRect::event;
 
@@ -127,8 +127,8 @@ class PanelTracks final : public zincgui::ColorRect {
     };
 
     enum class InsertCursorPos : u8 { BELOW, ABOVE };
-    PanelTracks(zincgui::Root& ui_);
-    ~PanelTracks();
+    PanelTracklist(zincgui::Root& ui_);
+    ~PanelTracklist();
 
     void event(zincgui::Input::InputEventMouseScroll&) override;
     void event(zincgui::Input::InputEventMouseButton&) override;
@@ -153,7 +153,7 @@ class PanelTracks final : public zincgui::ColorRect {
     float get_scroll_px() const;
 
     std::span<const Item> get_items() const { return items; }
-    const PanelTracksSelection& selection() const { return m_selection; }
+    const PanelTracklistSelection& selection() const { return m_selection; }
     void clear_selection() {
       m_selection.clear();
       selection_modified = true;
@@ -166,7 +166,7 @@ class PanelTracks final : public zincgui::ColorRect {
 
   protected:
     WidgetTrack::TrackHighlightMode track_highlight_mode = WidgetTrack::TrackHighlightMode::TRACK_INFO;
-    PanelTracksSelection m_selection;
+    PanelTracklistSelection m_selection;
 
   public:
     std::function<void(db::track_info, WidgetTrack*)> on_track_lmb{};

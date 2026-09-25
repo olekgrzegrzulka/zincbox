@@ -1,7 +1,7 @@
 #include "color_rect.hpp"
 #include <cstddef>
-#include <memory>
-#include "opengl_includes.hpp"
+
+#include <glad/glad.h>
 #include "ui.hpp"
 #include "widget.hpp"
 

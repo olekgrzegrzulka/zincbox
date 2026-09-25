@@ -14,7 +14,7 @@ struct Settings;
 namespace zincbox {
   float ui_scale();
 
-  enum InitFlags : u64 { WINDOW = 1, TRAY = 2, MPRIS = 4 };
+  enum InitFlags : u8 { WINDOW = 1, TRAY = 2, MPRIS = 4 };
 
   void init(u64 flags);
   void deinit();
@@ -25,6 +25,7 @@ namespace zincbox {
   void load_state_from_json();
   void apply_loaded_state();
   void save_state_to_json();
+  void load_db_from_file();
   void save_db_to_file();
 
 #ifdef ZINCBOX_HAS_GUI

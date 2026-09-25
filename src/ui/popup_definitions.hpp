@@ -8,8 +8,8 @@
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/scanner.hpp"
-#include "ui/panel_albums.hpp"
-#include "ui/panel_tracks.hpp"
+#include "ui/panel_playlists.hpp"
+#include "ui/panel_tracklist.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/scrollable_view.hpp"
@@ -348,7 +348,7 @@ class PopupAddToPlaylist : public Popup {
       title->set_anchor(zincgui::Anchor::TOP);
       title->set_parent_anchor(zincgui::Anchor::TOP);
 
-      playlists_view = &add_child<PanelAlbums>();
+      playlists_view = &add_child<PanelPlaylists>();
       playlists_view->set_width((64 + 12) * 6);
       playlists_view->set_height(std::clamp(ui.get_window_height() - 300, 100, 500));
       playlists_view->set_min_height(playlists_view->get_height());
@@ -383,7 +383,7 @@ class PopupAddToPlaylist : public Popup {
     std::optional<size_t> track_id;
     zincgui::Label* title{};
     zincgui::Label* content{};
-    PanelAlbums* playlists_view{};
+    PanelPlaylists* playlists_view{};
     Widget* buttons{};
     zincgui::Button* btn_cancel{};
 
@@ -542,7 +542,7 @@ class PopupScanSummary : public Popup {
           }
           display_tracks_storage.emplace_back(std::move(ti_vec));
 
-          auto& pt = wrapper.add_child<PanelTracks>();
+          auto& pt = wrapper.add_child<PanelTracklist>();
 
           i32 target_panel_h = std::clamp<i32>(ids.size() * 28, 40, 200) * zincbox::ui_scale();
           pt.set_height(target_panel_h);

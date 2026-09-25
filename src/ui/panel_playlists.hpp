@@ -54,12 +54,12 @@ class WidgetAlbumCover : public zincgui::Button {
     rgba label_author_text_color{};
 };
 
-class PanelAlbums : public zincgui::ColorRect {
+class PanelPlaylists : public zincgui::ColorRect {
   public:
     enum class SortBy : u8 { NAME_AZ, NAME_ZA, AUTHOR_AZ, AUTHOR_ZA };
 
   public:
-    PanelAlbums(zincgui::Root& ui_);
+    PanelPlaylists(zincgui::Root& ui_);
     void draw() override;
     void clear();
     void input() override;
@@ -98,7 +98,7 @@ class PanelAlbums : public zincgui::ColorRect {
     struct Props {
         std::optional<size_t> collection_id{};
         std::vector<size_t> playlist_ids{};
-        SortBy sort_by = PanelAlbums::SortBy::AUTHOR_AZ;
+        SortBy sort_by = PanelPlaylists::SortBy::AUTHOR_AZ;
         bool group = false;
         bool panel_search_visible = true;
         bool button_sort_by_visible = true;

@@ -32,8 +32,8 @@
 #include <queue>
 #include <thread>
 #include <unordered_map>
-#include "common/types.hpp"
 #include <variant>
+#include "common/types.hpp"
 
 template <typename Progress, typename Result> class JobContext {
   public:
