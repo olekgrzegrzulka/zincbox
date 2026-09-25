@@ -59,6 +59,7 @@ class PanelQueue : public zincgui::Widget {
     void on_track_rmb(const std::function<void(db::track_info, WidgetTrack*)>&);
     void on_selection_rmb(const std::function<void(WidgetTrack*)>&);
     void set_is_dragged(bool);
+    void insert_to_selection(size_t);
 
   protected:
     PanelTracklist* panel_tracklist{};

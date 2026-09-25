@@ -1,5 +1,6 @@
 #include "playlist.hpp"
 #include <fstream>
+#include <numeric>
 #include <optional>
 #include <vector>
 #include "common/logger.hpp"
@@ -43,8 +44,8 @@ bool db::Playlist::add_track(size_t track_id) {
   return true;
 }
 
-void db::Playlist::insert_tracks(size_t at, std::span<const size_t> new_track_ids) {
-  if (new_track_ids.empty()) { return; }
+std::vector<size_t> db::Playlist::insert_tracks(size_t at, std::span<const size_t> new_track_ids) {
+  if (new_track_ids.empty()) { return {}; }
   size_t insert_pos = std::min(at, track_ids.size());
   std::vector<size_t> unique_tracks;
   unique_tracks.reserve(new_track_ids.size());
@@ -53,9 +54,13 @@ void db::Playlist::insert_tracks(size_t at, std::span<const size_t> new_track_id
       unique_tracks.emplace_back(id);
     }
   }
-  if (!unique_tracks.empty()) {
-    track_ids.insert(track_ids.begin() + insert_pos, unique_tracks.begin(), unique_tracks.end());
-  }
+  if (unique_tracks.empty()) { return {}; }
+
+  track_ids.insert(track_ids.begin() + insert_pos, unique_tracks.begin(), unique_tracks.end());
+
+  std::vector<size_t> indices(unique_tracks.size());
+  std::iota(indices.begin(), indices.end(), insert_pos);
+  return indices;
 }
 
 bool db::Playlist::remove_track_by_id(size_t track_id) {

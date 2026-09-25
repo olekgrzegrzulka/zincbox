@@ -29,7 +29,7 @@ namespace db {
         type = type_;
       }
       bool add_track(size_t);
-      void insert_tracks(size_t at, std::span<const size_t>);
+      std::vector<size_t> insert_tracks(size_t at, std::span<const size_t>);
       bool remove_track_by_id(size_t);
       bool remove_track_by_index(size_t);
       void remove_tracks_by_indices(std::span<const size_t>);

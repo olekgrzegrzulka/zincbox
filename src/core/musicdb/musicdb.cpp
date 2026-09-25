@@ -403,11 +403,10 @@ bool db::add_track_id_to_playlist(size_t playlist_id, size_t track_id) {
   return playlist.add_track(track_id);
 }
 
-bool db::add_track_ids_to_playlist(size_t playlist_id, size_t at, std::span<const size_t> track_ids) {
-  if (playlist_id >= playlists.size()) { return false; }
+std::vector<size_t> db::add_track_ids_to_playlist(size_t playlist_id, size_t at, std::span<const size_t> track_ids) {
+  if (playlist_id >= playlists.size()) { return {}; }
 
-  playlists[playlist_id].insert_tracks(at, track_ids);
-  return true;
+  return playlists[playlist_id].insert_tracks(at, track_ids);
 }
 
 bool db::remove_track_id_from_playlist(size_t playlist_id, size_t track_id) {
