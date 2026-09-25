@@ -2,8 +2,8 @@
 #include <string_view>
 #include <vector>
 #include "interface_notifications.hpp"
-#include "theme_config.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/ui.hpp"

@@ -1,11 +1,11 @@
 #include "texture.hpp"
 #include <filesystem>
 #include <string>
+#include <glad/glad.h>
 #include "common/logger.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "lib/stb_image/stb_image.h"
-#include "opengl_includes.hpp"
 
 zincgui::Texture::Texture(const std::filesystem::path& file_name) {
   std::string file_path = "./assets/" / file_name;

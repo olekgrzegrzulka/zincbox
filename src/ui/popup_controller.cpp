@@ -4,16 +4,16 @@
 #include <string>
 #include <unordered_map>
 #include "common/color.hpp"
-#include "theme_config.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
-#include "zincbox.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
 using namespace zincgui;
 

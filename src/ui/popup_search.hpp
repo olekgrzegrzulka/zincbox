@@ -2,11 +2,11 @@
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
-#include "ui/tr.hpp"
-#include "ui/panel_albums.hpp"
+#include "ui/panel_playlists.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
+#include "ui/tr.hpp"
 #include "ui/widget_track.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/checkbox.hpp"
@@ -61,7 +61,7 @@ class PopupSearch : public Popup {
       label_playlists->set_height(32);
       label_playlists->set_is_drawn(false);
 
-      playlists_container = &scrollable_content->add_child<PanelAlbums>();
+      playlists_container = &scrollable_content->add_child<PanelPlaylists>();
       playlists_container->props.playlist_ids = {};
       playlists_container->props.panel_search_visible = false;
       playlists_container->props.is_scrollable = false;
@@ -265,7 +265,7 @@ class PopupSearch : public Popup {
     Widget* search_results{};
     Widget* scrollable_content{};
     zincgui::ScrollBar* scrollbar{};
-    PanelAlbums* playlists_container{};
+    PanelPlaylists* playlists_container{};
     Widget* tracks_container{};
     Widget* buttons{};
     zincgui::Button* button_close{};

@@ -29,9 +29,9 @@ set(UI_SOURCES
     tr.cpp
     interface.cpp
     interface_notifications.cpp
-    panel_albums.cpp
+    panel_playlists.cpp
     panel_controls.cpp
-    panel_tracks.cpp
+    panel_tracklist.cpp
     panel_queue.cpp
     panel_top.cpp
     theme.cpp

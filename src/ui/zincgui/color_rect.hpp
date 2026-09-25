@@ -8,7 +8,6 @@ namespace zincgui {
 
   class Root;
 
-
   class ColorRect : public Widget {
       struct vertex final {
           i32 type = 2;

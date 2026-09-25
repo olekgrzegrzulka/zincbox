@@ -28,11 +28,11 @@
 #include "core/player.hpp"
 #include "core/settings.hpp"
 #ifdef ZINCBOX_HAS_GUI
-#include "opengl_includes.hpp"
-#include "theme_config.hpp"
+#include <glad/glad.h>
 #include "ui/interface.hpp"
 #include "ui/sdl3_window.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/tray.hpp"
 #include "ui/zincgui/input.hpp"
 #endif
@@ -47,20 +47,12 @@ static std::unique_ptr<zincbox::SDL3Window> s_window = nullptr;
 static void update_mini_player_state();
 static void update_window_title();
 static void check_opengl_errors();
+static SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*);
 #endif
 
 float zincbox::ui_scale() { return s_settings.interface.scale * 0.01f; }
 
 void zincbox::init(u64 flags) {
-  out::debug_info("db::deserialize start");
-  if (std::filesystem::exists(io::get_db_path())) {
-    auto s = std::ifstream{io::get_db_path(), std::ifstream::binary};
-    db::deserialize(s);
-  } else {
-    db::create_empty_db();
-  }
-  out::debug_info("db::deserialize end");
-
   player::init();
 
   if (flags & zincbox::MPRIS) { mpris::init(); }
@@ -78,6 +70,9 @@ void zincbox::init(u64 flags) {
     s_window->min_size(480, 320);
     s_window->max_size(7680, 4320);
     s_window->vsync(false);
+
+    SDL_Window* sdl_window = zincbox::window()->native_handle();
+    SDL_SetWindowHitTest(sdl_window, hit_test_callback, NULL);
 
     zincbox::ui::init();
   }
@@ -239,6 +234,17 @@ void zincbox::save_state_to_json() {
   if (ec) { out::error("failed to write zincbox.json: {}", ec.custom_error_message); }
 }
 
+void zincbox::load_db_from_file() {
+  out::debug_info("db::deserialize start");
+  if (std::filesystem::exists(io::get_db_path())) {
+    auto s = std::ifstream{io::get_db_path(), std::ifstream::binary};
+    db::deserialize(s);
+  } else {
+    db::create_empty_db();
+  }
+  out::debug_info("db::deserialize end");
+}
+
 void zincbox::save_db_to_file() {
   ScopeTimer st{"db::serialize"};
   auto s = std::ofstream{io::get_db_path(), std::ifstream::binary};
@@ -339,7 +345,7 @@ static void update_mpris() {
   }
 
   static i32 t = 0;
-  if (t++ >= 120) {
+  if (t++ >= 20) {
     t = 0;
     mpris::notify_seeked(player::get_current_time_ms());
   }
@@ -366,6 +372,25 @@ static void check_opengl_errors() {
     std::stringstream error_hex;
     error_hex << std::hex << error << ": " << get_opengl_error_string(error);
     out::debug_error("GL error 0x{}", error_hex.str());
+  }
+}
+
+static SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*) {
+  using enum zincbox::ui::DecorationHover;
+  auto decoration_hover = zincbox::ui::get_decoration_hover(p->x, p->y);
+
+  switch (decoration_hover) {
+  case TOP_LEFT: return SDL_HITTEST_RESIZE_TOPLEFT;
+  case TOP_RIGHT: return SDL_HITTEST_RESIZE_TOPRIGHT;
+  case BOTTOM_LEFT: return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+  case BOTTOM_RIGHT: return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+  case TOP: return SDL_HITTEST_RESIZE_TOP;
+  case LEFT: return SDL_HITTEST_RESIZE_LEFT;
+  case RIGHT: return SDL_HITTEST_RESIZE_RIGHT;
+  case BOTTOM: return SDL_HITTEST_RESIZE_BOTTOM;
+  case TITLEBAR: return SDL_HITTEST_DRAGGABLE;
+  case INSIDE: [[__fallthrough__]];
+  default: return SDL_HITTEST_NORMAL;
   }
 }
 #endif

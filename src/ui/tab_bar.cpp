@@ -9,15 +9,15 @@
 #include <vector>
 #include <stdlib.h>
 #include "common/color.hpp"
-#include "ui/zincgui/input.hpp"
-#include "zincbox.hpp"
-#include "theme_config.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
 using namespace zincgui;
 

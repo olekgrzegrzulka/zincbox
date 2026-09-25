@@ -3,13 +3,13 @@
 #include <optional>
 #include <variant>
 #include <vector>
+#include <glad/glad.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <stdlib.h>
 #include "common/logger.hpp"
 #include "common/types.hpp"
 #include "freetype/freetype.h"
-#include "opengl_includes.hpp"
 #include "shader.hpp"
 #include "shader_src.hpp"
 #include "ui.hpp"

@@ -10,8 +10,8 @@
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/player.hpp"
-#include "ui/tr.hpp"
 #include "ui/theme.hpp"
+#include "ui/tr.hpp"
 
 namespace tray {
   namespace {

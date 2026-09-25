@@ -4,11 +4,11 @@
 #include <map>
 #include "common/utf.hpp"
 #include "core/settings.hpp"
-#include "ui/tr.hpp"
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/scrollable_view.hpp"
 #include "ui/theme.hpp"
+#include "ui/tr.hpp"
 #include "ui/zincgui/checkbox.hpp"
 #include "ui/zincgui/combo_box.hpp"
 #include "ui/zincgui/spinner.hpp"

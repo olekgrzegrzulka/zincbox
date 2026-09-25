@@ -7,14 +7,13 @@
 #include "common/types.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
-#include "theme_config.hpp"
 #include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
+#include "ui/theme_config.hpp"
 #include "widget.hpp"
 
 namespace zincgui {
 
   class Root;
-
 
   enum class ButtonState : u8 { IDLE, HOVERED, PRESSED, DISABLED };
 

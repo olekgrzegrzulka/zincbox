@@ -11,9 +11,9 @@
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
-#include "panel_albums.hpp"
 #include "theme.hpp"
-#include "theme_config.hpp"
+#include "ui/panel_playlists.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
@@ -140,7 +140,7 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
   Button::event(ev);
 }
 
-PanelAlbums::PanelAlbums(Root& ui_) : ColorRect(ui_) {
+PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_playlists.color);
   set_clip_children(true);
 
@@ -186,14 +186,14 @@ PanelAlbums::PanelAlbums(Root& ui_) : ColorRect(ui_) {
   button_clear_search->on_press([this]() { this->search_bar->clear(); });
 }
 
-void PanelAlbums::clear() {
+void PanelPlaylists::clear() {
   for (auto& w : album_widgets) {
     w->set_marked_for_deletion(true);
   }
   album_widgets.clear();
 }
 
-void PanelAlbums::recreate() {
+void PanelPlaylists::recreate() {
   clear();
 
   panel_search->set_is_updated(props.panel_search_visible);
@@ -275,7 +275,7 @@ void PanelAlbums::recreate() {
   reflow();
 }
 
-void PanelAlbums::scroll_to_playlist(size_t playlist_id, bool immediate) {
+void PanelPlaylists::scroll_to_playlist(size_t playlist_id, bool immediate) {
   for (auto& album_widget : album_widgets) {
     if (album_widget->playlist_id == playlist_id) {
       target_scroll_px = album_widget->get_y();
@@ -290,7 +290,7 @@ void PanelAlbums::scroll_to_playlist(size_t playlist_id, bool immediate) {
   }
 }
 
-void PanelAlbums::reflow() {
+void PanelPlaylists::reflow() {
   i32 cover_total_width = props.cover_width + props.cover_min_horizontal_spacing;
   i32 cover_total_height = props.cover_width + props.cover_min_vertical_spacing;
   i32 albums_area_width = albums_container->get_width();
@@ -334,7 +334,7 @@ void PanelAlbums::reflow() {
   albums_container->set_height(content_height);
 }
 
-void PanelAlbums::input() {
+void PanelPlaylists::input() {
   if (props_old != props) {
     recreate();
     props_old = props;
@@ -354,9 +354,9 @@ void PanelAlbums::input() {
   ColorRect::input();
 }
 
-void PanelAlbums::update() { ColorRect::update(); }
+void PanelPlaylists::update() { ColorRect::update(); }
 
-void PanelAlbums::show() {
+void PanelPlaylists::show() {
   set_is_drawn(true);
   set_is_updated(true);
   input();
@@ -365,31 +365,31 @@ void PanelAlbums::show() {
   scrollbar->update();
 }
 
-void PanelAlbums::hide() {
+void PanelPlaylists::hide() {
   props.collection_id = std::nullopt;
   set_is_drawn(false);
   set_is_updated(false);
 }
 
-void PanelAlbums::draw() { ColorRect::draw(); }
+void PanelPlaylists::draw() { ColorRect::draw(); }
 
-void PanelAlbums::event(Input::InputEventMouseScroll& e) {
+void PanelPlaylists::event(Input::InputEventMouseScroll& e) {
   if (props.is_scrollable && is_mouse_hovering()) {
     scrollbar->scroll(e.offset.y);
     e.handled = true;
   }
 }
 
-float PanelAlbums::get_scroll_px() const {
+float PanelPlaylists::get_scroll_px() const {
   if (!props.is_scrollable) { return 0.0f; }
   return target_scroll_px;
 }
 
-void PanelAlbums::set_scroll_px(float px, bool immediate) {
+void PanelPlaylists::set_scroll_px(float px, bool immediate) {
   scroll_px = px;
   target_scroll_px = px;
   scrollbar->set_scroll_offset(px);
   if (immediate) { scrollbar->skip_anim(); }
 }
 
-vec2i PanelAlbums::get_content_size() const { return {width, content_height}; }
+vec2i PanelPlaylists::get_content_size() const { return {width, content_height}; }

@@ -1,9 +1,8 @@
 #include "sprite.hpp"
 #include <cstddef>
 #include <functional>
-#include <memory>
+#include <glad/glad.h>
 #include "common/logger.hpp"
-#include "opengl_includes.hpp"
 #include "ui.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 #include "widget.hpp"

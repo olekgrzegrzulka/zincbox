@@ -1,6 +1,6 @@
 #pragma once
-#include "theme_config.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/ui.hpp"

@@ -1,4 +1,4 @@
-#include "panel_tracks.hpp"
+#include "panel_tracklist.hpp"
 #include <algorithm>
 #include <cmath>
 #include <memory>
@@ -29,7 +29,7 @@
 
 using namespace zincgui;
 
-PanelTracks::PanelTracks(Root& ui_) : ColorRect(ui_) {
+PanelTracklist::PanelTracklist(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_tracklist.color);
   set_clip_children(true);
 
@@ -64,9 +64,9 @@ PanelTracks::PanelTracks(Root& ui_) : ColorRect(ui_) {
   insert_cursor->set_is_drawn(false);
 }
 
-PanelTracks::~PanelTracks() {}
+PanelTracklist::~PanelTracklist() {}
 
-void PanelTracks::create_item_widget_if_null(Item& item) {
+void PanelTracklist::create_item_widget_if_null(Item& item) {
   size_t track_number = item.track_info.index;
   if (item.has_widget()) { return; }
 
@@ -156,9 +156,9 @@ void PanelTracks::create_item_widget_if_null(Item& item) {
   }
 }
 
-void PanelTracks::draw() { ColorRect::draw(); }
+void PanelTracklist::draw() { ColorRect::draw(); }
 
-void PanelTracks::show() {
+void PanelTracklist::show() {
   set_is_drawn(true);
   set_is_updated(true);
   input();
@@ -167,12 +167,12 @@ void PanelTracks::show() {
   scrollbar->update();
 }
 
-void PanelTracks::hide() {
+void PanelTracklist::hide() {
   set_is_drawn(false);
   set_is_updated(false);
 }
 
-void PanelTracks::scroll_to_playlist(size_t target_playlist_id, bool immediate) {
+void PanelTracklist::scroll_to_playlist(size_t target_playlist_id, bool immediate) {
   i32 offset = 0;
   for (auto& item : items) {
     if (item.type == ItemType::HEADER) {
@@ -189,7 +189,7 @@ void PanelTracks::scroll_to_playlist(size_t target_playlist_id, bool immediate) 
   }
 }
 
-void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool immediate) {
+void PanelTracklist::scroll_to_track(size_t playlist_id, size_t track_id, bool immediate) {
   i32 offset = 0;
   for (auto& item : items) {
     auto ti = item.track_info;
@@ -204,7 +204,7 @@ void PanelTracks::scroll_to_track(size_t playlist_id, size_t track_id, bool imme
   }
 }
 
-void PanelTracks::input() {
+void PanelTracklist::input() {
   items_container->set_pos(scrollbar->get_width(), 0);
   items_container->set_size(width - scrollbar->get_width(), height);
 
@@ -271,7 +271,7 @@ void PanelTracks::input() {
   }
 }
 
-void PanelTracks::update() {
+void PanelTracklist::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 
   std::optional<size_t> tooltip_visible_index;
@@ -338,14 +338,14 @@ void PanelTracks::update() {
   ColorRect::update();
 }
 
-void PanelTracks::event(Input::InputEventMouseScroll& e) {
+void PanelTracklist::event(Input::InputEventMouseScroll& e) {
   if (is_mouse_hovering()) {
     scrollbar->scroll(e.offset.y);
     e.handled = true;
   }
 }
 
-void PanelTracks::event(Input::InputEventMouseButton& e) {
+void PanelTracklist::event(Input::InputEventMouseButton& e) {
   if (is_mouse_hovering()) {
     if (!m_selection.empty() && e.button == Input::MouseButton::MOUSE_BUTTON_LEFT &&
         e.action == Input::MouseAction::RELEASE) {
@@ -356,7 +356,7 @@ void PanelTracks::event(Input::InputEventMouseButton& e) {
   }
 }
 
-void PanelTracks::clear() {
+void PanelTracklist::clear() {
   collection_id = std::nullopt;
   items.clear();
   for (auto&& widget : items_container->get_children()) {
@@ -368,16 +368,16 @@ void PanelTracks::clear() {
   scrollbar->set_content_size(0);
 }
 
-float PanelTracks::get_scroll_px() const { return target_scroll_px; }
+float PanelTracklist::get_scroll_px() const { return target_scroll_px; }
 
-void PanelTracks::set_scroll_px(float px, bool immediate) {
+void PanelTracklist::set_scroll_px(float px, bool immediate) {
   scroll_px = px;
   target_scroll_px = px;
   scrollbar->set_scroll_offset(px);
   if (immediate) { scrollbar->skip_anim(); }
 }
 
-void PanelTracks::recreate(std::optional<size_t> collection_id_) {
+void PanelTracklist::recreate(std::optional<size_t> collection_id_) {
   clear();
   collection_id = collection_id_;
   if (!collection_id.has_value()) { return; }
@@ -404,7 +404,7 @@ void PanelTracks::recreate(std::optional<size_t> collection_id_) {
   set_scroll_px(scroll_px);
 }
 
-void PanelTracks::recreate(std::span<const db::track_info> tracks) {
+void PanelTracklist::recreate(std::span<const db::track_info> tracks) {
   clear();
   collection_id = std::nullopt;
 
@@ -418,7 +418,7 @@ void PanelTracks::recreate(std::span<const db::track_info> tracks) {
   set_scroll_px(scroll_px);
 }
 
-void PanelTracks::insert_track(size_t index, db::track_info ti) {
+void PanelTracklist::insert_track(size_t index, db::track_info ti) {
   index = std::min(index, items.size());
   Item item_track = {.type = ItemType::TRACK, .track_info = ti};
   items.insert(items.begin() + index, item_track);
@@ -428,9 +428,9 @@ void PanelTracks::insert_track(size_t index, db::track_info ti) {
   m_selection.clear();
 }
 
-void PanelTracks::insert_track(db::track_info ti) { insert_track(items.size(), ti); }
+void PanelTracklist::insert_track(db::track_info ti) { insert_track(items.size(), ti); }
 
-void PanelTracks::set_track(size_t index, db::track_info ti) {
+void PanelTracklist::set_track(size_t index, db::track_info ti) {
   if (index >= items.size()) { return; }
   i32 prev_height = items[index].height();
   Item item_track = {.type = ItemType::TRACK, .track_info = ti};
@@ -441,7 +441,7 @@ void PanelTracks::set_track(size_t index, db::track_info ti) {
   m_selection.clear();
 }
 
-void PanelTracks::remove_item(size_t index) {
+void PanelTracklist::remove_item(size_t index) {
   if (index >= items.size()) { return; }
   i32 h = items[index].height();
   items.erase(items.begin() + index);

@@ -1,10 +1,10 @@
 #include <algorithm>
 #include <string_view>
+#include <glad/glad.h>
 #include <stddef.h>
 #include "common/types.hpp"
-#include "opengl_includes.hpp"
-#include "theme_config.hpp"
 #include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
+#include "ui/theme_config.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/ui.hpp"

@@ -1,6 +1,6 @@
 #pragma once
 #include "core/settings.hpp"
-#include "theme_config.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
