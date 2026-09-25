@@ -79,3 +79,10 @@ void PanelQueue::on_selection_rmb(const std::function<void(WidgetTrack*)>& fn) {
 }
 
 void PanelQueue::set_is_dragged(bool value) { panel_tracklist->set_is_dragged(value); }
+
+void PanelQueue::insert_to_selection(size_t i) {
+  if (i >= player::get_playing_queue().size()) { return; }
+  auto ti = player::get_playing_queue()[i];
+  ti.index = i;
+  panel_tracklist->insert_to_selection(ti);
+}

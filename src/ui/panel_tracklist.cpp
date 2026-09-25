@@ -128,8 +128,13 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
     });
 
     w->on_press_rmb([this, ti = item.track_info, w]() -> void {
-      if (m_selection.has(w->track_info()) && on_selection_rmb) {
-        on_selection_rmb(w);
+      if (!m_selection.empty()) {
+        if (m_selection.has(w->track_info()) && on_selection_rmb) {
+          on_selection_rmb(w);
+        } else if (on_track_rmb) {
+          clear_selection();
+          on_track_rmb(ti, w);
+        }
       } else if (on_track_rmb) {
         on_track_rmb(ti, w);
       }
@@ -348,11 +353,18 @@ void PanelTracklist::event(Input::InputEventMouseScroll& e) {
 void PanelTracklist::event(Input::InputEventMouseButton& e) {
   if (is_mouse_hovering()) {
     if (!m_selection.empty() && e.button == Input::MouseButton::MOUSE_BUTTON_LEFT &&
-        e.action == Input::MouseAction::RELEASE) {
+        e.action == Input::MouseAction::PRESS) {
       m_selection.clear();
       selection_modified = true;
     }
     e.handled = true;
+  }
+}
+
+void PanelTracklist::event(Input::InputEventKey& e) {
+  if (e.key == Input::Key::KEY_ESCAPE && e.action == Input::KeyAction::PRESS) {
+    m_selection.clear();
+    selection_modified = true;
   }
 }
 

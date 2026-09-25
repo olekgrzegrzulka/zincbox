@@ -13,8 +13,8 @@
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
 #include "core/settings.hpp"
-#include "zincbox.hpp"
 #include "lib/miniaudio/miniaudio.h"
+#include "zincbox.hpp"
 
 static Random rng{};
 
@@ -203,8 +203,8 @@ void player::enqueue(db::track_info play, size_t at) {
   }
 }
 
-void player::add_to_queue(std::span<const db::track_info> tracks, size_t at) {
-  if (tracks.empty()) { return; }
+std::vector<size_t> player::add_to_queue(std::span<const db::track_info> tracks, size_t at) {
+  if (tracks.empty()) { return {}; }
 
   bool appended = (at >= playing_queue.size());
   size_t insert_pos = appended ? playing_queue.size() : at;
@@ -220,6 +220,10 @@ void player::add_to_queue(std::span<const db::track_info> tracks, size_t at) {
     playing_index = insert_pos;
     play_track();
   }
+
+  std::vector<size_t> ret(tracks.size());
+  std::iota(ret.begin(), ret.end(), insert_pos);
+  return ret;
 }
 
 void player::remove_from_queue(size_t at) {
@@ -265,19 +269,19 @@ void player::remove_from_queue(std::span<const size_t> indices) {
   if (current_track_removed) { play_track(); }
 }
 
-void player::move_queue_tracks(std::span<const size_t> indices, size_t target_index) {
-  if (indices.empty() || playing_queue.empty()) { return; }
+std::vector<size_t> player::move_queue_tracks(std::span<const size_t> indices, size_t target_index) {
+  if (indices.empty() || playing_queue.empty()) { return {}; }
 
   std::set<size_t, std::less<size_t>> sorted_indices(indices.begin(), indices.end());
 
   if (*sorted_indices.begin() >= playing_queue.size() || *sorted_indices.rbegin() >= playing_queue.size()) {
     out::error("player::move_queue_tracks(): index out of bounds");
-    return;
+    return {};
   }
 
   if (sorted_indices.size() != indices.size()) {
     out::error("player::move_queue_tracks(): duplicate indices");
-    return;
+    return {};
   }
 
   std::vector<db::track_info> tracks_to_insert;
@@ -317,6 +321,10 @@ void player::move_queue_tracks(std::span<const size_t> indices, size_t target_in
     }
     playing_index = std::min(corrected_playing_index.value(), playing_queue.size() - 1);
   }
+
+  std::vector<size_t> ret(tracks_to_insert.size());
+  std::iota(ret.begin(), ret.end(), corrected_target_index);
+  return ret;
 }
 
 void player::clear_queue() {

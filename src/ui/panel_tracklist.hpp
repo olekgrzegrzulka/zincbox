@@ -132,6 +132,7 @@ class PanelTracklist final : public zincgui::ColorRect {
 
     void event(zincgui::Input::InputEventMouseScroll&) override;
     void event(zincgui::Input::InputEventMouseButton&) override;
+    void event(zincgui::Input::InputEventKey&) override;
     void input() override;
     void update() override;
     void draw() override;
@@ -156,6 +157,11 @@ class PanelTracklist final : public zincgui::ColorRect {
     const PanelTracklistSelection& selection() const { return m_selection; }
     void clear_selection() {
       m_selection.clear();
+      selection_modified = true;
+    }
+
+    void insert_to_selection(db::track_info s) {
+      m_selection.insert(s);
       selection_modified = true;
     }
 

@@ -17,10 +17,10 @@ namespace player {
   bool play(db::track_info, bool clear_queue = true);
   bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
   void enqueue(db::track_info, size_t at);
-  void add_to_queue(std::span<const db::track_info> play, size_t at);
+  std::vector<size_t> add_to_queue(std::span<const db::track_info> play, size_t at);
   void remove_from_queue(size_t at);
   void remove_from_queue(std::span<const size_t>);
-  void move_queue_tracks(std::span<const size_t> indices, size_t target_index);
+  std::vector<size_t> move_queue_tracks(std::span<const size_t> indices, size_t target_index);
   void clear_queue();
   void resume();
   void pause();

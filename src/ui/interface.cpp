@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 #include <glaze/glaze.hpp>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
@@ -736,9 +737,11 @@ static void handle_drag_and_drop() {
     }
   };
 
-  auto handle_drag_playlist_cover = [&](WidgetAlbumCover* hovered_playlist_cover_, bool drag_ended) -> bool {
-    if (!hovered_playlist_cover_) { return false; }
-    if (hovered_playlist_cover_->is_add_button()) {
+  auto handle_drag_playlist_panel = [&](WidgetAlbumCover* hovered_playlist_cover_, bool drag_ended) -> bool {
+    if (!panel_playlists->is_mouse_hovering()) { return false; }
+    if (!hovered_playlist_cover_ || hovered_playlist_cover_->is_add_button()) {
+      static i32 i = 0;
+      out::warn(i++);
       return handle_drag_create_playlist(drag_ended);
     } else {
       if (!hovered_playlist_cover_->playlist_id.has_value()) { return false; }
@@ -793,17 +796,23 @@ static void handle_drag_and_drop() {
       bool move = selection_drag_is_from_queue;
       size_t target_index = hovered_track_->track_info().index;
       if (!above) { target_index += 1; }
+      std::vector<size_t> selection_indices_to_restore;
       if (move) {
         std::vector<size_t> indices;
         indices.reserve(selection_drag_sorted_top_to_bottom.size());
         for (const auto& item : selection_drag_sorted_top_to_bottom) {
           indices.emplace_back(item.index);
         }
-        player::move_queue_tracks(indices, target_index);
+        selection_indices_to_restore = player::move_queue_tracks(indices, target_index);
       } else {
-        player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
+        selection_indices_to_restore = player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
       }
+      if (selection_indices_to_restore.size() == 1) { selection_indices_to_restore.clear(); }
       panel_queue->on_queue_changed();
+      panel_queue->clear_selection();
+      for (size_t i : selection_indices_to_restore) {
+        panel_queue->insert_to_selection(i);
+      }
       return true;
     }
   };
@@ -831,15 +840,24 @@ static void handle_drag_and_drop() {
           if (item.index < i) { i -= 1; }
         }
       }
+      std::vector<size_t> selection_indices_to_restore;
       if (move) {
         db::remove_track_indices_from_playlist(target_playlist_id, indices_to_remove);
-        db::add_track_ids_to_playlist(target_playlist_id, i, track_ids);
+        selection_indices_to_restore = db::add_track_ids_to_playlist(target_playlist_id, i, track_ids);
       } else {
-        db::add_track_ids_to_playlist(target_playlist_id, i, track_ids);
+        selection_indices_to_restore = db::add_track_ids_to_playlist(target_playlist_id, i, track_ids);
       }
+      if (selection_indices_to_restore.size() == 1) { selection_indices_to_restore.clear(); }
       if (active_collection_id.has_value()) {
-        panel_tracklist->clear();
         panel_tracklist->recreate(active_collection_id);
+        panel_tracklist->clear_selection();
+        for (size_t i : selection_indices_to_restore) {
+          panel_tracklist->insert_to_selection(
+            db::track_info{.collection_id = db::collection_of_playlist(target_playlist_id).value(),
+                           .playlist_id = target_playlist_id,
+                           .track_id = playlist->get().track_ids[i],
+                           .index = i});
+        }
       }
       return true;
     } else {
@@ -905,17 +923,23 @@ static void handle_drag_and_drop() {
       return true;
     } else {
       size_t target_index = player::get_playing_queue().size();
+      std::vector<size_t> selection_indices_to_restore;
       if (move) {
         std::vector<size_t> indices;
         indices.reserve(selection_drag_sorted_top_to_bottom.size());
         for (const auto& item : selection_drag_sorted_top_to_bottom) {
           indices.emplace_back(item.index);
         }
-        player::move_queue_tracks(indices, target_index);
+        selection_indices_to_restore = player::move_queue_tracks(indices, target_index);
       } else {
-        player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
+        selection_indices_to_restore = player::add_to_queue(selection_drag_sorted_top_to_bottom, target_index);
       }
+      if (selection_indices_to_restore.size() == 1) { selection_indices_to_restore.clear(); }
+      panel_queue->clear_selection();
       panel_queue->on_queue_changed();
+      for (size_t i : selection_indices_to_restore) {
+        panel_queue->insert_to_selection(i);
+      }
       return true;
     }
   };
@@ -944,7 +968,7 @@ static void handle_drag_and_drop() {
     panel_tracklist->set_is_dragged(true);
     panel_queue->set_is_dragged(true);
 
-    if ((hovered_playlist_cover && handle_drag_playlist_cover(hovered_playlist_cover, false)) ||
+    if (handle_drag_playlist_panel(hovered_playlist_cover, false) ||
         (hovered_playlist_header && handle_drag_playlist_header(hovered_playlist_header, false)) ||
         (hovered_track && handle_drag_track(hovered_track, false)) ||
         (hovered_queue_panel && handle_drag_track_queue_panel(false)) ||
@@ -960,11 +984,9 @@ static void handle_drag_and_drop() {
     tooltip_drag->set_is_drawn(false);
   }
   if (lmb_just_released && valid_selection) {
-    if (handle_drag_playlist_cover(hovered_playlist_cover, true) ||
+    if (handle_drag_playlist_panel(hovered_playlist_cover, true) ||
         handle_drag_playlist_header(hovered_playlist_header, true) || handle_drag_track(hovered_track, true) ||
         handle_drag_track_queue_panel(true) || handle_drag_tab(hovered_tab, true)) {
-      panel_tracklist->clear_selection();
-      panel_queue->clear_selection();
       selection_drag_sorted_top_to_bottom.clear();
       panel_tracklist->set_is_dragged(false);
       panel_queue->set_is_dragged(false);
@@ -974,6 +996,7 @@ static void handle_drag_and_drop() {
   if (lmb_just_released || rmb_just_pressed || Input::key_just_pressed(Input::Key::KEY_ESCAPE) ||
       popup_controller->is_popup_open()) {
     selection_drag = std::nullopt;
+    selection_drag_sorted_top_to_bottom.clear();
     selection_drag_started = false;
     selection_drag_tab_id = -1;
     selection_drag_tab_timer = 0;
