@@ -80,11 +80,12 @@ i32 Popup::get_max_content_height() const {
 }
 
 Popover::Popover(Root& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
+  set_nine_slice_margin(14.0f);
   arrow = &add_child<Sprite>(arrow_on_top ? "popover_arrow" : "popover_arrow_inverted");
   arrow->set_ignore_parents_layout(true);
   arrow->set_parent_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
   arrow->set_anchor(arrow_on_top ? Anchor::BOTTOM : Anchor::TOP);
-  arrow->set_y(arrow_on_top ? 1 : -1);
+  arrow->set_y(arrow_on_top ? 2 : -2);
 }
 
 void Popover::update() {
@@ -94,8 +95,8 @@ void Popover::update() {
   i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
   i32 push_x = off_screen_left - off_screen_right;
   i32 push_y = off_screen_top - off_screen_bottom;
-  i32 lo = std::min(-width / 2 + 8, width / 2 - 8);
-  i32 hi = std::max(-width / 2 + 8, width / 2 - 8);
+  i32 lo = std::min(-width / 2 + 16, width / 2 - 16);
+  i32 hi = std::max(-width / 2 + 16, width / 2 - 16);
   arrow_offset = std::clamp(arrow_offset - push_x, lo, hi);
   arrow->set_x(arrow_offset);
   set_x(get_x() + push_x);

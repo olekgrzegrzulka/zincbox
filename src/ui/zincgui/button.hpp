@@ -52,7 +52,7 @@ namespace zincgui {
         set_texture_hovered("button_hovered");
         set_texture_pressed("button_pressed");
         set_texture_disabled("button_disabled");
-        set_nine_slice_margin(3.0f);
+        set_nine_slice_margin(10.0f);
         set_nine_slice_scale(1.0f);
 
         label.set_text_color(theme::config().text_color);

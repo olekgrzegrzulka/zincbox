@@ -33,7 +33,7 @@ Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
 
   set_clip_children(true);
   set_texture_inactive();
-  set_nine_slice_margin(8.0f);
+  set_nine_slice_margin((i32)(theme::config().panel_top.height / 2));
 
   on_press([&]() { on_active(this); });
 

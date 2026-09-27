@@ -267,7 +267,7 @@ static void update_mini_player_state() {
     if (is_mini_player.value()) {
       s_loaded_state.interface.window_height = s_window->height();
 
-      int fixed_h = theme::config().panel_controls.height + theme::config().custom_window_decoration.border_size;
+      int fixed_h = theme::config().panel_controls.height + 2 * theme::config().custom_window_decoration.border_size;
       s_window->min_size(480, fixed_h);
       s_window->max_size(7680, fixed_h);
       s_window->resize(s_window->width(), fixed_h);
