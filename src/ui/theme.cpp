@@ -194,6 +194,7 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
       load_theme("", ui, language);
       return;
     }
+    config_.clamp_values();
 
     // Try to load a font file, else fallback to default theme
     std::string font_path = "";
@@ -222,6 +223,7 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
       out::critical("failed to parse theme.json");
       exit(1);
     }
+    config_.clamp_values();
 
     if (resources_ttf_path.empty()) {
       out::critical("no ttf file found in default theme");

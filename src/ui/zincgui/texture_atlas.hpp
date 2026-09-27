@@ -47,6 +47,8 @@ namespace zincgui {
 
       void set_fallback_texture(std::string_view id);
 
+      i32 size() const { return atlas_size_px; }
+
     protected:
       std::optional<std::reference_wrapper<TextureAtlasData>> get_internal(std::string_view id, i32 max_depth = 16);
       std::optional<std::pair<i32, i32>> find_space_for_texture(i32 width, i32 height);

@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "slider.hpp"
 #include "sprite.hpp"

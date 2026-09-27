@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <glaze/glaze.hpp>
 #include "common/color.hpp"
 #include "common/serialized_state.hpp" // for glz::meta<rgba> specialization
@@ -7,13 +8,17 @@
 struct ButtonConfig {
     bool visible{true};
     i32 width{36};
-    i32 nine_slice_margin{0};
+    i32 nine_slice_margin{10};
+
+    void clamp_values();
 };
 
 struct PanelTopConfig {
     rgba color{0x1e0e1cff};
     i32 height{26};
     ButtonConfig button_add_tab{};
+
+    void clamp_values();
 };
 
 struct SeekbarConfig {
@@ -22,6 +27,8 @@ struct SeekbarConfig {
     i32 track_height{12};
     i32 thumb_width{12};
     i32 thumb_height{12};
+
+    void clamp_values();
 };
 
 struct VolumeBarConfig {
@@ -31,6 +38,8 @@ struct VolumeBarConfig {
     i32 track_height{12};
     i32 thumb_width{12};
     i32 thumb_height{12};
+
+    void clamp_values();
 };
 
 struct TimestampConfig {
@@ -51,6 +60,8 @@ struct PanelControlsConfig {
     ButtonConfig button_repeat;
     ButtonConfig button_shuffle;
     ButtonConfig button_expand_player;
+
+    void clamp_values();
 };
 
 struct PanelTracklistConfig {
@@ -72,6 +83,8 @@ struct PanelTracklistConfig {
     rgba title_color{0xcca3c4ff};
     rgba length_color{0x80667aff};
     rgba insert_cursor_color{0x77376eff};
+
+    void clamp_values();
 };
 
 struct PanelPlaylistsConfig {
@@ -84,6 +97,8 @@ struct NotificationConfig {
     i32 nine_slice_margin{6};
     i32 height{10};
     i32 spacing{10};
+
+    void clamp_values();
 };
 
 struct CustomWindowDecorationConfig {
@@ -93,6 +108,8 @@ struct CustomWindowDecorationConfig {
     bool show_maximize_button = true;
     bool show_close_button = true;
     i32 border_size{3};
+
+    void clamp_values();
 };
 
 struct ThemeConfig {
@@ -107,4 +124,68 @@ struct ThemeConfig {
     PanelPlaylistsConfig panel_playlists;
     NotificationConfig notification;
     CustomWindowDecorationConfig custom_window_decoration;
+
+    void clamp_values();
 };
+
+inline void ButtonConfig::clamp_values() {
+  width = std::clamp(width, 12, 512);
+  nine_slice_margin = std::clamp(nine_slice_margin, 0, 32);
+}
+
+inline void PanelTopConfig::clamp_values() {
+  height = std::clamp(height, 15, 100);
+  button_add_tab.clamp_values();
+}
+
+inline void SeekbarConfig::clamp_values() {
+  nine_slice_margin = std::clamp(nine_slice_margin, 0, 32);
+  track_height = std::clamp(track_height, 2, 50);
+  thumb_width = std::clamp(thumb_width, 2, 50);
+  thumb_height = std::clamp(thumb_height, 2, 50);
+}
+
+inline void VolumeBarConfig::clamp_values() {
+  width = std::clamp(width, 20, 250);
+  nine_slice_margin = std::clamp(nine_slice_margin, 0, 32);
+  track_height = std::clamp(track_height, 2, 50);
+  thumb_width = std::clamp(thumb_width, 4, 50);
+  thumb_height = std::clamp(thumb_height, 4, 50);
+}
+
+inline void PanelControlsConfig::clamp_values() {
+  height = std::clamp(height, 15, 100);
+  padding = std::clamp(padding, 0, 20);
+  button_previous.clamp_values();
+  button_play.clamp_values();
+  button_stop.clamp_values();
+  button_next.clamp_values();
+  seekbar.clamp_values();
+  volume_bar.clamp_values();
+  button_repeat.clamp_values();
+  button_shuffle.clamp_values();
+  button_expand_player.clamp_values();
+}
+
+inline void PanelTracklistConfig::clamp_values() {
+  track_height = std::clamp(track_height, 12, 50);
+  header_height = std::clamp(header_height, 16, 100);
+  header_spacing = std::clamp(header_spacing, 0, 100);
+  track_hovered_opacity = std::clamp(track_hovered_opacity, 0.0f, 1.0f);
+}
+
+inline void NotificationConfig::clamp_values() {
+  nine_slice_margin = std::clamp(nine_slice_margin, 0, 32);
+  height = std::clamp(height, 10, 100);
+  spacing = std::clamp(spacing, 0, 50);
+}
+
+inline void CustomWindowDecorationConfig::clamp_values() { border_size = std::clamp(border_size, 0, 20); }
+
+inline void ThemeConfig::clamp_values() {
+  panel_top.clamp_values();
+  panel_controls.clamp_values();
+  panel_tracklist.clamp_values();
+  notification.clamp_values();
+  custom_window_decoration.clamp_values();
+}

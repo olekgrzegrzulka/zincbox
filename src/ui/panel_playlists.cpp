@@ -37,7 +37,7 @@ SpriteAlbumCover::SpriteAlbumCover(Root& ui_, const std::string& id, vec2i cover
     set_texture("cover_unknown");
   }
   set_size(cover_size_);
-  set_nine_slice_margin(0.0f);
+  set_nine_slice_margin(1.0f);
 }
 
 void WidgetAlbumCover::update_highlight_status_from_player() {
@@ -99,13 +99,17 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   label_author->set_y(cover_size.y + 8 + 16);
 
   hover = &sprite_cover.add_child<Sprite>("playlist_hovered");
+  hover->set_parent_anchor(Anchor::TOP);
+  hover->set_anchor(Anchor::TOP);
   hover->set_nine_slice_margin(8.0f);
   hover->set_ignore_parents_layout(true);
   hover->set_size(cover_size.x, cover_size.y);
   hover->set_is_drawn(false);
 
   sprite_playing = &sprite_cover.add_child<Sprite>("playlist_playing");
-  sprite_playing->set_nine_slice_margin(0.0f);
+  sprite_playing->set_parent_anchor(Anchor::TOP);
+  sprite_playing->set_anchor(Anchor::TOP);
+  sprite_playing->set_nine_slice_margin(8.0f);
   sprite_playing->set_ignore_parents_layout(true);
   sprite_playing->set_size(cover_size.x, cover_size.y);
   sprite_playing->set_is_drawn(false);
@@ -172,14 +176,13 @@ PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
   });
   button_sort_by->add_image("sort_by");
 
-  button_clear_search->set_width(20);
-  button_clear_search->set_height(20);
   button_clear_search->set_x(-2);
   button_clear_search->set_ignore_parents_layout(true);
-  button_clear_search->set_texture("clear_search_idle", false);
+  button_clear_search->set_texture("clear_search_idle", true);
   button_clear_search->set_texture_idle("clear_search_idle");
   button_clear_search->set_texture_hovered("clear_search_hovered");
   button_clear_search->set_texture_pressed("clear_search_pressed");
+  button_clear_search->set_nine_slice_margin(0);
   button_clear_search->set_anchor(Anchor::RIGHT);
   button_clear_search->set_parent_anchor(Anchor::RIGHT);
 

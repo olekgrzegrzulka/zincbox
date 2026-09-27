@@ -1,48 +1,51 @@
 {
-  "text_color": "hsv(312, 0.20, 0.95)",
-  "text_color_muted": "hsv(312, 0.24, 0.7)",
-  "text_color_disabled": "hsv(312, 0.10, 0.60)",
-  "text_caret_color": "#d48dc9",
-  "splitter_color": "#1e0e1c",
+  "text_color": "#f4c0de",
+  "text_color_muted": "#b586a0",
+  "text_color_disabled": "#9a8992",
+  "text_caret_color": "#d889b9",
+  "splitter_color": "#1f0d18",
 
   "panel_top": {
-    "color": "#1e0e1c",
-    "height": 26
+    "color": "#1f0d18",
+    "height": 26,
+    "button_add_tab": {
+      "nine_slice_margin": 0
+    }
   },
 
   "panel_controls": {
-    "color": "#1e0e1c",
+    "color": "#1f0d18",
     "height": 44,
     "padding": 4,
 
     "button_previous": {
       "visible": true,
       "width": 36,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     },
 
     "button_play": {
       "visible": true,
       "width": 36,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     },
 
     "button_stop": {
       "visible": true,
       "width": 36,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     },
 
     "button_next": {
       "visible": true,
       "width": 36,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     },
 
     "seekbar": {
       "visible": true,
-      "nine_slice_margin": 6,
-      "track_height": 12,
+      "nine_slice_margin": 3,
+      "track_height": 6,
       "thumb_width": 12,
       "thumb_height": 12
     },
@@ -53,9 +56,9 @@
 
     "volume_bar": {
       "visible": true,
-      "width": 70,
-      "nine_slice_margin": 6,
-      "track_height": 12,
+      "width": 65,
+      "nine_slice_margin": 3,
+      "track_height": 8,
       "thumb_width": 12,
       "thumb_height": 12
     },
@@ -63,47 +66,47 @@
     "button_repeat": {
       "visible": true,
       "width": 36,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     },
 
     "button_shuffle": {
       "visible": true,
       "width": 36,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     },
 
     "button_expand_player": {
       "visible": true,
       "width": 24,
-      "nine_slice_margin": 0
+      "nine_slice_margin": 10
     }
   },
 
   "panel_tracklist": {
-    "color": "#0f070c",
+    "color": "#0f070a",
     "track_height": 22,
     "header_height": 28,
     "header_spacing": 10,
-    "header_author_color": "#a8769e",
-    "header_name_color": "#dc99ce",
-    "track_color_odd": "#0c050b",
-    "track_color_even": "#150913",
-    "track_color_playing": "#2d1528",
-    "track_color_selected_odd": "#34132d",
-    "track_color_selected_even": "#3b1634",
-    "track_hovered": "#ad3594",
+    "header_author_color": "#ab7492",
+    "header_name_color": "#df96be",
+    "track_color_odd": "#0c0509",
+    "track_color_even": "#160810",
+    "track_color_playing": "#2e1422",
+    "track_color_selected_odd": "#361125",
+    "track_color_selected_even": "#3d142b",
+    "track_hovered": "#b32f78",
     "track_hovered_opacity": 0.2,
-    "track_artist_color": "#80667a",
-    "track_number_color": "#a6859f",
-    "title_color": "#cca3c4",
-    "length_color": "#80667a",
-    "insert_cursor_color": "#77376e"
+    "track_artist_color": "#816574",
+    "track_number_color": "#a88397",
+    "title_color": "#cea1ba",
+    "length_color": "#816574",
+    "insert_cursor_color": "#7a345f"
   },
 
   "panel_playlists": {
-    "color": "#0f070c",
-    "title_color": "hsv(312, 0.20, 0.86)",
-    "author_color": "hsv(312, 0.20, 0.66)"
+    "color": "#0f070a",
+    "title_color": "#df96be",
+    "author_color": "#ab7492"
   },
 
   "notification": {

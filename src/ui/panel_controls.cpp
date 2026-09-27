@@ -70,11 +70,11 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
 
   seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
   seekbar->set_is_drawn(theme::config().panel_controls.seekbar.visible);
+  i32 track_height = theme::config().panel_controls.seekbar.track_height;
+  i32 thumb_width = theme::config().panel_controls.seekbar.thumb_width;
+  i32 thumb_height = theme::config().panel_controls.seekbar.thumb_height;
   seekbar->set_track_nine_slice_margin(theme::config().panel_controls.seekbar.nine_slice_margin);
-  seekbar->set_thumb_nine_slice_margin(theme::config().panel_controls.seekbar.nine_slice_margin);
-  i32 track_height = std::clamp(theme::config().panel_controls.seekbar.track_height, 1, 50) * scale;
-  i32 thumb_width = std::clamp(theme::config().panel_controls.seekbar.thumb_width, 1, 50) * scale;
-  i32 thumb_height = std::clamp(theme::config().panel_controls.seekbar.thumb_height, 1, 50) * scale;
+  seekbar->set_thumb_nine_slice_margin(0);
   seekbar->set_track_thickness(track_height);
   seekbar->set_drag_area_inflation(std::max(16 - track_height, 0));
   seekbar->set_thumb_thickness(thumb_height);
@@ -114,12 +114,12 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
 
   volume_bar = &add_child<ZincboxSlider>("volume_bar");
   volume_bar->set_is_drawn(theme::config().panel_controls.volume_bar.visible);
+  volume_bar->set_max_width(theme::config().panel_controls.volume_bar.width * scale);
+  i32 vol_track_height = theme::config().panel_controls.volume_bar.track_height;
+  i32 vol_thumb_width = theme::config().panel_controls.volume_bar.thumb_width;
+  i32 vol_thumb_height = theme::config().panel_controls.volume_bar.thumb_height;
   volume_bar->set_track_nine_slice_margin(theme::config().panel_controls.volume_bar.nine_slice_margin);
-  volume_bar->set_thumb_nine_slice_margin(theme::config().panel_controls.volume_bar.nine_slice_margin);
-  volume_bar->set_max_width(std::clamp(theme::config().panel_controls.volume_bar.width, 20, 200) * scale);
-  i32 vol_track_height = std::clamp(theme::config().panel_controls.volume_bar.track_height, 1, 50) * scale;
-  i32 vol_thumb_width = std::clamp(theme::config().panel_controls.volume_bar.thumb_width, 1, 50) * scale;
-  i32 vol_thumb_height = std::clamp(theme::config().panel_controls.volume_bar.thumb_height, 1, 50) * scale;
+  volume_bar->set_thumb_nine_slice_margin(0);
   volume_bar->set_track_thickness(vol_track_height);
   volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
   volume_bar->set_thumb_thickness(vol_thumb_height);

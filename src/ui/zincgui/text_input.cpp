@@ -16,7 +16,7 @@ namespace zincgui {
 
 zincgui::TextInput::TextInput(Root& ui_) : Sprite(ui_), label(add_child<Label>()), caret(add_child<ColorRect>()) {
   set_size(64, 24);
-  set_nine_slice_margin(4);
+  set_nine_slice_margin(10.0f);
   set_clip_children(true);
   label.set_anchor(Anchor::CENTER_LEFT);
   label.set_parent_anchor(Anchor::CENTER_LEFT);

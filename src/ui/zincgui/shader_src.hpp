@@ -68,38 +68,32 @@ out vec4 FragColor;
 void main() {
   if (type == 0) {
     vec2 uv_extents = uv_end - uv_start;
-    vec2 tex_res = vec2(1.0) / tex_size;
-
-    // uv2 is transposed to [0;1]
+    vec2 sprite_size = uv_extents * tex_size;
+    
     vec2 uv2 = (uv - uv_start) / uv_extents;
-
-    if (uv2.x <= nine_slice_pixel_margin / widget_size.x * scale) {
-      uv2.x *= widget_size.x / tex_size.x / scale;
-    } else if (uv2.x >= 1.0 - nine_slice_pixel_margin / widget_size.x * scale) {
-      uv2.x -= 1.0;
-      uv2.x *= widget_size.x / tex_size.x / scale;
-      uv2.x += 1.0;
+    
+    vec2 border_widget = min((nine_slice_pixel_margin * scale) / vec2(widget_size), vec2(0.4999));
+    vec2 border_sprite = nine_slice_pixel_margin / sprite_size;
+    
+    if (uv2.x < border_widget.x) {
+        uv2.x = (uv2.x / border_widget.x) * border_sprite.x;
+    } else if (uv2.x > 1.0 - border_widget.x) {
+        uv2.x = 1.0 - border_sprite.x + ((uv2.x - (1.0 - border_widget.x)) / border_widget.x) * border_sprite.x;
     } else {
-      uv2.x -= (nine_slice_pixel_margin / widget_size.x);
-      uv2.x /= (1.0 - nine_slice_pixel_margin / widget_size.x) - (nine_slice_pixel_margin / widget_size.x);
-      uv2.x = mix(nine_slice_pixel_margin * tex_res.x, 1.0 - nine_slice_pixel_margin * tex_res.x, uv2.x);
+        float t = (uv2.x - border_widget.x) / (1.0 - 2.0 * border_widget.x);
+        uv2.x = mix(border_sprite.x, 1.0 - border_sprite.x, t);
     }
-
-    if (uv2.y <= nine_slice_pixel_margin / widget_size.y * scale) {
-      uv2.y *= widget_size.y / tex_size.y / scale;
-    } else if (uv2.y >= 1.0 - nine_slice_pixel_margin / widget_size.y * scale) {
-      uv2.y -= 1.0;
-      uv2.y *= widget_size.y / tex_size.y / scale;
-      uv2.y += 1.0;
+    
+    if (uv2.y < border_widget.y) {
+        uv2.y = (uv2.y / border_widget.y) * border_sprite.y;
+    } else if (uv2.y > 1.0 - border_widget.y) {
+        uv2.y = 1.0 - border_sprite.y + ((uv2.y - (1.0 - border_widget.y)) / border_widget.y) * border_sprite.y;
     } else {
-      uv2.y -= (nine_slice_pixel_margin / widget_size.y);
-      uv2.y /= (1.0 - nine_slice_pixel_margin / widget_size.y) - (nine_slice_pixel_margin / widget_size.y);
-      uv2.y = mix(nine_slice_pixel_margin * tex_res.y, 1.0 - nine_slice_pixel_margin * tex_res.y, uv2.y);
+        float t = (uv2.y - border_widget.y) / (1.0 - 2.0 * border_widget.y);
+        uv2.y = mix(border_sprite.y, 1.0 - border_sprite.y, t);
     }
-
-    uv2 = uv2 * uv_extents + uv_start;
-    vec4 color = texture(atlas, uv2);
-    FragColor = color;
+    
+    FragColor = texture(atlas, uv_start + uv2 * uv_extents);
   } else if (type == 1) {
     float a = texture(text_atlas, uv).a;
     FragColor = vec4(color, a);
