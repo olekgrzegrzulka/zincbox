@@ -49,7 +49,12 @@ bool zincgui::TextureAtlas::add_texture(std::string_view id, const std::filesyst
     exit(1);
   }
 
-  auto at = paste_texture(data, width, height);
+  auto opt_at = paste_texture(data, width, height);
+  if (!opt_at) {
+    stbi_image_free(data);
+    return false;
+  }
+  auto at = *opt_at;
 
   TextureAtlasData uv;
   uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
@@ -72,7 +77,9 @@ bool zincgui::TextureAtlas::add_texture(std::string_view id, const std::vector<u
     return false;
   }
 
-  auto at = paste_texture(data, width, height);
+  auto opt_at = paste_texture(data, width, height);
+  if (!opt_at) { return false; }
+  auto at = *opt_at;
 
   TextureAtlasData uv;
   uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
@@ -95,7 +102,9 @@ bool zincgui::TextureAtlas::add_texture(std::string_view id, const u8* data_, i3
     return false;
   }
 
-  auto at = paste_texture(data, width, height);
+  auto opt_at = paste_texture(data, width, height);
+  if (!opt_at) { return false; }
+  auto at = *opt_at;
 
   TextureAtlasData uv;
   uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
@@ -152,7 +161,9 @@ bool zincgui::TextureAtlas::add_texture_row(std::span<const std::string> ids, co
     return false;
   }
 
-  auto at = paste_texture((stbi_uc*)data, width, height);
+  auto opt_at = paste_texture((stbi_uc*)data, width, height);
+  if (!opt_at) { return false; }
+  auto at = *opt_at;
   i32 frag_width = width / (i32)ids.size();
 
   for (size_t i = 0; i < ids.size(); i += 1) {
@@ -181,11 +192,16 @@ bool zincgui::TextureAtlas::remove_texture(std::string_view id) {
   if (textures_contains_id) {
     std::string id_str(id);
     auto& uv = textures.at(id_str);
-    mark_space_for_texture(uv.start.x * atlas_size_px, uv.start.y * atlas_size_px, uv.width, uv.height, true);
+
+    i32 px = std::round((uv.start.x + half_pixel()) * atlas_size_px);
+    i32 py = std::round((uv.start.y + half_pixel()) * atlas_size_px);
+
+    mark_space_for_texture(px - margin_px, py - margin_px, uv.width + 2 * margin_px, uv.height + 2 * margin_px, true);
+
     for (i32 y = 0; y < uv.height; y++) {
       for (i32 x = 0; x < uv.width; x++) {
-        i32 atlas_x = uv.start.x * atlas_size_px + x;
-        i32 atlas_y = uv.start.y * atlas_size_px + y;
+        i32 atlas_x = px + x;
+        i32 atlas_y = py + y;
         i32 atlas_i = (atlas_y * atlas_size_px + atlas_x) * 4;
         image[atlas_i + 0] = 0;
         image[atlas_i + 1] = 0;
@@ -195,6 +211,14 @@ bool zincgui::TextureAtlas::remove_texture(std::string_view id) {
     }
     dirty = true;
     textures.erase(id_str);
+
+    for (auto it = aliases.begin(); it != aliases.end();) {
+      if (it->second == id_str) {
+        it = aliases.erase(it);
+      } else {
+        ++it;
+      }
+    }
   }
   if (aliases_contains_id) { aliases.erase(std::string(id)); }
 
@@ -207,13 +231,17 @@ vec2i zincgui::TextureAtlas::get_texture_size(std::string_view id) {
   return {texture_atlas_data->get().width, texture_atlas_data->get().height};
 }
 
+bool zincgui::TextureAtlas::can_fit_texture(i32 w, i32 h) {
+  return find_space_for_texture(w + 2 * margin_px, h + 2 * margin_px).has_value();
+}
+
 void zincgui::TextureAtlas::save_to_file(std::string filename) {
   if (!filename.ends_with(".png")) { filename += ".png"; }
-  auto data_copy = image.data();
   auto size_px_copy = atlas_size_px;
+  auto image_copy = image;
 
-  std::thread th([filename, size_px_copy, data_copy]() {
-    i32 status = stbi_write_png(filename.c_str(), size_px_copy, size_px_copy, 4, data_copy, 4 * size_px_copy);
+  std::thread th([filename, size_px_copy, image_copy]() {
+    i32 status = stbi_write_png(filename.c_str(), size_px_copy, size_px_copy, 4, image_copy.data(), 4 * size_px_copy);
     if (status == 1) {
       out::debug_info("Saved texture atlas to {}", filename);
     } else {
@@ -257,6 +285,9 @@ void zincgui::TextureAtlas::set_fallback_texture(std::string_view id) {
 }
 
 void zincgui::TextureAtlas::regenerate_texture() {
+  if (texture != 0) { glDeleteTextures(1, &texture); }
+  if (sampler != 0) { glDeleteSamplers(1, &sampler); }
+
   glGenTextures(1, &texture);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);
@@ -319,19 +350,25 @@ void zincgui::TextureAtlas::mark_space_for_texture(i32 x, i32 y, i32 width, i32 
   }
 }
 
-vec2i zincgui::TextureAtlas::paste_texture(stbi_uc* data, i32 width, i32 height) {
-  auto [x, y] = find_space_for_texture(width + 2 * margin_px, height + 2 * margin_px).value_or(std::make_pair(0, 0));
-  mark_space_for_texture(x + margin_px, y + margin_px, width + 2 * margin_px, height + 2 * margin_px);
+std::optional<vec2i> zincgui::TextureAtlas::paste_texture(stbi_uc* data, i32 width, i32 height) {
+  auto space = find_space_for_texture(width + 2 * margin_px, height + 2 * margin_px);
+  if (!space) { return std::nullopt; }
+  auto [x, y] = *space;
+
+  mark_space_for_texture(x, y, width + 2 * margin_px, height + 2 * margin_px, false);
+
+  i32 px = x + margin_px;
+  i32 py = y + margin_px;
 
   for (i32 oy = 0; oy < height; oy += 1) {
     for (i32 ox = 0; ox < width; ox += 1) {
-      if ((x + ox) < atlas_size_px && (y + oy) < atlas_size_px) {
+      if ((px + ox) < atlas_size_px && (py + oy) < atlas_size_px) {
         for (i32 c = 0; c < 4; c += 1) {
-          image[4 * ((y + oy) * atlas_size_px + (x + ox)) + c] = data[4 * (oy * width + ox) + c];
+          image[4 * ((py + oy) * atlas_size_px + (px + ox)) + c] = data[4 * (oy * width + ox) + c];
         }
       }
     }
   }
   dirty = true;
-  return {x, y};
+  return vec2i{px, py};
 }

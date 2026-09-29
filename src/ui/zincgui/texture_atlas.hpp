@@ -24,6 +24,8 @@ namespace zincgui {
     public:
       TextureAtlas(i32 atlas_size_ = 2048, i32 margin_px_ = 1, i32 grid_size_px_ = 4);
 
+      i32 texture_count() const { return textures.size(); }
+
       bool has_texture(std::string_view id, i32 max_depth = 16) const {
         if (max_depth <= 0) { return false; }
         if (textures.contains(id)) { return true; }
@@ -38,6 +40,7 @@ namespace zincgui {
       void add_texture_alias(std::string id, std::string to);
       bool remove_texture(std::string_view id);
       vec2i get_texture_size(std::string_view id);
+      bool can_fit_texture(i32 w, i32 h);
 
       void save_to_file(std::string filename);
 
@@ -55,7 +58,7 @@ namespace zincgui {
 
       void mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, bool unmark = false);
 
-      vec2i paste_texture(stbi_uc* data, i32 width, i32 height);
+      std::optional<vec2i> paste_texture(stbi_uc* data, i32 width, i32 height);
 
       float half_pixel() { return 1.0 / (atlas_size_px * 2.0); }
 
