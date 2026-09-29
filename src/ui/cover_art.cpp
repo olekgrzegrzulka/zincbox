@@ -77,7 +77,10 @@ static constexpr i32 MAX_BATCH_SIZE = 16;
 
 std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t track_id) {
   auto path = zincbox::cover_art::get_64(track_id);
-  if (!path) { return std::nullopt; }
+  if (!path) {
+    pending_tracks.insert(track_id);
+    return std::nullopt;
+  }
 
   std::string id = path_to_utf8(path->stem());
   lru.touch(id);

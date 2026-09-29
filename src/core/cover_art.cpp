@@ -20,6 +20,7 @@
 #include <taglib/toolkit/tpropertymap.h>
 #include <tfile.h>
 #include <tfilestream.h>
+#include "common/logger.hpp"
 #include "common/serialize.hpp"
 #include "common/utf.hpp"
 #include "common/worker.hpp"
@@ -44,6 +45,7 @@ static Worker<worker_fn, WorkerProgress, WorkerResult> worker;
 static std::vector<decltype(worker)::job_id_t> active_jobs;
 
 static std::vector<std::vector<std::filesystem::path>> filenames;
+static std::vector<bool> filenames_failed;
 static std::unordered_set<db::track_id_t> track_ids_in_progress;
 
 static void worker_fn(db::track_id_t track_id, std::filesystem::path path,
@@ -156,6 +158,7 @@ static void worker_fn(db::track_id_t track_id, std::filesystem::path path,
 static std::filesystem::path get_cover_path(const std::filesystem::path& folder_name, db::track_id_t track_id) {
   if (filenames.size() <= track_id) { return {}; }
   if (filenames[track_id].empty()) { return {}; }
+  if (filenames_failed.size() > track_id && filenames_failed[track_id] == true) { return {}; }
   auto& filename = filenames[track_id][0];
   if (filename.empty()) { return {}; }
   auto path = io::get_cover_cache_path() / folder_name / filename;
@@ -177,6 +180,7 @@ static std::filesystem::path get_cover_path_64(db::track_id_t track_id) { return
 
 static void ensure_worker_started(db::track_id_t track_id) {
   if (filenames.size() > track_id && !filenames[track_id].empty()) { return; }
+  if (filenames_failed.size() > track_id && filenames_failed[track_id] == true) { return; }
 
   if (track_ids_in_progress.find(track_id) == track_ids_in_progress.end()) {
     track_ids_in_progress.insert(track_id);
@@ -262,6 +266,9 @@ void zincbox::cover_art::update() {
         if (!filename.empty()) {
           if (filenames.size() <= track_id) { filenames.resize(track_id + 1); }
           filenames[track_id].emplace_back(filename);
+        } else {
+          if (filenames_failed.size() <= track_id) { filenames_failed.resize(track_id + 1); }
+          filenames_failed[track_id] = true;
         }
         track_ids_in_progress.erase(track_id);
       }
