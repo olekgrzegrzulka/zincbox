@@ -51,9 +51,17 @@ void zincgui::Sprite::update_mesh() {
                   nine_slice_scale,
                   {width, height},
                   uv_start,
-                  uv_end},
-    vertex_sprite{
-      0, {end.x, end.y}, {uv_end.x, uv_end.y}, nine_slice_margin, nine_slice_scale, {width, height}, uv_start, uv_end},
+                  uv_end,
+                  atlas_index},
+    vertex_sprite{0,
+                  {end.x, end.y},
+                  {uv_end.x, uv_end.y},
+                  nine_slice_margin,
+                  nine_slice_scale,
+                  {width, height},
+                  uv_start,
+                  uv_end,
+                  atlas_index},
     vertex_sprite{0,
                   {start.x, start.y},
                   {uv_start.x, uv_start.y},
@@ -61,7 +69,8 @@ void zincgui::Sprite::update_mesh() {
                   nine_slice_scale,
                   {width, height},
                   uv_start,
-                  uv_end},
+                  uv_end,
+                  atlas_index},
     vertex_sprite{0,
                   {end.x, start.y},
                   {uv_end.x, uv_start.y},
@@ -69,7 +78,8 @@ void zincgui::Sprite::update_mesh() {
                   nine_slice_scale,
                   {width, height},
                   uv_start,
-                  uv_end},
+                  uv_end,
+                  atlas_index},
   };
 }
 
@@ -115,6 +125,9 @@ void zincgui::Sprite::setup_buffers() {
 
   glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, uv_end)));
   glEnableVertexAttribArray(7);
+
+  glVertexAttribIPointer(10, 1, GL_UNSIGNED_INT, sizeof(vertex_sprite), (void*)(offsetof(vertex_sprite, atlas_i)));
+  glEnableVertexAttribArray(10);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);

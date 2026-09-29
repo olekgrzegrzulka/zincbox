@@ -16,6 +16,7 @@ layout(location = 6) in vec2 uv_start;
 layout(location = 7) in vec2 uv_end;
 layout(location = 8) in vec3 color;
 layout(location = 9) in float opacity;
+layout(location = 10) in uint atlas_i;
 
 layout(location = 0) out flat int type_;
 layout(location = 1) out vec2 uv_;
@@ -26,6 +27,8 @@ layout(location = 5) out vec2 uv_start_;
 layout(location = 6) out vec2 uv_end_;
 layout(location = 7) out vec3 color_;
 layout(location = 8) out float opacity_;
+layout(location = 9) out flat uint atlas_i_;
+
 
 void main() {
   gl_Position = vec4(vertex, 0.0f, 1.0f) * matrix;
@@ -37,6 +40,7 @@ void main() {
     widget_size_ = widget_size;
     uv_start_ = uv_start;
     uv_end_ = uv_end;
+    atlas_i_ = atlas_i;
   } else if (type == 1) {
     uv_ = uv;
     color_ = color;
@@ -48,8 +52,7 @@ void main() {
 
   static constexpr char shader_frag[] = R"(#version 450 core
 
-layout(binding = 0) uniform sampler2D atlas;
-layout(binding = 1) uniform sampler2D text_atlas;
+layout(binding = 0) uniform sampler2D atlas[5];
 
 uniform vec2 tex_size;
 
@@ -62,6 +65,7 @@ layout(location = 5) in vec2 uv_start;
 layout(location = 6) in vec2 uv_end;
 layout(location = 7) in vec3 color;
 layout(location = 8) in float opacity;
+layout(location = 9) in flat uint atlas_i;
 
 out vec4 FragColor;
 
@@ -93,9 +97,9 @@ void main() {
         uv2.y = mix(border_sprite.y, 1.0 - border_sprite.y, t);
     }
     
-    FragColor = texture(atlas, uv_start + uv2 * uv_extents);
+    FragColor = texture(atlas[atlas_i], uv_start + uv2 * uv_extents);
   } else if (type == 1) {
-    float a = texture(text_atlas, uv).a;
+    float a = texture(atlas[0], uv).a;
     FragColor = vec4(color, a);
   } else if (type == 2) {
     FragColor = vec4(color, opacity);

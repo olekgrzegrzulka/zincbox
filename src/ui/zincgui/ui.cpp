@@ -191,10 +191,9 @@ void zincgui::Root::draw() {
 
   shader.use();
   shader.set_uniform_mat4("matrix", get_matrix());
-  // FIXME: don't hardcode texture size
   shader.set_uniform_float("tex_size", texture_atlas.size(), texture_atlas.size());
-  texture_atlas.bind(0);
-  font_face.bind(1);
+  font_face.bind(0);
+  texture_atlas.bind(1);
   for (auto& layer : widget_traversal_order) {
     for (auto* widget : layer) {
       if (widget->visible_ && widget->is_self_drawn) {
