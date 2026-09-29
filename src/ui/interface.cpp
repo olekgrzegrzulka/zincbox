@@ -28,6 +28,7 @@
 #include "core/scanner.hpp"
 #include "core/settings.hpp"
 #include "interface_notifications.hpp"
+#include "ui/cover_art.hpp"
 #include "ui/file_dialog.hpp"
 #include "ui/panel_controls.hpp"
 #include "ui/panel_playlists.hpp"
@@ -75,6 +76,7 @@ static i32 selection_drag_tab_id = -1;
 static i32 selection_drag_tab_timer = 0;
 static constexpr i32 SELECTION_DRAG_TAB_TIMER = 15;
 
+static TextureAtlas texture_atlas_cover_art;
 static std::unique_ptr<Root> root;
 static class ShortcutInterceptor* shortcut_interceptor{};
 static PopupController* popup_controller{};
@@ -183,6 +185,7 @@ void zincbox::ui::init() {
   std::string language = zincbox::settings().interface.language;
   std::string theme = zincbox::settings().interface.theme;
   theme::load_theme(theme, *root.get(), language);
+  zincbox::ui::cover_art::init();
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));
   db::set_loved_tracks_playlist_name(tr::get("playlist.loved_tracks_playlist_name"));
 
@@ -378,6 +381,14 @@ static void rebuild() { root->rebuild(); }
 
 void zincbox::ui::update(vec2i window_size) {
 
+  bool covers_added = zincbox::ui::cover_art::update();
+  if (covers_added) {
+    if (panel_playlists->get_is_updated()) {
+      panel_playlists->recreate();
+      panel_playlists->show();
+    }
+  }
+
   auto scan_progress = zincbox::scanner::get_progress();
   if (scan_progress) {
     if (!notification_scan_progress) { notification_scan_progress = notifications->push_persistent(""); }
@@ -512,7 +523,10 @@ void zincbox::ui::update(vec2i window_size) {
   draw();
 }
 
-static void draw() { root->draw(); }
+static void draw() {
+  zincbox::ui::cover_art::bind();
+  root->draw();
+}
 
 void zincbox::ui::deinit() { root = nullptr; }
 
