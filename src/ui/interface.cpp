@@ -105,7 +105,6 @@ static void rebuild();
 static void draw();
 
 static void init_atlas();
-static void add_playlist_art_to_texture_atlas(db::collection_id_t);
 static void handle_dropped_files();
 static void handle_drag_and_drop();
 static void delete_collection(db::collection_id_t);
@@ -186,8 +185,6 @@ void zincbox::ui::init() {
   theme::load_theme(theme, *root.get(), language);
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));
   db::set_loved_tracks_playlist_name(tr::get("playlist.loved_tracks_playlist_name"));
-
-  init_atlas();
 
   shortcut_interceptor = &root->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = show_search_popup;
@@ -398,7 +395,6 @@ void zincbox::ui::update(vec2i window_size) {
   if (scan_summary) {
     popup_controller->show_popup<PopupScanSummary>(*scan_summary);
 
-    add_playlist_art_to_texture_atlas(scan_summary->collection_id);
     if (active_collection_id.has_value() && active_collection_id.value() == scan_summary->collection_id) {
       panel_tracklist->recreate(active_collection_id);
       panel_playlists->props.collection_id = scan_summary->collection_id;
@@ -451,15 +447,7 @@ void zincbox::ui::update(vec2i window_size) {
       }
 
       case FileDialogOpen::PICK_PLAYLIST_IMAGE: {
-        auto playlist_id = std::get<db::playlist_id_t>(file_dialog_data);
-        if (db::collection_count() <= playlist_id) { break; }
-        db::set_playlist_image(playlist_id, paths.front().string());
-        std::string playlist_id_str = std::to_string(playlist_id);
-
-        root->get_texture_atlas().remove_texture(playlist_id_str);
-        root->get_texture_atlas().add_texture(playlist_id_str, db::playlist_by_id(playlist_id)->get().art_64x64, 64,
-                                              64);
-        panel_playlists->recreate();
+        notifications->push_error("Unimplemented");
         break;
       }
 
@@ -556,35 +544,6 @@ zincbox::ui::DecorationHover zincbox::ui::get_decoration_hover(i32 mouse_x, i32 
   }
 
   return DecorationHover::INSIDE;
-}
-
-static void init_atlas() {
-  auto& atlas = root->get_texture_atlas();
-
-  for (size_t collection_id = 0; collection_id < db::collection_count(); collection_id += 1) {
-    add_playlist_art_to_texture_atlas(collection_id);
-  }
-
-#ifndef NDEBUG
-  atlas.save_to_file("atlas.png");
-#endif
-}
-
-static void add_playlist_art_to_texture_atlas(db::collection_id_t collection_id) {
-  i32 count = 0;
-  if (!db::collection_by_id(collection_id).has_value()) { return; }
-  for (size_t playlist_id : db::collection_by_id(collection_id)->get().playlist_ids()) {
-    auto& playlist = db::playlist_by_id(playlist_id)->get();
-    std::string playlist_id_str = std::to_string(playlist_id);
-    if (root->get_texture_atlas().has_texture(playlist_id_str, 1)) {
-      root->get_texture_atlas().remove_texture(playlist_id_str);
-    }
-    root->get_texture_atlas().add_texture(playlist_id_str, playlist.art_64x64, 64, 64);
-    if (count++ >= 1023) { break; }
-  }
-#ifndef NDEBUG
-  root->get_texture_atlas().save_to_file("atlas.png");
-#endif
 }
 
 static void create_collection(std::vector<std::string> directories) {
@@ -1720,18 +1679,9 @@ static void show_popover_playlist_actions(db::playlist_id_t playlist_id, Widget*
                          },
                          "pick_playlist_cover");
 
-    if (!db::playlist_by_id(playlist_id)->get().art_64x64.empty()) {
-      buttons.emplace_back((tr::get("dialog.action.reset_image")),
-                           [callback_close, playlist_id]() -> void {
-                             if (callback_close) { callback_close(); }
-                             db::reset_playlist_image(playlist_id);
-                             std::string playlist_id_str = std::to_string(playlist_id);
-                             root->get_texture_atlas().remove_texture(playlist_id_str);
-                             root->get_texture_atlas().add_texture_alias(playlist_id_str, "cover_unknown");
-                             panel_playlists->recreate();
-                           },
-                           "reset_playlist_cover");
-    }
+    buttons.emplace_back((tr::get("dialog.action.reset_image")),
+                         [callback_close, playlist_id]() -> void { notifications->push_error("Unimplemented"); },
+                         "reset_playlist_cover");
   }
 
   if (is_album) {

@@ -16,9 +16,9 @@
 #include "common/serialize.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
+#include "core/cover_art.hpp"
 #include "core/io.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/track_file.hpp"
 #include "musicdb.hpp"
 #include "playlist.hpp"
 #include "track.hpp"
@@ -36,7 +36,7 @@ static std::unordered_map<std::filesystem::path, std::unordered_set<db::track_id
 static std::vector<std::pair<db::collection_id_t, db::track_id_t>> orphaned_tracks;
 
 static constexpr size_t DB_MAGIC = 667667667;
-static constexpr size_t DB_VERSION = 3;
+static constexpr size_t DB_VERSION = 4;
 
 void db::create_empty_db() {
   collections.clear();
@@ -123,6 +123,8 @@ void db::serialize(std::ofstream& os) {
     if (t.get_flag(TOMBSTONE)) { continue; }
     t.serialize(os, old_playlist_id_to_new_playlist_id);
   }
+
+  zincbox::cover_art::serialize(os, old_track_id_to_new_track_id);
 }
 
 void db::deserialize(std::ifstream& is) {
@@ -181,6 +183,8 @@ void db::deserialize(std::ifstream& is) {
     path_to_track_id[t.file_path] = track_id;
     file_name_to_track_ids[t.file_name_without_extension()].insert(track_id);
   }
+
+  zincbox::cover_art::deserialize(is);
 
   for (auto& p : playlists) {
     if (p.type == PlaylistType::Album) { p.sort_by_track_number(); }
@@ -438,7 +442,6 @@ void db::set_playlist_image(size_t playlist_id, std::string_view image_path) {
 void db::reset_playlist_image(size_t playlist_id) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];
-  playlist.art_64x64.clear();
   playlist.art_file_path.clear();
 }
 
