@@ -7,6 +7,7 @@
 #include "common/color.hpp"
 #include "common/signal.hpp"
 #include "common/types.hpp"
+#include "core/musicdb/types.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/sprite.hpp"
@@ -21,7 +22,9 @@ namespace zincgui {
 
 class SpriteAlbumCover : public zincgui::Sprite {
   public:
-    SpriteAlbumCover(zincgui::Root& ui_, const std::string& id, vec2i cover_size_);
+    SpriteAlbumCover(zincgui::Root& ui_, std::optional<db::playlist_id_t>, vec2i cover_size_);
+    bool set_cover(std::optional<db::playlist_id_t>);
+    zincgui::TextureAtlas& get_texture_atlas() override;
 };
 
 class WidgetAlbumCover : public zincgui::Button {

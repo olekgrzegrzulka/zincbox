@@ -39,6 +39,7 @@ set(UI_SOURCES
     popup.cpp
     tab_bar.cpp
     scrollable_view.cpp
+    cover_art.cpp
     zincgui/input.cpp
     zincgui/texture.cpp
     zincgui/texture_atlas.cpp

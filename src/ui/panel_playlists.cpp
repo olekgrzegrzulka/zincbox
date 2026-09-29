@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -12,6 +13,7 @@
 #include "core/musicdb/types.hpp"
 #include "core/player.hpp"
 #include "theme.hpp"
+#include "ui/cover_art.hpp"
 #include "ui/panel_playlists.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/tr.hpp"
@@ -29,16 +31,27 @@
 
 using namespace zincgui;
 
-SpriteAlbumCover::SpriteAlbumCover(Root& ui_, const std::string& id, vec2i cover_size_) : Sprite(ui_) {
-  bool has_texture = ui_.get_texture_atlas().has_texture(id, 1);
-  if (has_texture) {
-    set_texture(id);
-  } else {
-    set_texture("cover_unknown");
-  }
+SpriteAlbumCover::SpriteAlbumCover(Root& ui_, std::optional<db::playlist_id_t> playlist_id, vec2i cover_size_)
+  : Sprite(ui_) {
+  set_atlas_index(2);
+  if (!set_cover(playlist_id)) { set_texture("cover_unknown"); }
   set_size(cover_size_);
   set_nine_slice_margin(1.0f);
 }
+
+bool SpriteAlbumCover::set_cover(std::optional<db::playlist_id_t> playlist_id) {
+  if (!playlist_id) { return false; }
+  const auto& playlist = db::playlist_by_id(*playlist_id);
+  if (!playlist.has_value()) { return false; }
+  if (playlist->get().track_ids.empty()) { return false; }
+  auto track_id = playlist->get().track_ids.front();
+  auto id = zincbox::ui::cover_art::get_texture_id(track_id);
+  if (!id) { return false; }
+  set_texture(*id);
+  return true;
+}
+
+zincgui::TextureAtlas& SpriteAlbumCover::get_texture_atlas() { return zincbox::ui::cover_art::texture_atlas(); }
 
 void WidgetAlbumCover::update_highlight_status_from_player() {
   bool playing = player::get_playing().has_value() && playlist_id == player::get_playing()->playlist_id;
@@ -68,7 +81,7 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   } else {
     sprite_cover_id = "cover_unknown";
   }
-  auto& sprite_cover = add_child<SpriteAlbumCover>(sprite_cover_id, cover_size_);
+  auto& sprite_cover = add_child<SpriteAlbumCover>(playlist_id_, cover_size_);
   sprite_cover.set_parent_anchor(Anchor::TOP);
   sprite_cover.set_anchor(Anchor::TOP);
   label_title = &add_child<Label>();
