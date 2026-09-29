@@ -162,6 +162,16 @@ void mpris::notify_track_change(std::string title_, std::string artist_, std::st
   }
 }
 
+void mpris::notify_cover_change(std::string cover_path_) {
+  std::string cover_path_temp = "file://" + std::move(cover_path_);
+  if (cover_path != cover_path_temp) {
+    cover_path = std::move(cover_path_temp);
+    if (mpris_object) {
+      mpris_object->emitPropertiesChangedSignal("org.mpris.MediaPlayer2.Player", {sdbus::PropertyName("Metadata")});
+    }
+  }
+}
+
 void mpris::notify_volume(double volume_) {
   volume = volume_;
   if (mpris_object) {
@@ -199,6 +209,7 @@ void mpris::notify_playback_status_playing() {}
 void mpris::notify_playback_status_paused() {}
 void mpris::notify_playback_status_stopped() {}
 void mpris::notify_track_change(std::string, std::string, std::string, i64, std::string) {}
+void mpris::notify_cover_change(std::string) {}
 void mpris::notify_volume(double) {}
 void mpris::notify_seeked(i64) {}
 void mpris::notify_loop_status(i32) {}
