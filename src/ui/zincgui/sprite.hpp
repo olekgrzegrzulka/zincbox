@@ -22,6 +22,7 @@ namespace zincgui {
       glm::vec<2, u32> widget_size = {1.0f, 1.0f};
       vec2f uv_start = {0.0f, 0.0f};
       vec2f uv_end = {1.0f, 1.0f};
+      u32 atlas_i = 1;
   };
 
   class Sprite : public Widget {
@@ -32,6 +33,7 @@ namespace zincgui {
       vec2f uv_end = {1.0f, 1.0f};
       i32 texture_width = 16;
       i32 texture_height = 16;
+      u32 atlas_index = 1;
 
     protected:
       u32 vbo = 0;
@@ -69,11 +71,13 @@ namespace zincgui {
       WIDGET_DEF_SETTER_DIRTY(nine_slice_scale)
       WIDGET_DEF_SETTER_DIRTY(uv_start)
       WIDGET_DEF_SETTER_DIRTY(uv_end)
+      WIDGET_DEF_SETTER_DIRTY(atlas_index)
 
       WIDGET_DEF_GETTER(nine_slice_margin)
       WIDGET_DEF_GETTER(nine_slice_scale)
       WIDGET_DEF_GETTER(uv_start)
       WIDGET_DEF_GETTER(uv_end)
+      WIDGET_DEF_GETTER(atlas_index)
   };
 
 } // namespace zincgui
