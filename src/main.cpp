@@ -1,6 +1,4 @@
-
 #include <csignal>
-
 #include "common/logger.hpp"
 #include "signal_handlers.hpp"
 #include "zincbox.hpp"
@@ -15,6 +13,15 @@
 #endif
 
 int main() {
+#ifdef ZINCBOX_HAS_GUI
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "zincbox");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "com.olekgrzegrzulka.zincbox");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, "1.0.0");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "Aleksander Grzegrzułka");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "Copyright (c) 2026 Aleksander Grzegrzułka");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://github.com/olekgrzegrzulka/zincbox");
+  SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "mediaplayer");
+#endif
   // ----------------------------------------------------------------------
   //                Initialize libraries and signal handlers
   // ----------------------------------------------------------------------
@@ -41,12 +48,6 @@ int main() {
   zincbox::load_db_from_file();
   zincbox::load_state_from_json();
   zincbox::init(zincbox::InitFlags::WINDOW | zincbox::InitFlags::MPRIS);
-#ifdef ZINCBOX_HAS_GUI
-  SDL_Window* sdl_window = zincbox::window()->native_handle();
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  zincgui::Input::init(sdl_window);
-#endif
   zincbox::apply_loaded_state();
 
   // ----------------------------------------------------------------------

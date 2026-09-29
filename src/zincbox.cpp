@@ -72,8 +72,11 @@ void zincbox::init(u64 flags) {
     s_window->max_size(7680, 4320);
     s_window->vsync(false);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     SDL_Window* sdl_window = zincbox::window()->native_handle();
     SDL_SetWindowHitTest(sdl_window, hit_test_callback, NULL);
+    zincgui::Input::init(sdl_window);
 
     zincbox::ui::init();
   }

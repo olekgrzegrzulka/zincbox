@@ -8,6 +8,7 @@
 #include "common/logger.hpp"
 #include "common/random.hpp"
 #include "common/utf.hpp"
+#include "core/cover_art.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
@@ -130,6 +131,11 @@ bool play_track() {
 
 void player::update() {
   if (is_at_end() && get_playing().has_value()) { next_track(); }
+
+  if (playing_index) {
+    auto cover = zincbox::cover_art::get_full_res(playing_queue[*playing_index].track_id);
+    if (cover && !(cover->empty())) { mpris::notify_cover_change(path_to_utf8(cover.value())); }
+  }
 }
 
 bool player::play(db::track_info play, bool clear_queue) {
