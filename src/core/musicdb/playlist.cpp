@@ -21,7 +21,6 @@ db::Playlist::Playlist(std::ifstream& is) {
     read_str(is, author[i]);
   }
 
-  read_blob(is, art_64x64);
   read_bin(is, type);
   size_t track_ids_size = 0;
   read_bin(is, track_ids_size);
@@ -184,7 +183,6 @@ void db::Playlist::serialize(std::ostream& os) const {
   for (auto& a : author) {
     write_str(os, a);
   }
-  write_blob(os, art_64x64);
   write_bin(os, type);
   write_bin(os, track_ids.size());
   for (size_t track_id : track_ids) {
@@ -199,7 +197,6 @@ void db::Playlist::serialize(std::ostream& os, const std::vector<size_t>& old_tr
   for (auto& a : author) {
     write_str(os, a);
   }
-  write_blob(os, art_64x64);
   write_bin(os, type);
   write_bin(os, track_ids.size());
   for (size_t track_id : track_ids) {

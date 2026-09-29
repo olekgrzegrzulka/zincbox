@@ -15,7 +15,6 @@ namespace db {
       std::string name;
       std::string album_path;
       std::vector<std::string> author;
-      std::vector<u8> art_64x64;
       PlaylistType type;
       bool tombstone = false;
       std::vector<size_t> track_ids;
