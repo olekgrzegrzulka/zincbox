@@ -7,6 +7,7 @@ set(CORE_SOURCES
     io.cpp
     track_file.cpp
     scanner.cpp
+    cover_art.cpp
     ${CMAKE_SOURCE_DIR}/lib/miniaudio/miniaudio.c
 )
 

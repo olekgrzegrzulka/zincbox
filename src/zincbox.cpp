@@ -20,6 +20,7 @@
 #include "common/serialized_state.hpp"
 #include "common/signal.hpp"
 #include "common/utf.hpp"
+#include "core/cover_art.hpp"
 #include "core/io.hpp"
 #include "core/mpris.hpp"
 #include "core/musicdb/musicdb.hpp"
@@ -93,6 +94,7 @@ void zincbox::run() {
     update_mini_player_state();
     update_window_title();
     update_mpris();
+    zincbox::cover_art::update();
     zincgui::Input::update();
     player::update();
     tray::update();
