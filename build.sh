@@ -4,6 +4,7 @@
 BUILD_TYPE="Debug"
 ASAN="OFF"
 COMPILER=""
+USE_CCACHE=true
 RUN_APP=false
 EXE_NAME="zincbox"
 CLEAN=false
@@ -11,16 +12,17 @@ CLEAN=false
 usage() {
     echo "Usage: ./build.sh [flags]"
     echo "Flags:"
-    echo "  asan     - Enable AddressSanitizer"
-    echo "  release  - Build in release mode"
-    echo "  debug    - Build in debug mode (default)"
-    echo "  clang    - Use Clang (default)"
-    echo "  gcc      - Use GCC"
-    echo "  ninja    - Use Ninja build system (default)"
-    echo "  make     - Use Make build system"
-    echo "  run      - Run the program after build"
-    echo "  clean    - Remove build directory"
-    echo "  help     - Display this help"
+    echo "  asan      - Enable AddressSanitizer"
+    echo "  release   - Build in release mode"
+    echo "  debug     - Build in debug mode (default)"
+    echo "  clang     - Use Clang (default)"
+    echo "  gcc       - Use GCC"
+    echo "  no-ccache - Disable ccache"
+    echo "  ninja     - Use Ninja build system (default)"
+    echo "  make      - Use Make build system"
+    echo "  run       - Run the program after build"
+    echo "  clean     - Remove build directory"
+    echo "  help      - Display this help"
     exit 0
 }
 
@@ -38,17 +40,18 @@ HAS_DEBUG=false
 
 for arg in "$@"; do
     case $arg in
-        clean)   CLEAN=true ;;
-        asan)    HAS_ASAN=true; ASAN="ON" ;;
-        release) HAS_RELEASE=true; BUILD_TYPE="Release" ;;
-        debug)   HAS_DEBUG=true; BUILD_TYPE="Debug" ;;
-        gcc)     HAS_GCC=true; COMPILER="gcc" ;;
-        clang)   HAS_CLANG=true; COMPILER="clang" ;;
-        ninja)        HAS_NINJA=true ;;
-        make)         HAS_MAKE=true ;;
-        run)     RUN_APP=true ;;
-        help)    usage ;;
-        *)       echo "Unknown parameter: $arg"; usage ;;
+        clean)    CLEAN=true ;;
+        asan)     HAS_ASAN=true; ASAN="ON" ;;
+        release)  HAS_RELEASE=true; BUILD_TYPE="Release" ;;
+        debug)    HAS_DEBUG=true; BUILD_TYPE="Debug" ;;
+        gcc)      HAS_GCC=true; COMPILER="gcc" ;;
+        clang)    HAS_CLANG=true; COMPILER="clang" ;;
+        no-ccache)USE_CCACHE=false ;;
+        ninja)    HAS_NINJA=true ;;
+        make)     HAS_MAKE=true ;;
+        run)      RUN_APP=true ;;
+        help)     usage ;;
+        *)        echo "Unknown parameter: $arg"; usage ;;
     esac
 done
 
@@ -107,6 +110,17 @@ else
     export CC_PATH=/usr/bin/gcc
 fi
 
+# Ccache configuration
+CCACHE_CMAKE_ARGS=()
+if [ "$USE_CCACHE" = true ]; then
+    if check_cmd ccache; then
+        CCACHE_CMAKE_ARGS=(
+            "-DCMAKE_C_COMPILER_LAUNCHER=ccache"
+            "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+        )
+    fi
+fi
+
 # Generator resolution and checks
 if [ "$HAS_MAKE" = true ] && [ "$HAS_NINJA" = true ]; then
     echo "Error: 'make' and 'ninja' are mutually exclusive."
@@ -154,7 +168,8 @@ cmake $CMAKE_GENERATOR -B build -S . \
   -DENABLE_ASAN=$ASAN \
   -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
   -DMY_FLAGS="" \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS="ON"
+  -DCMAKE_EXPORT_COMPILE_COMMANDS="ON" \
+  "${CCACHE_CMAKE_ARGS[@]}"
 fi
 
 # Compile

@@ -87,6 +87,31 @@ struct PanelTracklistConfig {
     void clamp_values();
 };
 
+struct PanelQueueConfig {
+    rgba color{0x0f070cff};
+    i32 track_height{22};
+    i32 playlist_height{38};
+    i32 collection_height{38};
+    i32 header_height{28};
+    i32 header_spacing{10};
+    rgba header_author_color{0xa8769eff};
+    rgba header_name_color{0xdc99ceff};
+    rgba track_color_odd{0x0c050bff};
+    rgba track_color_even{0x150913ff};
+    rgba track_color_playing{0x2d1528ff};
+    rgba track_color_selected_odd{0x34132dff};
+    rgba track_color_selected_even{0x3b1634ff};
+    rgba track_hovered{0xad3594ff};
+    float track_hovered_opacity = 0.2f;
+    rgba track_artist_color{0x80667aff};
+    rgba track_number_color{0xa6859fff};
+    rgba title_color{0xcca3c4ff};
+    rgba length_color{0x80667aff};
+    rgba insert_cursor_color{0x77376eff};
+
+    void clamp_values();
+};
+
 struct PanelPlaylistsConfig {
     rgba color{0x0f070c};
     rgba title_color{0xdc99ceff};
@@ -121,6 +146,7 @@ struct ThemeConfig {
     PanelTopConfig panel_top;
     PanelControlsConfig panel_controls;
     PanelTracklistConfig panel_tracklist;
+    PanelQueueConfig panel_queue;
     PanelPlaylistsConfig panel_playlists;
     NotificationConfig notification;
     CustomWindowDecorationConfig custom_window_decoration;
@@ -174,6 +200,13 @@ inline void PanelTracklistConfig::clamp_values() {
   track_hovered_opacity = std::clamp(track_hovered_opacity, 0.0f, 1.0f);
 }
 
+inline void PanelQueueConfig::clamp_values() {
+  track_height = std::clamp(track_height, 12, 50);
+  header_height = std::clamp(header_height, 16, 100);
+  header_spacing = std::clamp(header_spacing, 0, 100);
+  track_hovered_opacity = std::clamp(track_hovered_opacity, 0.0f, 1.0f);
+}
+
 inline void NotificationConfig::clamp_values() {
   nine_slice_margin = std::clamp(nine_slice_margin, 0, 32);
   height = std::clamp(height, 10, 100);
@@ -186,6 +219,7 @@ inline void ThemeConfig::clamp_values() {
   panel_top.clamp_values();
   panel_controls.clamp_values();
   panel_tracklist.clamp_values();
+  panel_queue.clamp_values();
   notification.clamp_values();
   custom_window_decoration.clamp_values();
 }

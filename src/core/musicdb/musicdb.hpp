@@ -62,6 +62,7 @@ namespace db {
   bool remove_track_id_from_playlist(playlist_id_t, track_id_t);
   bool remove_track_index_from_playlist(playlist_id_t, size_t track_index);
   bool remove_track_indices_from_playlist(playlist_id_t, std::span<const size_t> indices);
+  std::vector<size_t> move_track_indices_in_playlist(playlist_id_t, std::span<const size_t> indices, size_t index);
   void set_playlist_image(playlist_id_t, std::string_view image_path);
   void reset_playlist_image(playlist_id_t);
   void rename_playlist(playlist_id_t, std::string_view new_name);

@@ -26,12 +26,11 @@ class WidgetTrack final : public zincgui::Button {
 
     void update_highlight_status_from_player() {
       if (m_highlight_mode == TrackHighlightMode::QUEUE_INDEX) {
-        set_highlighted(player::get_playing_index().has_value() &&
-                        (m_track_number - 1) == player::get_playing_index().value());
+        set_highlighted(player::get_playing_index() == m_track_number - 1);
       } else if (m_highlight_mode == TrackHighlightMode::TRACK_INFO) {
-        set_highlighted(player::get_playing().has_value() && m_track_id == player::get_playing()->track_id &&
-                        m_playlist_id == player::get_playing()->playlist_id &&
-                        m_collection_id == player::get_playing()->collection_id);
+        set_highlighted(player::get_playing_track() && m_track_id == player::get_playing_track()->track_id &&
+                        m_playlist_id == player::get_playing_track()->playlist_id &&
+                        m_collection_id == player::get_playing_track()->collection_id);
       }
     }
 
@@ -112,13 +111,14 @@ class WidgetTrack final : public zincgui::Button {
 
       if (!label_track_length) {
         label_track_length = &add_child<zincgui::Label>();
+        label_track_length->set_label_anchor(zincgui::Anchor::RIGHT);
         label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
       }
 
       if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
       label_track_length->update();
-      label_track_length->set_min_width(std::max<i32>(font_size * 2.2f, label_track_length->get_text_extents().x));
-      label_track_length->set_max_width(std::max<i32>(font_size * 2.2f, label_track_length->get_text_extents().x));
+      label_track_length->set_min_width(std::max<i32>(font_size * 2.6f, label_track_length->get_text_extents().x));
+      label_track_length->set_max_width(std::max<i32>(font_size * 2.6f, label_track_length->get_text_extents().x));
 
       if (track.has_value() && track->get().get_flag(db::TOMBSTONE)) {
         label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
@@ -146,7 +146,6 @@ class WidgetTrack final : public zincgui::Button {
     }
 
     void update_text_colors() {
-      std::string txt;
       if (m_is_selected) {
         if (m_track_number % 2 == 0) {
           bg->set_color(theme::config().panel_tracklist.track_color_selected_odd);
@@ -249,6 +248,13 @@ class WidgetTrack final : public zincgui::Button {
       }
       return *this;
     }
+    WidgetTrack& item_index(size_t value) {
+      if (m_item_index != value) {
+        m_item_index = value;
+        m_changed = true;
+      }
+      return *this;
+    }
 
     WidgetTrack& highlight_mode(TrackHighlightMode value) {
       if (m_highlight_mode != value) {
@@ -262,7 +268,8 @@ class WidgetTrack final : public zincgui::Button {
     size_t playlist_id() const { return m_playlist_id; }
     size_t collection_id() const { return m_collection_id; }
     size_t track_number() const { return m_track_number; }
-    size_t is_selected() const { return m_is_selected; }
+    bool is_selected() const { return m_is_selected; }
+    size_t item_index() const { return m_item_index; }
     db::track_info track_info() const {
       return db::track_info{.collection_id = m_collection_id,
                             .playlist_id = m_playlist_id,
@@ -277,6 +284,7 @@ class WidgetTrack final : public zincgui::Button {
     size_t m_collection_id = db::INVALID_ID;
     size_t m_track_number = 0;
     bool m_is_selected = false;
+    size_t m_item_index = 0;
     TrackHighlightMode m_highlight_mode = TrackHighlightMode::TRACK_INFO;
     bool m_changed = true;
     Signal<>::slot_key slot_on_track_changed;

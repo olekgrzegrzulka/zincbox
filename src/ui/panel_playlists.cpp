@@ -54,7 +54,7 @@ bool SpriteAlbumCover::set_cover(std::optional<db::playlist_id_t> playlist_id) {
 zincgui::TextureAtlas& SpriteAlbumCover::get_texture_atlas() { return zincbox::ui::cover_art::texture_atlas(); }
 
 void WidgetAlbumCover::update_highlight_status_from_player() {
-  bool playing = player::get_playing().has_value() && playlist_id == player::get_playing()->playlist_id;
+  bool playing = player::get_playing_track() && playlist_id == player::get_playing_track()->playlist_id;
   sprite_playing->set_is_drawn(playing);
   if (playing) {
     label_title->set_text_color(label_title_text_color * 1.5);

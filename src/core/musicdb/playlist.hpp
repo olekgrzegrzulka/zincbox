@@ -32,6 +32,7 @@ namespace db {
       bool remove_track_by_id(size_t);
       bool remove_track_by_index(size_t);
       void remove_tracks_by_indices(std::span<const size_t>);
+      std::vector<size_t> move_tracks_by_indices(std::span<const size_t> indices, size_t target_index);
       void sort_by_track_number();
       void sort_by_artist_asc();
       void sort_by_artist_desc();
@@ -40,6 +41,8 @@ namespace db {
       void set_tombstone(bool t) { tombstone = t; }
       bool is_tombstone() const { return tombstone; }
       std::string author_pretty() const;
+      i32 length_ms() const;
+      std::string pretty_length() const;
 
       std::optional<size_t> next_track_id(size_t track_id) const;
       std::optional<size_t> prev_track_id(size_t track_id) const;

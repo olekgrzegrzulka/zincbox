@@ -5,6 +5,7 @@
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
+#include "core/queue_element.hpp"
 
 namespace player {
   enum class RepeatMode : u8 { OFF, TRACK, ALBUM, REPEAT_MODE_SIZE };
@@ -15,8 +16,9 @@ namespace player {
   void update();
 
   bool play(db::track_info, bool clear_queue = true);
+  bool play(const QueueElement&, bool clear_queue = true);
   bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
-  void enqueue(db::track_info, size_t at);
+  void enqueue(const QueueElement&, size_t at);
   std::vector<size_t> add_to_queue(std::span<const db::track_info> play, size_t at);
   void remove_from_queue(size_t at);
   void remove_from_queue(std::span<const size_t>);
@@ -36,8 +38,9 @@ namespace player {
   i32 get_total_duration_ms();
   bool is_playing();
   bool is_at_end();
-  std::optional<db::track_info> get_playing();
-  const std::vector<db::track_info>& get_playing_queue();
+  std::optional<QueueElement> get_playing();
+  std::optional<db::track_info> get_playing_track();
+  const std::vector<QueueElement>& get_playing_queue();
   std::optional<size_t> get_playing_index();
   void set_playing_index(std::optional<size_t>);
 
@@ -49,5 +52,6 @@ namespace player {
 
   extern const Signal<> signal_on_track_changed;
   extern const Signal<bool /* track_appended_to_back */> signal_on_queue_changed;
+  extern const Signal<size_t> signal_on_queue_changed_at;
 
 } // namespace player

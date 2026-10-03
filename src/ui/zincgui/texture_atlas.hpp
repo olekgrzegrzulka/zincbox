@@ -52,6 +52,13 @@ namespace zincgui {
 
       i32 size() const { return atlas_size_px; }
 
+      void set_filter(bool f) {
+        if (filter != f) {
+          filter = f;
+          regenerate_texture();
+        }
+      }
+
     protected:
       std::optional<std::reference_wrapper<TextureAtlasData>> get_internal(std::string_view id, i32 max_depth = 16);
       std::optional<std::pair<i32, i32>> find_space_for_texture(i32 width, i32 height);
@@ -81,6 +88,7 @@ namespace zincgui {
       i32 atlas_size_px = 1024;
       i32 margin_px = 1;
       i32 grid_size_px = 4;
+      bool filter = false;
   };
 
 } // namespace zincgui
