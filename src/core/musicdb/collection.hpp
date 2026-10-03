@@ -23,6 +23,7 @@ namespace db {
       Collection(std::string_view name_) { m_name = name_; }
       Collection(std::ifstream&);
       std::string_view name() const { return m_name; }
+      std::string pretty_length() const;
       const std::vector<size_t>& playlist_ids() const { return m_playlist_ids; }
       const std::unordered_set<fs::path>& paths() const { return m_paths; }
       void set_name(std::string_view name_) { m_name = name_; }

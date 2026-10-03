@@ -7,10 +7,13 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/utf.hpp"
 #include "core/cover_art.hpp"
+#include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
+#include "core/player.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "ui/theme.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
@@ -52,6 +55,7 @@ zincgui::TextureAtlas& zincbox::ui::cover_art::texture_atlas() { return atlas; }
 
 void zincbox::ui::cover_art::init() {
   atlas = zincgui::TextureAtlas{2048, 4, 4};
+  atlas.set_filter(true);
   auto res = theme::get_raw_resource("cover_unknown.png");
   if (res.empty()) { out::critical("failed to load cover_unknown.png, empty"); }
 
@@ -89,6 +93,30 @@ std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t
 
   pending_tracks.insert(track_id);
   return std::nullopt;
+}
+
+std::optional<std::string> zincbox::ui::cover_art::get_texture_id_of_playlist(db::playlist_id_t playlist_id) {
+  auto playlist = db::playlist_by_id(playlist_id);
+  ensure(playlist);
+  if (playlist->get().get_tracks_count() > 0) {
+    auto track_id = playlist->get().track_ids.front();
+    auto res = get_texture_id(track_id);
+    if (res.has_value()) { return res; }
+  }
+  return "cover_unknown";
+}
+std::optional<std::string> zincbox::ui::cover_art::get_texture_id_of_collection(db::collection_id_t collection_id) {
+  auto collection = db::collection_by_id(collection_id);
+  ensure(collection) if (!collection->get().playlist_ids().empty()) {
+    auto playlist = db::playlist_by_id(collection->get().playlist_ids().front());
+    ensure(playlist);
+    if (playlist->get().get_tracks_count() > 0) {
+      auto track_id = playlist->get().track_ids.back();
+      auto res = get_texture_id(track_id);
+      if (res.has_value()) { return res; }
+    }
+  }
+  return "cover_unknown";
 }
 
 bool zincbox::ui::cover_art::update() {

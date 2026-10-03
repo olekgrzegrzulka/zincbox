@@ -293,8 +293,8 @@ void zincgui::TextureAtlas::regenerate_texture() {
   glBindTexture(GL_TEXTURE_2D, texture);
   glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, atlas_size_px, atlas_size_px);
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, atlas_size_px, atlas_size_px, GL_RGBA, GL_UNSIGNED_BYTE, image.data());
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -302,8 +302,8 @@ void zincgui::TextureAtlas::regenerate_texture() {
   glCreateSamplers(1, &sampler);
   glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_CLAMP);
   glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_CLAMP);
-  glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+  glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 
   dirty = false;
 }

@@ -1,4 +1,5 @@
 #include "collection.hpp"
+#include "common/debug.hpp"
 #include "common/serialize.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/musicdb.hpp"
@@ -30,6 +31,21 @@ db::Collection::Collection(std::ifstream& is) {
     read_bin(is, value);
     m_playlist_ids[i] = value;
   }
+}
+
+std::string db::Collection::pretty_length() const {
+  i32 ms = 0;
+  for (auto playlist_id : m_playlist_ids) {
+    auto playlist = db::playlist_by_id(playlist_id);
+    ensure(playlist);
+    ms += playlist->get().length_ms();
+  }
+  i32 length_s = ms / 1000;
+  i32 length_m = ms / 1000 / 60;
+  length_s %= 60;
+  std::stringstream ss;
+  ss << std::right << std::setfill('0') << std::setw(2) << length_m << ":" << std::setw(2) << length_s;
+  return ss.str();
 }
 
 bool db::Collection::add_path(const fs::path& path) {

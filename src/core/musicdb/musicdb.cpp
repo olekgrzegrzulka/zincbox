@@ -433,6 +433,12 @@ bool db::remove_track_indices_from_playlist(size_t playlist_id, std::span<const 
   return true;
 }
 
+std::vector<size_t> db::move_track_indices_in_playlist(playlist_id_t playlist_id, std::span<const size_t> indices,
+                                                       size_t index) {
+  if (playlist_id >= playlists.size()) { return {}; }
+  return playlists[playlist_id].move_tracks_by_indices(indices, index);
+}
+
 void db::set_playlist_image(size_t playlist_id, std::string_view image_path) {
   if (playlist_id >= playlists.size()) { return; }
   auto& playlist = playlists[playlist_id];

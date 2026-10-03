@@ -111,7 +111,7 @@ std::string db::Track::pretty_length() const {
   i32 length_m = metadata.duration_ms / 1000 / 60;
   length_s %= 60;
   std::stringstream ss;
-  ss << std::right << std::setfill('0') << std::setw(0) << length_m << ":" << std::setw(2) << length_s;
+  ss << std::right << std::setfill('0') << std::setw(2) << length_m << ":" << std::setw(2) << length_s;
   return ss.str();
 }
 

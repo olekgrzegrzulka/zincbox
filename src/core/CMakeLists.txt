@@ -8,6 +8,7 @@ set(CORE_SOURCES
     track_file.cpp
     scanner.cpp
     cover_art.cpp
+    queue_element.cpp
     ${CMAKE_SOURCE_DIR}/lib/miniaudio/miniaudio.c
 )
 

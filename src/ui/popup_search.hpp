@@ -152,6 +152,7 @@ class PopupSearch : public Popup {
       i32 track_height = theme::config().panel_tracklist.track_height;
       for (db::track_info& ti : found_tracks) {
         auto* w = &tracks_container->add_child<WidgetTrack>();
+        w->item_index(tracks_container->get_children().size() - 1);
         w->track_id(ti.track_id).track_number(i);
         w->set_min_height(track_height);
         w->set_max_height(track_height);
