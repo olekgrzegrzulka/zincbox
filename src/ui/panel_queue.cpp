@@ -22,24 +22,55 @@ PanelQueue::PanelQueue(Root& ui_) : Widget(ui_) {
       this->on_queue_changed();
     }
   });
+
+  slot_on_queue_changed_at =
+    player::signal_on_queue_changed_at.connect([this](size_t at) -> void { this->on_queue_changed_at(at); });
 }
 
-PanelQueue::~PanelQueue() { player::signal_on_queue_changed.disconnect(slot_on_queue_changed); }
+PanelQueue::~PanelQueue() {
+  player::signal_on_queue_changed.disconnect(slot_on_queue_changed);
+  player::signal_on_queue_changed_at.disconnect(slot_on_queue_changed_at);
+}
 
 void PanelQueue::draw() { Widget::draw(); }
 
 void PanelQueue::on_queue_appended_to_back() {
   if (player::get_playing_queue().empty()) { return; }
-  db::track_info ti = player::get_playing_queue().back();
-  ti.index = player::get_playing_queue().size() - 1;
-  panel_tracklist->insert_track(ti);
+  size_t i = player::get_playing_queue().size() - 1;
+  auto& elem = player::get_playing_queue().back();
+
+  if (elem.is_track()) {
+    PanelTracklist::ItemQueueTrack item;
+    item.queue_index = i;
+    panel_tracklist->insert_item(item);
+  } else if (elem.is_playlist()) {
+    PanelTracklist::ItemQueuePlaylist item;
+    item.queue_index = i;
+    panel_tracklist->insert_item(item);
+  } else if (elem.is_collection()) {
+    PanelTracklist::ItemQueueCollection item;
+    item.queue_index = i;
+    panel_tracklist->insert_item(item);
+  }
 }
 
 void PanelQueue::on_queue_changed_at(size_t queue_i) {
   if (player::get_playing_queue().size() <= queue_i) { return; }
-  db::track_info ti = player::get_playing_queue()[queue_i];
-  ti.index = queue_i;
-  panel_tracklist->set_track(queue_i, ti);
+  auto& elem = player::get_playing_queue()[queue_i];
+
+  if (elem.is_track()) {
+    PanelTracklist::ItemQueueTrack item;
+    item.queue_index = queue_i;
+    panel_tracklist->set_item(queue_i, item);
+  } else if (elem.is_playlist()) {
+    PanelTracklist::ItemQueuePlaylist item;
+    item.queue_index = queue_i;
+    panel_tracklist->set_item(queue_i, item);
+  } else if (elem.is_collection()) {
+    PanelTracklist::ItemQueueCollection item;
+    item.queue_index = queue_i;
+    panel_tracklist->set_item(queue_i, item);
+  }
 }
 
 void PanelQueue::on_queue_changed() {
@@ -47,14 +78,25 @@ void PanelQueue::on_queue_changed() {
     panel_tracklist->clear();
     return;
   }
-  std::vector<db::track_info> queue;
-  queue.reserve(player::get_playing_queue().size());
+  std::vector<PanelTracklist::Item> queue_items;
+  queue_items.reserve(player::get_playing_queue().size());
   for (size_t i = 0; i < player::get_playing_queue().size(); i += 1) {
-    db::track_info ti = player::get_playing_queue()[i];
-    ti.index = i;
-    queue.emplace_back(ti);
+    auto& elem = player::get_playing_queue()[i];
+    if (elem.is_track()) {
+      PanelTracklist::ItemQueueTrack item;
+      item.queue_index = i;
+      queue_items.emplace_back(item);
+    } else if (elem.is_playlist()) {
+      PanelTracklist::ItemQueuePlaylist item;
+      item.queue_index = i;
+      queue_items.emplace_back(item);
+    } else if (elem.is_collection()) {
+      PanelTracklist::ItemQueueCollection item;
+      item.queue_index = i;
+      queue_items.emplace_back(item);
+    }
   }
-  panel_tracklist->recreate(queue);
+  panel_tracklist->recreate(queue_items);
 }
 
 void PanelQueue::recreate() { on_queue_changed(); }
@@ -66,15 +108,15 @@ void PanelQueue::update() {
   Widget::update();
 }
 
-void PanelQueue::on_track_lmb(const std::function<void(db::track_info, WidgetTrack*)>& fn) {
-  if (fn) { panel_tracklist->on_track_lmb = fn; }
+void PanelQueue::on_item_lmb(const std::function<void(size_t)>& fn) {
+  if (fn) { panel_tracklist->on_item_lmb = fn; }
 }
 
-void PanelQueue::on_track_rmb(const std::function<void(db::track_info, WidgetTrack*)>& fn) {
-  if (fn) { panel_tracklist->on_track_rmb = fn; }
+void PanelQueue::on_item_rmb(const std::function<void(size_t)>& fn) {
+  if (fn) { panel_tracklist->on_item_rmb = fn; }
 }
 
-void PanelQueue::on_selection_rmb(const std::function<void(WidgetTrack*)>& fn) {
+void PanelQueue::on_selection_rmb(const std::function<void(size_t)>& fn) {
   if (fn) { panel_tracklist->on_selection_rmb = fn; }
 }
 
@@ -82,7 +124,5 @@ void PanelQueue::set_is_dragged(bool value) { panel_tracklist->set_is_dragged(va
 
 void PanelQueue::insert_to_selection(size_t i) {
   if (i >= player::get_playing_queue().size()) { return; }
-  auto ti = player::get_playing_queue()[i];
-  ti.index = i;
-  panel_tracklist->insert_to_selection(ti);
+  panel_tracklist->insert_to_selection_index(i);
 }

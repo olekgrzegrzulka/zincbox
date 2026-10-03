@@ -151,7 +151,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   button_expand_player->add_image("expand_player");
 
   auto on_track_changed = [this]() -> void {
-    auto playing = player::get_playing();
+    auto playing = player::get_playing_track();
     if (!playing.has_value()) {
       label_track->set_text("");
       update_love_state(false);
@@ -291,10 +291,10 @@ void PanelControls::update() {
 
     std::stringstream ss;
     ss << std::right << std::setfill('0');
-    ss << std::setw(0) << progress_m << ":";
+    ss << std::setw(2) << progress_m << ":";
     ss << std::setw(2) << progress_s;
     ss << " / ";
-    ss << std::setw(0) << total_m << ":";
+    ss << std::setw(2) << total_m << ":";
     ss << std::setw(2) << total_s;
     label_progress->set_text(ss.str());
   }
@@ -317,7 +317,7 @@ void PanelControls::update() {
       tooltip_s %= 60;
       std::stringstream ss_hover;
       ss_hover << std::right << std::setfill('0');
-      ss_hover << std::setw(0) << tooltip_m << ":";
+      ss_hover << std::setw(2) << tooltip_m << ":";
       ss_hover << std::setw(2) << tooltip_s;
       tooltip_timestamp->set_text(ss_hover.str());
     }

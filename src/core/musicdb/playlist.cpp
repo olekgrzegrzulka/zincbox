@@ -2,10 +2,15 @@
 #include <fstream>
 #include <numeric>
 #include <optional>
+#include <set>
 #include <vector>
+#include <fmt/core.h>
+#include <fmt/ranges.h>
+#include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/serialize.hpp"
 #include "core/musicdb/musicdb.hpp"
+#include "core/musicdb/types.hpp"
 #include "lib/stb_image/stb_image.h"
 
 db::Playlist::Playlist(std::ifstream& is) {
@@ -44,7 +49,15 @@ bool db::Playlist::add_track(size_t track_id) {
 }
 
 std::vector<size_t> db::Playlist::insert_tracks(size_t at, std::span<const size_t> new_track_ids) {
-  if (new_track_ids.empty()) { return {}; }
+  out::debug_info("db::Playlist::insert_tracks");
+  out::debug_info("before: {}", track_ids);
+  out::debug_info("to add: {} at {}", new_track_ids, at);
+
+  if (new_track_ids.empty()) {
+    out::debug_info("after:  {}", track_ids);
+    out::debug_info("restore:  none");
+    return {};
+  }
   size_t insert_pos = std::min(at, track_ids.size());
   std::vector<size_t> unique_tracks;
   unique_tracks.reserve(new_track_ids.size());
@@ -53,12 +66,18 @@ std::vector<size_t> db::Playlist::insert_tracks(size_t at, std::span<const size_
       unique_tracks.emplace_back(id);
     }
   }
-  if (unique_tracks.empty()) { return {}; }
+  if (unique_tracks.empty()) {
+    out::debug_info("after:  {}", track_ids);
+    out::debug_info("restore:  none");
+    return {};
+  }
 
   track_ids.insert(track_ids.begin() + insert_pos, unique_tracks.begin(), unique_tracks.end());
 
   std::vector<size_t> indices(unique_tracks.size());
   std::iota(indices.begin(), indices.end(), insert_pos);
+  out::debug_info("after:  {}", track_ids);
+  out::debug_info("restore: {}", indices);
   return indices;
 }
 
@@ -76,6 +95,10 @@ bool db::Playlist::remove_track_by_index(size_t index) {
 }
 
 void db::Playlist::remove_tracks_by_indices(std::span<const size_t> indices) {
+  out::debug_info("db::Playlist::remove_tracks_by_indices");
+  out::debug_info("before: {}", track_ids);
+  out::debug_info("remove: {}", indices);
+
   if (indices.empty() || track_ids.empty()) { return; }
   std::vector<size_t> sorted_indices(indices.begin(), indices.end());
   std::sort(sorted_indices.begin(), sorted_indices.end(), std::greater<size_t>());
@@ -83,6 +106,48 @@ void db::Playlist::remove_tracks_by_indices(std::span<const size_t> indices) {
   for (size_t index : sorted_indices) {
     if (index < track_ids.size()) { track_ids.erase(track_ids.begin() + index); }
   }
+  out::debug_info("after:  {}", track_ids);
+}
+
+std::vector<size_t> db::Playlist::move_tracks_by_indices(std::span<const size_t> indices, size_t target_index) {
+  if (indices.empty() || track_ids.empty()) { return {}; }
+
+  std::set<size_t, std::less<size_t>> sorted_indices(indices.begin(), indices.end());
+
+  if (*sorted_indices.begin() >= track_ids.size() || *sorted_indices.rbegin() >= track_ids.size()) {
+    out::error("player::move_queue_tracks(): index out of bounds");
+    return {};
+  }
+
+  if (sorted_indices.size() != indices.size()) {
+    out::error("player::move_queue_tracks(): duplicate indices");
+    return {};
+  }
+
+  std::vector<db::track_id_t> tracks_to_insert;
+  tracks_to_insert.reserve(indices.size());
+  std::optional<size_t> playing_track_offset;
+  for (size_t i = 0; i < indices.size(); ++i) {
+    tracks_to_insert.emplace_back(track_ids[indices[i]]);
+  }
+
+  auto it_target = sorted_indices.lower_bound(target_index);
+  size_t corrected_target_index = target_index - std::distance(sorted_indices.begin(), it_target);
+
+  std::vector<db::track_id_t> track_ids_new;
+  track_ids_new.reserve(track_ids.size() - sorted_indices.size());
+  for (size_t i = 0; i < track_ids.size(); i += 1) {
+    if (sorted_indices.contains(i)) { continue; }
+    track_ids_new.emplace_back(track_ids[i]);
+  }
+
+  track_ids = std::move(track_ids_new);
+
+  track_ids.insert(track_ids.begin() + corrected_target_index, tracks_to_insert.begin(), tracks_to_insert.end());
+
+  std::vector<size_t> ret(tracks_to_insert.size());
+  std::iota(ret.begin(), ret.end(), corrected_target_index);
+  return ret;
 }
 
 void db::Playlist::sort_by_track_number() {
@@ -141,6 +206,26 @@ std::string db::Playlist::author_pretty() const {
   if (!ret.empty()) { ret.pop_back(); }
   if (!ret.empty()) { ret.pop_back(); }
   return ret;
+}
+
+i32 db::Playlist::length_ms() const {
+  i32 ms = 0;
+  for (auto track_id : track_ids) {
+    auto track = db::track_by_id(track_id);
+    ensure(track);
+    ms += track->get().metadata.duration_ms;
+  }
+  return ms;
+}
+
+std::string db::Playlist::pretty_length() const {
+  i32 ms = length_ms();
+  i32 length_s = ms / 1000;
+  i32 length_m = ms / 1000 / 60;
+  length_s %= 60;
+  std::stringstream ss;
+  ss << std::right << std::setfill('0') << std::setw(2) << length_m << ":" << std::setw(2) << length_s;
+  return ss.str();
 }
 
 std::optional<size_t> db::Playlist::next_track_id(size_t track_id) const {

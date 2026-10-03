@@ -103,6 +103,29 @@
     "insert_cursor_color": "#7a345f"
   },
 
+  "panel_queue": {
+    "color": "#0f070a",
+    "track_height": 22,
+    "playlist_height": 38,
+    "collection_height": 38,
+    "header_height": 28,
+    "header_spacing": 10,
+    "header_author_color": "#ab7492",
+    "header_name_color": "#df96be",
+    "track_color_odd": "#0c0509",
+    "track_color_even": "#160810",
+    "track_color_playing": "#2e1422",
+    "track_color_selected_odd": "#361125",
+    "track_color_selected_even": "#3d142b",
+    "track_hovered": "#b32f78",
+    "track_hovered_opacity": 0.2,
+    "track_artist_color": "#816574",
+    "track_number_color": "#a88397",
+    "title_color": "#cea1ba",
+    "length_color": "#816574",
+    "insert_cursor_color": "#7a345f"
+  },
+
   "panel_playlists": {
     "color": "#0f070a",
     "title_color": "#df96be",
