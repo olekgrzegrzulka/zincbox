@@ -23,28 +23,25 @@ class PopupSettings : public Popup {
 
       static constexpr i32 TITLE_BAR_HEIGHT = 32;
 
-      set_size(600, 400);
+      set_layout("ttb expand fill fit m:8 s:8");
+
+      auto& title = add_child<zincgui::Label>(tr::get("settings.title"));
+      title.set_resize_to_text_extents(false);
+      title.set_fixed_height(32 * zincbox::ui_scale());
+      title.set_anchor(zincgui::Anchor::TOP);
+      title.set_parent_anchor(zincgui::Anchor::TOP);
+      title.set_width(width);
+
+      auto& content = add_child<zincgui::Widget>();
+      content.set_layout("ltr expand fill fit m:0 s:8");
+      content.set_anchor(zincgui::Anchor::TOP);
+      content.set_parent_anchor(zincgui::Anchor::TOP);
 
       auto& buttons = add_child<zincgui::Widget>();
       buttons.set_anchor(zincgui::Anchor::BOTTOM);
       buttons.set_parent_anchor(zincgui::Anchor::BOTTOM);
-      buttons.set_width(width);
-      buttons.set_layout("ltr fill fit expand m:8 s:8");
-      buttons.set_height(48);
-
-      auto& content = add_child<zincgui::Widget>();
-      content.set_layout("ltr expand fill mx:8 my:0 s:8");
-      content.set_anchor(zincgui::Anchor::TOP);
-      content.set_parent_anchor(zincgui::Anchor::TOP);
-      content.set_size(width, height - (48 + TITLE_BAR_HEIGHT));
-      content.set_y(TITLE_BAR_HEIGHT);
-
-      auto& title = add_child<zincgui::Label>(tr::get("settings.title"));
-      title.set_resize_to_text_extents(false);
-      title.set_height(TITLE_BAR_HEIGHT);
-      title.set_anchor(zincgui::Anchor::TOP);
-      title.set_parent_anchor(zincgui::Anchor::TOP);
-      title.set_width(width);
+      buttons.set_layout("ltr expand fill m:0 s:8");
+      buttons.set_fixed_height(32 * zincbox::ui_scale());
 
       auto& btn_cancel = buttons.add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
       btn_cancel.on_press([this]() -> void {
@@ -78,7 +75,6 @@ class PopupSettings : public Popup {
           for (size_t j = 0; j < pages.size(); j += 1) {
             pages[j]->set_is_drawn(i == j);
             pages[j]->set_is_updated(i == j);
-            pages[j]->update();
             if (i != j) { page_buttons[j]->set_is_switched(false); }
           }
         });
@@ -99,10 +95,10 @@ class PopupSettings : public Popup {
 
         auto& combo = parent_->add_child<zincgui::ComboBox>();
         combo.set_max_width(200);
+        combo.set_height(8 * zincbox::ui_scale() + zincbox::font_size());
 
         auto& pad = parent_->add_child<zincgui::Widget>();
-        pad.set_min_height(10);
-        pad.set_max_height(10);
+        pad.set_fixed_height(10);
 
         combo_boxes[std::move(json_key)] = &combo;
         return &combo;
@@ -118,11 +114,11 @@ class PopupSettings : public Popup {
         label.set_label_anchor(zincgui::Anchor::LEFT);
 
         auto& spinner = parent_->add_child<zincgui::Spinner>();
+        spinner.set_height(8 * zincbox::ui_scale() + zincbox::font_size());
         spinner.set_max_width(200);
 
         auto& pad = parent_->add_child<zincgui::Widget>();
-        pad.set_min_height(10);
-        pad.set_max_height(10);
+        pad.set_fixed_height(10);
 
         spinners[std::move(json_key)] = &spinner;
         return &spinner;
@@ -132,7 +128,7 @@ class PopupSettings : public Popup {
                                            std::string_view label_) -> zincgui::Checkbox* {
         auto& checkbox = parent_->add_child<zincgui::Checkbox>(label_);
         checkbox.set_width(128);
-        checkbox.set_height(24);
+        checkbox.set_height(8 * zincbox::ui_scale() + zincbox::font_size());
 
         checkboxes[std::move(json_key)] = &checkbox;
         return &checkbox;
@@ -172,8 +168,7 @@ class PopupSettings : public Popup {
                              tr::get("settings.playback.allow_same_artist"));
 
       auto& pad = page_playback.content()->add_child<zincgui::Widget>();
-      pad.set_min_height(10);
-      pad.set_max_height(10);
+      pad.set_fixed_height(10);
 
       create_widget_checkbox(page_playback.content(), std::pair{"playback", "restart_on_previous"},
                              tr::get("settings.playback.restart_on_previous"));
@@ -259,6 +254,12 @@ class PopupSettings : public Popup {
 
       s.clamp_values();
       return s;
+    }
+
+    void update() {
+      set_width(std::min<i32>(get_max_content_width(), 800 * zincbox::ui_scale()));
+      set_height(std::min<i32>(get_max_content_height(), 600 * zincbox::ui_scale()));
+      Popup::update();
     }
 
   public:

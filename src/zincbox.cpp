@@ -53,6 +53,7 @@ static SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point*
 #endif
 
 float zincbox::ui_scale() { return s_settings.interface.scale * 0.01f; }
+i32 zincbox::font_size() { return s_settings.interface.font_size; }
 
 void zincbox::init(u64 flags) {
   player::init();
@@ -102,7 +103,10 @@ void zincbox::run() {
     zincgui::Input::update();
     player::update();
     tray::update();
+
     zincbox::ui::update(s_window->size());
+    if (!window()->is_minimized()) { zincbox::ui::draw(); }
+
     zincgui::Input::clear();
     check_opengl_errors();
     window()->swap_buffers();

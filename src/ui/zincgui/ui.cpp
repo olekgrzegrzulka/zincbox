@@ -1,6 +1,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 #include <glad/glad.h>
@@ -27,9 +28,6 @@ zincgui::Root::Root(i32 window_width_, i32 window_height_) : shader{shader_vert,
   }
   matrix = glm::mat4{1.0};
   matrix = glm::scale(matrix, glm::vec3(1.0f, -1.0f, 1.0f));
-
-  // font_face = FontFace(freetype_lib, "./assets/Arimo/Arimo-VariableFont_wght.ttf", 14);
-  // font_face = FontFace(freetype_lib, "./assets/arial/ARIAL.TTF", 15);
 }
 
 void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
@@ -53,6 +51,15 @@ void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
 }
 
 void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_layer) {
+  if (widget->parent && widget->parent->deleted_) { widget->deleted_ = true; }
+
+  if (widget->get_marked_for_deletion() && !widget->deleted_) {
+    widget->deleted_ = true;
+    deleted_widgets.insert(widget);
+  }
+
+  if (!widget->children_to_add.empty() && !widget->deleted_) { mutated_widgets.insert(widget); }
+
   if (widget->is_drawn_on_top) { always_on_top_layer += 1; }
   Widget* parent = widget->parent;
 
@@ -61,6 +68,9 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
 
   bool parent_updated = parent ? parent->updated_ : true;
   widget->updated_ = parent_updated && widget->get_is_updated();
+
+  bool parent_dirty = parent ? parent->dirty : false;
+  widget->dirty = parent_dirty || widget->dirty;
 
   std::optional<rect2i> parent_scissor = parent ? parent->scissor_ : std::nullopt;
   if (widget->is_drawn_on_top) { parent_scissor = std::nullopt; }
@@ -94,8 +104,13 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   }
 }
 
+static i32 construct_traversal_order_counter = 0;
 void zincgui::Root::construct_traversal_order() {
+  tree_dirty = false;
+  construct_traversal_order_counter++;
   widget_traversal_order.clear();
+  deleted_widgets.clear();
+  mutated_widgets.clear();
 
   for (auto&& w : widgets) {
     if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
@@ -108,50 +123,61 @@ void zincgui::Root::construct_traversal_order() {
   }
 }
 
-bool zincgui::Root::rebuild_tree(Widget* widget, bool tree_changed) {
-  std::erase_if(widget->children, [&tree_changed](auto&& w) {
-    tree_changed |= w->get_marked_for_deletion();
-    return w->get_marked_for_deletion();
-  });
+bool zincgui::Root::process_mutations() {
+  bool changed = false;
 
-  if (!widget->children_to_add.empty()) {
-    tree_changed = true;
-    widget->children.insert(widget->children.end(), std::move_iterator(widget->children_to_add.begin()),
-                            std::move_iterator(widget->children_to_add.end()));
-    widget->children_to_add.clear();
+  if (!deleted_widgets.empty()) {
+    changed = true;
+    for (Widget* w : deleted_widgets) {
+      if (w->parent != nullptr) {
+        std::erase_if(w->parent->children, [w](const auto& child) { return child.get() == w; });
+      } else {
+        std::erase_if(widgets, [w](const auto& child) { return child.get() == w; });
+      }
+    }
   }
-
-  for (auto&& child : widget->get_children()) {
-    if (rebuild_tree(child.get(), tree_changed)) { tree_changed = true; }
-  }
-
-  return tree_changed;
-}
-
-bool zincgui::Root::rebuild_tree() {
-  bool tree_changed = false;
-
-  std::erase_if(widgets, [&tree_changed](auto&& w) {
-    tree_changed |= w->get_marked_for_deletion();
-    return w->get_marked_for_deletion();
-  });
 
   if (!widgets_to_add.empty()) {
-    tree_changed = true;
+    changed = true;
     widgets.insert(widgets.end(), std::move_iterator(widgets_to_add.begin()), std::move_iterator(widgets_to_add.end()));
     widgets_to_add.clear();
   }
 
-  for (auto&& widget : widgets) {
-    tree_changed |= rebuild_tree(widget.get());
+  if (!mutated_widgets.empty()) {
+    changed = true;
+    for (Widget* w : mutated_widgets) {
+      w->last_update_frame_ = 0;
+      w->children.insert(w->children.end(), std::move_iterator(w->children_to_add.begin()),
+                         std::move_iterator(w->children_to_add.end()));
+      w->children_to_add.clear();
+    }
   }
 
-  return tree_changed;
+  return changed;
 }
 
-void zincgui::Root::input(i32 window_width_, i32 window_height_) {
+void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
+  construct_traversal_order_counter = 0;
+  current_frame += 1;
+
+  if (window_width_ != window_width || window_height_ != window_height) {
+    tree_dirty = true;
+    for (auto&& widget : widgets) {
+      widget->mark_dirty();
+    }
+  }
+
   window_width = window_width_;
   window_height = window_height_;
+
+  if (!widgets_to_add.empty()) {
+    tree_dirty = true;
+    widgets.insert(widgets.end(), std::move_iterator(widgets_to_add.begin()), std::move_iterator(widgets_to_add.end()));
+    widgets_to_add.clear();
+  }
+
+  if (tree_dirty) { construct_traversal_order(); }
+  if (process_mutations()) { construct_traversal_order(); }
 
   for (auto it_layer = widget_traversal_order.rbegin(); it_layer != widget_traversal_order.rend(); ++it_layer) {
     for (auto it = (*it_layer).rbegin(); it != (*it_layer).rend(); ++it) {
@@ -161,27 +187,30 @@ void zincgui::Root::input(i32 window_width_, i32 window_height_) {
         for (auto& ev : Input::get_event_queue()) {
           std::visit([it](auto& ev_) { (*it)->event(ev_); }, ev);
         }
-        (*it)->input();
       }
     }
   }
-}
 
-void zincgui::Root::rebuild() {
-  bool tree_changed = rebuild_tree();
-  if (tree_changed || true) { construct_traversal_order(); }
+  bool tree_changed = false;
+  do {
+    for (auto& layer : widget_traversal_order) {
+      for (auto* widget : layer) {
+        if (widget->updated_ && widget->last_update_frame_ != current_frame) {
+          widget->last_update_frame_ = current_frame;
+          widget->input();
+          widget->update();
+        }
+      }
+    }
+
+    if (tree_dirty) { construct_traversal_order(); }
+    tree_changed = process_mutations();
+    if (tree_changed) { construct_traversal_order(); }
+  } while (tree_changed);
 
   hovered_widgets.clear();
   for (auto&& w : widgets) {
     update_hovered_widgets_recursive(w.get());
-  }
-}
-
-void zincgui::Root::update() {
-  for (auto& layer : widget_traversal_order) {
-    for (auto* widget : layer) {
-      if (widget->updated_) { widget->update(); }
-    }
   }
 }
 
@@ -211,6 +240,7 @@ void zincgui::Root::draw() {
           glDisable(GL_SCISSOR_TEST);
         }
         widget->draw();
+        widget->dirty = false;
       }
     }
   }

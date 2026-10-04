@@ -1,7 +1,9 @@
 #include "widget.hpp"
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 #include <spanstream>
+#include <stacktrace>
 #include "common/logger.hpp"
 #include "ui.hpp"
 #include "ui/zincgui/input.hpp"
@@ -257,8 +259,8 @@ void zincgui::Widget::set_layout(std::string_view def) {
   }
 
   if (layout != l) {
-    mark_dirty();
     layout = l;
+    mark_dirty();
   }
 }
 
@@ -266,7 +268,7 @@ void zincgui::Widget::set_pos(i32 x_, i32 y_) {
   if (x_ != x || y_ != y) {
     x = x_;
     y = y_;
-    ui.mark_dirty_recursive(this);
+    mark_dirty();
   }
 }
 
@@ -274,7 +276,7 @@ void zincgui::Widget::set_pos(vec2i pos) {
   if (pos.x != x || pos.y != y) {
     x = pos.x;
     y = pos.y;
-    ui.mark_dirty_recursive(this);
+    mark_dirty();
   }
 }
 
@@ -282,15 +284,15 @@ void zincgui::Widget::set_size(i32 w_, i32 h_) {
   if (w_ != width || h_ != height) {
     width = w_;
     height = h_;
-    if (layout.enabled) { ui.mark_dirty_recursive(this); }
+    mark_dirty();
   }
 }
 
 void zincgui::Widget::set_size(vec2i size_) {
-  if (width != x || height != y) {
+  if (width != size_.x || height != size_.y) {
     width = size_.x;
     height = size_.y;
-    if (layout.enabled) { ui.mark_dirty_recursive(this); }
+    mark_dirty();
   }
 }
 
@@ -298,7 +300,6 @@ void zincgui::Widget::set_width(i32 width_) {
   if (width_ != width) {
     width = width_;
     mark_dirty();
-    if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
 
@@ -306,8 +307,10 @@ void zincgui::Widget::set_height(i32 height_) {
   if (height_ != height) {
     height = height_;
     mark_dirty();
-    if (layout.enabled) { ui.mark_dirty_recursive(this); }
   }
 }
 
-void zincgui::Widget::mark_dirty() { ui.mark_dirty_recursive(this); }
+void zincgui::Widget::mark_dirty() {
+  dirty = true;
+  ui.mark_tree_dirty();
+}

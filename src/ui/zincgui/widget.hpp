@@ -148,6 +148,8 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool hovered_ = false;
       bool visible_ = false;
       bool updated_ = false;
+      u64 last_update_frame_ = 0;
+      bool deleted_ = false;
       i32 always_on_top_layer_ = 0;
       std::optional<rect2i> scissor_;
 
@@ -183,7 +185,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
         if (name == name_) { return; }
         name = std::move(name_);
       }
-      WIDGET_DEF_SETTER(marked_for_deletion)
+      WIDGET_DEF_SETTER_DIRTY(marked_for_deletion)
       WIDGET_DEF_SETTER_DIRTY(is_updated)
       WIDGET_DEF_SETTER_DIRTY(x)
       WIDGET_DEF_SETTER_DIRTY(y)
@@ -202,25 +204,32 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_SETTER_DIRTY(clip)
       WIDGET_DEF_SETTER_DIRTY(clip_children)
 
+      void set_fixed_width(i32 value) {
+        set_min_width(value);
+        set_max_width(value);
+      }
+
+      void set_fixed_height(i32 value) {
+        set_min_height(value);
+        set_max_height(value);
+      }
+
       void set_is_drawn(bool to) {
         if (is_drawn == to) { return; }
         is_drawn = to;
         mark_dirty();
-        if (parent) { parent->mark_dirty(); }
       }
 
       void set_ignore_parents_layout(bool to) {
         if (ignore_parents_layout == to) { return; }
         ignore_parents_layout = to;
         mark_dirty();
-        if (parent) { parent->mark_dirty(); }
       }
 
       WIDGET_DEF_SETTER_DIRTY(is_drawn_on_top)
       WIDGET_DEF_SETTER_DIRTY(weight)
       WIDGET_DEF_SETTER_DIRTY(draw_behind_parent)
 
-      WIDGET_DEF_GETTER(dirty)
       WIDGET_DEF_GETTER(marked_for_deletion)
       WIDGET_DEF_GETTER(is_updated)
       WIDGET_DEF_GETTER(x)
@@ -280,6 +289,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
         children_to_add.emplace_back(std::make_unique<T>(ui, std::forward<Args>(args)...));
         T& widget = static_cast<T&>(*children_to_add.back().get());
         widget.parent = this;
+        mark_dirty();
         return widget;
       }
 

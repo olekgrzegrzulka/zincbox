@@ -206,7 +206,6 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
         on_playlist_more_options_invoked(collection_id, playlist_id, w->button_more);
       }
     });
-    w->update();
   }
 
   size_t item_index = 0;
@@ -266,11 +265,9 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
     if (auto* w = dynamic_cast<WidgetTrack*>(generic_widget)) {
       w->on_press(handle_press);
       w->on_press_rmb(handle_press_rmb);
-      w->update();
     } else if (auto* w2 = dynamic_cast<WidgetQueuePlaylistCollection*>(generic_widget)) {
       w2->on_press(handle_press);
       w2->on_press_rmb(handle_press_rmb);
-      w2->update();
     }
   }
 }
@@ -280,10 +277,6 @@ void PanelTracklist::draw() { ColorRect::draw(); }
 void PanelTracklist::show() {
   set_is_drawn(true);
   set_is_updated(true);
-  input();
-  update();
-  scrollbar->input();
-  scrollbar->update();
 }
 
 void PanelTracklist::hide() {
@@ -324,7 +317,9 @@ void PanelTracklist::scroll_to_track(size_t playlist_id, size_t track_id, bool i
   }
 }
 
-void PanelTracklist::input() {
+void PanelTracklist::input() {}
+
+void PanelTracklist::update() {
   items_container->set_pos(scrollbar->get_width(), 0);
   items_container->set_size(width - scrollbar->get_width(), height);
 
@@ -365,29 +360,23 @@ void PanelTracklist::input() {
       if (item_visible) {
         set_item_index(items[i], i);
         create_item_widget_if_null(items[i]);
-        ensure(get_item_widget(items[i]));
-        get_item_widget(items[i])->set_width(items_container->get_width());
-        get_item_widget(items[i])->set_y(current_item_top_y - scroll_px);
-        if (std::holds_alternative<ItemPlaylistHeader>(items[i])) {
-          ui.mark_dirty_recursive(get_item_widget(items[i]));
-        }
-        get_item_widget(items[i])->set_is_drawn(item_visible);
+        auto* item_widget = get_item_widget(items[i]);
+        ensure(item_widget);
+        item_widget->set_width(items_container->get_width());
+        item_widget->set_y(current_item_top_y - scroll_px);
+        item_widget->set_is_drawn(item_visible);
         set_item_selected(items[i], m_selection.has(i));
       } else if (get_item_widget(items[i])) {
         delete_item_widget(items[i]);
       }
 
       current_item_top_y += item_h;
-      ui.mark_dirty_recursive(items_container); // FIXME without this the view flickers when scrolling down
     }
     old_scroll_px = scroll_px;
     old_size = vec2i{width, height};
     just_recreated = false;
     selection_modified = false;
   }
-}
-
-void PanelTracklist::update() {
   scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
 
   std::optional<size_t> tooltip_visible_index;

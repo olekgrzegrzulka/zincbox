@@ -38,7 +38,7 @@ void PopupController::on_dimmer_enter_pressed() {}
 void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 
 void PopupController::create_popover(const popover_descriptor& d) {
-  static const float scale = zincbox::ui_scale();
+  float scale = zincbox::ui_scale();
   i32 space_needed = (8 + (4 + 24) * d.buttons.size() + 12) * scale;
   bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 
@@ -62,13 +62,12 @@ void PopupController::create_popover(const popover_descriptor& d) {
 
   if (!d.title.empty()) {
     auto& label = popover.add_child<Label>(d.title);
-    label.update();
+    // label.update_text();
     popover.set_width(std::max<i32>(popover.get_width(), label.get_width() + 30 * scale));
     label.set_text_color(theme::config().text_color_muted);
     label.set_label_anchor(Anchor::TOP);
     label.set_resize_to_text_extents(false);
-    label.set_min_height(20 * scale);
-    label.set_max_height(20 * scale);
+    label.set_fixed_height(20 * scale);
     label.set_height(20 * scale);
   }
 
@@ -81,8 +80,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
     btn.set_texture_pressed("button_popover_pressed");
     btn.set_texture_disabled("button_popover_disabled");
     btn.set_texture("button_popover_idle", false);
-    btn.set_min_height(22 * scale);
-    btn.set_max_height(22 * scale);
+    btn.set_fixed_height(22 * scale);
     btn.set_height(22 * scale);
     i32 w = btn.get_label().get_width() + 30;
 

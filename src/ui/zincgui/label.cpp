@@ -18,7 +18,7 @@ zincgui::Label::Label(Root& ui_) : Widget::Widget(ui_) {
 zincgui::Label::Label(Root& ui_, std::string_view text_) : Widget::Widget(ui_) {
   set_text_color(theme::config().text_color);
   set_text(text_);
-  update_mesh();
+  update_text();
   clip = true;
 }
 
@@ -37,22 +37,21 @@ void zincgui::Label::set_resize_to_text_extents(bool to) {
   }
 }
 
-void zincgui::Label::update() {
-  if (dirty && is_drawn) {
-    update_mesh();
+void zincgui::Label::update() { Widget::update(); }
+
+void zincgui::Label::draw() {
+  if (dirty) {
+    update_text();
     setup_buffers();
     dirty = false;
   }
-  Widget::update();
-}
-
-void zincgui::Label::draw() {
   glBindVertexArray(vao);
   glDrawArrays(GL_TRIANGLES, 0, vertices.size());
   Widget::draw();
 }
 
-void zincgui::Label::update_mesh() {
+void zincgui::Label::update_text() {
+  text_dirty = false;
   i32 window_width_ = ui.get_window_width();
   i32 window_height_ = ui.get_window_height();
 

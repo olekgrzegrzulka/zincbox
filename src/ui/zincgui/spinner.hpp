@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include "button.hpp"
+#include "common/logger.hpp"
 #include "common/utf.hpp"
 #include "label.hpp"
 #include "sprite.hpp"
@@ -21,14 +22,16 @@ namespace zincgui {
           button_decrease(add_child<ZincboxButton>("spinner_decrease")), label_postfix(add_child<Label>()) {
 
         button_decrease.set_parent_anchor(Anchor::LEFT);
-        button_decrease.set_nine_slice_margin(2.0f);
+        button_decrease.set_nine_slice_margin(10.0f);
         button_decrease.set_anchor(Anchor::LEFT);
         button_decrease.set_pos(1, 0);
+        button_decrease.add_image("spinner_decrease_icon");
 
         button_increase.set_parent_anchor(Anchor::RIGHT);
-        button_increase.set_nine_slice_margin(2.0f);
+        button_increase.set_nine_slice_margin(10.0f);
         button_increase.set_anchor(Anchor::RIGHT);
         button_increase.set_pos(-1, 0);
+        button_increase.add_image("spinner_increase_icon");
 
         label.set_pos({button_increase.get_width() + 2, 0});
         label.set_resize_to_text_extents(false);
