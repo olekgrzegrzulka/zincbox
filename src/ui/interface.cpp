@@ -53,7 +53,6 @@
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/text_input.hpp"
-#include "ui/zincgui/texture_atlas.hpp"
 #include "ui/zincgui/tooltip.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
@@ -86,7 +85,6 @@ static struct {
 
 constexpr size_t SELECTION_DRAG_TAB_TIMER = 15;
 
-static TextureAtlas texture_atlas_cover_art;
 static std::unique_ptr<Root> root;
 static class ShortcutInterceptor* shortcut_interceptor{};
 static PopupController* popup_controller{};

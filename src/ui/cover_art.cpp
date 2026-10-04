@@ -54,17 +54,20 @@ static zincgui::TextureAtlas atlas;
 zincgui::TextureAtlas& zincbox::ui::cover_art::texture_atlas() { return atlas; }
 
 void zincbox::ui::cover_art::init() {
-  atlas = zincgui::TextureAtlas{2048, 4, 4};
+  atlas = zincgui::TextureAtlas{4096, 0, 64};
   atlas.set_filter(true);
-  auto res = theme::get_raw_resource("cover_unknown.png");
-  if (res.empty()) { out::critical("failed to load cover_unknown.png, empty"); }
 
-  int width, height, channels;
-  stbi_uc* data = stbi_load_from_memory((stbi_uc*)res.data(), res.size(), &width, &height, &channels, STBI_rgb_alpha);
+  std::array<std::string, 2> texture_paths = {"cover_unknown.png", "panel_playlists/button_add_playlist.png"};
+  std::array<std::string, 2> textures = {"cover_unknown", "button_add_playlist"};
 
-  if (!data) { out::critical("failed to load cover_unknown.png"); }
-
-  atlas.add_texture("cover_unknown", (u8*)data, width, height);
+  for (size_t i : {0, 1}) {
+    auto res = theme::get_raw_resource(texture_paths[i]);
+    if (res.empty()) { out::critical("failed to load " + textures[i] + ", empty"); }
+    int width, height, channels;
+    stbi_uc* data = stbi_load_from_memory((stbi_uc*)res.data(), res.size(), &width, &height, &channels, STBI_rgb_alpha);
+    if (!data) { out::critical("failed to load " + textures[i]); }
+    atlas.add_texture(textures[i], (u8*)data, width, height);
+  }
   atlas.set_fallback_texture("cover_unknown");
 }
 
@@ -76,13 +79,21 @@ void clean() {
   }
 }
 
-static std::unordered_set<db::track_id_t> pending_tracks;
+struct PendingTracksHash {
+    size_t operator()(const std::pair<size_t, bool>& a) const noexcept {
+      size_t seed = std::hash<size_t>{}(a.first);
+      seed ^= std::hash<bool>{}(a.second) + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+      return seed;
+    }
+};
+
+static std::unordered_set<std::pair<db::track_id_t, bool>, PendingTracksHash> pending_tracks;
 static constexpr i32 MAX_BATCH_SIZE = 16;
 
-std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t track_id) {
-  auto path = zincbox::cover_art::get_64(track_id);
+std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t track_id, bool high_res) {
+  auto path = high_res ? zincbox::cover_art::get_256(track_id) : zincbox::cover_art::get_64(track_id);
   if (!path) {
-    pending_tracks.insert(track_id);
+    pending_tracks.insert({track_id, high_res});
     return std::nullopt;
   }
 
@@ -91,7 +102,7 @@ std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t
 
   if (atlas.has_texture(id, 1)) { return id; }
 
-  pending_tracks.insert(track_id);
+  pending_tracks.insert({track_id, high_res});
   return std::nullopt;
 }
 
@@ -127,21 +138,37 @@ bool zincbox::ui::cover_art::update() {
 
   auto it = pending_tracks.begin();
   while (it != pending_tracks.end() && processed < MAX_BATCH_SIZE) {
-    db::track_id_t track_id = *it;
+    auto [track_id, high_res] = *it;
     it = pending_tracks.erase(it);
     processed += 1;
-    auto path = zincbox::cover_art::get_64(track_id);
+    auto path = high_res ? zincbox::cover_art::get_256(track_id) : zincbox::cover_art::get_64(track_id);
     if (!path) { continue; }
     std::string id = path_to_utf8(path->stem());
     if (atlas.has_texture(id, 1)) { continue; }
-    if (!atlas.can_fit_texture(64, 64)) {
-      clean();
-      modified = true;
+    if (high_res) {
+      if (!atlas.can_fit_texture(256, 256)) {
+        clean();
+        modified = true;
+      }
+    } else {
+      if (!atlas.can_fit_texture(64, 64)) {
+        clean();
+        modified = true;
+      }
     }
-    if (!atlas.can_fit_texture(64, 64)) {
-      pending_tracks.insert(track_id);
-      break;
+
+    if (high_res) {
+      if (!atlas.can_fit_texture(256, 256)) {
+        pending_tracks.insert({track_id, high_res});
+        break;
+      }
+    } else {
+      if (!atlas.can_fit_texture(64, 64)) {
+        pending_tracks.insert({track_id, high_res});
+        break;
+      }
     }
+
     atlas.add_texture(id, *path);
     modified = true;
   }
