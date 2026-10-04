@@ -66,7 +66,6 @@ class WidgetTrack final : public zincgui::Button {
         label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
       }
       label_track_number->set_text(std::to_string(m_track_number));
-      label_track_number->update();
       label_track_number->set_min_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
       label_track_number->set_max_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
 
@@ -84,7 +83,6 @@ class WidgetTrack final : public zincgui::Button {
         } else {
           label_track_artist->set_is_drawn(true);
           label_track_artist->set_text(track->get().metadata.artist);
-          label_track_artist->update();
           label_track_artist->set_min_width(0);
           label_track_artist->set_max_width(label_track_artist->get_text_extents().x);
         }
@@ -96,15 +94,13 @@ class WidgetTrack final : public zincgui::Button {
       }
       if (track.has_value()) {
         label_track_title->set_text(track->get().pretty_title());
-        label_track_title->update();
       }
 
       if (!love_icon) {
         love_icon = &add_child<Sprite>("love");
         love_icon->set_min_width(love_icon->get_width());
         love_icon->set_max_width(love_icon->get_width());
-        love_icon->set_min_height(love_icon->get_height());
-        love_icon->set_max_height(love_icon->get_height());
+        love_icon->set_fixed_height(love_icon->get_height());
         love_icon->set_nine_slice_margin(0.0f);
       }
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(m_track_id));
@@ -116,7 +112,6 @@ class WidgetTrack final : public zincgui::Button {
       }
 
       if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
-      label_track_length->update();
       label_track_length->set_min_width(std::max<i32>(font_size * 2.6f, label_track_length->get_text_extents().x));
       label_track_length->set_max_width(std::max<i32>(font_size * 2.6f, label_track_length->get_text_extents().x));
 

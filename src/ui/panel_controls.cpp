@@ -161,7 +161,6 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
       bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
       update_love_state(is_loved);
     }
-    label_track->update();
     label_track->set_min_width(label_track->get_text_extents().x);
     label_track->set_max_width(label_track->get_text_extents().x);
     label_track_underline->set_width(label_track->get_text_extents().x);

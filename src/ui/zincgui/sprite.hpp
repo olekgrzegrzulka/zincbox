@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <glm/vec2.hpp>
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "widget.hpp"
 
@@ -69,8 +70,18 @@ namespace zincgui {
 
       WIDGET_DEF_SETTER_DIRTY(nine_slice_margin)
       WIDGET_DEF_SETTER_DIRTY(nine_slice_scale)
-      WIDGET_DEF_SETTER_DIRTY(uv_start)
-      WIDGET_DEF_SETTER_DIRTY(uv_end)
+      void set_uv_start(vec2f value) {
+        if (!std::is_eq(uv_start.x <=> value.x) || !std::is_eq(uv_start.y <=> value.y)) {
+          uv_start = value;
+          mark_dirty();
+        }
+      }
+      void set_uv_end(vec2f value) {
+        if (!std::is_eq(uv_end.x <=> value.x) || !std::is_eq(uv_end.y <=> value.y)) {
+          uv_end = value;
+          mark_dirty();
+        }
+      }
       WIDGET_DEF_SETTER_DIRTY(atlas_index)
 
       WIDGET_DEF_GETTER(nine_slice_margin)

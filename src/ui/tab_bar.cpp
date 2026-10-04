@@ -23,7 +23,7 @@ using namespace zincgui;
 
 Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
   label.set_text(info.label);
-  label.update();
+  // label.update_text();
   set_width(std::clamp((i32)get_label().get_width() + 2 * info.padding, 40, 200));
   padding = info.padding;
   is_draggable = info.is_draggable;
@@ -246,8 +246,7 @@ void TabBar::scroll(double value) {
 void TabBar::update() {
   button_add->set_min_width(button_add->get_width());
   button_add->set_max_width(button_add->get_width());
-  button_add->set_min_height(button_add->get_height());
-  button_add->set_max_height(button_add->get_height());
+  button_add->set_fixed_height(button_add->get_height());
 
   target_scroll_px = std::clamp<double>(target_scroll_px, 0, get_max_scroll_px());
   auto scroll_px_ = scroll_px;
@@ -258,8 +257,6 @@ void TabBar::update() {
   } else {
     scroll_px = scroll_px_;
   }
-  if ((i32)scroll_px_ != (i32)scroll_px) { ui.mark_dirty_recursive(this); }
-
   if (Input::mouse_just_released(Input::MouseButton::MOUSE_BUTTON_LEFT)) { dragged_tab_index = -1; }
 
   i32 mouse_x = Input::get_mouse_x() - x + scroll_px;

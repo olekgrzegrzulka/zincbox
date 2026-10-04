@@ -30,7 +30,6 @@ namespace zincgui {
 
       void set_text(const std::string& s) {
         label->set_text(s);
-        label->update();
 
         set_size_and_position();
       }
@@ -66,8 +65,6 @@ namespace zincgui {
       }
 
       void update() override {
-        if (label->get_dirty()) { mark_dirty(); }
-
         if (clamp) {
           i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
           i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());

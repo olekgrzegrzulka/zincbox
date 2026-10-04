@@ -3,6 +3,7 @@
 #include <string_view>
 #include <utility>
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 #include "ui/zincgui/ui.hpp"
@@ -24,7 +25,6 @@ namespace zincgui {
         uv_checkbox_check = ui.get_texture_atlas().get("checkbox_check")->get();
 
         set_clip_children(true);
-        set_layout("ltr fill expand s:4");
 
         button = &add_child<Button>();
         button->set_ignore_parents_layout(true);
@@ -33,16 +33,21 @@ namespace zincgui {
         button->on_press([this]() -> void { set_checked(true); });
         button->on_depress([this]() -> void { set_checked(false); });
 
-        sprite_checkbox = &add_child<Sprite>("checkbox_idle");
-        sprite_checkbox->set_min_width(sprite_checkbox->get_width());
-        sprite_checkbox->set_max_width(sprite_checkbox->get_width());
-        sprite_checkbox->set_min_height(sprite_checkbox->get_height());
-        sprite_checkbox->set_max_height(sprite_checkbox->get_height());
+        inner = &add_child<Widget>();
+        inner->set_ignore_parents_layout(true);
+        inner->set_layout("ltr fill expand fit s:4");
+        inner->set_anchor(Anchor::CENTER);
+        inner->set_parent_anchor(Anchor::CENTER);
+
+        sprite_checkbox = &inner->add_child<Sprite>("checkbox_idle");
+        sprite_checkbox->set_fixed_width(sprite_checkbox->get_width());
+        sprite_checkbox->set_fixed_height(sprite_checkbox->get_height());
         sprite_check = &sprite_checkbox->add_child<Sprite>("checkbox_check");
         sprite_check->set_parent_anchor(Anchor::CENTER);
         sprite_check->set_anchor(Anchor::CENTER);
 
-        label = &add_child<Label>(label_text);
+        label = &inner->add_child<Label>(label_text);
+        label->set_label_anchor(Anchor::LEFT);
       }
 
       bool is_checked() const { return button->get_is_switched(); }
@@ -56,6 +61,9 @@ namespace zincgui {
       }
 
       void update() override {
+        button->set_size(width, height);
+        // inner->set_size(width, height);
+
         sprite_check->set_is_drawn(checked);
 
         switch (button->get_state()) {
@@ -89,6 +97,7 @@ namespace zincgui {
       Sprite* sprite_checkbox{};
       Sprite* sprite_check{};
       Label* label{};
+      Widget* inner{};
       TextureAtlasData uv_checkbox_idle;
       TextureAtlasData uv_checkbox_hovered;
       TextureAtlasData uv_checkbox_pressed;

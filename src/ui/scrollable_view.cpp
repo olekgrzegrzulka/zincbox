@@ -46,7 +46,6 @@ void ScrollableView::update() {
   if (m_content->get_y() != -m_scroll_px || m_content->get_width() != m_container->get_width()) {
     m_content->set_width(m_container->get_width());
     m_content->set_y(-m_scroll_px);
-    ui.mark_dirty_recursive(m_content);
   }
 
   m_background->set_size(width, height);

@@ -110,10 +110,6 @@ static enum class FileDialogOpen : u8 {
 static std::future<std::vector<std::filesystem::path>> file_dialog_future_path;
 static std::variant<size_t, std::string, std::monostate> file_dialog_data = std::monostate{};
 
-static void input(vec2i window_size);
-static void rebuild();
-static void draw();
-
 static void init_atlas();
 static void handle_dropped_files();
 static void handle_drag_and_drop();
@@ -250,13 +246,6 @@ void zincbox::ui::init() {
       } else {
         love_track(ti.track_id);
       }
-
-      // FIXME: hack to prevent flicker
-      if (active_collection_id) {
-        panel_tracklist->show();
-      } else {
-        panel_queue->show();
-      }
     }
   };
 
@@ -390,16 +379,7 @@ void zincbox::ui::init() {
   recreate_panel_top(false);
 }
 
-static void input(vec2i window_size) {
-  handle_dropped_files();
-  handle_drag_and_drop();
-  root->input(window_size.x, window_size.y);
-}
-
-static void rebuild() { root->rebuild(); }
-
 void zincbox::ui::update(vec2i window_size) {
-
   bool covers_added = zincbox::ui::cover_art::update();
   if (covers_added) {
     if (panel_playlists->get_is_updated()) {
@@ -491,8 +471,8 @@ void zincbox::ui::update(vec2i window_size) {
     file_dialog_data = std::monostate{};
   }
 
-  input(window_size);
-  rebuild();
+  handle_dropped_files();
+  handle_drag_and_drop();
 
   auto& window_decor = theme::config().custom_window_decoration;
   bool mini_player_disabled = !mini_player.value_or(false);
@@ -537,13 +517,11 @@ void zincbox::ui::update(vec2i window_size) {
 
   panel_controls->set_pos(content_x, -border);
   panel_controls->set_width(content_width);
-
-  root->update();
-  draw();
+  root->tick(window_size.x, window_size.y);
 }
 
-static void draw() {
-  zincbox::ui::cover_art::bind();
+void zincbox::ui::draw() {
+  zincbox::ui::cover_art::texture_atlas().bind(2);
   root->draw();
 }
 
@@ -797,7 +775,7 @@ static void show_popup_delete_playlist(db::playlist_id_t playlist_id) {
 
 static void show_popup_rename_playlist(db::playlist_id_t playlist_id) {
   auto* popup = popup_controller->show_popup<PopupInput>();
-  popup->set_size(300, 200);
+  popup->set_size(300, 200 * 4);
   popup->title->set_text(tr::get("popup.playlist.rename.title"));
   popup->btn_ok->get_label().set_text(tr::get("dialog.action.rename"));
   popup->text_input->label.set_text(db::playlist_by_id(playlist_id)->get().name);
@@ -1755,7 +1733,6 @@ static void show_settings_popup() {
     if (zincbox::settings().must_reload(new_settings)) {
       auto* popup_close = popup_controller->show_popup<PopupConfirm>(tr::get("popup.reload_required.content"));
       popup_close->title->set_text(tr::get("popup.reload_required.title"));
-      popup_close->content->update();
       popup_close->set_width(popup_close->content->get_width() + 32);
       popup_close->btn_ok->get_label().set_text(tr::get("dialog.action.reload"));
       popup_close->btn_cancel->get_label().set_text(tr::get("dialog.action.cancel"));

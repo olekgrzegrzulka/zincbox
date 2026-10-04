@@ -39,7 +39,7 @@ namespace zincgui {
       ComboBox(Root& ui_)
         : Button(ui_), icon(add_child<Sprite>("combobox_expand")), dropdown_bg(add_child<Sprite>("panel_combobox")) {
         set_size(64, 24);
-        set_nine_slice_margin(4.0);
+        set_nine_slice_margin(10.0f);
 
         set_texture_idle("combobox_idle");
         set_texture_hovered("combobox_hovered");
@@ -54,13 +54,15 @@ namespace zincgui {
         icon.set_parent_anchor(Anchor::RIGHT);
         icon.set_nine_slice_margin(0.0f);
         icon.set_x(-8);
-
-        label.set_x((-icon.get_width() - 8) / 2);
+        label.set_anchor(Anchor::LEFT);
+        label.set_parent_anchor(Anchor::LEFT);
+        label.set_label_anchor(Anchor::LEFT);
 
         dropdown_bg.set_parent_anchor(Anchor::BOTTOM_CENTER);
         dropdown_bg.set_anchor(Anchor::TOP_CENTER);
         dropdown_bg.set_clip_children(true);
         dropdown_bg.set_is_drawn_on_top(true);
+        dropdown_bg.set_nine_slice_margin(10.0f);
 
         for (i32 i = 0; i < dropdown_max_length + 1; i += 1) {
           auto& item = dropdown_bg.add_child<ComboBoxItem>();
@@ -79,6 +81,7 @@ namespace zincgui {
 
       void update() override {
         Button::update();
+        label.set_x(height / 2);
 
         target_scroll_progress =
           std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, items.size() - item_widgets.size() + 1));

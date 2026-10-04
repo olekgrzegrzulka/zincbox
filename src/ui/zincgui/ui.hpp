@@ -2,6 +2,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <glm/mat4x4.hpp>
@@ -11,9 +12,11 @@
 #include "freetype/freetype.h"
 #include "shader.hpp"
 #include "texture_atlas.hpp"
-#include "widget.hpp"
+// #include "widget.hpp"
 
 namespace zincgui {
+  class Widget;
+
   class Root final {
     public:
       Root(i32 window_width_, i32 window_height_);
@@ -24,12 +27,11 @@ namespace zincgui {
         T& widget = static_cast<T&>(*widgets_to_add.back().get());
         widget.set_window_width(window_width);
         widget.set_window_height(window_height);
+        root_mutated = true;
         return widget;
       }
 
-      void input(i32 window_width_, i32 window_height_);
-      void rebuild();
-      void update();
+      void tick(i32 window_width_, i32 window_height_);
       void draw();
 
       void set_font_face(const std::string& location, i32 pixel_height) {
@@ -49,22 +51,20 @@ namespace zincgui {
       TextureAtlas& get_texture_atlas() { return texture_atlas; }
       std::span<Widget*> get_hovered_widgets() { return hovered_widgets; }
 
-      void mark_dirty_recursive(Widget* w) {
-        w->dirty = true;
-        for (auto& c : w->get_children()) {
-          mark_dirty_recursive(c.get());
-        }
-      }
+      void mark_tree_dirty() { tree_dirty = true; }
 
-    public:
     protected:
+      u64 current_frame = 0;
       void update_hovered_widgets_recursive(Widget* widget);
-      bool rebuild_tree(Widget*, bool tree_changed = false);
-      bool rebuild_tree();
+      bool process_mutations();
       void construct_traversal_order(Widget*, i32 always_on_top_layer = 0);
       void construct_traversal_order();
 
     protected:
+      std::unordered_set<Widget*> mutated_widgets;
+      std::unordered_set<Widget*> deleted_widgets;
+      bool root_mutated = true;
+      bool tree_dirty = false;
       glm::mat4 matrix;
       std::vector<std::unique_ptr<Widget>> widgets;
       std::vector<std::unique_ptr<Widget>> widgets_to_add;
@@ -77,5 +77,4 @@ namespace zincgui {
       i32 window_width = 0;
       i32 window_height = 0;
   };
-
 } // namespace zincgui

@@ -64,7 +64,6 @@ class WidgetQueuePlaylistCollection final : public zincgui::Button {
         label_queue_index->set_label_anchor(zincgui::Anchor::LEFT);
       }
       label_queue_index->set_text(std::to_string(m_queue_index + 1));
-      label_queue_index->update();
       label_queue_index->set_min_width(std::max<i32>(font_size * 1.3f, label_queue_index->get_text_extents().x));
       label_queue_index->set_max_width(std::max<i32>(font_size * 1.3f, label_queue_index->get_text_extents().x));
 
@@ -73,8 +72,7 @@ class WidgetQueuePlaylistCollection final : public zincgui::Button {
         i32 cover_size = item_height - 10 * scale;
         cover_art->set_min_width(cover_size);
         cover_art->set_max_width(cover_size);
-        cover_art->set_min_height(cover_size);
-        cover_art->set_max_height(cover_size);
+        cover_art->set_fixed_height(cover_size);
         cover_art->set_nine_slice_margin(0.0f);
         cover_art->set_atlas_index(2);
         cover_art->set_is_drawn(false);
@@ -118,9 +116,6 @@ class WidgetQueuePlaylistCollection final : public zincgui::Button {
         }
       }
 
-      label_top->update();
-      label_bottom->update();
-
       if (!label_progress) {
         label_progress = &add_child<zincgui::Label>();
         label_progress->set_label_anchor(zincgui::Anchor::RIGHT);
@@ -133,7 +128,6 @@ class WidgetQueuePlaylistCollection final : public zincgui::Button {
       }
 
       label_length->set_text(length_str);
-      label_length->update();
       label_length->set_min_width(std::max<i32>(font_size * 2.6f, label_length->get_text_extents().x));
       label_length->set_max_width(std::max<i32>(font_size * 2.6f, label_length->get_text_extents().x));
 

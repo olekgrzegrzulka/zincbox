@@ -7,6 +7,7 @@ namespace zincbox::ui {
   void init();
   void deinit();
   void update(vec2i window_size);
+  void draw();
   bool get_mini_player();
   std::string get_selected_tab();
   std::vector<std::string> get_tabs_order();
