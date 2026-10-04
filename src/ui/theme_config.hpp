@@ -116,6 +116,12 @@ struct PanelPlaylistsConfig {
     rgba color{0x0f070c};
     rgba title_color{0xdc99ceff};
     rgba author_color{0xa8769eff};
+    i32 horizontal_spacing = 10;
+    i32 vertical_spacing = 10;
+    bool show_title = true;
+    bool show_author = true;
+
+    void clamp_values();
 };
 
 struct NotificationConfig {
@@ -207,6 +213,11 @@ inline void PanelQueueConfig::clamp_values() {
   track_hovered_opacity = std::clamp(track_hovered_opacity, 0.0f, 1.0f);
 }
 
+inline void PanelPlaylistsConfig::clamp_values() {
+  horizontal_spacing = std::clamp(horizontal_spacing, 0, 50);
+  vertical_spacing = std::clamp(vertical_spacing, 0, 100);
+};
+
 inline void NotificationConfig::clamp_values() {
   nine_slice_margin = std::clamp(nine_slice_margin, 0, 32);
   height = std::clamp(height, 10, 100);
@@ -220,6 +231,7 @@ inline void ThemeConfig::clamp_values() {
   panel_controls.clamp_values();
   panel_tracklist.clamp_values();
   panel_queue.clamp_values();
+  panel_playlists.clamp_values();
   notification.clamp_values();
   custom_window_decoration.clamp_values();
 }

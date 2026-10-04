@@ -408,6 +408,9 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
   // panel_top
   add_custom_button("add_tab", "panel_top/add_tab.png");
+  add_custom_button("tab_left", "panel_top/tab_left.png");
+  add_custom_button("tab_right", "panel_top/tab_right.png");
+  add_custom_button("add_tab", "panel_top/add_tab.png");
   atlas_add_texture("add_tab_icon", {"panel_top/add_tab_icon.png"});
   atlas_add_texture("left", {"panel_top/left.png"});
   atlas_add_texture("right", {"panel_top/right.png"});

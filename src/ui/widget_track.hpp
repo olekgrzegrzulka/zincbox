@@ -101,10 +101,10 @@ class WidgetTrack final : public zincgui::Button {
 
       if (!love_icon) {
         love_icon = &add_child<Sprite>("love");
-        love_icon->set_min_width(12);
-        love_icon->set_max_width(12);
-        love_icon->set_min_height(12);
-        love_icon->set_max_height(12);
+        love_icon->set_min_width(love_icon->get_width());
+        love_icon->set_max_width(love_icon->get_width());
+        love_icon->set_min_height(love_icon->get_height());
+        love_icon->set_max_height(love_icon->get_height());
         love_icon->set_nine_slice_margin(0.0f);
       }
       love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(m_track_id));

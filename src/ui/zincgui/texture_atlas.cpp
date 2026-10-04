@@ -57,9 +57,8 @@ bool zincgui::TextureAtlas::add_texture(std::string_view id, const std::filesyst
   auto at = *opt_at;
 
   TextureAtlasData uv;
-  uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(),
-            (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.start = {at.x / (float)atlas_size_px, at.y / (float)atlas_size_px};
+  uv.end = {(at.x + width) / (float)atlas_size_px, (at.y + height) / (float)atlas_size_px};
   uv.width = width;
   uv.height = height;
   textures[std::string(id)] = uv;
@@ -82,9 +81,8 @@ bool zincgui::TextureAtlas::add_texture(std::string_view id, const std::vector<u
   auto at = *opt_at;
 
   TextureAtlasData uv;
-  uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(),
-            (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.start = {at.x / (float)atlas_size_px, at.y / (float)atlas_size_px};
+  uv.end = {(at.x + width) / (float)atlas_size_px, (at.y + height) / (float)atlas_size_px};
   uv.width = width;
   uv.height = height;
   textures[std::string(id)] = uv;
@@ -107,9 +105,8 @@ bool zincgui::TextureAtlas::add_texture(std::string_view id, const u8* data_, i3
   auto at = *opt_at;
 
   TextureAtlasData uv;
-  uv.start = {at.x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-  uv.end = {(at.x + width) / (float)atlas_size_px + half_pixel(),
-            (at.y + height) / (float)atlas_size_px + half_pixel()};
+  uv.start = {at.x / (float)atlas_size_px, at.y / (float)atlas_size_px};
+  uv.end = {(at.x + width) / (float)atlas_size_px, (at.y + height) / (float)atlas_size_px};
   uv.width = width;
   uv.height = height;
   textures[std::string(id)] = uv;
@@ -170,9 +167,8 @@ bool zincgui::TextureAtlas::add_texture_row(std::span<const std::string> ids, co
     TextureAtlasData uv;
     i32 frag_x = at.x + (i32)i * frag_width;
 
-    uv.start = {frag_x / (float)atlas_size_px - half_pixel(), at.y / (float)atlas_size_px - half_pixel()};
-    uv.end = {(frag_x + frag_width) / (float)atlas_size_px + half_pixel(),
-              (at.y + height) / (float)atlas_size_px + half_pixel()};
+    uv.start = {frag_x / (float)atlas_size_px, at.y / (float)atlas_size_px};
+    uv.end = {(frag_x + frag_width) / (float)atlas_size_px, (at.y + height) / (float)atlas_size_px};
     uv.width = frag_width;
     uv.height = height;
 
@@ -193,8 +189,8 @@ bool zincgui::TextureAtlas::remove_texture(std::string_view id) {
     std::string id_str(id);
     auto& uv = textures.at(id_str);
 
-    i32 px = std::round((uv.start.x + half_pixel()) * atlas_size_px);
-    i32 py = std::round((uv.start.y + half_pixel()) * atlas_size_px);
+    i32 px = std::round((uv.start.x) * atlas_size_px);
+    i32 py = std::round((uv.start.y) * atlas_size_px);
 
     mark_space_for_texture(px - margin_px, py - margin_px, uv.width + 2 * margin_px, uv.height + 2 * margin_px, true);
 

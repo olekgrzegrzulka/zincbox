@@ -135,14 +135,14 @@ TabBar::TabBar(Root& ui_) : Widget(ui_) {
 
   static const float scale = zincbox::ui_scale();
 
-  button_right = &add_child<Button>("");
+  button_right = &add_child<ZincboxButton>("tab_right");
   button_right->add_image("right");
   button_right->set_ignore_parents_layout(true);
   button_right->set_x(-2 * scale);
   button_right->set_parent_anchor(Anchor::CENTER_LEFT);
   button_right->set_anchor(Anchor::CENTER_RIGHT);
 
-  button_left = &add_child<Button>("");
+  button_left = &add_child<ZincboxButton>("tab_left");
   button_left->add_image("left");
   button_left->set_ignore_parents_layout(true);
   button_left->set_x(2 * scale);

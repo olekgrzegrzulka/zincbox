@@ -22,7 +22,7 @@ namespace zincgui {
 
   class TextureAtlas {
     public:
-      TextureAtlas(i32 atlas_size_ = 2048, i32 margin_px_ = 1, i32 grid_size_px_ = 4);
+      TextureAtlas(i32 atlas_size_ = 1024, i32 margin_px_ = 4, i32 grid_size_px_ = 4);
 
       i32 texture_count() const { return textures.size(); }
 
@@ -66,8 +66,6 @@ namespace zincgui {
       void mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, bool unmark = false);
 
       std::optional<vec2i> paste_texture(stbi_uc* data, i32 width, i32 height);
-
-      float half_pixel() { return 1.0 / (atlas_size_px * 2.0); }
 
       void regenerate_texture();
 

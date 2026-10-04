@@ -65,9 +65,9 @@ class PopupSearch : public Popup {
       playlists_container->props.playlist_ids = {};
       playlists_container->props.panel_search_visible = false;
       playlists_container->props.is_scrollable = false;
-      playlists_container->props.cover_width = 48;
-      playlists_container->props.cover_min_horizontal_spacing = 12;
-      playlists_container->props.cover_min_vertical_spacing = 44;
+      // playlists_container->props.cover_width = 48;
+      // playlists_container->props.cover_min_horizontal_spacing = 12;
+      // playlists_container->props.cover_min_vertical_spacing = 44;
 
       label_no_results = &scrollable_content->add_child<zincgui::Label>(tr::get("search.no_results"));
       label_no_results->set_text_color(theme::config().text_color_muted);
