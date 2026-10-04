@@ -39,13 +39,16 @@ namespace zincgui {
       void set_resize_to_text_extents(bool to);
       WIDGET_DEF_GETTER(resize_to_text_extents);
       WIDGET_DEF_GETTER(text);
-      WIDGET_DEF_GETTER(text_extents);
+      vec2i get_text_extents() {
+        if (text_dirty) { update_text(); }
+        return text_extents;
+      }
       WIDGET_DEF_SETTER_DIRTY(label_anchor);
 
       void set_text(std::string_view text_) {
         if (text == text_) { return; }
         text = text_;
-        // text_dirty = true;
+        text_dirty = true;
         mark_dirty();
       }
 
@@ -58,14 +61,14 @@ namespace zincgui {
       void set_text_color(glm::vec3 text_color_) {
         if (text_color == text_color_) { return; }
         text_color = text_color_;
-        // text_dirty = true;
+        text_dirty = true;
         mark_dirty();
       }
 
       void append_text(std::string_view append) {
         if (append.empty()) { return; }
         text += append;
-        // text_dirty = true;
+        text_dirty = true;
         mark_dirty();
       }
 
@@ -77,16 +80,16 @@ namespace zincgui {
         text.erase(it, text.end());
 
         mark_dirty();
+        text_dirty = true;
         return true;
       }
 
       void update() override;
-
       void draw() override;
 
     protected:
-      void update_mesh();
-
+      void update_text();
+      bool text_dirty = false;
       void setup_buffers();
   };
 

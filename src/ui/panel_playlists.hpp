@@ -79,7 +79,6 @@ class PanelPlaylists : public zincgui::ColorRect {
     void reflow();
 
   protected:
-    static constexpr i32 PANEL_SEARCH_HEIGHT = 36;
     static constexpr i32 PANEL_SEARCH_PADDING = 4;
     double scroll_px = 0.0;
     double target_scroll_px = 0.0;

@@ -38,7 +38,7 @@ Notification::Notification(zincgui::Root& ui_, bool error)
 
 void Notification::update() {
   if (timer > 0) { timer -= 1; }
-  set_size(label->get_text_extents() + vec2f{32.0f, 24.0f});
+  set_size(label->get_text_extents() + vec2i{32, 24});
   Sprite::update();
 }
 
@@ -53,21 +53,18 @@ InterfaceNotifications::InterfaceNotifications(zincgui::Root& ui_) : Widget(ui_)
 void InterfaceNotifications::push(std::string_view message) {
   auto& w = add_child<Notification>();
   w.label->set_text(message);
-  w.label->update();
   notifications.emplace_back(&w);
 }
 
 void InterfaceNotifications::push_error(std::string_view message) {
   auto& w = add_child<Notification>(true);
   w.label->set_text(message);
-  w.label->update();
   notifications.emplace_back(&w);
 }
 
 Notification* InterfaceNotifications::push_persistent(std::string_view message) {
   auto& w = add_child<Notification>();
   w.label->set_text(message);
-  w.label->update();
   w.timer = -1;
   notifications.emplace_back(&w);
   return &w;

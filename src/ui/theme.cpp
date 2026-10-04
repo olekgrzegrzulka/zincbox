@@ -349,6 +349,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   add_custom_slider("volume_bar", "ui/volume_bar_track.png", "ui/volume_bar_thumb.png");
   add_custom_button("spinner_decrease", "ui/spinner_decrease.png");
   add_custom_button("spinner_increase", "ui/spinner_increase.png");
+  atlas_add_texture("spinner_decrease_icon", {"ui/spinner_decrease_icon.png"});
+  atlas_add_texture("spinner_increase_icon", {"ui/spinner_increase_icon.png"});
   atlas_add_texture("text_input_focused", {"ui/text_input_focused.png"});
   atlas_add_texture("text_input_idle", {"ui/text_input_idle.png"});
   atlas_add_texture("tooltip", {"ui/tooltip.png"});

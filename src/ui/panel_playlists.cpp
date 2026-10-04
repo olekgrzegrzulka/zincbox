@@ -185,6 +185,8 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
 }
 
 PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
+  i32 PANEL_SEARCH_HEIGHT = 2 * PANEL_SEARCH_PADDING + 8 * zincbox::ui_scale() + zincbox::font_size();
+
   auto& config = theme::config().panel_playlists;
   set_color(config.color);
   set_clip_children(true);
@@ -206,6 +208,7 @@ PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
   panel_search->set_ignore_parents_layout(true);
 
   search_bar = &panel_search->add_child<TextInput>();
+  search_bar->set_fixed_height(8 * zincbox::ui_scale() + zincbox::font_size());
   search_bar->set_on_text_changed([this]() { recreate(); });
   button_clear_search = &search_bar->add_child<Button>();
 
@@ -400,7 +403,9 @@ void PanelPlaylists::reflow() {
   albums_container->set_height(content_height);
 }
 
-void PanelPlaylists::input() {
+void PanelPlaylists::input() { ColorRect::input(); }
+
+void PanelPlaylists::update() {
   if (props_old != props) {
     recreate();
     props_old = props;
@@ -412,23 +417,16 @@ void PanelPlaylists::input() {
   albums_container->set_y(props.panel_search_visible
                             ? (panel_search->get_height() + 2 * PANEL_SEARCH_PADDING) - std::floor(scroll_px)
                             : -std::floor(scroll_px));
-  if (albums_container_prev_y != albums_container->get_y()) { ui.mark_dirty_recursive(albums_container); }
 
   double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
   scroll_px = std::lerp(scroll_px, target_scroll_px, t);
 
-  ColorRect::input();
+  ColorRect::update();
 }
-
-void PanelPlaylists::update() { ColorRect::update(); }
 
 void PanelPlaylists::show() {
   set_is_drawn(true);
   set_is_updated(true);
-  input();
-  update();
-  scrollbar->input();
-  scrollbar->update();
 }
 
 void PanelPlaylists::hide() {

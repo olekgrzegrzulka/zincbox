@@ -32,10 +32,7 @@ void zincgui::Button::set_texture_idle(std::string id) {
   uv_end_idle = val->get().end;
   texture_width = val->get().width;
   texture_height = val->get().height;
-  if (state == ButtonState::IDLE) {
-    set_sprite_idle();
-    mark_dirty();
-  } // FIXME check if texture actually changed
+  if (state == ButtonState::IDLE) { set_sprite_idle(); }
 }
 void zincgui::Button::set_texture_hovered(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
@@ -47,10 +44,7 @@ void zincgui::Button::set_texture_hovered(std::string id) {
   uv_end_hovered = val->get().end;
   texture_width = val->get().width;
   texture_height = val->get().height;
-  if (state == ButtonState::HOVERED) {
-    set_sprite_hovered();
-    mark_dirty();
-  } // FIXME check if texture actually changed
+  if (state == ButtonState::HOVERED) { set_sprite_hovered(); }
 }
 void zincgui::Button::set_texture_pressed(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
@@ -62,10 +56,7 @@ void zincgui::Button::set_texture_pressed(std::string id) {
   uv_end_pressed = val->get().end;
   texture_width = val->get().width;
   texture_height = val->get().height;
-  if (state == ButtonState::PRESSED) {
-    set_sprite_pressed();
-    mark_dirty();
-  } // FIXME check if texture actually changed
+  if (state == ButtonState::PRESSED) { set_sprite_pressed(); }
 }
 void zincgui::Button::set_texture_disabled(std::string id) {
   auto val = ui.get_texture_atlas().get(id);
@@ -77,10 +68,7 @@ void zincgui::Button::set_texture_disabled(std::string id) {
   uv_end_disabled = val->get().end;
   texture_width = val->get().width;
   texture_height = val->get().height;
-  if (state == ButtonState::DISABLED) {
-    set_sprite_disabled();
-    mark_dirty();
-  } // FIXME check if texture actually changed
+  if (state == ButtonState::DISABLED) { set_sprite_disabled(); }
 }
 
 void zincgui::Button::event(Input::InputEventMouseButton& ev) {

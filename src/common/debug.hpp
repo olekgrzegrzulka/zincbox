@@ -27,13 +27,13 @@ struct ScopeTimer {
 
     ~ScopeTimer() {
       auto end_time = std::chrono::high_resolution_clock::now();
-      auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+      auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
-      if (milliseconds.count() >= ms_threshold) {
+      if (microseconds.count() >= ms_threshold) {
         if (message.empty()) {
-          out::debug_info("took {}ms", milliseconds.count());
+          out::debug_info("took {}ms", microseconds.count() / 1000.0);
         } else {
-          out::debug_info("{} took {}ms", message, milliseconds.count());
+          out::debug_info("{} took {}ms", message, microseconds.count() / 1000.0);
         }
       }
     }

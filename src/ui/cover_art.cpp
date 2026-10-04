@@ -71,8 +71,6 @@ void zincbox::ui::cover_art::init() {
   atlas.set_fallback_texture("cover_unknown");
 }
 
-void zincbox::ui::cover_art::bind() { atlas.bind(2); }
-
 void clean() {
   for (auto&& id : lru.evict(16)) {
     atlas.remove_texture(id);

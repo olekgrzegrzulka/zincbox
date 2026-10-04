@@ -27,8 +27,6 @@ class PanelQueue : public zincgui::Widget {
       set_is_drawn(true);
       set_is_updated(true);
       recreate();
-      input();
-      update();
       panel_tracklist->show();
     }
 

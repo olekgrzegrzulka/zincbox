@@ -141,14 +141,22 @@ void zincgui::Sprite::set_texture(const std::string& id, bool resize_to_texture_
     out::debug_warn("atlas texture not found: {}", id);
     return;
   }
-  uv_start = val->get().start;
-  uv_end = val->get().end;
-  texture_width = val->get().width;
-  texture_height = val->get().height;
-  if (resize_to_texture_size) {
-    width = texture_width;
-    height = texture_height;
+
+  set_uv_start(val->get().start);
+  set_uv_end(val->get().end);
+
+  if (texture_width != val->get().width) {
+    texture_width = val->get().width;
+    mark_dirty();
   }
 
-  mark_dirty(); // FIXME check if texture actually changed
+  if (texture_height != val->get().height) {
+    texture_height = val->get().height;
+    mark_dirty();
+  }
+
+  if (resize_to_texture_size) {
+    set_width(texture_width);
+    set_height(texture_height);
+  }
 }

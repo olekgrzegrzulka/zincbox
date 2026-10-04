@@ -26,24 +26,16 @@ class PopupSearch : public Popup {
       playlist_ids.reserve(MAX_PLAYLISTS);
       found_tracks.reserve(MAX_TRACKS);
 
-      get_layout().enabled = false;
+      set_layout("ttb expand fill m:8 s:8");
 
       search_bar = &add_child<zincgui::TextInput>();
       search_bar->set_on_text_changed([this]() { update_search_results(); });
-      search_bar->set_height(22);
-      search_bar->set_min_height(22);
-      search_bar->set_max_height(22);
-      search_bar->set_anchor(zincgui::Anchor::TOP);
-      search_bar->set_parent_anchor(zincgui::Anchor::TOP);
-      search_bar->set_pos(0, 8);
+      search_bar->set_fixed_height(8 * zincbox::ui_scale() + zincbox::font_size());
       search_bar->set_focused(true);
 
       search_results = &add_child<zincgui::ColorRect>(theme::config().panel_playlists.color);
       search_results->set_layout("ltr fill expand");
       search_results->set_clip_children(true);
-      search_results->set_anchor(zincgui::Anchor::TOP);
-      search_results->set_parent_anchor(zincgui::Anchor::TOP);
-      search_results->set_pos(0, 8 + search_bar->get_height() + 8);
 
       scrollable_content = &search_results->add_child<Widget>();
       scrollable_content->set_clip_children(true);
@@ -88,13 +80,8 @@ class PopupSearch : public Popup {
       tracks_container->set_layout("ttb fill fit expand");
 
       buttons = &add_child<Widget>();
-      buttons->set_layout("ltr fill fit expand m:0 s:16");
-      buttons->set_height(32);
-      buttons->set_min_height(32);
-      buttons->set_max_height(32);
-      buttons->set_anchor(zincgui::Anchor::BOTTOM);
-      buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
-      buttons->set_pos(8, -8);
+      buttons->set_layout("ltr expand fill m:0 s:8");
+      buttons->set_fixed_height(32 * zincbox::ui_scale());
       button_close = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.close"));
       button_close->on_press([this]() {
         if (on_closed) { on_closed(); }
@@ -154,8 +141,7 @@ class PopupSearch : public Popup {
         auto* w = &tracks_container->add_child<WidgetTrack>();
         w->item_index(tracks_container->get_children().size() - 1);
         w->track_id(ti.track_id).track_number(i);
-        w->set_min_height(track_height);
-        w->set_max_height(track_height);
+        w->set_fixed_height(track_height);
         w->on_press([this, ti, w]() {
           if (on_track_lmb) { on_track_lmb(ti, w); }
         });
@@ -173,8 +159,8 @@ class PopupSearch : public Popup {
     }
 
     void update() override {
-      set_width(std::clamp(ui.get_window_width() - 100, 300, 600));
-      set_height(std::clamp(ui.get_window_height() - 100, 300, 500));
+      set_width(get_max_content_width());
+      set_height(get_max_content_height());
 
       if (checkbox_search_all_collections_state_old != checkbox_search_all_collections->is_checked()) {
         checkbox_search_all_collections_state_old = checkbox_search_all_collections->is_checked();
@@ -192,11 +178,8 @@ class PopupSearch : public Popup {
           w->set_y(-std::floor(scroll_px) + y_sum);
           y_sum += w->get_height();
         }
-
-        ui.mark_dirty_recursive(scrollable_content);
       }
 
-      search_bar->set_width(get_width() - 16);
       label_tracks->set_is_drawn(found_tracks.size() > 0);
       if (playlist_ids.size() == 0 && found_tracks.size() == 0) {
         bool no_search_text = sanitize_query(search_bar->label.get_text()).empty();
@@ -204,11 +187,6 @@ class PopupSearch : public Popup {
       } else {
         label_no_results->set_is_drawn(false);
       }
-
-      search_results->set_width(get_width() - 16);
-      search_results->set_height(get_height() - (22 + 32 + 4 * 8));
-
-      buttons->set_width(get_width() - 16);
 
       playlists_container->set_width(scrollable_content->get_width());
       if (playlist_ids.size() > 0) {
@@ -229,8 +207,6 @@ class PopupSearch : public Popup {
       scrollbar->set_content_size(content_size);
       scrollbar->set_page_size(page_size);
 
-      scrollbar->update();
-      search_results->update();
       tracks_container->set_width(scrollable_content->get_width());
       playlists_container->set_width(scrollable_content->get_width());
 

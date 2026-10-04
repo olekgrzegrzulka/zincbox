@@ -18,21 +18,19 @@ class WidgetPlaylistHeader : public zincgui::Widget {
       playlist_id = playlist_id_;
       auto playlist = db::playlist_by_id(playlist_id);
 
-      set_layout("ttb m:0 s:0 fit expand");
+      set_layout("ttb m:0 s:0 expand");
 
       i32 header_height = theme::config().panel_tracklist.header_height;
       i32 header_spacing = theme::config().panel_tracklist.header_spacing;
 
       auto& header_container = add_child<zincgui::Widget>();
       header_container.set_height((header_height + 2 * header_spacing) * scale);
-      header_container.set_layout("s:0 fit fill expand");
+      header_container.set_layout("s:0 fill expand");
       header_container.get_layout().margin.x = 4 * scale;
       header_container.get_layout().margin.y = header_spacing;
 
       auto& header = header_container.add_child<zincgui::Sprite>("panel_playlists_header");
-      // header.set_anchor(Anchor::CENTER);
-      // header.set_parent_anchor(Anchor::CENTER);
-      header.set_layout("ltr fit fill");
+      header.set_layout("ltr fill");
       header.get_layout().spacing = 8 * scale;
       header.get_layout().margin.x = 8 * scale;
       header.set_nine_slice_margin(8.0f);
@@ -43,7 +41,7 @@ class WidgetPlaylistHeader : public zincgui::Widget {
       label_author.set_text_color(theme::config().panel_tracklist.header_author_color);
       label_author.set_label_anchor(zincgui::Anchor::LEFT);
       label_author.set_is_drawn(!label_author.get_text().empty());
-      label_author.update();
+      // label_author.update_text();
       label_author.set_max_width(label_author.get_text_extents().x);
       auto& label_name = header.add_child<zincgui::Label>();
       label_name.set_text(playlist.has_value() ? playlist->get().name : "?");
