@@ -22,15 +22,14 @@ namespace zincgui {
 
 class SpriteAlbumCover : public zincgui::Sprite {
   public:
-    SpriteAlbumCover(zincgui::Root& ui_, std::optional<db::playlist_id_t>, vec2i cover_size_);
+    SpriteAlbumCover(zincgui::Root& ui_, std::optional<db::playlist_id_t>, vec2i cover_size_, bool is_add_button);
     bool set_cover(std::optional<db::playlist_id_t>);
     zincgui::TextureAtlas& get_texture_atlas() override;
 };
 
 class WidgetAlbumCover : public zincgui::Button {
   public:
-    WidgetAlbumCover(zincgui::Root& ui_, std::optional<size_t> playlist_id, vec2i total_size_, vec2i cover_size_,
-                     bool is_add_button_ = false);
+    WidgetAlbumCover(zincgui::Root& ui_, std::optional<size_t> playlist_id, bool is_add_button_ = false);
     ~WidgetAlbumCover();
     void draw() override;
     void update() override;
@@ -53,8 +52,6 @@ class WidgetAlbumCover : public zincgui::Button {
   protected:
     bool m_is_add_button = false;
     Signal<>::slot_key slot_on_track_changed;
-    rgba label_title_text_color{};
-    rgba label_author_text_color{};
 };
 
 class PanelPlaylists : public zincgui::ColorRect {
@@ -107,10 +104,6 @@ class PanelPlaylists : public zincgui::ColorRect {
         bool button_sort_by_visible = true;
         bool button_add_playlist_visible = true;
         bool is_scrollable = true;
-
-        i32 cover_width = 64;
-        i32 cover_min_horizontal_spacing = 12;
-        i32 cover_min_vertical_spacing = 46;
 
         bool operator==(const Props&) const = default;
     };

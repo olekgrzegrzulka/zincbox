@@ -17,6 +17,7 @@ struct Settings {
       interface.scale = std::clamp(interface.scale, 75, 200);
       interface.font_size = std::clamp(interface.font_size, 8, 32);
       interface.scrolling_speed = std::clamp(interface.scrolling_speed, 10.0f, 150.0f);
+      interface.cover_size = std::clamp(interface.cover_size, 16, 256);
     }
 
     struct General {
@@ -36,5 +37,6 @@ struct Settings {
         i32 scale = 100;
         i32 font_size = 14;
         float scrolling_speed = 40.0f;
+        i32 cover_size = 64;
     } interface;
 };
