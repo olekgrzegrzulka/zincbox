@@ -1897,12 +1897,14 @@ static void handle_drag_and_drop_start() {
   handle_drag_and_drop_clear();
 
   if (panel_tracklist->get_is_drawn() && !panel_tracklist->selection().empty()) {
-    if (hovered_track && !hovered_track->is_selected()) { return; }
+    bool hovering = hovered_track && hovered_track->is_selected();
+    if (!hovering) { return; }
   }
 
   if (panel_queue->get_is_drawn() && !panel_queue->selection().empty()) {
-    if (hovered_track && !hovered_track->is_selected()) { return; }
-    if (hovered_queue_item && !hovered_queue_item->is_selected()) { return; }
+    bool hovering = hovered_track && hovered_track->is_selected();
+    hovering |= hovered_queue_item && hovered_queue_item->is_selected();
+    if (!hovering) { return; }
   }
 
   if (panel_tracklist->get_is_drawn()) {
