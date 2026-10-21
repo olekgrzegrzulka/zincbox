@@ -13,7 +13,6 @@
 #include "core/cover_art.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
 #include "lib/stb_image/stb_image.h"
 #include "ui/theme.hpp"
 #include "ui/zincgui/texture_atlas.hpp"

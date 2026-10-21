@@ -11,7 +11,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "theme.hpp"
 #include "ui/cover_art.hpp"
 #include "ui/panel_playlists.hpp"

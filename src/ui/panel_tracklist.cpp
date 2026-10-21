@@ -12,7 +12,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "theme.hpp"
 #include "ui/tr.hpp"
 #include "ui/widget_queue_playlist_collection.hpp"

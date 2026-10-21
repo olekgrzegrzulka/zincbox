@@ -1,7 +1,7 @@
 #include "panel_queue.hpp"
 #include <vector>
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "ui/panel_tracklist.hpp"
 #include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"

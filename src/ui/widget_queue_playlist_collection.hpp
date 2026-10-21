@@ -7,7 +7,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "core/settings.hpp"
 #include "theme.hpp"
 #include "ui/cover_art.hpp"
