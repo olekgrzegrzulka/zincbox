@@ -26,7 +26,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "core/queue_element.hpp"
 #include "core/settings.hpp"
 #ifdef ZINCBOX_HAS_GUI
@@ -165,6 +165,8 @@ void zincbox::apply_loaded_state() {
   player::set_repeat_mode(s_loaded_state.player.repeat_mode);
   player::set_shuffle_mode(s_loaded_state.player.shuffle_mode);
   player::set_volume(s_loaded_state.player.volume);
+  player::set_crossfade(s_loaded_state.settings.playback.crossfade);
+  player::set_equalizer(s_loaded_state.settings.playback.equalizer);
   player::seek_ms(s_loaded_state.player.timestamp);
 
   for (auto& track_serialized : s_loaded_state.player.queue) {
@@ -182,9 +184,10 @@ void zincbox::apply_loaded_state() {
     player::enqueue(player::QueueTrack(track.value()), player::get_playing_queue().size());
   }
 
-  player::set_playing_index(s_loaded_state.player.queue_index);
-  player::seek_ms(s_loaded_state.player.timestamp);
   player::pause();
+  player::set_playing_index(s_loaded_state.player.queue_index);
+  player::pause();
+  player::seek_ms(s_loaded_state.player.timestamp);
   player::signal_on_queue_changed.emit(false);
   player::signal_on_track_changed.emit();
 

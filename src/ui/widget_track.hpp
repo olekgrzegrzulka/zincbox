@@ -5,7 +5,7 @@
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "core/settings.hpp"
 #include "theme.hpp"
 #include "ui/zincgui/button.hpp"
@@ -92,9 +92,7 @@ class WidgetTrack final : public zincgui::Button {
         label_track_title->set_label_anchor(zincgui::Anchor::LEFT);
         label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
       }
-      if (track.has_value()) {
-        label_track_title->set_text(track->get().pretty_title());
-      }
+      if (track.has_value()) { label_track_title->set_text(track->get().pretty_title()); }
 
       if (!love_icon) {
         love_icon = &add_child<Sprite>("love");

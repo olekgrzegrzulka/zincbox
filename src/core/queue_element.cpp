@@ -7,7 +7,7 @@
 #include "common/random.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 
 namespace player {
 

@@ -2,7 +2,7 @@
 #include <string>
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zb_widgets.hpp"
