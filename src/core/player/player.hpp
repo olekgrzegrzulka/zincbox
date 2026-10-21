@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <optional>
 #include <span>
 #include <vector>
@@ -8,6 +9,7 @@
 #include "core/queue_element.hpp"
 
 namespace player {
+
   enum class RepeatMode : u8 { OFF, TRACK, ALBUM, REPEAT_MODE_SIZE };
   enum class ShuffleMode : u8 { OFF, ON, SHUFFLE_MODE_SIZE };
 
@@ -31,6 +33,12 @@ namespace player {
   void set_volume(float);
   float get_volume();
 
+  void set_crossfade(i32 ms);
+  i32 get_crossfade();
+
+  void set_equalizer(const std::array<float, 10>& gains_db);
+  const std::array<float, 10>& get_equalizer();
+
   void next_track(i32 tries = 10);
   void prev_track(i32 tries = 10);
 
@@ -51,7 +59,7 @@ namespace player {
   void set_repeat_mode(RepeatMode);
 
   extern const Signal<> signal_on_track_changed;
-  extern const Signal<bool /* track_appended_to_back */> signal_on_queue_changed;
+  extern const Signal<bool> signal_on_queue_changed;
   extern const Signal<size_t> signal_on_queue_changed_at;
 
 } // namespace player

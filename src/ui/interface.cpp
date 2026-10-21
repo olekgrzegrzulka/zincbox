@@ -24,7 +24,7 @@
 #include "core/musicdb/playlist.hpp"
 #include "core/musicdb/track.hpp"
 #include "core/musicdb/types.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "core/queue_element.hpp"
 #include "core/scanner.hpp"
 #include "core/settings.hpp"

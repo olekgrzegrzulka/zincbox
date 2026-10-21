@@ -9,7 +9,7 @@
 #include "common/logger.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
-#include "core/player.hpp"
+#include "core/player/player.hpp"
 #include "ui/theme.hpp"
 #include "ui/tr.hpp"
 

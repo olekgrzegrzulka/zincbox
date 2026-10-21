@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <array>
 #include <string>
 #include "common/types.hpp"
 
@@ -29,6 +30,8 @@ struct Settings {
         bool shuffle_allow_same_album = false;
         bool shuffle_allow_same_artist = false;
         bool restart_on_previous = true;
+        i32 crossfade = 500;
+        std::array<float, 10> equalizer{};
     } playback;
 
     struct Interface {

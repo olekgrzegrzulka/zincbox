@@ -3,7 +3,10 @@ set(CORE_SOURCES
     musicdb/collection.cpp
     musicdb/playlist.cpp
     musicdb/track.cpp
-    player.cpp
+    player/audio_engine.cpp
+    player/equalizer.cpp
+    player/player.cpp
+    player/queue.cpp
     io.cpp
     track_file.cpp
     scanner.cpp
