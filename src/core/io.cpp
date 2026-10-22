@@ -46,6 +46,18 @@ void io::open_folder_in_file_manager(const fs::path& path) {
 #endif
 }
 
+void io::open_file_in_default_editor(const fs::path& path) {
+#ifdef _WIN32
+  ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#elif __APPLE__
+  std::string command = "open \"" + path_to_utf8(path) + "\" &";
+  std::system(command.c_str());
+#else
+  std::string command = "xdg-open \"" + path_to_utf8(path) + "\" &";
+  std::system(command.c_str());
+#endif
+}
+
 fs::path io::get_user_data_path() {
   if (user_data_path.has_value()) { return user_data_path.value(); }
 

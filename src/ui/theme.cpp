@@ -461,4 +461,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   atlas_add_texture("add_playlist", {"actions/add_playlist.png"});
   atlas_add_texture("add_playlist_from_json", {"actions/add_playlist_from_json.png"});
   atlas_add_texture("add_smart_playlist", {"actions/add_smart_playlist.png"});
+
+  // settings
+  add_custom_button("settings_page_button_odd", "settings/settings_page_button_odd.png");
+  add_custom_button("settings_page_button_even", "settings/settings_page_button_even.png");
 }
