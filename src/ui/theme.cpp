@@ -465,4 +465,5 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   // settings
   add_custom_button("settings_page_button_odd", "settings/settings_page_button_odd.png");
   add_custom_button("settings_page_button_even", "settings/settings_page_button_even.png");
+  add_custom_slider("equalizer", "settings/equalizer_track.png", "settings/equalizer_thumb.png");
 }
