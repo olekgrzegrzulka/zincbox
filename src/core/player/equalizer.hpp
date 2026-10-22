@@ -5,11 +5,11 @@
 
 namespace player {
 
-  inline constexpr size_t EQ_BAND_COUNT = 10;
+  static inline constexpr size_t EQ_BAND_COUNT = 10;
   using EqualizerGains = std::array<float, EQ_BAND_COUNT>;
 
-  inline constexpr std::array<float, EQ_BAND_COUNT> EQ_FREQUENCIES = {31.25f,  62.5f,   125.0f,  250.0f,  500.0f,
-                                                                      1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f};
+  static inline constexpr std::array<float, EQ_BAND_COUNT> EQ_FREQUENCIES = {
+    31.25f, 62.5f, 125.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f};
 
   class Equalizer {
     public:

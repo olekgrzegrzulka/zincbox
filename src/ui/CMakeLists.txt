@@ -54,6 +54,7 @@ set(UI_SOURCES
     zincgui/text_input.cpp
     zincgui/scrollbar.cpp
     zincgui/color_rect.cpp
+    zincgui/layout.cpp
 )
 
 add_library(zincbox_ui STATIC ${UI_SOURCES})

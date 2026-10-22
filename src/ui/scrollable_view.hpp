@@ -23,6 +23,8 @@ class ScrollableView : public zincgui::Widget {
     zincgui::Sprite* background() { return m_background; }
     zincgui::ScrollBar* scrollbar() { return m_scrollbar; }
 
+    void set_scroll_offset(i32 scroll, bool instant = false);
+
   protected:
     i32 m_scroll_px = 0;
     i32 m_target_scroll_px = 0;
