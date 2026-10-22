@@ -14,8 +14,13 @@ namespace zincgui {
   class Widget;
 } // namespace zincgui
 
-class PanelControls : public zincgui::ColorRect {
+class PanelControls final : public zincgui::ColorRect {
   public:
+    PanelControls(const PanelControls&) = delete;
+    PanelControls(PanelControls&&) = delete;
+    PanelControls& operator=(const PanelControls&) = delete;
+    PanelControls& operator=(PanelControls&&) = delete;
+
     PanelControls(zincgui::Root& ui_);
     ~PanelControls() override;
     using ColorRect::event;
@@ -33,38 +38,38 @@ class PanelControls : public zincgui::ColorRect {
     std::function<void()> on_love_button_pressed{};
     void on_button_expand_player_pressed(std::function<void()>);
 
-  protected:
-    zincgui::Button* button_play_pause{};
-    zincgui::Button* button_stop{};
-    zincgui::Button* button_next{};
-    zincgui::Button* button_prev{};
-    zincgui::Button* button_shuffle{};
-    zincgui::Button* button_repeat{};
-    zincgui::Button* button_expand_player{};
-    zincgui::ToolTip* tooltip_button_shuffle{};
-    zincgui::ToolTip* tooltip_button_repeat{};
-    zincgui::ToolTip* tooltip_timestamp{};
-    zincgui::ToolTip* tooltip_volume{};
-    zincgui::Slider* seekbar{};
-    zincgui::Slider* volume_bar{};
-    zincgui::Label* label_progress{};
-    zincgui::Label* label_track{};
-    ZincboxButton* love_button{};
-    zincgui::ColorRect* label_track_underline{};
+  private:
+    zincgui::Button* m_button_play_pause{};
+    zincgui::Button* m_button_stop{};
+    zincgui::Button* m_button_next{};
+    zincgui::Button* m_button_prev{};
+    zincgui::Button* m_button_shuffle{};
+    zincgui::Button* m_button_repeat{};
+    zincgui::Button* m_button_expand_player{};
+    zincgui::ToolTip* m_tooltip_button_shuffle{};
+    zincgui::ToolTip* m_tooltip_button_repeat{};
+    zincgui::ToolTip* m_tooltip_timestamp{};
+    zincgui::ToolTip* m_tooltip_volume{};
+    zincgui::Slider* m_seekbar{};
+    zincgui::Slider* m_volume_bar{};
+    zincgui::Label* m_label_progress{};
+    zincgui::Label* m_label_track{};
+    ZincboxButton* m_love_button{};
+    zincgui::ColorRect* m_label_track_underline{};
 
-    bool tooltip_visibility = true;
-    bool label_track_underline_lmb = false;
-    bool label_track_underline_rmb = false;
-    i32 progress_ms_prev = -1000;
-    i32 total_ms_prev = -1000;
-    i32 tooltip_ms_prev = -1000;
-    double volume_prev = -1.0;
+    bool m_tooltip_visibility = true;
+    bool m_label_track_underline_lmb = false;
+    bool m_label_track_underline_rmb = false;
+    i32 m_progress_ms_prev = -1000;
+    i32 m_total_ms_prev = -1000;
+    i32 m_tooltip_ms_prev = -1000;
+    double m_volume_prev = -1.0;
 
-    i32 repeat_mode_prev = -1;
-    i32 shuffle_mode_prev = -1;
+    i32 m_repeat_mode_prev = -1;
+    i32 m_shuffle_mode_prev = -1;
 
-    Signal<>::slot_key slot_on_track_changed;
-    bool is_playing = false;
+    Signal<>::slot_key m_slot_on_track_changed;
+    bool m_is_playing = false;
 
   protected:
     void update_repeat_mode();

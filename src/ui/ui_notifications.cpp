@@ -1,12 +1,12 @@
+#include "ui_notifications.hpp"
 #include <string>
 #include <string_view>
 #include <vector>
-#include "interface_notifications.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/label.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/sprite.hpp"
-#include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -43,30 +43,30 @@ void Notification::update() {
 }
 
 InterfaceNotifications::InterfaceNotifications(zincgui::Root& ui_) : Widget(ui_) {
-  static const float scale = zincbox::ui_scale();
+  const float SCALE = zincbox::ui_scale();
 
   set_parent_anchor(Anchor::BOTTOM_CENTER);
-  set_y(NOTIFICATIONS_Y_OFFSET * scale);
+  set_y(NOTIFICATIONS_Y_OFFSET * SCALE);
   set_anchor(Anchor::BOTTOM_CENTER);
 }
 
 void InterfaceNotifications::push(std::string_view message) {
   auto& w = add_child<Notification>();
   w.label->set_text(message);
-  notifications.emplace_back(&w);
+  m_notifications.emplace_back(&w);
 }
 
 void InterfaceNotifications::push_error(std::string_view message) {
   auto& w = add_child<Notification>(true);
   w.label->set_text(message);
-  notifications.emplace_back(&w);
+  m_notifications.emplace_back(&w);
 }
 
 Notification* InterfaceNotifications::push_persistent(std::string_view message) {
   auto& w = add_child<Notification>();
   w.label->set_text(message);
   w.timer = -1;
-  notifications.emplace_back(&w);
+  m_notifications.emplace_back(&w);
   return &w;
 }
 
@@ -80,22 +80,22 @@ void InterfaceNotifications::dismiss_after(Notification* w, i32 frames) {
 }
 
 void InterfaceNotifications::update() {
-  static const float scale = zincbox::ui_scale();
+  const float SCALE = zincbox::ui_scale();
 
   i32 offset = 0;
-  for (auto* w : notifications) {
+  for (auto* w : m_notifications) {
     bool visible = w->timer > HIDE_TIMER_THRESHOLD || w->timer < 0;
     float target_y = visible ? -(theme::config().notification.height + offset) : OFFSCREEN_Y_POSITION;
-    w->y_lerped = w->y_lerped * LERP_FACTOR + target_y * (1.0f - LERP_FACTOR);
+    w->y_lerped = (w->y_lerped * LERP_FACTOR) + (target_y * (1.0f - LERP_FACTOR));
     w->set_y(w->y_lerped);
-    if (visible) { offset += w->get_height() + theme::config().notification.spacing * scale; }
+    if (visible) { offset += w->get_height() + (theme::config().notification.spacing * SCALE); }
 
     if (w->timer == 0) { w->set_marked_for_deletion(true); }
   }
 
-  notifications.erase(
-    std::remove_if(notifications.begin(), notifications.end(), [](Notification* w) -> bool { return w->timer == 0; }),
-    notifications.end());
+  m_notifications.erase(std::remove_if(m_notifications.begin(), m_notifications.end(),
+                                       [](Notification* w) -> bool { return w->timer == 0; }),
+                        m_notifications.end());
 
   Widget::update();
 }

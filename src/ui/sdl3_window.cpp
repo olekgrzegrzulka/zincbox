@@ -49,19 +49,22 @@ namespace zincbox {
   }
 
   i32 SDL3Window::width() const {
-    i32 w, h;
+    i32 w = 0;
+    i32 h = 0;
     SDL_GetWindowSize(m_window, &w, &h);
     return w;
   }
 
   i32 SDL3Window::height() const {
-    i32 w, h;
+    i32 w = 0;
+    i32 h = 0;
     SDL_GetWindowSize(m_window, &w, &h);
     return h;
   }
 
   vec2i SDL3Window::size() const {
-    i32 w, h;
+    i32 w = 0;
+    i32 h = 0;
     SDL_GetWindowSize(m_window, &w, &h);
     return {w, h};
   }
@@ -73,7 +76,8 @@ namespace zincbox {
   void SDL3Window::resize(i32 w, i32 h) { SDL_SetWindowSize(m_window, w, h); }
 
   vec2i SDL3Window::position() const {
-    i32 x, y;
+    i32 x = 0;
+    i32 y = 0;
     SDL_GetWindowPosition(m_window, &x, &y);
     return {x, y};
   }
@@ -134,7 +138,7 @@ namespace zincbox {
   }
 
   bool SDL3Window::vsync() const {
-    i32 v;
+    i32 v = 0;
     SDL_GL_GetSwapInterval(&v);
     return v;
   }

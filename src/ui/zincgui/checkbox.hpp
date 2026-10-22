@@ -5,8 +5,8 @@
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/label.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
-#include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -103,11 +103,11 @@ namespace zincgui {
       Sprite* sprite_check{};
       Label* label{};
       Widget* inner{};
-      TextureAtlasData uv_checkbox_idle;
-      TextureAtlasData uv_checkbox_hovered;
-      TextureAtlasData uv_checkbox_pressed;
-      TextureAtlasData uv_checkbox_disabled;
-      TextureAtlasData uv_checkbox_check;
+      TextureAtlasData uv_checkbox_idle{};
+      TextureAtlasData uv_checkbox_hovered{};
+      TextureAtlasData uv_checkbox_pressed{};
+      TextureAtlasData uv_checkbox_disabled{};
+      TextureAtlasData uv_checkbox_check{};
   };
 
 } // namespace zincgui

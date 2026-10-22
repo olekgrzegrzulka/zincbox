@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 #include "common/types.hpp"
-#include "label.hpp"
-#include "sprite.hpp"
-#include "ui.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/root.hpp"
 #include "zincbox.hpp"
 
 namespace zincgui {

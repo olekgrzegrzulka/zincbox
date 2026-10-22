@@ -63,17 +63,17 @@ namespace color_utils {
 
   static inline rgba hsl_to_rgb(float h, float s, float l, float a) {
     auto f = [&](float n) {
-      float k = std::fmod(n + h / 30.0f, 12.0f);
+      float k = std::fmod(n + (h / 30.0f), 12.0f);
       float a_coeff = s * std::min(l, 1.0f - l);
-      return l - a_coeff * std::max(-1.0f, std::min({k - 3.0f, 9.0f - k, 1.0f}));
+      return l - (a_coeff * std::max(-1.0f, std::min({k - 3.0f, 9.0f - k, 1.0f})));
     };
     return {to_u8(f(0)), to_u8(f(8)), to_u8(f(4)), to_u8(a)};
   }
 
   static inline rgba hsv_to_rgb(float h, float s, float v, float a) {
     auto f = [&](float n) {
-      float k = std::fmod(n + h / 60.0f, 6.0f);
-      return v - v * s * std::max(0.0f, std::min({k, 4.0f - k, 1.0f}));
+      float k = std::fmod(n + (h / 60.0f), 6.0f);
+      return v - (v * s * std::max(0.0f, std::min({k, 4.0f - k, 1.0f})));
     };
     return {to_u8(f(5)), to_u8(f(3)), to_u8(f(1)), to_u8(a)};
   }
@@ -88,11 +88,11 @@ namespace color_utils {
     char* p = content.data();
     char* end_ptr = p + content.size();
     while (p < end_ptr) {
-      while (p < end_ptr && (std::isspace(*p) || *p == ',')) {
+      while (p < end_ptr && ((std::isspace(*p) != 0) || *p == ',')) {
         p += 1;
       }
       if (p >= end_ptr) { break; }
-      char* next;
+      char* next = nullptr;
       float val = std::strtof(p, &next);
       if (p == next) { break; }
       nums.push_back(val);
@@ -131,7 +131,9 @@ namespace color_utils {
 
     if (str.starts_with("hsl")) {
       if (nums.size() < 3) { return std::nullopt; }
-      float h = nums[0], s = nums[1], l = nums[2];
+      float h = nums[0];
+      float s = nums[1];
+      float l = nums[2];
       if (s > 1.0f) { s /= 100.0f; }
       if (l > 1.0f) { l /= 100.0f; }
       float a = (nums.size() == 4) ? (nums[3] > 1.0f ? nums[3] / 255.0f : nums[3]) : 1.0f;
@@ -140,7 +142,9 @@ namespace color_utils {
 
     if (str.starts_with("hsv")) {
       if (nums.size() < 3) { return std::nullopt; }
-      float h = nums[0], s = nums[1], v = nums[2];
+      float h = nums[0];
+      float s = nums[1];
+      float v = nums[2];
       if (s > 1.0f) { s /= 100.0f; }
       if (v > 1.0f) { v /= 100.0f; }
       float a = (nums.size() == 4) ? (nums[3] > 1.0f ? nums[3] / 255.0f : nums[3]) : 1.0f;

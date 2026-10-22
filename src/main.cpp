@@ -8,8 +8,6 @@
 #include <SDL3/SDL.h>
 #include <glad/glad.h>
 #include <nfd.hpp>
-#include "ui/sdl3_window.hpp"
-#include "ui/zincgui/input.hpp"
 #endif
 
 int main() {

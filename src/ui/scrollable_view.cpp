@@ -3,7 +3,7 @@
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/sprite.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 
 using namespace zincgui;

@@ -17,13 +17,13 @@ namespace player {
 
   struct CmdPlay {
       size_t track_id{};
-      std::filesystem::path file_path{};
+      std::filesystem::path file_path;
       bool crossfade = false;
   };
 
   struct CmdStartAutoCrossfade {
       size_t track_id{};
-      std::filesystem::path file_path{};
+      std::filesystem::path file_path;
   };
 
   struct CmdCancelAutoCrossfade {};
@@ -59,7 +59,7 @@ namespace player {
 
   struct EvtTrackError {
       size_t track_id{};
-      std::filesystem::path file_path{};
+      std::filesystem::path file_path;
       i32 error_code{};
       bool was_auto_crossfade = false;
   };
@@ -91,8 +91,8 @@ namespace player {
       bool is_at_end() const;
 
     private:
-      struct Deck {
-          std::unique_ptr<ma_decoder> decoder{};
+      struct Deck final {
+          std::unique_ptr<ma_decoder> decoder;
           size_t track_id{};
           u64 total_frames{};
           std::atomic<u64> cursor_frames{0};
@@ -102,6 +102,9 @@ namespace player {
           bool reached_eof = false;
 
           Deck() = default;
+          Deck(const Deck&) = delete;
+          Deck& operator=(const Deck&) = delete;
+          ~Deck() = default;
           Deck(Deck&& other) noexcept
             : decoder(std::move(other.decoder)), track_id(other.track_id), total_frames(other.total_frames),
               cursor_frames(other.cursor_frames.load(std::memory_order_relaxed)), current_gain(other.current_gain),
@@ -132,46 +135,46 @@ namespace player {
                           std::unique_ptr<ma_decoder>& garbage_b);
       void push_event(AudioEvent evt);
 
-      ma_device device_{};
-      bool device_initialized_ = false;
-      u32 sample_rate_ = 48000;
+      ma_device m_device{};
+      bool m_device_initialized = false;
+      u32 m_sample_rate = 48000;
 
-      std::jthread worker_thread_{};
+      std::jthread m_worker_thread;
 
-      std::mutex cmd_mutex_{};
-      std::condition_variable cmd_cv_{};
-      std::deque<AudioCommand> cmd_queue_{};
+      std::mutex m_cmd_mutex;
+      std::condition_variable m_cmd_cv;
+      std::deque<AudioCommand> m_cmd_queue;
 
-      std::mutex evt_mutex_{};
-      std::deque<AudioEvent> evt_queue_{};
+      std::mutex m_evt_mutex;
+      std::deque<AudioEvent> m_evt_queue;
 
-      std::mutex audio_mutex_{};
-      Deck primary_{};
-      Deck outgoing_{};
-      Deck incoming_{};
+      std::mutex m_audio_mutex;
+      Deck m_primary;
+      Deck m_outgoing;
+      Deck m_incoming;
 
-      bool manual_xfade_active_ = false;
-      u64 manual_xfade_total_frames_ = 0;
-      u64 manual_xfade_current_frame_ = 0;
+      bool m_manual_xfade_active = false;
+      u64 m_manual_xfade_total_frames = 0;
+      u64 m_manual_xfade_current_frame = 0;
 
-      bool auto_xfade_active_ = false;
-      u64 auto_xfade_total_frames_ = 0;
-      u64 auto_xfade_current_frame_ = 0;
-      bool crossfade_triggered_for_current_ = false;
+      bool m_auto_xfade_active = false;
+      u64 m_auto_xfade_total_frames = 0;
+      u64 m_auto_xfade_current_frame = 0;
+      bool m_crossfade_triggered_for_current = false;
 
-      bool pause_state_ = true;
-      float pause_gain_ = 0.0f;
+      bool m_pause_state = true;
+      float m_pause_gain = 0.0f;
 
-      Equalizer eq_{};
-      std::vector<float> mix_buffer_a_{};
-      std::vector<float> mix_buffer_b_{};
+      Equalizer m_eq{};
+      std::vector<float> m_mix_buffer_a;
+      std::vector<float> m_mix_buffer_b;
 
-      std::atomic<float> volume_{0.5f};
-      std::atomic<i32> crossfade_ms_{0};
-      std::atomic<i32> current_time_ms_{0};
-      std::atomic<i32> total_duration_ms_{0};
-      std::atomic<bool> user_playing_{false};
-      std::atomic<bool> is_at_end_{false};
+      std::atomic<float> m_volume{0.5f};
+      std::atomic<i32> m_crossfade_ms{0};
+      std::atomic<i32> m_current_time_ms{0};
+      std::atomic<i32> m_total_duration_ms{0};
+      std::atomic<bool> m_user_playing{false};
+      std::atomic<bool> m_is_at_end{false};
   };
 
 } // namespace player

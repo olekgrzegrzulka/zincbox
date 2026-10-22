@@ -23,15 +23,15 @@
 #include "ui/zincgui/slider.hpp"
 #include "ui/zincgui/spinner.hpp"
 #include "ui/zincgui/text_input.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
-class PopupSettings : public Popup {
+class PopupSettings final : public Popup {
   public:
     PopupSettings(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
-      : Popup(ui_, controller_, std::move(on_close_)), initial_settings(zincbox::settings()),
-        working_settings(zincbox::settings()) {
+      : Popup(ui_, controller_, std::move(on_close_)), m_initial_settings(zincbox::settings()),
+        m_working_settings(zincbox::settings()) {
 
       set_layout("ttb expand fill m:8 s:8");
 
@@ -55,13 +55,13 @@ class PopupSettings : public Popup {
       Popup::update();
 
       bool tight_ = width < 850;
-      if (tight_ != tight) {
-        tight = tight_;
-        for (auto* label : eq_freq_labels) {
-          label->set_is_drawn(!tight);
+      if (tight_ != m_tight) {
+        m_tight = tight_;
+        for (auto* label : m_eq_freq_labels) {
+          label->set_is_drawn(!m_tight);
         }
-        for (auto* label : eq_value_labels) {
-          label->set_is_drawn(!tight);
+        for (auto* label : m_eq_value_labels) {
+          label->set_is_drawn(!m_tight);
         }
       }
     }
@@ -73,35 +73,35 @@ class PopupSettings : public Popup {
   private:
     struct SettingEntry {
         zincgui::Widget* row_widget{};
-        std::string search_blob{};
+        std::string search_blob;
     };
 
     struct SectionGroup {
-        std::string raw_title_key{};
-        std::string localized_title{};
-        std::string search_blob{};
+        std::string raw_title_key;
+        std::string localized_title;
+        std::string search_blob;
         zincgui::Label* header_label{};
         zincgui::Widget* spacer_widget{};
-        std::vector<SettingEntry> entries{};
+        std::vector<SettingEntry> entries;
     };
 
     static constexpr size_t SECTION_COUNT = 4;
 
-    Settings initial_settings{};
-    Settings working_settings{};
+    Settings m_initial_settings{};
+    Settings m_working_settings{};
 
-    zincgui::TextInput* search_bar{};
-    ScrollableView* scroll_view{};
-    zincgui::Button* btn_save{};
-    std::array<ZincboxButton*, SECTION_COUNT> page_buttons{};
-    std::array<SectionGroup, SECTION_COUNT> sections{};
-    std::array<zincgui::Slider*, player::EQ_BAND_COUNT> eq_sliders{};
-    std::array<zincgui::Label*, player::EQ_BAND_COUNT> eq_value_labels{};
-    std::array<zincgui::Label*, player::EQ_BAND_COUNT> eq_freq_labels{};
-    std::string last_search_query{};
-    bool tight = false;
+    zincgui::TextInput* m_search_bar{};
+    ScrollableView* m_scroll_view{};
+    zincgui::Button* m_btn_save{};
+    std::array<ZincboxButton*, SECTION_COUNT> m_page_buttons{};
+    std::array<SectionGroup, SECTION_COUNT> m_sections{};
+    std::array<zincgui::Slider*, player::EQ_BAND_COUNT> m_eq_sliders{};
+    std::array<zincgui::Label*, player::EQ_BAND_COUNT> m_eq_value_labels{};
+    std::array<zincgui::Label*, player::EQ_BAND_COUNT> m_eq_freq_labels{};
+    std::string m_last_search_query;
+    bool m_tight = false;
 
-    static i32 control_row_height() { return static_cast<i32>(8 * zincbox::ui_scale() + zincbox::font_size()); }
+    static i32 control_row_height() { return static_cast<i32>((8 * zincbox::ui_scale()) + zincbox::font_size()); }
 
     static std::string make_search_blob(std::string_view raw_key, std::string_view localized_text) {
       std::string combined = std::string(raw_key) + " " + std::string(localized_text);
@@ -132,9 +132,9 @@ class PopupSettings : public Popup {
       title.set_anchor(zincgui::Anchor::TOP);
       title.set_parent_anchor(zincgui::Anchor::TOP);
 
-      search_bar = &add_child<zincgui::TextInput>();
-      search_bar->set_fixed_height(control_row_height());
-      search_bar->set_on_text_changed([this]() -> void { filter_by_search(); });
+      m_search_bar = &add_child<zincgui::TextInput>();
+      m_search_bar->set_fixed_height(control_row_height());
+      m_search_bar->set_on_text_changed([this]() -> void { filter_by_search(); });
     }
 
     void build_body() {
@@ -146,22 +146,22 @@ class PopupSettings : public Popup {
       sidebar.set_layout("ttb expand m:0 s:0");
       sidebar.set_fixed_width(static_cast<i32>(130 * zincbox::ui_scale()));
 
-      scroll_view = &content.add_child<ScrollableView>();
-      scroll_view->set_weight(1.0f);
-      scroll_view->background()->set_texture("panel_dark");
-      scroll_view->content()->set_layout("ttb fit expand mx:12 my:8 s:6");
+      m_scroll_view = &content.add_child<ScrollableView>();
+      m_scroll_view->set_weight(1.0f);
+      m_scroll_view->background()->set_texture("panel_dark");
+      m_scroll_view->content()->set_layout("ttb fit expand mx:12 my:8 s:6");
 
-      constexpr std::array<std::string_view, SECTION_COUNT> category_keys = {
+      constexpr std::array<std::string_view, SECTION_COUNT> CATEGORY_KEYS = {
         "settings.category.general", "settings.category.playback", "settings.category.interface",
         "settings.category.system"};
 
       for (size_t i = 0; i < SECTION_COUNT; ++i) {
         std::string tex = (i % 2 == 0) ? "settings_page_button_odd" : "settings_page_button_even";
 
-        sections[i].raw_title_key = std::string(category_keys[i]);
-        std::string localized = tr::get(sections[i].raw_title_key);
-        sections[i].localized_title = localized;
-        sections[i].search_blob = make_search_blob(category_keys[i], localized);
+        m_sections[i].raw_title_key = std::string(CATEGORY_KEYS[i]);
+        std::string localized = tr::get(m_sections[i].raw_title_key);
+        m_sections[i].localized_title = localized;
+        m_sections[i].search_blob = make_search_blob(CATEGORY_KEYS[i], localized);
 
         auto& btn = sidebar.add_child<ZincboxButton>(tex);
         btn.get_label().set_text(localized);
@@ -171,7 +171,7 @@ class PopupSettings : public Popup {
           select_sidebar_button(i);
           scroll_to_section(i);
         });
-        page_buttons[i] = &btn;
+        m_page_buttons[i] = &btn;
       }
     }
 
@@ -189,37 +189,37 @@ class PopupSettings : public Popup {
         close();
       });
 
-      btn_save = &buttons.add_child<zincgui::Button>(tr::get("dialog.action.save"));
-      btn_save->set_weight(1.0f);
-      btn_save->on_press([this]() -> void {
-        if (working_settings == initial_settings) { return; }
-        working_settings.clamp_values();
-        if (on_save) { on_save(working_settings); }
+      m_btn_save = &buttons.add_child<zincgui::Button>(tr::get("dialog.action.save"));
+      m_btn_save->set_weight(1.0f);
+      m_btn_save->on_press([this]() -> void {
+        if (m_working_settings == m_initial_settings) { return; }
+        m_working_settings.clamp_values();
+        if (on_save) { on_save(m_working_settings); }
         close();
       });
     }
 
     void begin_section(size_t section_idx) {
-      auto* parent = scroll_view->content();
+      auto* parent = m_scroll_view->content();
       if (section_idx > 0) {
         auto& spacer = parent->add_child<zincgui::Widget>();
         spacer.set_fixed_height(static_cast<i32>(12 * zincbox::ui_scale()));
-        sections[section_idx].spacer_widget = &spacer;
+        m_sections[section_idx].spacer_widget = &spacer;
       }
 
-      auto& header = parent->add_child<zincgui::Label>(sections[section_idx].localized_title);
+      auto& header = parent->add_child<zincgui::Label>(m_sections[section_idx].localized_title);
       header.set_resize_to_text_extents(false);
       header.set_fixed_height(static_cast<i32>(24 * zincbox::ui_scale()));
       header.set_text_color(theme::config().text_color_muted);
       header.set_label_anchor(zincgui::Anchor::LEFT);
       header.set_font_size(zincbox::font_size_lg());
-      sections[section_idx].header_label = &header;
+      m_sections[section_idx].header_label = &header;
     }
 
     zincgui::ComboBox* add_row_combobox(size_t section_idx, std::string_view tr_key,
                                         std::function<void(const std::string&)> on_changed) {
       std::string localized = tr::get(std::string(tr_key));
-      auto& row = scroll_view->content()->add_child<zincgui::Widget>();
+      auto& row = m_scroll_view->content()->add_child<zincgui::Widget>();
       row.set_layout("ltr fill expand m:0 s:8");
       row.set_fixed_height(control_row_height());
 
@@ -235,7 +235,7 @@ class PopupSettings : public Popup {
         refresh_save_button_state();
       });
 
-      sections[section_idx].entries.push_back(SettingEntry{
+      m_sections[section_idx].entries.push_back(SettingEntry{
         .row_widget = &row,
         .search_blob = make_search_blob(tr_key, localized),
       });
@@ -245,7 +245,7 @@ class PopupSettings : public Popup {
     zincgui::Spinner* add_row_spinner(size_t section_idx, std::string_view tr_key, i32 min_val, i32 max_val,
                                       i32 initial_val, std::string_view postfix, std::function<void(i32)> on_changed) {
       std::string localized = tr::get(std::string(tr_key));
-      auto& row = scroll_view->content()->add_child<zincgui::Widget>();
+      auto& row = m_scroll_view->content()->add_child<zincgui::Widget>();
       row.set_layout("ltr fill expand m:0 s:8");
       row.set_fixed_height(control_row_height());
 
@@ -265,7 +265,7 @@ class PopupSettings : public Popup {
         refresh_save_button_state();
       });
 
-      sections[section_idx].entries.push_back(SettingEntry{
+      m_sections[section_idx].entries.push_back(SettingEntry{
         .row_widget = &row,
         .search_blob = make_search_blob(tr_key, localized),
       });
@@ -275,7 +275,7 @@ class PopupSettings : public Popup {
     zincgui::Checkbox* add_row_checkbox(size_t section_idx, std::string_view tr_key, bool initial_checked,
                                         std::function<void(bool)> on_changed) {
       std::string localized = tr::get(std::string(tr_key));
-      auto& checkbox = scroll_view->content()->add_child<zincgui::Checkbox>(localized);
+      auto& checkbox = m_scroll_view->content()->add_child<zincgui::Checkbox>(localized);
       checkbox.set_fixed_height(control_row_height());
       checkbox.set_checked(initial_checked);
       checkbox.on_value_changed([checkbox_ = &checkbox, this, cb = std::move(on_changed)]() -> void {
@@ -284,7 +284,7 @@ class PopupSettings : public Popup {
       });
       checkbox.set_checkbox_anchor(zincgui::Anchor::LEFT);
 
-      sections[section_idx].entries.push_back(SettingEntry{
+      m_sections[section_idx].entries.push_back(SettingEntry{
         .row_widget = &checkbox,
         .search_blob = make_search_blob(tr_key, localized),
       });
@@ -296,7 +296,7 @@ class PopupSettings : public Popup {
       std::string localized_label = tr::get(std::string(label_tr_key));
       std::string localized_btn = tr::get(std::string(btn_tr_key));
 
-      auto& row = scroll_view->content()->add_child<zincgui::Widget>();
+      auto& row = m_scroll_view->content()->add_child<zincgui::Widget>();
       row.set_layout("ltr fill expand m:0 s:8");
       row.set_fixed_height(control_row_height());
 
@@ -311,7 +311,7 @@ class PopupSettings : public Popup {
 
       std::string combined_raw = std::string(label_tr_key) + " " + std::string(btn_tr_key);
       std::string combined_loc = localized_label + " " + localized_btn;
-      sections[section_idx].entries.push_back(SettingEntry{
+      m_sections[section_idx].entries.push_back(SettingEntry{
         .row_widget = &row,
         .search_blob = make_search_blob(combined_raw, combined_loc),
       });
@@ -323,37 +323,39 @@ class PopupSettings : public Popup {
       begin_section(SEC);
 
       auto* combo_cover = add_row_combobox(SEC, "settings.playback.source_label", [this](const std::string& id) {
-        working_settings.general.cover_preference =
-          (id == "album") ? Settings::CoverPreference::Album : Settings::CoverPreference::Playlist;
+        m_working_settings.general.cover_preference =
+          (id == "album") ? Settings::CoverPreference::ALBUM : Settings::CoverPreference::PLAYLIST;
       });
       combo_cover->add_item("album", tr::get("settings.playback.source_album"));
       combo_cover->add_item("playlist", tr::get("settings.playback.source_playlist"));
-      if (working_settings.general.cover_preference == Settings::CoverPreference::Album) {
+      if (m_working_settings.general.cover_preference == Settings::CoverPreference::ALBUM) {
         combo_cover->select_item_by_id("album");
       } else {
         combo_cover->select_item_by_id("playlist");
       }
 
-      add_row_spinner(SEC, "settings.playback.volume_step", 1, 10, working_settings.general.volume_step, "%",
-                      [this](i32 val) { working_settings.general.volume_step = val; });
+      add_row_spinner(SEC, "settings.playback.volume_step", 1, 10, m_working_settings.general.volume_step, "%",
+                      [this](i32 val) { m_working_settings.general.volume_step = val; });
     }
 
     void build_playback_section() {
       constexpr size_t SEC = 1;
       begin_section(SEC);
 
-      add_row_checkbox(SEC, "settings.playback.allow_same_album", working_settings.playback.shuffle_allow_same_album,
-                       [this](bool checked) -> void { working_settings.playback.shuffle_allow_same_album = checked; });
+      add_row_checkbox(
+        SEC, "settings.playback.allow_same_album", m_working_settings.playback.shuffle_allow_same_album,
+        [this](bool checked) -> void { m_working_settings.playback.shuffle_allow_same_album = checked; });
 
-      add_row_checkbox(SEC, "settings.playback.allow_same_artist", working_settings.playback.shuffle_allow_same_artist,
-                       [this](bool checked) -> void { working_settings.playback.shuffle_allow_same_artist = checked; });
+      add_row_checkbox(
+        SEC, "settings.playback.allow_same_artist", m_working_settings.playback.shuffle_allow_same_artist,
+        [this](bool checked) -> void { m_working_settings.playback.shuffle_allow_same_artist = checked; });
 
-      add_row_checkbox(SEC, "settings.playback.restart_on_previous", working_settings.playback.restart_on_previous,
-                       [this](bool checked) -> void { working_settings.playback.restart_on_previous = checked; });
+      add_row_checkbox(SEC, "settings.playback.restart_on_previous", m_working_settings.playback.restart_on_previous,
+                       [this](bool checked) -> void { m_working_settings.playback.restart_on_previous = checked; });
 
       auto* crossfade =
-        add_row_spinner(SEC, "settings.playback.crossfade", 0, 5000, working_settings.playback.crossfade, "ms",
-                        [this](i32 val) -> void { working_settings.playback.crossfade = val; });
+        add_row_spinner(SEC, "settings.playback.crossfade", 0, 5000, m_working_settings.playback.crossfade, "ms",
+                        [this](i32 val) -> void { m_working_settings.playback.crossfade = val; });
       crossfade->set_button_step(25);
 
       build_equalizer_widget(SEC);
@@ -363,7 +365,7 @@ class PopupSettings : public Popup {
       std::string eq_title_loc = tr::get("settings.playback.equalizer");
       std::string eq_reset_loc = tr::get("settings.playback.equalizer_reset");
 
-      auto& eq_wrapper = scroll_view->content()->add_child<zincgui::Widget>();
+      auto& eq_wrapper = m_scroll_view->content()->add_child<zincgui::Widget>();
       eq_wrapper.set_layout("ttb fit expand m:0 s:6");
 
       auto& header_row = eq_wrapper.add_child<zincgui::Widget>();
@@ -379,9 +381,9 @@ class PopupSettings : public Popup {
       reset_btn.set_fixed_height(control_row_height());
       reset_btn.on_press([this]() -> void {
         for (size_t i = 0; i < player::EQ_BAND_COUNT; i += 1) {
-          working_settings.playback.equalizer[i] = 0.0f;
-          eq_sliders[i]->set_value(0.0f, false);
-          eq_value_labels[i]->set_text(format_eq_db(0.0f));
+          m_working_settings.playback.equalizer[i] = 0.0f;
+          m_eq_sliders[i]->set_value(0.0f, false);
+          m_eq_value_labels[i]->set_text(format_eq_db(0.0f));
         }
         refresh_save_button_state();
       });
@@ -394,13 +396,13 @@ class PopupSettings : public Popup {
         auto& col = bands_row.add_child<zincgui::Widget>();
         col.set_layout("ttb fill expand m:0 s:4");
 
-        float init_gain = std::clamp(working_settings.playback.equalizer[i], -12.0f, 12.0f);
+        float init_gain = std::clamp(m_working_settings.playback.equalizer[i], -12.0f, 12.0f);
 
         auto& val_label = col.add_child<zincgui::Label>(format_eq_db(init_gain));
         val_label.set_resize_to_text_extents(false);
         val_label.set_fixed_height(static_cast<i32>(16 * zincbox::ui_scale()));
         val_label.set_label_anchor(zincgui::Anchor::CENTER);
-        eq_value_labels[i] = &val_label;
+        m_eq_value_labels[i] = &val_label;
 
         auto& slider = col.add_child<ZincboxSlider>("equalizer");
         slider.set_orientation(zincgui::SliderOrientation::VERTICAL_INVERTED);
@@ -412,21 +414,21 @@ class PopupSettings : public Popup {
         slider.set_value(init_gain, false);
         slider.on_value_changed([this, i](float, float new_val) {
           float rounded = std::round(new_val * 2.0f) / 2.0f;
-          working_settings.playback.equalizer[i] = std::clamp(rounded, -12.0f, 12.0f);
-          eq_value_labels[i]->set_text(format_eq_db(working_settings.playback.equalizer[i]));
+          m_working_settings.playback.equalizer[i] = std::clamp(rounded, -12.0f, 12.0f);
+          m_eq_value_labels[i]->set_text(format_eq_db(m_working_settings.playback.equalizer[i]));
           refresh_save_button_state();
         });
-        eq_sliders[i] = &slider;
+        m_eq_sliders[i] = &slider;
 
         auto& freq_label = col.add_child<zincgui::Label>(format_eq_freq(player::EQ_FREQUENCIES[i]));
         freq_label.set_resize_to_text_extents(false);
         freq_label.set_fixed_height(static_cast<i32>(16 * zincbox::ui_scale()));
         freq_label.set_label_anchor(zincgui::Anchor::CENTER);
         freq_label.set_text_color(theme::config().text_color_muted);
-        eq_freq_labels[i] = &freq_label;
+        m_eq_freq_labels[i] = &freq_label;
       }
 
-      sections[section_idx].entries.push_back(SettingEntry{
+      m_sections[section_idx].entries.push_back(SettingEntry{
         .row_widget = &eq_wrapper,
         .search_blob = make_search_blob("settings.playback.equalizer settings.playback.equalizer_reset eq hz db",
                                         eq_title_loc + " " + eq_reset_loc),
@@ -438,33 +440,34 @@ class PopupSettings : public Popup {
       begin_section(SEC);
 
       auto* combo_theme = add_row_combobox(SEC, "settings.interface.theme_label",
-                                           [this](const std::string& id) { working_settings.interface.theme = id; });
+                                           [this](const std::string& id) { m_working_settings.interface.theme = id; });
       combo_theme->add_item("default", tr::get("settings.interface.default_theme"));
       for (const auto& t : theme::get_themes()) {
         combo_theme->add_item(t, t);
       }
-      combo_theme->select_item_by_id(working_settings.interface.theme);
+      combo_theme->select_item_by_id(m_working_settings.interface.theme);
 
-      auto* combo_lang = add_row_combobox(SEC, "settings.interface.language_label",
-                                          [this](const std::string& id) { working_settings.interface.language = id; });
+      auto* combo_lang = add_row_combobox(SEC, "settings.interface.language_label", [this](const std::string& id) {
+        m_working_settings.interface.language = id;
+      });
       for (const auto& lang : theme::get_languages()) {
         combo_lang->add_item(lang, lang);
       }
-      combo_lang->select_item_by_id(working_settings.interface.language);
+      combo_lang->select_item_by_id(m_working_settings.interface.language);
 
-      add_row_spinner(SEC, "settings.interface.scale", 75, 200, working_settings.interface.scale, "%",
-                      [this](i32 val) -> void { working_settings.interface.scale = val; });
+      add_row_spinner(SEC, "settings.interface.scale", 75, 200, m_working_settings.interface.scale, "%",
+                      [this](i32 val) -> void { m_working_settings.interface.scale = val; });
 
-      add_row_spinner(SEC, "settings.interface.font_size", 8, 32, working_settings.interface.font_size, "px",
-                      [this](i32 val) -> void { working_settings.interface.font_size = val; });
+      add_row_spinner(SEC, "settings.interface.font_size", 8, 32, m_working_settings.interface.font_size, "px",
+                      [this](i32 val) -> void { m_working_settings.interface.font_size = val; });
 
       add_row_spinner(SEC, "settings.interface.scrolling_speed", 10, 150,
-                      static_cast<i32>(working_settings.interface.scrolling_speed), "", [this](i32 val) -> void {
-                        working_settings.interface.scrolling_speed = static_cast<float>(val);
+                      static_cast<i32>(m_working_settings.interface.scrolling_speed), "", [this](i32 val) -> void {
+                        m_working_settings.interface.scrolling_speed = static_cast<float>(val);
                       });
 
-      add_row_spinner(SEC, "settings.interface.cover_size", 16, 256, working_settings.interface.cover_size, "px",
-                      [this](i32 val) -> void { working_settings.interface.cover_size = val; });
+      add_row_spinner(SEC, "settings.interface.cover_size", 16, 256, m_working_settings.interface.cover_size, "px",
+                      [this](i32 val) -> void { m_working_settings.interface.cover_size = val; });
     }
 
     void build_system_section() {
@@ -480,23 +483,25 @@ class PopupSettings : public Popup {
 
     void select_sidebar_button(size_t active_idx) {
       for (size_t j = 0; j < SECTION_COUNT; ++j) {
-        page_buttons[j]->set_is_switched(j == active_idx);
+        m_page_buttons[j]->set_is_switched(j == active_idx);
       }
     }
 
     void scroll_to_section(size_t section_idx) {
       if (section_idx >= SECTION_COUNT) { return; }
-      auto* header = sections[section_idx].header_label;
-      if (header != nullptr && header->get_is_drawn()) { scroll_view->set_scroll_offset(std::max(0, header->get_y())); }
+      auto* header = m_sections[section_idx].header_label;
+      if (header != nullptr && header->get_is_drawn()) {
+        m_scroll_view->set_scroll_offset(std::max(0, header->get_y()));
+      }
     }
 
     void filter_by_search() {
-      std::string query = sanitize_query(search_bar->label.get_text());
-      if (query == last_search_query) { return; }
-      last_search_query = query;
+      std::string query = sanitize_query(m_search_bar->label.get_text());
+      if (query == m_last_search_query) { return; }
+      m_last_search_query = query;
 
       for (size_t s = 0; s < SECTION_COUNT; ++s) {
-        auto& sec = sections[s];
+        auto& sec = m_sections[s];
         bool section_title_matches = !query.empty() && sec.search_blob.find(query) != std::string::npos;
         bool any_entry_visible = false;
 
@@ -518,11 +523,11 @@ class PopupSettings : public Popup {
         }
       }
 
-      scroll_view->set_scroll_offset(0);
-      scroll_view->content()->mark_dirty();
+      m_scroll_view->set_scroll_offset(0);
+      m_scroll_view->content()->mark_dirty();
     }
 
     void refresh_save_button_state() {
-      if (btn_save != nullptr) { btn_save->set_disabled(working_settings == initial_settings); }
+      if (m_btn_save != nullptr) { m_btn_save->set_disabled(m_working_settings == m_initial_settings); }
     }
 };

@@ -1,7 +1,7 @@
-#include "widget.hpp"
-#include "ui.hpp"
+#include "ui/zincgui/widget.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/layout.hpp"
+#include "ui/zincgui/root.hpp"
 
 vec2i zincgui::Widget::get_position(Anchor relative_to) const {
   vec2i value = anchor_to_uv(parent_anchor) * vec2f{ui.get_window_size()};

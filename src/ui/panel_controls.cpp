@@ -31,164 +31,165 @@
 using namespace zincgui;
 
 PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
+
   set_color(theme::config().panel_controls.color);
-  static const float scale = zincbox::ui_scale();
+  const float SCALE = zincbox::ui_scale();
   set_anchor(Anchor::BOTTOM);
   set_parent_anchor(Anchor::BOTTOM);
-  set_height(theme::config().panel_controls.height * scale);
+  set_height(theme::config().panel_controls.height * SCALE);
   set_layout("ltr expand fill");
-  get_layout().spacing = theme::config().panel_controls.padding * scale;
-  get_layout().set_margin(theme::config().panel_controls.padding * scale);
+  get_layout().spacing = theme::config().panel_controls.padding * SCALE;
+  get_layout().set_margin(theme::config().panel_controls.padding * SCALE);
 
-  button_prev = &add_child<ZincboxButton>("prev", theme::config().panel_controls.button_previous);
-  button_prev->set_max_width(theme::config().panel_controls.button_previous.width * scale);
-  button_prev->set_is_drawn(theme::config().panel_controls.button_previous.visible);
-  button_prev->add_image("prev");
+  m_button_prev = &add_child<ZincboxButton>("prev", theme::config().panel_controls.button_previous);
+  m_button_prev->set_max_width(theme::config().panel_controls.button_previous.width * SCALE);
+  m_button_prev->set_is_drawn(theme::config().panel_controls.button_previous.visible);
+  m_button_prev->add_image("prev");
 
-  button_play_pause = &add_child<ZincboxButton>("play_pause", theme::config().panel_controls.button_play);
-  button_play_pause->set_max_width(theme::config().panel_controls.button_play.width * scale);
-  button_play_pause->set_is_drawn(theme::config().panel_controls.button_play.visible);
-  button_play_pause->add_image("play");
+  m_button_play_pause = &add_child<ZincboxButton>("play_pause", theme::config().panel_controls.button_play);
+  m_button_play_pause->set_max_width(theme::config().panel_controls.button_play.width * SCALE);
+  m_button_play_pause->set_is_drawn(theme::config().panel_controls.button_play.visible);
+  m_button_play_pause->add_image("play");
 
-  button_stop = &add_child<ZincboxButton>("stop", theme::config().panel_controls.button_stop);
-  button_stop->set_max_width(theme::config().panel_controls.button_stop.width * scale);
-  button_stop->set_is_drawn(theme::config().panel_controls.button_stop.visible);
-  button_stop->add_image("stop");
+  m_button_stop = &add_child<ZincboxButton>("stop", theme::config().panel_controls.button_stop);
+  m_button_stop->set_max_width(theme::config().panel_controls.button_stop.width * SCALE);
+  m_button_stop->set_is_drawn(theme::config().panel_controls.button_stop.visible);
+  m_button_stop->add_image("stop");
 
-  button_next = &add_child<ZincboxButton>("next", theme::config().panel_controls.button_next);
-  button_next->set_max_width(theme::config().panel_controls.button_next.width * scale);
-  button_next->set_is_drawn(theme::config().panel_controls.button_next.visible);
-  button_next->add_image("next");
+  m_button_next = &add_child<ZincboxButton>("next", theme::config().panel_controls.button_next);
+  m_button_next->set_max_width(theme::config().panel_controls.button_next.width * SCALE);
+  m_button_next->set_is_drawn(theme::config().panel_controls.button_next.visible);
+  m_button_next->add_image("next");
 
   auto& pad = add_child<Widget>();
-  pad.set_min_width(5 * scale);
-  pad.set_max_width(5 * scale);
+  pad.set_min_width(5 * SCALE);
+  pad.set_max_width(5 * SCALE);
 
   auto& panel_middle = add_child<Widget>();
   panel_middle.set_layout("m:0 s:4 btt expand fill");
   panel_middle.set_clip_children(true);
 
-  seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
-  seekbar->set_is_drawn(theme::config().panel_controls.seekbar.visible);
+  m_seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
+  m_seekbar->set_is_drawn(theme::config().panel_controls.seekbar.visible);
   i32 track_height = theme::config().panel_controls.seekbar.track_height;
   i32 thumb_width = theme::config().panel_controls.seekbar.thumb_width;
   i32 thumb_height = theme::config().panel_controls.seekbar.thumb_height;
-  seekbar->set_track_nine_slice_margin(theme::config().panel_controls.seekbar.nine_slice_margin);
-  seekbar->set_thumb_nine_slice_margin(0);
-  seekbar->set_track_thickness(track_height);
-  seekbar->set_drag_area_inflation(std::max(16 - track_height, 0));
-  seekbar->set_thumb_thickness(thumb_height);
-  seekbar->set_thumb_length(thumb_width);
-  seekbar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
-  tooltip_timestamp = &seekbar->add_child<ToolTip>("", ToolTipPosition::ABOVE, 4);
+  m_seekbar->set_track_nine_slice_margin(theme::config().panel_controls.seekbar.nine_slice_margin);
+  m_seekbar->set_thumb_nine_slice_margin(0);
+  m_seekbar->set_track_thickness(track_height);
+  m_seekbar->set_drag_area_inflation(std::max(16 - track_height, 0));
+  m_seekbar->set_thumb_thickness(thumb_height);
+  m_seekbar->set_thumb_length(thumb_width);
+  m_seekbar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
+  m_tooltip_timestamp = &m_seekbar->add_child<ToolTip>("", ToolTipPosition::ABOVE, 4);
 
   auto& label_track_container = panel_middle.add_child<Widget>();
   label_track_container.set_layout("ltr s:4 fill");
 
-  love_button = &label_track_container.add_child<ZincboxButton>("panel_controls_love");
-  love_button->set_anchor(Anchor::RIGHT);
-  love_button->set_parent_anchor(Anchor::LEFT);
-  love_button->set_size(12, 12);
-  love_button->set_min_width(12);
-  love_button->set_max_width(12);
-  love_button->set_nine_slice_margin(0.0f);
+  m_love_button = &label_track_container.add_child<ZincboxButton>("panel_controls_love");
+  m_love_button->set_anchor(Anchor::RIGHT);
+  m_love_button->set_parent_anchor(Anchor::LEFT);
+  m_love_button->set_size(12, 12);
+  m_love_button->set_min_width(12);
+  m_love_button->set_max_width(12);
+  m_love_button->set_nine_slice_margin(0.0f);
 
-  love_button->on_press([this]() -> void {
+  m_love_button->on_press([this]() -> void {
     if (on_love_button_pressed) { on_love_button_pressed(); }
   });
 
-  label_track = &label_track_container.add_child<Label>();
-  label_track->set_label_anchor(Anchor::LEFT);
+  m_label_track = &label_track_container.add_child<Label>();
+  m_label_track->set_label_anchor(Anchor::LEFT);
 
-  label_track_underline = &label_track->add_child<ColorRect>(theme::config().text_caret_color);
-  label_track_underline->set_width(1);
-  label_track_underline->set_height(1);
-  label_track_underline->set_parent_anchor(Anchor::CENTER);
-  label_track_underline->set_anchor(Anchor::CENTER);
+  m_label_track_underline = &m_label_track->add_child<ColorRect>(theme::config().text_caret_color);
+  m_label_track_underline->set_width(1);
+  m_label_track_underline->set_height(1);
+  m_label_track_underline->set_parent_anchor(Anchor::CENTER);
+  m_label_track_underline->set_anchor(Anchor::CENTER);
 
   auto& pad2 = add_child<Widget>();
-  pad2.set_min_width(5 * scale);
-  pad2.set_max_width(5 * scale);
+  pad2.set_min_width(5 * SCALE);
+  pad2.set_max_width(5 * SCALE);
 
-  label_progress = &add_child<Label>("0:00 / 0:00");
+  m_label_progress = &add_child<Label>("0:00 / 0:00");
 
-  volume_bar = &add_child<ZincboxSlider>("volume_bar");
-  volume_bar->set_is_drawn(theme::config().panel_controls.volume_bar.visible);
-  volume_bar->set_max_width(theme::config().panel_controls.volume_bar.width * scale);
+  m_volume_bar = &add_child<ZincboxSlider>("volume_bar");
+  m_volume_bar->set_is_drawn(theme::config().panel_controls.volume_bar.visible);
+  m_volume_bar->set_max_width(theme::config().panel_controls.volume_bar.width * SCALE);
   i32 vol_track_height = theme::config().panel_controls.volume_bar.track_height;
   i32 vol_thumb_width = theme::config().panel_controls.volume_bar.thumb_width;
   i32 vol_thumb_height = theme::config().panel_controls.volume_bar.thumb_height;
-  volume_bar->set_track_nine_slice_margin(theme::config().panel_controls.volume_bar.nine_slice_margin);
-  volume_bar->set_thumb_nine_slice_margin(0);
-  volume_bar->set_track_thickness(vol_track_height);
-  volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
-  volume_bar->set_thumb_thickness(vol_thumb_height);
-  volume_bar->set_thumb_length(vol_thumb_width);
-  volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
-  volume_bar->set_min_value(0.0f);
-  volume_bar->set_max_value(1.0f);
-  volume_bar->on_value_changed([](float, float volume) -> void { player::set_volume(volume); });
-  volume_bar->on_drag_ended([](float, float volume) -> void { player::set_volume(volume); });
-  tooltip_volume = &volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
+  m_volume_bar->set_track_nine_slice_margin(theme::config().panel_controls.volume_bar.nine_slice_margin);
+  m_volume_bar->set_thumb_nine_slice_margin(0);
+  m_volume_bar->set_track_thickness(vol_track_height);
+  m_volume_bar->set_drag_area_inflation(std::max(16 - vol_track_height, 0));
+  m_volume_bar->set_thumb_thickness(vol_thumb_height);
+  m_volume_bar->set_thumb_length(vol_thumb_width);
+  m_volume_bar->set_thumb_constraint(ThumbConstraint::INSIDE_TRACK);
+  m_volume_bar->set_min_value(0.0f);
+  m_volume_bar->set_max_value(1.0f);
+  m_volume_bar->on_value_changed([](float, float volume) -> void { player::set_volume(volume); });
+  m_volume_bar->on_drag_ended([](float, float volume) -> void { player::set_volume(volume); });
+  m_tooltip_volume = &m_volume_bar->add_child<ToolTip>("", ToolTipPosition::ABOVE, -4);
 
-  button_shuffle = &add_child<ZincboxButton>("shuffle", theme::config().panel_controls.button_shuffle);
-  button_shuffle->set_max_width(theme::config().panel_controls.button_shuffle.width * scale);
-  button_shuffle->set_is_drawn(theme::config().panel_controls.button_shuffle.visible);
-  button_shuffle->add_image("shuffle");
+  m_button_shuffle = &add_child<ZincboxButton>("shuffle", theme::config().panel_controls.button_shuffle);
+  m_button_shuffle->set_max_width(theme::config().panel_controls.button_shuffle.width * SCALE);
+  m_button_shuffle->set_is_drawn(theme::config().panel_controls.button_shuffle.visible);
+  m_button_shuffle->add_image("shuffle");
   update_shuffle_mode();
-  tooltip_button_shuffle = &button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
+  m_tooltip_button_shuffle = &m_button_shuffle->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  button_repeat = &add_child<ZincboxButton>("repeat", theme::config().panel_controls.button_repeat);
-  button_repeat->set_max_width(theme::config().panel_controls.button_repeat.width * scale);
-  button_repeat->set_is_drawn(theme::config().panel_controls.button_repeat.visible);
-  button_repeat->add_image("repeat");
+  m_button_repeat = &add_child<ZincboxButton>("repeat", theme::config().panel_controls.button_repeat);
+  m_button_repeat->set_max_width(theme::config().panel_controls.button_repeat.width * SCALE);
+  m_button_repeat->set_is_drawn(theme::config().panel_controls.button_repeat.visible);
+  m_button_repeat->add_image("repeat");
   update_repeat_mode();
-  tooltip_button_repeat = &button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
+  m_tooltip_button_repeat = &m_button_repeat->add_child<ToolTip>("", ToolTipPosition::ABOVE, 8);
 
-  button_expand_player =
+  m_button_expand_player =
     &add_child<ZincboxButton>("expand_player", theme::config().panel_controls.button_expand_player);
-  button_expand_player->set_max_width(theme::config().panel_controls.button_expand_player.width * scale);
-  button_expand_player->add_image("expand_player");
+  m_button_expand_player->set_max_width(theme::config().panel_controls.button_expand_player.width * SCALE);
+  m_button_expand_player->add_image("expand_player");
 
   auto on_track_changed = [this]() -> void {
     auto playing = player::get_playing_track();
     if (!playing.has_value()) {
-      label_track->set_text("");
+      m_label_track->set_text("");
       update_love_state(false);
     } else {
       auto& track = db::track_by_id(playing->track_id)->get();
-      label_track->set_text(track.pretty_name());
+      m_label_track->set_text(track.pretty_name());
       bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
       update_love_state(is_loved);
     }
-    label_track->set_min_width(label_track->get_text_extents().x);
-    label_track->set_max_width(label_track->get_text_extents().x);
-    label_track_underline->set_width(label_track->get_text_extents().x);
-    label_track_underline->set_y(std::floor(label_track->get_text_extents().y / 2.0f));
+    m_label_track->set_min_width(m_label_track->get_text_extents().x);
+    m_label_track->set_max_width(m_label_track->get_text_extents().x);
+    m_label_track_underline->set_width(m_label_track->get_text_extents().x);
+    m_label_track_underline->set_y(std::floor(m_label_track->get_text_extents().y / 2.0f));
   };
 
-  slot_on_track_changed = player::signal_on_track_changed.connect(on_track_changed);
+  m_slot_on_track_changed = player::signal_on_track_changed.connect(on_track_changed);
   on_track_changed();
 
-  seekbar->on_drag_ended([](float, float ms) {
+  m_seekbar->on_drag_ended([](float, float ms) {
     if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) { player::seek_ms(ms); }
   });
 
-  button_play_pause->on_press([&]() {
-    if (is_playing) {
+  m_button_play_pause->on_press([&]() {
+    if (m_is_playing) {
       player::pause();
     } else {
       player::resume();
     }
   });
 
-  button_stop->on_press([&]() { player::stop(); });
+  m_button_stop->on_press([&]() { player::stop(); });
 
-  button_prev->on_press([&]() { player::prev_track(); });
+  m_button_prev->on_press([&]() { player::prev_track(); });
 
-  button_next->on_press([&]() { player::next_track(); });
+  m_button_next->on_press([&]() { player::next_track(); });
 
-  button_repeat->on_press([this]() {
+  m_button_repeat->on_press([this]() {
     auto repeat_mode = player::get_repeat_mode();
     if (repeat_mode == player::RepeatMode::OFF) {
       player::set_repeat_mode(player::RepeatMode::TRACK);
@@ -201,7 +202,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
     update_repeat_mode();
   });
 
-  button_shuffle->on_press([this]() {
+  m_button_shuffle->on_press([this]() {
     auto shuffle_mode = player::get_shuffle_mode();
     if (shuffle_mode == player::ShuffleMode::OFF) {
       player::set_shuffle_mode(player::ShuffleMode::ON);
@@ -213,23 +214,23 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   });
 }
 
-PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
+PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
 
 void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 
-  if (label_track_underline->get_is_drawn()) {
+  if (m_label_track_underline->get_is_drawn()) {
     if (ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
-      if (ev.action == Input::MouseAction::PRESS) { label_track_underline_lmb = true; }
-      if (ev.action == Input::MouseAction::RELEASE && label_track_underline_lmb) {
-        label_track_underline_lmb = false;
-        if (on_playing_track_lmb) { on_playing_track_lmb(label_track); }
+      if (ev.action == Input::MouseAction::PRESS) { m_label_track_underline_lmb = true; }
+      if (ev.action == Input::MouseAction::RELEASE && m_label_track_underline_lmb) {
+        m_label_track_underline_lmb = false;
+        if (on_playing_track_lmb) { on_playing_track_lmb(m_label_track); }
       }
     } else if (ev.button == Input::MouseButton::MOUSE_BUTTON_RIGHT) {
-      if (ev.action == Input::MouseAction::PRESS) { label_track_underline_rmb = true; }
-      if (ev.action == Input::MouseAction::RELEASE && label_track_underline_rmb) {
-        label_track_underline_rmb = false;
-        if (on_playing_track_rmb) { on_playing_track_rmb(label_track); }
+      if (ev.action == Input::MouseAction::PRESS) { m_label_track_underline_rmb = true; }
+      if (ev.action == Input::MouseAction::RELEASE && m_label_track_underline_rmb) {
+        m_label_track_underline_rmb = false;
+        if (on_playing_track_rmb) { on_playing_track_rmb(m_label_track); }
       }
     }
   }
@@ -271,18 +272,18 @@ void PanelControls::event(Input::InputEventKey& ev) {
 
 void PanelControls::update() {
 
-  seekbar->set_min_value(0);
-  seekbar->set_max_value(player::get_total_duration_ms());
+  m_seekbar->set_min_value(0);
+  m_seekbar->set_max_value(player::get_total_duration_ms());
 
-  volume_bar->set_sensitivity(zincbox::settings().general.volume_step * 0.01f);
-  if (!volume_bar->is_being_dragged()) { volume_bar->set_value(player::get_volume(), false); }
+  m_volume_bar->set_sensitivity(zincbox::settings().general.volume_step * 0.01f);
+  if (!m_volume_bar->is_being_dragged()) { m_volume_bar->set_value(player::get_volume(), false); }
 
-  i32 progress_ms = seekbar->is_being_dragged() ? seekbar->get_value() : player::get_current_time_ms();
+  i32 progress_ms = m_seekbar->is_being_dragged() ? m_seekbar->get_value() : player::get_current_time_ms();
   i32 total_ms = player::get_total_duration_ms();
   i32 progress_s = progress_ms / 1000;
   i32 total_s = total_ms / 1000;
 
-  if ((progress_s != progress_ms_prev / 1000) || (total_s != total_ms_prev / 1000)) {
+  if ((progress_s != m_progress_ms_prev / 1000) || (total_s != m_total_ms_prev / 1000)) {
     i32 progress_m = progress_s / 60;
     progress_s %= 60;
     i32 total_m = total_s / 60;
@@ -295,101 +296,101 @@ void PanelControls::update() {
     ss << " / ";
     ss << std::setw(2) << total_m << ":";
     ss << std::setw(2) << total_s;
-    label_progress->set_text(ss.str());
+    m_label_progress->set_text(ss.str());
   }
 
-  label_progress->set_is_drawn(theme::config().panel_controls.timestamp.visible && width > 650);
-  label_progress->set_min_width(label_progress->get_text_extents().x);
-  label_progress->set_max_width(label_progress->get_text_extents().x);
+  m_label_progress->set_is_drawn(theme::config().panel_controls.timestamp.visible && width > 650);
+  m_label_progress->set_min_width(m_label_progress->get_text_extents().x);
+  m_label_progress->set_max_width(m_label_progress->get_text_extents().x);
 
-  seekbar->set_value(player::get_current_time_ms(), false);
+  m_seekbar->set_value(player::get_current_time_ms(), false);
 
-  if (seekbar->is_mouse_hovering()) {
-    i32 x_rel = Input::get_mouse_x() - seekbar->get_position(Anchor::LEFT).x;
-    i32 tooltip_ms = x_rel / (double)seekbar->get_width() * player::get_total_duration_ms();
-    if (seekbar->get_thumb().is_mouse_hovering()) { tooltip_ms = seekbar->get_value(); }
-    if (seekbar->is_being_dragged()) { tooltip_ms = progress_ms; }
+  if (m_seekbar->is_mouse_hovering()) {
+    i32 x_rel = Input::get_mouse_x() - m_seekbar->get_position(Anchor::LEFT).x;
+    i32 tooltip_ms = x_rel / (double)m_seekbar->get_width() * player::get_total_duration_ms();
+    if (m_seekbar->get_thumb().is_mouse_hovering()) { tooltip_ms = m_seekbar->get_value(); }
+    if (m_seekbar->is_being_dragged()) { tooltip_ms = progress_ms; }
     i32 tooltip_s = tooltip_ms / 1000;
-    if (tooltip_s != tooltip_ms_prev / 1000) {
-      tooltip_ms_prev = tooltip_ms;
+    if (tooltip_s != m_tooltip_ms_prev / 1000) {
+      m_tooltip_ms_prev = tooltip_ms;
       i32 tooltip_m = tooltip_s / 60;
       tooltip_s %= 60;
       std::stringstream ss_hover;
       ss_hover << std::right << std::setfill('0');
       ss_hover << std::setw(2) << tooltip_m << ":";
       ss_hover << std::setw(2) << tooltip_s;
-      tooltip_timestamp->set_text(ss_hover.str());
+      m_tooltip_timestamp->set_text(ss_hover.str());
     }
-    tooltip_timestamp->set_is_drawn(tooltip_visibility && true);
+    m_tooltip_timestamp->set_is_drawn(m_tooltip_visibility);
     // tooltip is centered - subtract half width to compensate
-    tooltip_timestamp->set_x(x_rel - seekbar->get_width() / 2);
+    m_tooltip_timestamp->set_x(x_rel - (m_seekbar->get_width() / 2));
   } else {
-    tooltip_timestamp->set_is_drawn(false);
+    m_tooltip_timestamp->set_is_drawn(false);
   }
 
-  if (volume_bar->is_mouse_hovering()) {
-    double tooltip_value = volume_bar->get_value();
-    if (volume_bar->get_thumb().is_mouse_hovering()) { tooltip_value = volume_bar->get_value(); }
-    if (tooltip_value != volume_prev) {
-      volume_prev = tooltip_value;
-      tooltip_volume->set_text(std::to_string((i32)(std::round(tooltip_value * 100))) + "%");
+  if (m_volume_bar->is_mouse_hovering()) {
+    double tooltip_value = m_volume_bar->get_value();
+    if (m_volume_bar->get_thumb().is_mouse_hovering()) { tooltip_value = m_volume_bar->get_value(); }
+    if (tooltip_value != m_volume_prev) {
+      m_volume_prev = tooltip_value;
+      m_tooltip_volume->set_text(std::to_string((i32)(std::round(tooltip_value * 100))) + "%");
     }
-    tooltip_volume->set_is_drawn(tooltip_visibility && true);
+    m_tooltip_volume->set_is_drawn(m_tooltip_visibility);
     // tooltip is centered - subtract half width to compensate
-    tooltip_volume->set_x((volume_bar->get_value() - 0.5) * volume_bar->get_width());
+    m_tooltip_volume->set_x((m_volume_bar->get_value() - 0.5) * m_volume_bar->get_width());
   } else {
-    tooltip_volume->set_is_drawn(false);
+    m_tooltip_volume->set_is_drawn(false);
   }
 
-  label_track_underline->set_is_drawn(label_track->is_mouse_hovering());
-  if (!label_track_underline->get_is_drawn()) {
-    label_track_underline_lmb = false;
-    label_track_underline_rmb = false;
+  m_label_track_underline->set_is_drawn(m_label_track->is_mouse_hovering());
+  if (!m_label_track_underline->get_is_drawn()) {
+    m_label_track_underline_lmb = false;
+    m_label_track_underline_rmb = false;
   }
 
-  if (is_playing != player::is_playing()) {
-    is_playing = player::is_playing();
-    if (is_playing) {
-      button_play_pause->add_image("pause");
+  if (m_is_playing != player::is_playing()) {
+    m_is_playing = player::is_playing();
+    if (m_is_playing) {
+      m_button_play_pause->add_image("pause");
     } else {
-      button_play_pause->add_image("play");
+      m_button_play_pause->add_image("play");
     }
   }
 
-  if (button_shuffle->is_mouse_hovering()) {
-    tooltip_button_shuffle->set_is_drawn(tooltip_visibility && true);
+  if (m_button_shuffle->is_mouse_hovering()) {
+    m_tooltip_button_shuffle->set_is_drawn(m_tooltip_visibility);
     auto s = player::get_shuffle_mode();
     if (s == player::ShuffleMode::OFF) {
-      tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.off"));
+      m_tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.off"));
     } else if (s == player::ShuffleMode::ON) {
-      tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.on"));
+      m_tooltip_button_shuffle->set_text(tr::get("tooltip.shuffle.on"));
     }
   } else {
-    tooltip_button_shuffle->set_is_drawn(false);
+    m_tooltip_button_shuffle->set_is_drawn(false);
   }
 
-  if (button_repeat->is_mouse_hovering()) {
-    tooltip_button_repeat->set_is_drawn(tooltip_visibility && true);
+  if (m_button_repeat->is_mouse_hovering()) {
+    m_tooltip_button_repeat->set_is_drawn(m_tooltip_visibility);
     auto r = player::get_repeat_mode();
     if (r == player::RepeatMode::OFF) {
-      tooltip_button_repeat->set_text(tr::get("tooltip.repeat.off"));
+      m_tooltip_button_repeat->set_text(tr::get("tooltip.repeat.off"));
     } else if (r == player::RepeatMode::TRACK) {
-      tooltip_button_repeat->set_text(tr::get("tooltip.repeat.track"));
+      m_tooltip_button_repeat->set_text(tr::get("tooltip.repeat.track"));
     } else if (r == player::RepeatMode::ALBUM) {
-      tooltip_button_repeat->set_text(tr::get("tooltip.repeat.album"));
+      m_tooltip_button_repeat->set_text(tr::get("tooltip.repeat.album"));
     }
   } else {
-    tooltip_button_repeat->set_is_drawn(false);
+    m_tooltip_button_repeat->set_is_drawn(false);
   }
 
-  if (repeat_mode_prev != (i32)player::get_repeat_mode()) {
+  if (m_repeat_mode_prev != (i32)player::get_repeat_mode()) {
     update_repeat_mode();
-    repeat_mode_prev = (i32)player::get_repeat_mode();
+    m_repeat_mode_prev = (i32)player::get_repeat_mode();
   }
 
-  if (shuffle_mode_prev != (i32)player::get_shuffle_mode()) {
+  if (m_shuffle_mode_prev != (i32)player::get_shuffle_mode()) {
     update_shuffle_mode();
-    shuffle_mode_prev = (i32)player::get_shuffle_mode();
+    m_shuffle_mode_prev = (i32)player::get_shuffle_mode();
   }
 
   ColorRect::update();
@@ -398,55 +399,55 @@ void PanelControls::update() {
 void PanelControls::update_repeat_mode() {
   auto repeat_mode = player::get_repeat_mode();
   if (repeat_mode == player::RepeatMode::OFF) {
-    button_repeat->add_image("repeat_off");
+    m_button_repeat->add_image("repeat_off");
   } else if (repeat_mode == player::RepeatMode::TRACK) {
-    button_repeat->add_image("repeat_track");
+    m_button_repeat->add_image("repeat_track");
   } else if (repeat_mode == player::RepeatMode::ALBUM) {
-    button_repeat->add_image("repeat_album");
+    m_button_repeat->add_image("repeat_album");
   }
 }
 
 void PanelControls::update_shuffle_mode() {
   auto shuffle_mode = player::get_shuffle_mode();
   if (shuffle_mode == player::ShuffleMode::OFF) {
-    button_shuffle->add_image("shuffle_off");
+    m_button_shuffle->add_image("shuffle_off");
   } else if (shuffle_mode == player::ShuffleMode::ON) {
-    button_shuffle->add_image("shuffle");
+    m_button_shuffle->add_image("shuffle");
   }
 }
 
 void PanelControls::update_love_state(bool is_loved) {
   if (is_loved) {
-    love_button->set_texture_all("panel_controls_unlove");
+    m_love_button->set_texture_all("panel_controls_unlove");
   } else {
-    love_button->set_texture_all("panel_controls_love");
+    m_love_button->set_texture_all("panel_controls_love");
   }
 }
 
 void PanelControls::set_button_expand_player_visibility(bool state) {
-  button_expand_player->set_is_drawn(theme::config().panel_controls.button_expand_player.visible && state);
-  button_expand_player->set_is_updated(button_expand_player->get_is_drawn());
+  m_button_expand_player->set_is_drawn(theme::config().panel_controls.button_expand_player.visible && state);
+  m_button_expand_player->set_is_updated(m_button_expand_player->get_is_drawn());
 }
 
 void PanelControls::on_button_expand_player_pressed(std::function<void()> fn) {
-  button_expand_player->on_press(std::move(fn));
+  m_button_expand_player->on_press(std::move(fn));
 }
 
 void PanelControls::set_tooltip_visibility(bool state) {
-  tooltip_visibility = state;
+  m_tooltip_visibility = state;
   if (!state) {
-    tooltip_button_shuffle->set_is_drawn(state);
-    tooltip_button_repeat->set_is_drawn(state);
-    tooltip_timestamp->set_is_drawn(state);
-    tooltip_volume->set_is_drawn(state);
+    m_tooltip_button_shuffle->set_is_drawn(state);
+    m_tooltip_button_repeat->set_is_drawn(state);
+    m_tooltip_timestamp->set_is_drawn(state);
+    m_tooltip_volume->set_is_drawn(state);
   }
 }
 
 bool PanelControls::can_drag_window() const {
-  return (is_mouse_hovering() && !button_play_pause->is_mouse_hovering() && !button_stop->is_mouse_hovering() &&
-          !button_next->is_mouse_hovering() && !button_prev->is_mouse_hovering() &&
-          !button_shuffle->is_mouse_hovering() && !button_repeat->is_mouse_hovering() &&
-          !button_expand_player->is_mouse_hovering() && !seekbar->is_mouse_hovering() &&
-          !volume_bar->get_thumb().is_mouse_hovering() && !volume_bar->get_track().is_mouse_hovering() &&
-          !label_track->is_mouse_hovering() && !love_button->is_mouse_hovering());
+  return (is_mouse_hovering() && !m_button_play_pause->is_mouse_hovering() && !m_button_stop->is_mouse_hovering() &&
+          !m_button_next->is_mouse_hovering() && !m_button_prev->is_mouse_hovering() &&
+          !m_button_shuffle->is_mouse_hovering() && !m_button_repeat->is_mouse_hovering() &&
+          !m_button_expand_player->is_mouse_hovering() && !m_seekbar->is_mouse_hovering() &&
+          !m_volume_bar->get_thumb().is_mouse_hovering() && !m_volume_bar->get_track().is_mouse_hovering() &&
+          !m_label_track->is_mouse_hovering() && !m_love_button->is_mouse_hovering());
 }

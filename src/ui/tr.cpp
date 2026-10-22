@@ -8,13 +8,15 @@
 #include "common/utf.hpp"
 
 namespace tr {
-  static std::unordered_map<std::string, std::string> dictionary;
+  namespace {
+    std::unordered_map<std::string, std::string> dictionary;
+  } // namespace
 
   bool load_from_string(const std::string& json_content) {
     dictionary.clear();
 
     glz::generic parsed_json{};
-    const auto ec = glz::read_json(parsed_json, json_content);
+    auto ec = glz::read_json(parsed_json, json_content);
     if (ec || !parsed_json.is_object()) { return false; }
 
     for (const auto& [key, value] : parsed_json.get_object()) {

@@ -20,7 +20,9 @@
 
 namespace fs = std::filesystem;
 
-std::optional<fs::path> user_data_path;
+namespace {
+  std::optional<fs::path> user_data_path;
+}
 
 bool io::is_cover_file(const fs::path& path) {
   auto ext = path.extension();
@@ -67,23 +69,23 @@ fs::path io::get_user_data_path() {
   const std::string path = std::string(getenv("HOME")) + "/Library/Application Support/zincbox/";
 #elif defined(__linux__)
   const char* xdg_data = getenv("XDG_DATA_HOME");
-  const std::string path =
+  const std::string PATH =
     (xdg_data ? std::string(xdg_data) : std::string(getenv("HOME")) + "/.local/share") + "/zincbox/";
 #else
 #error "unknown platform"
 #endif
 
-  if (!fs::exists(fs::path(path))) {
-    if (!fs::create_directories(fs::path(path))) {
+  if (!fs::exists(fs::path(PATH))) {
+    if (!fs::create_directories(fs::path(PATH))) {
       out::critical("failed to create user data directory");
       exit(1);
     }
-  } else if (!fs::is_directory(fs::path(path))) {
+  } else if (!fs::is_directory(fs::path(PATH))) {
     out::critical("user data directory exists but is not a directory");
     exit(1);
   }
 
-  user_data_path = fs::path(path);
+  user_data_path = fs::path(PATH);
   return user_data_path.value();
 }
 

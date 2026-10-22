@@ -10,7 +10,7 @@ namespace zincgui {
   class Widget;
 }; // namespace zincgui
 
-class Notification : public zincgui::Sprite {
+class Notification final : public zincgui::Sprite {
   public:
     Notification(zincgui::Root& ui_, bool error = false);
 
@@ -34,6 +34,6 @@ class InterfaceNotifications : public zincgui::Widget {
 
     void update() override;
 
-  protected:
-    std::vector<Notification*> notifications;
+  private:
+    std::vector<Notification*> m_notifications;
 };

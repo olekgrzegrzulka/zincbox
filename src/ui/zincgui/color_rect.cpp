@@ -2,8 +2,8 @@
 #include <cstddef>
 
 #include <glad/glad.h>
-#include "ui.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/root.hpp"
+#include "ui/zincgui/widget.hpp"
 
 zincgui::ColorRect::ColorRect(Root& ui_) : Widget(ui_) {}
 

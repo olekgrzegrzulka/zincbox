@@ -6,21 +6,21 @@
 #include "common/logger.hpp"
 #include "zincbox.hpp"
 
-extern "C" void handle_sigterm(int signal) {
+extern "C" inline void handle_sigterm(int signal) {
   if (signal == SIGTERM) {
     out::warn("received SIGTERM, shutting down");
     zincbox::stop();
   }
 }
 
-extern "C" void handle_sigint(int signal) {
+extern "C" inline void handle_sigint(int signal) {
   if (signal == SIGINT) {
     out::warn("received SIGINT, shutting down");
     zincbox::stop();
   }
 }
 
-extern "C" void handle_sigsegv(int) {
+extern "C" inline void handle_sigsegv(int) {
   out::critical("=== SEGMENTATION FAULT START ===");
   out::critical("stack trace (most recent call first):");
 

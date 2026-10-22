@@ -15,9 +15,9 @@ namespace zincgui {
 class ScrollableView : public zincgui::Widget {
   public:
     ScrollableView(zincgui::Root& ui_);
-    virtual void input() override;
-    virtual void update() override;
-    virtual void event(zincgui::Input::InputEventMouseScroll& ev) override;
+    void input() override;
+    void update() override;
+    void event(zincgui::Input::InputEventMouseScroll& ev) override;
 
     zincgui::Widget* content() { return m_content; }
     zincgui::Sprite* background() { return m_background; }

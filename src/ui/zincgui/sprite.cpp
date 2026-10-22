@@ -1,11 +1,11 @@
-#include "sprite.hpp"
+#include "ui/zincgui/sprite.hpp"
 #include <cstddef>
 #include <functional>
 #include <glad/glad.h>
 #include "common/logger.hpp"
-#include "ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
 zincgui::Sprite::Sprite(Root& ui_) : Widget(ui_) {}
 

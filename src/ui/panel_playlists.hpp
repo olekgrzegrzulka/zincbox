@@ -1,10 +1,8 @@
 #pragma once
 #include <functional>
 #include <optional>
-#include <string>
 #include <vector>
 #include <stddef.h>
-#include "common/color.hpp"
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
@@ -27,10 +25,14 @@ class SpriteAlbumCover : public zincgui::Sprite {
     zincgui::TextureAtlas& get_texture_atlas() override;
 };
 
-class WidgetAlbumCover : public zincgui::Button {
+class WidgetAlbumCover final : public zincgui::Button {
   public:
+    WidgetAlbumCover(const WidgetAlbumCover&) = delete;
+    WidgetAlbumCover(WidgetAlbumCover&&) = delete;
+    WidgetAlbumCover& operator=(const WidgetAlbumCover&) = delete;
+    WidgetAlbumCover& operator=(WidgetAlbumCover&&) = delete;
     WidgetAlbumCover(zincgui::Root& ui_, std::optional<size_t> playlist_id, bool is_add_button_ = false);
-    ~WidgetAlbumCover();
+    ~WidgetAlbumCover() override;
     void draw() override;
     void update() override;
     void event(zincgui::Input::InputEventMouseMove& ev) override;
@@ -49,12 +51,12 @@ class WidgetAlbumCover : public zincgui::Button {
     vec2i total_size{};
     vec2i cover_size{};
 
-  protected:
+  private:
     bool m_is_add_button = false;
-    Signal<>::slot_key slot_on_track_changed;
+    Signal<>::slot_key m_slot_on_track_changed;
 };
 
-class PanelPlaylists : public zincgui::ColorRect {
+class PanelPlaylists final : public zincgui::ColorRect {
   public:
     enum class SortBy : u8 { NAME_AZ, NAME_ZA, AUTHOR_AZ, AUTHOR_ZA };
 
@@ -75,28 +77,28 @@ class PanelPlaylists : public zincgui::ColorRect {
     vec2i get_content_size() const;
     std::optional<size_t> get_collection_id() const { return props.collection_id; }
 
-  protected:
+  private:
     void reflow();
 
-  protected:
+  private:
     static constexpr i32 PANEL_SEARCH_PADDING = 4;
-    double scroll_px = 0.0;
-    double target_scroll_px = 0.0;
-    i32 content_height = 0;
+    double m_scroll_px = 0.0;
+    double m_target_scroll_px = 0.0;
+    i32 m_content_height = 0;
 
-    std::vector<WidgetAlbumCover*> album_widgets;
-    zincgui::ScrollBar* scrollbar{};
+    std::vector<WidgetAlbumCover*> m_album_widgets;
+    zincgui::ScrollBar* m_scrollbar{};
 
-    zincgui::Sprite* panel_search{};
-    zincgui::Widget* albums_container{};
-    zincgui::TextInput* search_bar{};
-    zincgui::Button* button_clear_search{};
-    zincgui::Button* button_sort_by{};
+    zincgui::Sprite* m_panel_search{};
+    zincgui::Widget* m_albums_container{};
+    zincgui::TextInput* m_search_bar{};
+    zincgui::Button* m_button_clear_search{};
+    zincgui::Button* m_button_sort_by{};
 
   public:
     struct Props {
-        std::optional<size_t> collection_id{};
-        std::vector<size_t> playlist_ids{};
+        std::optional<size_t> collection_id;
+        std::vector<size_t> playlist_ids;
         SortBy sort_by = PanelPlaylists::SortBy::AUTHOR_AZ;
         bool group = false;
         bool panel_search_visible = true;
@@ -109,12 +111,12 @@ class PanelPlaylists : public zincgui::ColorRect {
 
     Props props{};
 
-  protected:
-    Props props_old{};
+  private:
+    Props m_props_old{};
 
   public:
-    std::function<void(size_t, Widget*)> on_playlist_lmb{};
-    std::function<void(size_t, Widget*)> on_playlist_rmb{};
-    std::function<void(Widget*)> on_button_sort_by_pressed{};
-    std::function<void(Widget*)> on_add_playlist_button_pressed{};
+    std::function<void(size_t, Widget*)> on_playlist_lmb;
+    std::function<void(size_t, Widget*)> on_playlist_rmb;
+    std::function<void(Widget*)> on_button_sort_by_pressed;
+    std::function<void(Widget*)> on_add_playlist_button_pressed;
 };

@@ -10,27 +10,27 @@ namespace mpris {
 
   enum class LoopStatus : u8 { NONE, TRACK, PLAYLIST };
 
-  struct Command {
+  struct Command final {
       CommandType type{};
       i64 value{};
   };
 
-  class CommandQueue {
+  class CommandQueue final {
     private:
-      std::queue<Command> queue;
-      std::mutex mutex;
+      std::queue<Command> m_queue;
+      std::mutex m_mutex;
 
     public:
       void push(Command cmd) {
-        std::lock_guard<std::mutex> lock(mutex);
-        queue.push(cmd);
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_queue.push(cmd);
       }
 
       std::optional<Command> pop() {
-        std::unique_lock<std::mutex> lock(mutex);
-        if (queue.empty()) { return std::nullopt; }
-        auto ret = queue.front();
-        queue.pop();
+        std::unique_lock<std::mutex> lock(m_mutex);
+        if (m_queue.empty()) { return std::nullopt; }
+        auto ret = m_queue.front();
+        m_queue.pop();
         return ret;
       }
   };

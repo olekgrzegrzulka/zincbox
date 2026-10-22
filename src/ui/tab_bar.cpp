@@ -15,7 +15,7 @@
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -24,7 +24,7 @@ using namespace zincgui;
 Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
   label.set_text(info.label);
   // label.update_text();
-  set_width(std::clamp((i32)get_label().get_width() + 2 * info.padding, 40, 200));
+  set_width(std::clamp(get_label().get_width() + (2 * info.padding), 40, 200));
   padding = info.padding;
   is_draggable = info.is_draggable;
   label.set_anchor(Anchor::CENTER);
@@ -93,7 +93,7 @@ void Tab::move(i32 to) {
 }
 
 void Tab::update() {
-  set_width(std::clamp((i32)label.get_width() + 2 * padding, 40, 200));
+  set_width(std::clamp(label.get_width() + (2 * padding), 40, 200));
   t = std::clamp(t + 0.2f, 0.0f, 1.0f);
   set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
   Button::update();
@@ -133,19 +133,19 @@ TabBar::TabBar(Root& ui_) : Widget(ui_) {
     if (on_add_tab_button_pressed) { on_add_tab_button_pressed(); };
   });
 
-  static const float scale = zincbox::ui_scale();
+  const float SCALE = zincbox::ui_scale();
 
   button_right = &add_child<ZincboxButton>("tab_right");
   button_right->add_image("right");
   button_right->set_ignore_parents_layout(true);
-  button_right->set_x(-2 * scale);
+  button_right->set_x(-2 * SCALE);
   button_right->set_parent_anchor(Anchor::CENTER_LEFT);
   button_right->set_anchor(Anchor::CENTER_RIGHT);
 
   button_left = &add_child<ZincboxButton>("tab_left");
   button_left->add_image("left");
   button_left->set_ignore_parents_layout(true);
-  button_left->set_x(2 * scale);
+  button_left->set_x(2 * SCALE);
   button_left->set_parent_anchor(Anchor::CENTER_LEFT);
   button_left->set_anchor(Anchor::CENTER_LEFT);
 }
@@ -324,9 +324,9 @@ void TabBar::update() {
 
   scroll_px = std::clamp<double>(scroll_px, 0, get_max_scroll_px());
 
-  static const float scale = zincbox::ui_scale();
-  button_right->set_size(height - 4 * scale, height - 4 * scale);
-  button_left->set_size(height - 4 * scale, height - 4 * scale);
+  const float SCALE = zincbox::ui_scale();
+  button_right->set_size(height - (4 * SCALE), height - (4 * SCALE));
+  button_left->set_size(height - (4 * SCALE), height - (4 * SCALE));
 
   Widget::update();
 }

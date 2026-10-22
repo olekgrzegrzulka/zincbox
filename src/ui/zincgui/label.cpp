@@ -9,7 +9,7 @@
 #include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/font_face.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 

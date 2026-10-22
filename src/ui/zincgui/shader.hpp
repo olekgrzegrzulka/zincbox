@@ -8,6 +8,10 @@ namespace zincgui {
 
   class Shader {
     public:
+      Shader(const Shader&) = delete;
+      Shader(Shader&&) = delete;
+      Shader& operator=(const Shader&) = delete;
+      Shader& operator=(Shader&&) = delete;
       Shader(const std::string& file_name);
       Shader(const char* vert, const char* frag);
       ~Shader();

@@ -27,7 +27,7 @@ db::Collection::Collection(std::ifstream& is) {
   }
   m_playlist_ids.resize(playlist_ids_size);
   for (size_t i = 0; i < playlist_ids_size; i += 1) {
-    size_t value;
+    size_t value = 0;
     read_bin(is, value);
     m_playlist_ids[i] = value;
   }
@@ -61,20 +61,14 @@ bool db::Collection::remove_path(const fs::path& path) {
 
 std::optional<size_t> db::Collection::next_playlist_id(size_t playlist_id) const {
   auto index = find_playlist_index(playlist_id);
-  if (index.has_value() && index.value() + 1 < m_playlist_ids.size()) {
-    return m_playlist_ids[index.value() + 1];
-  } else {
-    return std::nullopt;
-  }
+  if (index.has_value() && index.value() + 1 < m_playlist_ids.size()) { return m_playlist_ids[index.value() + 1]; }
+  return std::nullopt;
 }
 
 std::optional<size_t> db::Collection::prev_playlist_id(size_t playlist_id) const {
   auto index = find_playlist_index(playlist_id);
-  if (index.has_value() && index.value() > 0) {
-    return m_playlist_ids[index.value() - 1];
-  } else {
-    return std::nullopt;
-  }
+  if (index.has_value() && index.value() > 0) { return m_playlist_ids[index.value() - 1]; }
+  return std::nullopt;
 }
 
 void db::Collection::serialize(std::ofstream& os) const {

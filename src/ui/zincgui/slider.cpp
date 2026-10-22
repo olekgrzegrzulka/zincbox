@@ -1,14 +1,13 @@
 #include <algorithm>
 #include <cmath>
 #include <optional>
-#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "slider.hpp"
-#include "sprite.hpp"
-#include "ui.hpp"
 #include "ui/zincgui/input.hpp"
+#include "ui/zincgui/root.hpp"
+#include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
 zincgui::Slider::Slider(Root& ui_, SliderOrientation orientation_)
   : Widget::Widget(ui_), track(add_child<Sprite>()), track_active(track.add_child<Sprite>()),
@@ -31,7 +30,7 @@ void zincgui::Slider::skip_anim() {
   i32 track_length = is_horiz ? width : height;
   float thumb_pos_target = 0.0f;
   if ((max_value - min_value) != 0.0f) {
-    float norm = (value - min_value) / (float)(max_value - min_value);
+    float norm = (value - min_value) / (max_value - min_value);
     if (is_invert) { norm = 1.0f - norm; }
     if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
       thumb_pos_target = norm * (track_length);
@@ -43,11 +42,11 @@ void zincgui::Slider::skip_anim() {
   if (is_horiz) {
     thumb.set_x(thumb_pos_target);
     track_active.set_width(is_invert ? (track_length - (thumb_pos_target + thumb.get_width() * 0.5))
-                                     : (thumb_pos_target + thumb.get_width() * 0.5));
+                                     : (thumb_pos_target + (thumb.get_width() * 0.5)));
   } else {
     thumb.set_y(thumb_pos_target);
     track_active.set_height(is_invert ? (track_length - (thumb_pos_target + thumb.get_height() * 0.5))
-                                      : (thumb_pos_target + thumb.get_height() * 0.5));
+                                      : (thumb_pos_target + (thumb.get_height() * 0.5)));
   }
 }
 
@@ -150,8 +149,8 @@ void zincgui::Slider::input() {
   }
 
   if (is_dragged) {
-    i32 drag_px = is_horiz ? (Input::get_mouse_x() - drag_start_mouse_pos)
-                           : (Input::get_mouse_y() - drag_start_mouse_pos);
+    i32 drag_px =
+      is_horiz ? (Input::get_mouse_x() - drag_start_mouse_pos) : (Input::get_mouse_y() - drag_start_mouse_pos);
     if (is_invert) { drag_px = -drag_px; }
 
     if ((track_length - thumb_length) != 0) {
@@ -182,7 +181,7 @@ void zincgui::Slider::input() {
   float thumb_old_pos = is_horiz ? thumb.get_x() : thumb.get_y();
   float thumb_pos_target = 0.0f;
   if ((max_value - min_value) != 0.0f) {
-    float norm = (value - min_value) / (float)(max_value - min_value);
+    float norm = (value - min_value) / (max_value - min_value);
     if (is_invert) { norm = 1.0f - norm; }
     if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
       thumb_pos_target = norm * (track_length);
@@ -196,11 +195,11 @@ void zincgui::Slider::input() {
   if (is_horiz) {
     thumb.set_x(thumb_pos_lerped);
     track_active.set_width(is_invert ? (track_length - (thumb_pos_lerped + thumb.get_width() * 0.5))
-                                     : (thumb_pos_lerped + thumb.get_width() * 0.5));
+                                     : (thumb_pos_lerped + (thumb.get_width() * 0.5)));
   } else {
     thumb.set_y(thumb_pos_lerped);
     track_active.set_height(is_invert ? (track_length - (thumb_pos_lerped + thumb.get_height() * 0.5))
-                                      : (thumb_pos_lerped + thumb.get_height() * 0.5));
+                                      : (thumb_pos_lerped + (thumb.get_height() * 0.5)));
   }
 
   Widget::input();
@@ -220,7 +219,7 @@ void zincgui::Slider::event(Input::InputEventMouseScroll& ev) {
   if (is_mouse_hovering()) {
     if (!is_dragged) {
       i32 sign = ev.offset.y / std::abs(ev.offset.y);
-      set_value(value + (float)sign * sensitivity);
+      set_value(value + ((float)sign * sensitivity));
     }
     ev.handled = true;
   }

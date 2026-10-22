@@ -23,5 +23,6 @@ namespace zincbox {
       TrackMetadata(TrackMetadata&&) noexcept = default;
       TrackMetadata& operator=(TrackMetadata&&) noexcept = default;
       bool operator==(const TrackMetadata&) const = default;
+      ~TrackMetadata() = default;
   };
 } // namespace zincbox

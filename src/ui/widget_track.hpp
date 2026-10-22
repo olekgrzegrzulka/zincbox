@@ -11,16 +11,20 @@
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/sprite.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "zincbox.hpp"
 
 class WidgetTrack final : public zincgui::Button {
   public:
     enum class TrackHighlightMode : u8 { TRACK_INFO, QUEUE_INDEX, OFF };
+    WidgetTrack(const WidgetTrack&) = delete;
+    WidgetTrack(WidgetTrack&&) = delete;
+    WidgetTrack& operator=(const WidgetTrack&) = delete;
+    WidgetTrack& operator=(WidgetTrack&&) = delete;
     WidgetTrack(zincgui::Root& ui_) : Button(ui_) {
       setup();
 
-      slot_on_track_changed =
+      m_slot_on_track_changed =
         player::signal_on_track_changed.connect([this]() -> void { update_highlight_status_from_player(); });
     }
 
@@ -34,90 +38,90 @@ class WidgetTrack final : public zincgui::Button {
       }
     }
 
-    ~WidgetTrack() override { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
+    ~WidgetTrack() override { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
 
     void setup() {
-      static const float scale = zincbox::ui_scale();
-      static const float font_size = zincbox::settings().interface.font_size;
-      static const i32 track_height = theme::config().panel_tracklist.track_height * scale;
-      const auto track = db::track_by_id(m_track_id);
+      const float SCALE = zincbox::ui_scale();
+      const float FONT_SIZE = zincbox::settings().interface.font_size;
+      const i32 TRACK_HEIGHT = theme::config().panel_tracklist.track_height * SCALE;
+      auto track = db::track_by_id(m_track_id);
       set_nine_slice_margin(8.0f);
-      set_height(track_height);
+      set_height(TRACK_HEIGHT);
 
       set_layout("ltr mx:5 my:0 s:5 fill expand");
 
       label.set_is_drawn(false);
 
-      if (!bg) {
-        bg = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_color_odd);
-        bg->set_ignore_parents_layout(true);
+      if (!m_bg) {
+        m_bg = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_color_odd);
+        m_bg->set_ignore_parents_layout(true);
       }
 
-      if (!hover) {
-        hover = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_hovered);
-        hover->set_opacity(theme::config().panel_tracklist.track_hovered_opacity);
-        hover->set_ignore_parents_layout(true);
-        hover->set_is_drawn(false);
+      if (!m_hover) {
+        m_hover = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_hovered);
+        m_hover->set_opacity(theme::config().panel_tracklist.track_hovered_opacity);
+        m_hover->set_ignore_parents_layout(true);
+        m_hover->set_is_drawn(false);
       }
 
-      if (!label_track_number) {
-        label_track_number = &add_child<zincgui::Label>();
-        label_track_number->set_label_anchor(zincgui::Anchor::LEFT);
-        label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
+      if (!m_label_track_number) {
+        m_label_track_number = &add_child<zincgui::Label>();
+        m_label_track_number->set_label_anchor(zincgui::Anchor::LEFT);
+        m_label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
       }
-      label_track_number->set_text(std::to_string(m_track_number));
-      label_track_number->set_min_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
-      label_track_number->set_max_width(std::max<i32>(font_size * 1.3f, label_track_number->get_text_extents().x));
+      m_label_track_number->set_text(std::to_string(m_track_number));
+      m_label_track_number->set_min_width(std::max<i32>(FONT_SIZE * 1.3f, m_label_track_number->get_text_extents().x));
+      m_label_track_number->set_max_width(std::max<i32>(FONT_SIZE * 1.3f, m_label_track_number->get_text_extents().x));
 
-      if (!label_track_artist) {
-        label_track_artist = &add_child<zincgui::Label>();
-        label_track_artist->set_label_anchor(zincgui::Anchor::LEFT);
-        label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
+      if (!m_label_track_artist) {
+        m_label_track_artist = &add_child<zincgui::Label>();
+        m_label_track_artist->set_label_anchor(zincgui::Anchor::LEFT);
+        m_label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
       }
       if (track.has_value()) {
         if (track->get().metadata.artist.empty() || track->get().metadata.title.empty()) {
-          label_track_artist->set_is_drawn(false);
-          label_track_artist->set_text("");
-          label_track_artist->set_min_width(0);
-          label_track_artist->set_max_width(0);
+          m_label_track_artist->set_is_drawn(false);
+          m_label_track_artist->set_text("");
+          m_label_track_artist->set_min_width(0);
+          m_label_track_artist->set_max_width(0);
         } else {
-          label_track_artist->set_is_drawn(true);
-          label_track_artist->set_text(track->get().metadata.artist);
-          label_track_artist->set_min_width(0);
-          label_track_artist->set_max_width(label_track_artist->get_text_extents().x);
+          m_label_track_artist->set_is_drawn(true);
+          m_label_track_artist->set_text(track->get().metadata.artist);
+          m_label_track_artist->set_min_width(0);
+          m_label_track_artist->set_max_width(m_label_track_artist->get_text_extents().x);
         }
       }
-      if (!label_track_title) {
-        label_track_title = &add_child<zincgui::Label>();
-        label_track_title->set_label_anchor(zincgui::Anchor::LEFT);
-        label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
+      if (!m_label_track_title) {
+        m_label_track_title = &add_child<zincgui::Label>();
+        m_label_track_title->set_label_anchor(zincgui::Anchor::LEFT);
+        m_label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
       }
-      if (track.has_value()) { label_track_title->set_text(track->get().pretty_title()); }
+      if (track.has_value()) { m_label_track_title->set_text(track->get().pretty_title()); }
 
-      if (!love_icon) {
-        love_icon = &add_child<Sprite>("love");
-        love_icon->set_min_width(love_icon->get_width());
-        love_icon->set_max_width(love_icon->get_width());
-        love_icon->set_fixed_height(love_icon->get_height());
-        love_icon->set_nine_slice_margin(0.0f);
+      if (!m_love_icon) {
+        m_love_icon = &add_child<Sprite>("love");
+        m_love_icon->set_min_width(m_love_icon->get_width());
+        m_love_icon->set_max_width(m_love_icon->get_width());
+        m_love_icon->set_fixed_height(m_love_icon->get_height());
+        m_love_icon->set_nine_slice_margin(0.0f);
       }
-      love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(m_track_id));
+      m_love_icon->set_is_drawn(db::playlist_loved_tracks().has_track_id(m_track_id));
 
-      if (!label_track_length) {
-        label_track_length = &add_child<zincgui::Label>();
-        label_track_length->set_label_anchor(zincgui::Anchor::RIGHT);
-        label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
+      if (!m_label_track_length) {
+        m_label_track_length = &add_child<zincgui::Label>();
+        m_label_track_length->set_label_anchor(zincgui::Anchor::RIGHT);
+        m_label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
       }
 
-      if (track.has_value()) { label_track_length->set_text(track->get().pretty_length()); }
-      label_track_length->set_min_width(std::max<i32>(font_size * 2.6f, label_track_length->get_text_extents().x));
-      label_track_length->set_max_width(std::max<i32>(font_size * 2.6f, label_track_length->get_text_extents().x));
+      if (track.has_value()) { m_label_track_length->set_text(track->get().pretty_length()); }
+      m_label_track_length->set_min_width(std::max<i32>(FONT_SIZE * 2.6f, m_label_track_length->get_text_extents().x));
+      m_label_track_length->set_max_width(std::max<i32>(FONT_SIZE * 2.6f, m_label_track_length->get_text_extents().x));
 
       if (track.has_value() && track->get().get_flag(db::TOMBSTONE)) {
-        label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
-        label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
-        label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
-        label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
+        m_label_track_number->set_text_color(m_label_track_number->get_text_color() * 0.6f);
+        m_label_track_artist->set_text_color(m_label_track_artist->get_text_color() * 0.6f);
+        m_label_track_title->set_text_color(m_label_track_title->get_text_color() * 0.6f);
+        m_label_track_length->set_text_color(m_label_track_length->get_text_color() * 0.6f);
       }
 
       set_playback_error(track.has_value() && track->get().get_flag(db::PLAYBACK_ERROR));
@@ -141,42 +145,42 @@ class WidgetTrack final : public zincgui::Button {
     void update_text_colors() {
       if (m_is_selected) {
         if (m_track_number % 2 == 0) {
-          bg->set_color(theme::config().panel_tracklist.track_color_selected_odd);
+          m_bg->set_color(theme::config().panel_tracklist.track_color_selected_odd);
         } else {
-          bg->set_color(theme::config().panel_tracklist.track_color_selected_even);
+          m_bg->set_color(theme::config().panel_tracklist.track_color_selected_even);
         }
       } else if (m_highlighted) {
-        bg->set_color(theme::config().panel_tracklist.track_color_playing);
+        m_bg->set_color(theme::config().panel_tracklist.track_color_playing);
       } else {
         if (m_track_number % 2 == 0) {
-          bg->set_color(theme::config().panel_tracklist.track_color_odd);
+          m_bg->set_color(theme::config().panel_tracklist.track_color_odd);
         } else {
-          bg->set_color(theme::config().panel_tracklist.track_color_even);
+          m_bg->set_color(theme::config().panel_tracklist.track_color_even);
         }
       }
 
-      label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
-      label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
-      label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
-      label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
+      m_label_track_number->set_text_color(theme::config().panel_tracklist.track_number_color);
+      m_label_track_artist->set_text_color(theme::config().panel_tracklist.track_artist_color);
+      m_label_track_title->set_text_color(theme::config().panel_tracklist.title_color);
+      m_label_track_length->set_text_color(theme::config().panel_tracklist.length_color);
 
       auto track = db::track_by_id(m_track_id);
       if (track.has_value()) {
         if (m_is_selected) {
-          label_track_number->set_text_color(label_track_number->get_text_color() * 5.0f);
-          label_track_artist->set_text_color(label_track_artist->get_text_color() * 5.0f);
-          label_track_title->set_text_color(label_track_title->get_text_color() * 5.0f);
-          label_track_length->set_text_color(label_track_length->get_text_color() * 5.0f);
+          m_label_track_number->set_text_color(m_label_track_number->get_text_color() * 5.0f);
+          m_label_track_artist->set_text_color(m_label_track_artist->get_text_color() * 5.0f);
+          m_label_track_title->set_text_color(m_label_track_title->get_text_color() * 5.0f);
+          m_label_track_length->set_text_color(m_label_track_length->get_text_color() * 5.0f);
         } else if (track->get().get_flag(db::TOMBSTONE) || m_playback_error) {
-          label_track_number->set_text_color(label_track_number->get_text_color() * 0.6f);
-          label_track_artist->set_text_color(label_track_artist->get_text_color() * 0.6f);
-          label_track_title->set_text_color(label_track_title->get_text_color() * 0.6f);
-          label_track_length->set_text_color(label_track_length->get_text_color() * 0.6f);
+          m_label_track_number->set_text_color(m_label_track_number->get_text_color() * 0.6f);
+          m_label_track_artist->set_text_color(m_label_track_artist->get_text_color() * 0.6f);
+          m_label_track_title->set_text_color(m_label_track_title->get_text_color() * 0.6f);
+          m_label_track_length->set_text_color(m_label_track_length->get_text_color() * 0.6f);
         } else if (m_highlighted) {
-          label_track_number->set_text_color(label_track_number->get_text_color() * 1.5f);
-          label_track_artist->set_text_color(label_track_artist->get_text_color() * 1.5f);
-          label_track_title->set_text_color(label_track_title->get_text_color() * 1.5f);
-          label_track_length->set_text_color(label_track_length->get_text_color() * 1.5f);
+          m_label_track_number->set_text_color(m_label_track_number->get_text_color() * 1.5f);
+          m_label_track_artist->set_text_color(m_label_track_artist->get_text_color() * 1.5f);
+          m_label_track_title->set_text_color(m_label_track_title->get_text_color() * 1.5f);
+          m_label_track_length->set_text_color(m_label_track_length->get_text_color() * 1.5f);
         }
       }
     }
@@ -190,12 +194,12 @@ class WidgetTrack final : public zincgui::Button {
 
       if (!is_mouse_hovering()) { m_is_hovered = false; }
 
-      hover->set_width(width);
-      hover->set_height(height);
-      hover->set_is_drawn(m_is_hovered);
+      m_hover->set_width(width);
+      m_hover->set_height(height);
+      m_hover->set_is_drawn(m_is_hovered);
 
-      bg->set_width(width);
-      bg->set_height(height);
+      m_bg->set_width(width);
+      m_bg->set_height(height);
 
       Sprite::update();
     }
@@ -270,7 +274,7 @@ class WidgetTrack final : public zincgui::Button {
                             .index = m_track_number - 1};
     }
 
-  protected:
+  private:
     bool m_is_hovered = false;
     size_t m_track_id = db::INVALID_ID;
     size_t m_playlist_id = db::INVALID_ID;
@@ -280,15 +284,15 @@ class WidgetTrack final : public zincgui::Button {
     size_t m_item_index = 0;
     TrackHighlightMode m_highlight_mode = TrackHighlightMode::TRACK_INFO;
     bool m_changed = true;
-    Signal<>::slot_key slot_on_track_changed;
-    zincgui::Label* label_track_number{};
-    zincgui::Label* label_track_artist{};
-    zincgui::Label* label_track_title{};
-    zincgui::Label* label_track_length{};
-    zincgui::ColorRect* bg{};
-    zincgui::ColorRect* hover{};
-    Sprite* love_icon{};
+    Signal<>::slot_key m_slot_on_track_changed;
+    zincgui::Label* m_label_track_number{};
+    zincgui::Label* m_label_track_artist{};
+    zincgui::Label* m_label_track_title{};
+    zincgui::Label* m_label_track_length{};
+    zincgui::ColorRect* m_bg{};
+    zincgui::ColorRect* m_hover{};
+    Sprite* m_love_icon{};
     bool m_highlighted = false;
     bool m_playback_error = false;
-    bool pressed = false;
+    bool m_pressed = false;
 };

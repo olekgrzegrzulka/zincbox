@@ -9,13 +9,13 @@
 
 namespace zincbox::scanner {
 
-  struct ScanProgress {
+  struct ScanProgress final {
       i32 directories_scanned = 0;
       i32 files_scanned = 0;
       auto operator<=>(const ScanProgress&) const = default;
   };
 
-  struct ScanResult {
+  struct ScanResult final {
       struct DirContent {
           std::vector<std::filesystem::path> image_files;
           std::vector<TrackFile> track_files;
@@ -25,7 +25,7 @@ namespace zincbox::scanner {
       std::unordered_map<std::filesystem::path, DirContent> files;
   };
 
-  struct ImportSummary {
+  struct ImportSummary final {
       db::collection_id_t collection_id{};
       std::vector<db::track_id_t> skipped_tracks;
       std::vector<db::track_id_t> added_tracks;
@@ -34,6 +34,7 @@ namespace zincbox::scanner {
       std::vector<std::filesystem::path> errors;
 
       ImportSummary() = default;
+      ~ImportSummary() = default;
       ImportSummary(const ImportSummary&) = delete;
       ImportSummary& operator=(const ImportSummary&) = delete;
       ImportSummary(ImportSummary&&) noexcept = default;
