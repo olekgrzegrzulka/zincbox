@@ -211,7 +211,8 @@ class PopupSettings : public Popup {
       header.set_resize_to_text_extents(false);
       header.set_fixed_height(static_cast<i32>(24 * zincbox::ui_scale()));
       header.set_text_color(theme::config().text_color_muted);
-      header.set_label_anchor(zincgui::Anchor::CENTER);
+      header.set_label_anchor(zincgui::Anchor::LEFT);
+      header.set_font_size(zincbox::font_size_lg());
       sections[section_idx].header_label = &header;
     }
 

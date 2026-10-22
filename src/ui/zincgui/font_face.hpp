@@ -1,51 +1,87 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include <ft2build.h>
-#include <glm/vec2.hpp>
-#include "common/types.hpp"
-
+#include <vector>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <freetype/ftimage.h>
+#include FT_SIZES_H
+#include <glm/vec2.hpp>
+#include <hb.h>
+#include "common/types.hpp"
+#include <hb-ft.h>
 
 namespace zincgui {
-
-  // #define STB_IMAGE_WRITE_IMPLEMENTATION
-  // #include "stb_image_write.h"
 
   struct FontGlyph {
       vec2i size{};
       vec2i bearing{};
-      vec2i advance{};
       vec2f uv_start{};
       vec2f uv_end{};
+  };
+
+  struct FontSizeMetrics {
+      FT_Size ft_size = nullptr;
+      hb_font_t* hb_font = nullptr;
+      float ascender = 0.0f;
+      float descender = 0.0f;
+      float line_height = 0.0f;
+      float underline_position = -2.0f;
+      float underline_thickness = 1.0f;
+      float strikeout_position = 4.0f;
+      float strikeout_thickness = 1.0f;
   };
 
   class FontFace {
     public:
       FontFace() = default;
+      FontFace(FT_Library freetype_lib, const std::string& path);
+      FontFace(FT_Library freetype_lib, const void* data, size_t data_size);
+      ~FontFace();
 
-      FontFace(FT_Library& freetype_lib, const std::string& path, i32 pixel_height);
-      FontFace(FT_Library& freetype_lib, void* data, size_t data_size, i32 pixel_height);
+      FontFace(const FontFace&) = delete;
+      FontFace& operator=(const FontFace&) = delete;
+      FontFace(FontFace&& other) noexcept;
+      FontFace& operator=(FontFace&& other) noexcept;
 
       void bind(u32 slot) const;
 
-      const FontGlyph* find_glyph(u32 charcode) const;
+      const FontSizeMetrics& get_metrics(i32 pixel_height) const;
+      const FontGlyph* get_glyph(u32 glyph_index, i32 pixel_height, bool bold, bool italic) const;
+      u32 get_codepoint_glyph_index(u32 codepoint) const;
 
-      float get_line_height() const { return m_line_height; }
-      float get_ascender() const { return m_ascender; }
+      hb_buffer_t* acquire_hb_buffer() const;
+      vec2f get_white_uv() const { return white_uv_; }
+      u64 get_atlas_version() const { return atlas_version_; }
 
     private:
-      bool init(FT_Face&, i32 pixel_height);
-      bool try_creating_glyph_data(FT_Face&, i32 texture_dimensions, i32 pixel_height);
+      void init_atlas(i32 width, i32 height);
+      bool grow_atlas() const;
+      const FontGlyph* rasterize_glyph(u64 key, u32 glyph_index, i32 pixel_height, bool bold, bool italic) const;
+      void cleanup();
+
+      static u64 make_glyph_key(u32 glyph_index, i32 pixel_height, bool bold, bool italic) {
+        u64 style = (bold ? 1ULL : 0ULL) | (italic ? 2ULL : 0ULL);
+        return (static_cast<u64>(glyph_index) << 32) | (static_cast<u64>(static_cast<u16>(pixel_height)) << 8) | style;
+      }
 
     private:
-      float m_line_height = 0.0f;
-      float m_ascender = 0.0f;
-      u32 texture = 0;
-      u32 sampler = 0;
-      std::unordered_map<u32, FontGlyph> glyph_map;
+      FT_Face ft_face_ = nullptr;
+      std::vector<u8> memory_buffer_{};
+      mutable hb_buffer_t* hb_buffer_ = nullptr;
+
+      mutable u32 texture_ = 0;
+      u32 sampler_ = 0;
+      mutable i32 atlas_width_ = 0;
+      mutable i32 atlas_height_ = 0;
+      mutable i32 shelf_x_ = 0;
+      mutable i32 shelf_y_ = 0;
+      mutable i32 shelf_height_ = 0;
+      mutable vec2f white_uv_{};
+      mutable u64 atlas_version_ = 1;
+      mutable std::vector<u8> atlas_pixels_{};
+
+      mutable std::unordered_map<i32, FontSizeMetrics> metrics_cache_{};
+      mutable std::unordered_map<u64, FontGlyph> glyph_map_{};
   };
 
 } // namespace zincgui

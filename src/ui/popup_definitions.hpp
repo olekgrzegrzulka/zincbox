@@ -442,6 +442,7 @@ class PopupAbout : public Popup {
         tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
       set_width(content.get_text_extents().x + 16);
       content.set_text_color(theme::config().text_color_muted);
+      content.set_text_alignment(zincgui::TextAlign::JUSTIFY);
 
       auto& buttons = add_child<Widget>();
       buttons.set_layout("ltr fill fit expand m:0 s:8");

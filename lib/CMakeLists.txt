@@ -55,6 +55,7 @@ if(ZINCBOX_GUI)
   add_subdirectory(glad SYSTEM)
   add_subdirectory(SDL SYSTEM)
   add_subdirectory(cmrc SYSTEM)
+  add_subdirectory(harfbuzz SYSTEM)
 
   add_library(spng_static STATIC libspng/spng/spng.c)
   target_include_directories(spng_static PUBLIC libspng/spng)

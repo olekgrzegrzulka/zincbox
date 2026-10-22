@@ -53,7 +53,12 @@ static SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point*
 #endif
 
 float zincbox::ui_scale() { return s_settings.interface.scale * 0.01f; }
-i32 zincbox::font_size() { return s_settings.interface.font_size; }
+
+i32 zincbox::font_size_xs() { return (font_size() * 3) / 4; }       // 75%
+i32 zincbox::font_size_sm() { return (font_size() * 17) / 20; }     // 85%
+i32 zincbox::font_size() { return s_settings.interface.font_size; } // 100%
+i32 zincbox::font_size_lg() { return (font_size() * 6) / 5; }       // 120%
+i32 zincbox::font_size_xl() { return (font_size() * 29) / 20; }     // 145%
 
 void zincbox::init(u64 flags) {
   player::init();

@@ -78,5 +78,6 @@ target_link_libraries(zincbox_ui PUBLIC
     stb_image
     glad
     SDL3::SDL3-static
+    harfbuzz
     zincbox_resources
 )
