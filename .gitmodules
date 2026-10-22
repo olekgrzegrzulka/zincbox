@@ -37,3 +37,6 @@
 [submodule "lib/cmrc"]
 	path = lib/cmrc
 	url = https://github.com/vector-of-bool/cmrc.git
+[submodule "lib/harfbuzz"]
+	path = lib/harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz.git

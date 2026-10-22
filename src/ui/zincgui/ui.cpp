@@ -1,3 +1,4 @@
+#include "ui.hpp"
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -8,12 +9,12 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <stdlib.h>
+#include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/types.hpp"
 #include "freetype/freetype.h"
 #include "shader.hpp"
 #include "shader_src.hpp"
-#include "ui.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
@@ -28,6 +29,64 @@ zincgui::Root::Root(i32 window_width_, i32 window_height_) : shader{shader_vert,
   }
   matrix = glm::mat4{1.0};
   matrix = glm::scale(matrix, glm::vec3(1.0f, -1.0f, 1.0f));
+}
+
+zincgui::Root::~Root() {
+  widgets.clear();
+  widgets_to_add.clear();
+  fonts.clear();
+  if (freetype_lib != nullptr) {
+    FT_Done_FreeType(freetype_lib);
+    freetype_lib = nullptr;
+  }
+}
+
+size_t zincgui::Root::add_font(std::string_view name, const std::string& path) {
+  size_t id = fonts.size();
+  fonts.emplace_back(std::make_unique<FontFace>(freetype_lib, path));
+  font_name_to_id[std::string(name)] = id;
+  return id;
+}
+
+size_t zincgui::Root::add_font_from_data(std::string_view name, const void* data, size_t data_size) {
+  size_t id = fonts.size();
+  fonts.emplace_back(std::make_unique<FontFace>(freetype_lib, data, data_size));
+  font_name_to_id[std::string(name)] = id;
+  return id;
+}
+
+std::optional<size_t> zincgui::Root::find_font_id(std::string_view name) const {
+  auto it = font_name_to_id.find(std::string(name));
+  if (it == font_name_to_id.end()) { return std::nullopt; }
+  return it->second;
+}
+
+zincgui::FontFace& zincgui::Root::get_font(std::string_view name) {
+  auto id_opt = find_font_id(name);
+  if (!id_opt.has_value()) {
+    out::critical("requested unknown font '{}'", name);
+    exit(1);
+  }
+  return *fonts[*id_opt];
+}
+
+const zincgui::FontFace& zincgui::Root::get_font(std::string_view name) const {
+  auto id_opt = find_font_id(name);
+  if (!id_opt.has_value()) {
+    out::critical("requested unknown font '{}'", name);
+    exit(1);
+  }
+  return *fonts[*id_opt];
+}
+
+zincgui::FontFace& zincgui::Root::get_font(size_t id) {
+  ensure(id < fonts.size());
+  return *fonts[id];
+}
+
+const zincgui::FontFace& zincgui::Root::get_font(size_t id) const {
+  ensure(id < fonts.size());
+  return *fonts[id];
 }
 
 void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
@@ -221,7 +280,7 @@ void zincgui::Root::draw() {
   shader.use();
   shader.set_uniform_mat4("matrix", get_matrix());
   shader.set_uniform_float("tex_size", texture_atlas.size(), texture_atlas.size());
-  font_face.bind(0);
+  if (!fonts.empty()) { fonts[0]->bind(0); }
   texture_atlas.bind(1);
   for (auto& layer : widget_traversal_order) {
     for (auto* widget : layer) {

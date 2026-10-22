@@ -205,7 +205,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
       }
     }
     if (font_path != "") {
-      ui.set_font_face(font_path, zincbox::settings().interface.font_size);
+      ui.set_default_font_size(zincbox::settings().interface.font_size);
+      ui.add_font("default", font_path);
     } else {
       out::warn("no ttf file found in {}", std::string{theme_name});
       load_theme("", ui, language);
@@ -229,8 +230,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
       out::critical("no ttf file found in default theme");
       exit(1);
     }
-    ui.set_font_face_from_data(resources[resources_ttf_path].data(), resources[resources_ttf_path].size(),
-                               zincbox::settings().interface.font_size);
+    ui.set_default_font_size(zincbox::settings().interface.font_size);
+    ui.add_font_from_data("default", resources[resources_ttf_path].data(), resources[resources_ttf_path].size());
   }
 
   load_translations(theme_name, language);

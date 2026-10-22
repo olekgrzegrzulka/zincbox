@@ -13,7 +13,11 @@ struct Settings;
 
 namespace zincbox {
   float ui_scale();
+  i32 font_size_xs();
+  i32 font_size_sm();
   i32 font_size();
+  i32 font_size_lg();
+  i32 font_size_xl();
 
   enum InitFlags : u8 { WINDOW = 1, TRAY = 2, MPRIS = 4 };
 

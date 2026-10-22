@@ -9,6 +9,7 @@
 #include <vector>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
+#include "common/lru.hpp"
 #include "common/utf.hpp"
 #include "core/cover_art.hpp"
 #include "core/musicdb/musicdb.hpp"
@@ -17,37 +18,7 @@
 #include "ui/theme.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 
-class LRU {
-  private:
-    std::list<std::string> order;
-    std::unordered_map<std::string, std::list<std::string>::iterator> lookup;
-
-  public:
-    void touch(const std::string& id) {
-      auto it = lookup.find(id);
-      if (it != lookup.end()) {
-        order.splice(order.begin(), order, it->second);
-      } else {
-        order.push_front(id);
-        lookup[id] = order.begin();
-      }
-    }
-
-    size_t size() const { return lookup.size(); }
-
-    std::vector<std::string> evict(size_t n) {
-      std::vector<std::string> evicted;
-      while (n > 0 && !order.empty()) {
-        std::string id = std::move(order.back());
-        order.pop_back();
-        lookup.erase(id);
-        evicted.push_back(std::move(id));
-        n -= 1;
-      }
-      return evicted;
-    }
-} lru;
-
+static LRU lru;
 static zincgui::TextureAtlas atlas;
 
 zincgui::TextureAtlas& zincbox::ui::cover_art::texture_atlas() { return atlas; }
