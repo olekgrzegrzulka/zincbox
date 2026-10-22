@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <string_view>
 #include "lib/utfcpp/source/utf8.h"

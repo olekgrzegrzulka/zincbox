@@ -60,6 +60,11 @@ namespace zincgui {
         if (m_on_value_changed) { m_on_value_changed(); }
       }
 
+      void set_checkbox_anchor(Anchor anchor) {
+        inner->set_anchor(anchor);
+        inner->set_parent_anchor(anchor);
+      }
+
       void update() override {
         button->set_size(width, height);
         // inner->set_size(width, height);

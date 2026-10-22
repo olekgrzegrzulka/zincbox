@@ -18,6 +18,8 @@ namespace io {
 
   void open_folder_in_file_manager(const fs::path&);
 
+  void open_file_in_default_editor(const fs::path&);
+
   fs::path get_user_data_path();
   fs::path get_themes_path();
   fs::path get_db_path();
