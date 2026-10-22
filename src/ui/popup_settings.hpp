@@ -53,6 +53,17 @@ class PopupSettings : public Popup {
       set_height(std::min<i32>(get_max_content_height(), static_cast<i32>(600 * zincbox::ui_scale())));
       refresh_save_button_state();
       Popup::update();
+
+      bool tight_ = width < 850;
+      if (tight_ != tight) {
+        tight = tight_;
+        for (auto* label : eq_freq_labels) {
+          label->set_is_drawn(!tight);
+        }
+        for (auto* label : eq_value_labels) {
+          label->set_is_drawn(!tight);
+        }
+      }
     }
 
   public:
@@ -86,7 +97,9 @@ class PopupSettings : public Popup {
     std::array<SectionGroup, SECTION_COUNT> sections{};
     std::array<zincgui::Slider*, player::EQ_BAND_COUNT> eq_sliders{};
     std::array<zincgui::Label*, player::EQ_BAND_COUNT> eq_value_labels{};
+    std::array<zincgui::Label*, player::EQ_BAND_COUNT> eq_freq_labels{};
     std::string last_search_query{};
+    bool tight = false;
 
     static i32 control_row_height() { return static_cast<i32>(8 * zincbox::ui_scale() + zincbox::font_size()); }
 
@@ -379,7 +392,6 @@ class PopupSettings : public Popup {
       for (size_t i = 0; i < player::EQ_BAND_COUNT; ++i) {
         auto& col = bands_row.add_child<zincgui::Widget>();
         col.set_layout("ttb fill expand m:0 s:4");
-        col.set_weight(1.0f);
 
         float init_gain = std::clamp(working_settings.playback.equalizer[i], -12.0f, 12.0f);
 
@@ -389,8 +401,11 @@ class PopupSettings : public Popup {
         val_label.set_label_anchor(zincgui::Anchor::CENTER);
         eq_value_labels[i] = &val_label;
 
-        auto& slider = col.add_child<zincgui::Slider>(zincgui::SliderOrientation::VERTICAL);
-        slider.set_weight(1.0f);
+        auto& slider = col.add_child<ZincboxSlider>("equalizer");
+        slider.set_orientation(zincgui::SliderOrientation::VERTICAL_INVERTED);
+        slider.set_fixed_width(slider.get_width());
+        slider.set_track_nine_slice_margin(3);
+        slider.set_thumb_nine_slice_margin(6);
         slider.set_min_value(-12.0f);
         slider.set_max_value(12.0f);
         slider.set_value(init_gain, false);
@@ -407,6 +422,7 @@ class PopupSettings : public Popup {
         freq_label.set_fixed_height(static_cast<i32>(16 * zincbox::ui_scale()));
         freq_label.set_label_anchor(zincgui::Anchor::CENTER);
         freq_label.set_text_color(theme::config().text_color_muted);
+        eq_freq_labels[i] = &freq_label;
       }
 
       sections[section_idx].entries.push_back(SettingEntry{

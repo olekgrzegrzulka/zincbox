@@ -25,22 +25,29 @@ zincgui::Slider::Slider(Root& ui_, SliderOrientation orientation_)
 
 void zincgui::Slider::skip_anim() {
   using enum SliderOrientation;
-  i32 track_length = (orientation == HORIZONTAL) ? width : height;
+  bool is_horiz = (orientation == HORIZONTAL || orientation == HORIZONTAL_INVERTED);
+  bool is_invert = (orientation == HORIZONTAL_INVERTED || orientation == VERTICAL_INVERTED);
+
+  i32 track_length = is_horiz ? width : height;
   float thumb_pos_target = 0.0f;
   if ((max_value - min_value) != 0.0f) {
+    float norm = (value - min_value) / (float)(max_value - min_value);
+    if (is_invert) { norm = 1.0f - norm; }
     if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
-      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length);
+      thumb_pos_target = norm * (track_length);
       thumb_pos_target -= thumb_length * 0.5f;
     } else {
-      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length - thumb_length);
+      thumb_pos_target = norm * (track_length - thumb_length);
     }
   }
-  if (orientation == HORIZONTAL) {
+  if (is_horiz) {
     thumb.set_x(thumb_pos_target);
-    track_active.set_width(thumb_pos_target + thumb.get_width() * 0.5);
-  } else if (orientation == VERTICAL) {
+    track_active.set_width(is_invert ? (track_length - (thumb_pos_target + thumb.get_width() * 0.5))
+                                     : (thumb_pos_target + thumb.get_width() * 0.5));
+  } else {
     thumb.set_y(thumb_pos_target);
-    track_active.set_height(thumb_pos_target + thumb.get_height() * 0.5);
+    track_active.set_height(is_invert ? (track_length - (thumb_pos_target + thumb.get_height() * 0.5))
+                                      : (thumb_pos_target + thumb.get_height() * 0.5));
   }
 }
 
@@ -48,6 +55,9 @@ void zincgui::Slider::input() {
   using enum Anchor;
   using enum Input::MouseButton;
   using enum SliderOrientation;
+
+  bool is_horiz = (orientation == HORIZONTAL || orientation == HORIZONTAL_INVERTED);
+  bool is_invert = (orientation == HORIZONTAL_INVERTED || orientation == VERTICAL_INVERTED);
 
   track.set_nine_slice_margin(track_nine_slice_margin);
   track_active.set_nine_slice_margin(track_nine_slice_margin);
@@ -58,16 +68,16 @@ void zincgui::Slider::input() {
   track_active.set_uv_start(uv_start_track_active);
   track_active.set_uv_end(uv_end_track_active);
 
-  i32 track_length = (orientation == HORIZONTAL) ? width : height;
-  if (orientation == HORIZONTAL) {
+  i32 track_length = is_horiz ? width : height;
+  if (is_horiz) {
     track.set_width(track_length);
     track.set_height(track_thickness);
     track.set_parent_anchor(CENTER);
     track.set_anchor(CENTER);
 
     track_active.set_height(track_thickness);
-    track_active.set_parent_anchor(LEFT);
-    track_active.set_anchor(LEFT);
+    track_active.set_parent_anchor(is_invert ? RIGHT : LEFT);
+    track_active.set_anchor(is_invert ? RIGHT : LEFT);
 
     thumb.set_width(thumb_length);
     thumb.set_height(thumb_thickness);
@@ -81,8 +91,8 @@ void zincgui::Slider::input() {
     track.set_anchor(CENTER);
 
     track_active.set_width(track_thickness);
-    track_active.set_parent_anchor(TOP);
-    track_active.set_anchor(TOP);
+    track_active.set_parent_anchor(is_invert ? BOTTOM : TOP);
+    track_active.set_anchor(is_invert ? BOTTOM : TOP);
 
     thumb.set_width(thumb_thickness);
     thumb.set_height(thumb_length);
@@ -97,7 +107,7 @@ void zincgui::Slider::input() {
   i32 mouse_y = Input::get_mouse_y();
   bool mouse_on_thumb = false;
   bool mouse_on_track = false;
-  if (orientation == HORIZONTAL) {
+  if (is_horiz) {
     mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x && mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
                       mouse_y >= thumb.get_position(TOP_LEFT).y - drag_area_inflation &&
                       mouse_y <= thumb.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
@@ -115,11 +125,12 @@ void zincgui::Slider::input() {
 
   if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
     float new_value = 0.0f;
-    if (orientation == HORIZONTAL && width != 0) {
+    if (is_horiz && width != 0) {
       new_value = (Input::get_mouse_x() - get_position().x) / (float)width;
     } else if (height != 0) {
       new_value = (Input::get_mouse_y() - get_position().y) / (float)height;
     }
+    if (is_invert) { new_value = 1.0f - new_value; }
     new_value *= (max_value - min_value);
     new_value += min_value;
     set_value(new_value);
@@ -128,7 +139,7 @@ void zincgui::Slider::input() {
 
   if (lmb_just_pressed && mouse_on_thumb) {
     drag_start_value = value;
-    if (orientation == HORIZONTAL) {
+    if (is_horiz) {
       drag_start_mouse_pos = Input::get_mouse_x();
       drag_start_thumb_pos = thumb.get_x();
     } else {
@@ -139,8 +150,9 @@ void zincgui::Slider::input() {
   }
 
   if (is_dragged) {
-    i32 drag_px = Input::get_mouse_x() - drag_start_mouse_pos;
-    if (orientation == VERTICAL) { drag_px = Input::get_mouse_y() - drag_start_mouse_pos; }
+    i32 drag_px = is_horiz ? (Input::get_mouse_x() - drag_start_mouse_pos)
+                           : (Input::get_mouse_y() - drag_start_mouse_pos);
+    if (is_invert) { drag_px = -drag_px; }
 
     if ((track_length - thumb_length) != 0) {
       float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
@@ -167,24 +179,28 @@ void zincgui::Slider::input() {
     thumb.set_uv_end(uv_end_thumb_idle);
   }
 
-  float thumb_old_pos = (orientation == HORIZONTAL) ? thumb.get_x() : thumb.get_y();
+  float thumb_old_pos = is_horiz ? thumb.get_x() : thumb.get_y();
   float thumb_pos_target = 0.0f;
   if ((max_value - min_value) != 0.0f) {
+    float norm = (value - min_value) / (float)(max_value - min_value);
+    if (is_invert) { norm = 1.0f - norm; }
     if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
-      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length);
+      thumb_pos_target = norm * (track_length);
       thumb_pos_target -= thumb_length * 0.5f;
     } else {
-      thumb_pos_target = ((value - min_value) / (float)(max_value - min_value)) * (track_length - thumb_length);
+      thumb_pos_target = norm * (track_length - thumb_length);
     }
   }
   double t = std::clamp(std::abs(thumb_old_pos - thumb_pos_target) * 0.004, 0.6, 0.95);
   float thumb_pos_lerped = std::lerp(thumb_old_pos, thumb_pos_target, t);
-  if (orientation == HORIZONTAL) {
+  if (is_horiz) {
     thumb.set_x(thumb_pos_lerped);
-    track_active.set_width(thumb_pos_lerped + thumb.get_width() * 0.5);
-  } else if (orientation == VERTICAL) {
+    track_active.set_width(is_invert ? (track_length - (thumb_pos_lerped + thumb.get_width() * 0.5))
+                                     : (thumb_pos_lerped + thumb.get_width() * 0.5));
+  } else {
     thumb.set_y(thumb_pos_lerped);
-    track_active.set_height(thumb_pos_lerped + thumb.get_height() * 0.5);
+    track_active.set_height(is_invert ? (track_length - (thumb_pos_lerped + thumb.get_height() * 0.5))
+                                      : (thumb_pos_lerped + thumb.get_height() * 0.5));
   }
 
   Widget::input();

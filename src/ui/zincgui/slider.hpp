@@ -11,7 +11,7 @@ namespace zincgui {
   class Root;
   class Sprite;
 
-  enum class SliderOrientation : u8 { HORIZONTAL, VERTICAL };
+  enum class SliderOrientation : u8 { HORIZONTAL, VERTICAL, HORIZONTAL_INVERTED, VERTICAL_INVERTED };
 
   enum class ThumbConstraint : u8 { INSIDE_TRACK, FULL_RANGE };
 
