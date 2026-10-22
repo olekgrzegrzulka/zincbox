@@ -104,6 +104,8 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   label_title->set_clip(false);
   label_author = &add_child<Label>();
   label_author->set_clip(false);
+  label_author->set_font_size(zincbox::font_size_sm());
+  label_author->set_ellipsis(true);
 
   if (playlist_id.has_value()) {
     auto& playlist = db::playlist_by_id(playlist_id.value())->get();
