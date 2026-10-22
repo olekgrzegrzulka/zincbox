@@ -13,48 +13,49 @@
 #include <sdbus-c++/IConnection.h>
 #include <sdbus-c++/sdbus-c++.h>
 
-static mpris::CommandQueue command_queue;
+namespace {
+  mpris::CommandQueue command_queue;
+  std::unique_ptr<sdbus::IObject> mpris_object;
+  std::string status = "Stopped";
+  double volume = 1.0;
+  std::string track_id = "/org/mpris/MediaPlayer2/Track/0";
+  i64 duration_us;
+  std::string title;
+  std::string artist;
+  std::string album;
+  std::string cover_path;
+  mpris::LoopStatus loop_status = mpris::LoopStatus::NONE;
+  bool shuffle = false;
 
-static std::unique_ptr<sdbus::IObject> mpris_object;
-static std::string status = "Stopped";
-static double volume = 1.0;
-static std::string track_id = "/org/mpris/MediaPlayer2/Track/0";
-static i64 duration_us;
-static std::string title;
-static std::string artist;
-static std::string album;
-static std::string cover_path;
-static mpris::LoopStatus loop_status = mpris::LoopStatus::NONE;
-static bool shuffle = false;
-
-static const char* const player_name = "zincbox";
-static const char* const player_id = "org.mpris.MediaPlayer2.zincbox";
-
-static const char* loop_status_to_string(mpris::LoopStatus s) {
-  switch (s) {
-  case mpris::LoopStatus::TRACK: return "Track";
-  case mpris::LoopStatus::PLAYLIST: return "Playlist";
-  case mpris::LoopStatus::NONE:
-  default: return "None";
+  const char* loop_status_to_string(mpris::LoopStatus s) {
+    switch (s) {
+    case mpris::LoopStatus::TRACK: return "Track";
+    case mpris::LoopStatus::PLAYLIST: return "Playlist";
+    case mpris::LoopStatus::NONE:
+    default: return "None";
+    }
   }
-}
 
-static mpris::LoopStatus string_to_loop_status(const std::string& val) {
-  if (val == "Track") { return mpris::LoopStatus::TRACK; }
-  if (val == "Playlist") { return mpris::LoopStatus::PLAYLIST; }
-  return mpris::LoopStatus::NONE;
-}
+  mpris::LoopStatus string_to_loop_status(const std::string& val) {
+    if (val == "Track") { return mpris::LoopStatus::TRACK; }
+    if (val == "Playlist") { return mpris::LoopStatus::PLAYLIST; }
+    return mpris::LoopStatus::NONE;
+  }
+} // namespace
+
+static const char* const PLAYER_NAME = "zincbox";
+static const char* const PLAYER_ID = "org.mpris.MediaPlayer2.zincbox";
 
 void mpris::init() {
   auto thread = std::thread([]() {
     try {
-      auto connection = sdbus::createSessionBusConnection(sdbus::ServiceName{player_id});
+      auto connection = sdbus::createSessionBusConnection(sdbus::ServiceName{PLAYER_ID});
 
-      const sdbus::ObjectPath path{"/org/mpris/MediaPlayer2"};
-      mpris_object = sdbus::createObject(*connection, path);
+      const sdbus::ObjectPath PATH{"/org/mpris/MediaPlayer2"};
+      mpris_object = sdbus::createObject(*connection, PATH);
 
       mpris_object
-        ->addVTable(sdbus::registerProperty("Identity").withGetter([]() { return std::string(player_name); }),
+        ->addVTable(sdbus::registerProperty("Identity").withGetter([]() { return std::string(PLAYER_NAME); }),
                     sdbus::registerProperty("CanQuit").withGetter([]() { return false; }),
                     sdbus::registerProperty("CanRaise").withGetter([]() { return false; }),
                     sdbus::registerProperty("HasTrackList").withGetter([]() { return false; }))

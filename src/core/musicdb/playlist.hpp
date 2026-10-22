@@ -8,7 +8,7 @@
 #include "common/types.hpp"
 
 namespace db {
-  enum class PlaylistType : u8 { Album, User, Smart };
+  enum class PlaylistType : u8 { ALBUM, USER, SMART };
 
   struct Playlist final {
     public:

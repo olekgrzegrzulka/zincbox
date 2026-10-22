@@ -27,8 +27,8 @@ set(UI_SOURCES
     sdl3_window.cpp
     tray.cpp
     tr.cpp
-    interface.cpp
-    interface_notifications.cpp
+    ui.cpp
+    ui_notifications.cpp
     panel_playlists.cpp
     panel_controls.cpp
     panel_tracklist.cpp
@@ -44,7 +44,7 @@ set(UI_SOURCES
     zincgui/texture.cpp
     zincgui/texture_atlas.cpp
     zincgui/shader.cpp
-    zincgui/ui.cpp
+    zincgui/root.cpp
     zincgui/font_face.cpp
     zincgui/button.cpp
     zincgui/label.cpp

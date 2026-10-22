@@ -34,4 +34,4 @@ void zincgui::ScrollBar::recalculate_values() {
 
 void zincgui::ScrollBar::draw() { Slider::draw(); }
 
-void zincgui::ScrollBar::scroll(float force) { set_value(value - force * sensitivity); }
+void zincgui::ScrollBar::scroll(float force) { set_value(value - (force * sensitivity)); }

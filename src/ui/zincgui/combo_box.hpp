@@ -5,11 +5,11 @@
 #include <numbers>
 #include <string>
 #include <string_view>
-#include "button.hpp"
-#include "label.hpp"
-#include "sprite.hpp"
+#include "ui/zincgui/button.hpp"
 #include "ui/zincgui/input.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 
@@ -99,10 +99,10 @@ namespace zincgui {
           auto* item = item_widgets[widget_i];
           bool draw_item = label_i < (i32)items.size();
           if (draw_item) {
-            item->set_width(width - 2 * dropdown_padding);
+            item->set_width(width - (2 * dropdown_padding));
             item->set_height(item_height);
             float y_residue = (scroll_progress - std::trunc(scroll_progress)) * (item_height + dropdown_padding);
-            item->set_y(dropdown_padding + (item_height + dropdown_padding) * widget_i - y_residue);
+            item->set_y(dropdown_padding + ((item_height + dropdown_padding) * widget_i) - y_residue);
 
             item->get_label().set_text(items[label_i].second);
             item->set_is_updated(true);
@@ -123,9 +123,10 @@ namespace zincgui {
           }
         }
 
-        i32 dropdown_height =
-          2 * dropdown_padding + (item_height + dropdown_padding) * std::min<i32>(items.size(), dropdown_max_length);
-        float dropdown_animation_eased = std::sin(std::numbers::pi * (dropdown_animation_progress - 0.5f)) * 0.5 + 0.5;
+        i32 dropdown_height = (2 * dropdown_padding) +
+                              ((item_height + dropdown_padding) * std::min<i32>(items.size(), dropdown_max_length));
+        float dropdown_animation_eased =
+          (std::sin(std::numbers::pi * (dropdown_animation_progress - 0.5f)) * 0.5) + 0.5;
         if (dropdown_state == DropDownState::APPEARING) {
           dropdown_height = std::lerp(0, dropdown_height, dropdown_animation_eased);
         } else if (dropdown_state == DropDownState::DISAPPEARING) {
@@ -236,7 +237,7 @@ namespace zincgui {
       float scroll_progress = 0.0; // 1.0 per one item scrolled
 
       std::array<ComboBoxItem*, dropdown_max_length + 1>
-        item_widgets; // +1 to accomodate for partially visible extra item
+        item_widgets{}; // +1 to accomodate for partially visible extra item
       std::vector<std::pair<std::string, std::string>> items;
 
     public:

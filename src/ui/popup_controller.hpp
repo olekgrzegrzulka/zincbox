@@ -9,7 +9,7 @@
 #include "common/types.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/input.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 
 class Popup;
@@ -59,13 +59,13 @@ class Dimmer : public zincgui::ColorRect {
     }
 
   public:
-    std::optional<vec2i> prev_window_size{};
-    std::function<void()> on_pressed{};
-    std::function<void()> on_enter_pressed{};
-    std::function<void()> on_escape_pressed{};
+    std::optional<vec2i> prev_window_size;
+    std::function<void()> on_pressed;
+    std::function<void()> on_enter_pressed;
+    std::function<void()> on_escape_pressed;
 };
 
-class PopupController : public zincgui::Widget {
+class PopupController final : public zincgui::Widget {
   public:
     PopupController(zincgui::Root& ui_);
     void input() override;
@@ -82,7 +82,7 @@ class PopupController : public zincgui::Widget {
     T* show_popup(Args&&... args) {
       close_all_popovers();
       auto& popup = add_child<T>(*this, [this](Popup* p) { on_popup_closed(p); }, std::forward<Args>(args)...);
-      popups.emplace_back(&popup);
+      m_popups.emplace_back(&popup);
       return &popup;
     };
 
@@ -90,10 +90,10 @@ class PopupController : public zincgui::Widget {
     void close_all_popups();
     void close_all_popovers();
 
-  protected:
+  private:
     void on_popup_closed(Popup* popup);
-    zincgui::Root& ui;
-    Dimmer* dimmer{};
-    std::vector<Widget*> popups{};
-    std::unordered_map<std::string, Widget*> popovers{};
+    zincgui::Root& m_ui;
+    Dimmer* m_dimmer{};
+    std::vector<Widget*> m_popups;
+    std::unordered_map<std::string, Widget*> m_popovers;
 };

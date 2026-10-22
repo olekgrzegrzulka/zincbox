@@ -50,8 +50,8 @@ namespace zincgui {
       u32 get_codepoint_glyph_index(u32 codepoint) const;
 
       hb_buffer_t* acquire_hb_buffer() const;
-      vec2f get_white_uv() const { return white_uv_; }
-      u64 get_atlas_version() const { return atlas_version_; }
+      vec2f get_white_uv() const { return m_white_uv; }
+      u64 get_atlas_version() const { return m_atlas_version; }
 
     private:
       void init_atlas(i32 width, i32 height);
@@ -65,23 +65,23 @@ namespace zincgui {
       }
 
     private:
-      FT_Face ft_face_ = nullptr;
-      std::vector<u8> memory_buffer_{};
-      mutable hb_buffer_t* hb_buffer_ = nullptr;
+      FT_Face m_ft_face = nullptr;
+      std::vector<u8> m_memory_buffer;
+      mutable hb_buffer_t* m_hb_buffer = nullptr;
 
-      mutable u32 texture_ = 0;
-      u32 sampler_ = 0;
-      mutable i32 atlas_width_ = 0;
-      mutable i32 atlas_height_ = 0;
-      mutable i32 shelf_x_ = 0;
-      mutable i32 shelf_y_ = 0;
-      mutable i32 shelf_height_ = 0;
-      mutable vec2f white_uv_{};
-      mutable u64 atlas_version_ = 1;
-      mutable std::vector<u8> atlas_pixels_{};
+      mutable u32 m_texture = 0;
+      u32 m_sampler = 0;
+      mutable i32 m_atlas_width = 0;
+      mutable i32 m_atlas_height = 0;
+      mutable i32 m_shelf_x = 0;
+      mutable i32 m_shelf_y = 0;
+      mutable i32 m_shelf_height = 0;
+      mutable vec2f m_white_uv{};
+      mutable u64 m_atlas_version = 1;
+      mutable std::vector<u8> m_atlas_pixels;
 
-      mutable std::unordered_map<i32, FontSizeMetrics> metrics_cache_{};
-      mutable std::unordered_map<u64, FontGlyph> glyph_map_{};
+      mutable std::unordered_map<i32, FontSizeMetrics> m_metrics_cache;
+      mutable std::unordered_map<u64, FontGlyph> m_glyph_map;
   };
 
 } // namespace zincgui

@@ -26,7 +26,6 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -76,6 +75,11 @@ template <auto Fn, typename Progress, typename Result> class Worker {
     using State = typename JobContext<Progress, Result>::State;
 
     struct ITask {
+        ITask() = default;
+        ITask(const ITask&) = delete;
+        ITask(ITask&&) = delete;
+        ITask& operator=(const ITask&) = delete;
+        ITask& operator=(ITask&&) = delete;
         virtual ~ITask() = default;
         virtual void execute() = 0;
     };
@@ -100,6 +104,10 @@ template <auto Fn, typename Progress, typename Result> class Worker {
     using job_id_t = u64;
 
     Worker();
+    Worker(const Worker&) = delete;
+    Worker(Worker&&) = delete;
+    Worker& operator=(const Worker&) = delete;
+    Worker& operator=(Worker&&) = delete;
     ~Worker();
 
     template <typename... Args> job_id_t run(Args&&... args);

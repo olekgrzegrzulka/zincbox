@@ -27,19 +27,12 @@ enum Dir : u8 {
 };
 
 static constexpr Dir opposite_dir(Dir dir) {
-  if (dir == Dir::LEFT) {
-    return Dir::RIGHT;
-  } else if (dir == Dir::RIGHT) {
-    return Dir::LEFT;
-  } else if (dir == Dir::FRONT) {
-    return Dir::BACK;
-  } else if (dir == Dir::BACK) {
-    return Dir::FRONT;
-  } else if (dir == Dir::TOP) {
-    return Dir::BOTTOM;
-  } else if (dir == Dir::BOTTOM) {
-    return Dir::TOP;
-  }
+  if (dir == Dir::LEFT) { return Dir::RIGHT; }
+  if (dir == Dir::RIGHT) { return Dir::LEFT; }
+  if (dir == Dir::FRONT) { return Dir::BACK; }
+  if (dir == Dir::BACK) { return Dir::FRONT; }
+  if (dir == Dir::TOP) { return Dir::BOTTOM; }
+  if (dir == Dir::BOTTOM) { return Dir::TOP; }
   return Dir::NONE;
 }
 

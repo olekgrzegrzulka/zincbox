@@ -34,10 +34,10 @@ namespace player {
           float z2_r = 0.0f;
       };
 
-      u32 sample_rate_ = 48000;
-      bool bypass_ = true;
-      std::array<BiquadCoeffs, EQ_BAND_COUNT> coeffs_{};
-      std::array<BiquadState, EQ_BAND_COUNT> state_{};
+      u32 m_sample_rate = 48000;
+      bool m_bypass = true;
+      std::array<BiquadCoeffs, EQ_BAND_COUNT> m_coeffs{};
+      std::array<BiquadState, EQ_BAND_COUNT> m_state{};
   };
 
 } // namespace player

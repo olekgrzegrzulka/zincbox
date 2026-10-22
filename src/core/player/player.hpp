@@ -21,7 +21,7 @@ namespace player {
   bool play(const QueueElement&, bool clear_queue = true);
   bool play_playlist(size_t collection_id, size_t playlist_id, bool clear_queue = true);
   void enqueue(const QueueElement&, size_t at);
-  std::vector<size_t> add_to_queue(std::span<const db::track_info> play, size_t at);
+  std::vector<size_t> add_to_queue(std::span<const db::track_info> tracks, size_t at);
   void remove_from_queue(size_t at);
   void remove_from_queue(std::span<const size_t>);
   std::vector<size_t> move_queue_tracks(std::span<const size_t> indices, size_t target_index);

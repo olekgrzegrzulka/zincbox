@@ -1,4 +1,4 @@
-#include "ui.hpp"
+#include "root.hpp"
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -18,46 +18,46 @@
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
-zincgui::Root::Root(i32 window_width_, i32 window_height_) : shader{shader_vert, shader_frag} {
-  window_width = window_width_;
-  window_height = window_height_;
-  if (FT_Init_FreeType(&freetype_lib)) {
+zincgui::Root::Root(i32 window_width_, i32 window_height_) : m_shader{shader_vert, shader_frag} {
+  m_window_width = window_width_;
+  m_window_height = window_height_;
+  if (FT_Init_FreeType(&m_freetype_lib)) {
     out::critical("failed to initialize freetype");
     exit(1);
   }
-  matrix = glm::mat4{1.0};
-  matrix = glm::scale(matrix, glm::vec3(1.0f, -1.0f, 1.0f));
+  m_matrix = glm::mat4{1.0};
+  m_matrix = glm::scale(m_matrix, glm::vec3(1.0f, -1.0f, 1.0f));
 }
 
 zincgui::Root::~Root() {
-  widgets.clear();
-  widgets_to_add.clear();
-  fonts.clear();
-  if (freetype_lib != nullptr) {
-    FT_Done_FreeType(freetype_lib);
-    freetype_lib = nullptr;
+  m_widgets.clear();
+  m_widgets_to_add.clear();
+  m_fonts.clear();
+  if (m_freetype_lib != nullptr) {
+    FT_Done_FreeType(m_freetype_lib);
+    m_freetype_lib = nullptr;
   }
 }
 
 size_t zincgui::Root::add_font(std::string_view name, const std::string& path) {
-  size_t id = fonts.size();
-  fonts.emplace_back(std::make_unique<FontFace>(freetype_lib, path));
-  font_name_to_id[std::string(name)] = id;
+  size_t id = m_fonts.size();
+  m_fonts.emplace_back(std::make_unique<FontFace>(m_freetype_lib, path));
+  m_font_name_to_id[std::string(name)] = id;
   return id;
 }
 
 size_t zincgui::Root::add_font_from_data(std::string_view name, const void* data, size_t data_size) {
-  size_t id = fonts.size();
-  fonts.emplace_back(std::make_unique<FontFace>(freetype_lib, data, data_size));
-  font_name_to_id[std::string(name)] = id;
+  size_t id = m_fonts.size();
+  m_fonts.emplace_back(std::make_unique<FontFace>(m_freetype_lib, data, data_size));
+  m_font_name_to_id[std::string(name)] = id;
   return id;
 }
 
 std::optional<size_t> zincgui::Root::find_font_id(std::string_view name) const {
-  auto it = font_name_to_id.find(std::string(name));
-  if (it == font_name_to_id.end()) { return std::nullopt; }
+  auto it = m_font_name_to_id.find(std::string(name));
+  if (it == m_font_name_to_id.end()) { return std::nullopt; }
   return it->second;
 }
 
@@ -67,7 +67,7 @@ zincgui::FontFace& zincgui::Root::get_font(std::string_view name) {
     out::critical("requested unknown font '{}'", name);
     exit(1);
   }
-  return *fonts[*id_opt];
+  return *m_fonts[*id_opt];
 }
 
 const zincgui::FontFace& zincgui::Root::get_font(std::string_view name) const {
@@ -76,17 +76,17 @@ const zincgui::FontFace& zincgui::Root::get_font(std::string_view name) const {
     out::critical("requested unknown font '{}'", name);
     exit(1);
   }
-  return *fonts[*id_opt];
+  return *m_fonts[*id_opt];
 }
 
 zincgui::FontFace& zincgui::Root::get_font(size_t id) {
-  ensure(id < fonts.size());
-  return *fonts[id];
+  ensure(id < m_fonts.size());
+  return *m_fonts[id];
 }
 
 const zincgui::FontFace& zincgui::Root::get_font(size_t id) const {
-  ensure(id < fonts.size());
-  return *fonts[id];
+  ensure(id < m_fonts.size());
+  return *m_fonts[id];
 }
 
 void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
@@ -98,7 +98,7 @@ void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
   bool parent_hovered = !widget->parent || widget->parent->hovered_;
   if (!widget->get_marked_for_deletion() && widget->get_is_updated() && widget->get_is_drawn() &&
       widget->get_is_self_drawn() && hovered && parent_hovered) {
-    hovered_widgets.emplace_back(widget);
+    m_hovered_widgets.emplace_back(widget);
     widget->hovered_ = true;
   } else {
     widget->hovered_ = false;
@@ -114,10 +114,10 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
 
   if (widget->get_marked_for_deletion() && !widget->deleted_) {
     widget->deleted_ = true;
-    deleted_widgets.insert(widget);
+    m_deleted_widgets.insert(widget);
   }
 
-  if (!widget->children_to_add.empty() && !widget->deleted_) { mutated_widgets.insert(widget); }
+  if (!widget->children_to_add.empty() && !widget->deleted_) { m_mutated_widgets.insert(widget); }
 
   if (widget->is_drawn_on_top) { always_on_top_layer += 1; }
   Widget* parent = widget->parent;
@@ -135,7 +135,7 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   if (widget->is_drawn_on_top) { parent_scissor = std::nullopt; }
   if (widget->get_clip_children()) {
     widget->scissor_ = {
-      .begin = {widget->get_position(Anchor::TOP_LEFT).x, window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
+      .begin = {widget->get_position(Anchor::TOP_LEFT).x, m_window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
       .size = {widget->get_width(), widget->get_height()}};
     if (parent && parent->scissor_.has_value()) { widget->scissor_ = widget->scissor_->intersected(*parent->scissor_); }
   } else {
@@ -147,10 +147,10 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       construct_traversal_order(child.get(), always_on_top_layer);
     }
   }
-  if ((i32)widget_traversal_order.size() <= always_on_top_layer) {
-    widget_traversal_order.resize(always_on_top_layer + 1);
+  if ((i32)m_widget_traversal_order.size() <= always_on_top_layer) {
+    m_widget_traversal_order.resize(always_on_top_layer + 1);
   }
-  widget_traversal_order[always_on_top_layer].emplace_back(widget);
+  m_widget_traversal_order[always_on_top_layer].emplace_back(widget);
 
   for (auto&& child : widget->get_children()) {
     if (!child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) {
@@ -165,19 +165,19 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
 
 static i32 construct_traversal_order_counter = 0;
 void zincgui::Root::construct_traversal_order() {
-  tree_dirty = false;
+  m_tree_dirty = false;
   construct_traversal_order_counter++;
-  widget_traversal_order.clear();
-  deleted_widgets.clear();
-  mutated_widgets.clear();
+  m_widget_traversal_order.clear();
+  m_deleted_widgets.clear();
+  m_mutated_widgets.clear();
 
-  for (auto&& w : widgets) {
+  for (auto&& w : m_widgets) {
     if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
   }
-  for (auto&& w : widgets) {
+  for (auto&& w : m_widgets) {
     if (!w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
   }
-  for (const auto& w : widgets) {
+  for (const auto& w : m_widgets) {
     if (w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
   }
 }
@@ -185,26 +185,27 @@ void zincgui::Root::construct_traversal_order() {
 bool zincgui::Root::process_mutations() {
   bool changed = false;
 
-  if (!deleted_widgets.empty()) {
+  if (!m_deleted_widgets.empty()) {
     changed = true;
-    for (Widget* w : deleted_widgets) {
+    for (Widget* w : m_deleted_widgets) {
       if (w->parent != nullptr) {
         std::erase_if(w->parent->children, [w](const auto& child) { return child.get() == w; });
       } else {
-        std::erase_if(widgets, [w](const auto& child) { return child.get() == w; });
+        std::erase_if(m_widgets, [w](const auto& child) { return child.get() == w; });
       }
     }
   }
 
-  if (!widgets_to_add.empty()) {
+  if (!m_widgets_to_add.empty()) {
     changed = true;
-    widgets.insert(widgets.end(), std::move_iterator(widgets_to_add.begin()), std::move_iterator(widgets_to_add.end()));
-    widgets_to_add.clear();
+    m_widgets.insert(m_widgets.end(), std::move_iterator(m_widgets_to_add.begin()),
+                     std::move_iterator(m_widgets_to_add.end()));
+    m_widgets_to_add.clear();
   }
 
-  if (!mutated_widgets.empty()) {
+  if (!m_mutated_widgets.empty()) {
     changed = true;
-    for (Widget* w : mutated_widgets) {
+    for (Widget* w : m_mutated_widgets) {
       w->last_update_frame_ = 0;
       w->children.insert(w->children.end(), std::move_iterator(w->children_to_add.begin()),
                          std::move_iterator(w->children_to_add.end()));
@@ -217,31 +218,32 @@ bool zincgui::Root::process_mutations() {
 
 void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   construct_traversal_order_counter = 0;
-  current_frame += 1;
+  m_current_frame += 1;
 
-  if (window_width_ != window_width || window_height_ != window_height) {
-    tree_dirty = true;
-    for (auto&& widget : widgets) {
+  if (window_width_ != m_window_width || window_height_ != m_window_height) {
+    m_tree_dirty = true;
+    for (auto&& widget : m_widgets) {
       widget->mark_dirty();
     }
   }
 
-  window_width = window_width_;
-  window_height = window_height_;
+  m_window_width = window_width_;
+  m_window_height = window_height_;
 
-  if (!widgets_to_add.empty()) {
-    tree_dirty = true;
-    widgets.insert(widgets.end(), std::move_iterator(widgets_to_add.begin()), std::move_iterator(widgets_to_add.end()));
-    widgets_to_add.clear();
+  if (!m_widgets_to_add.empty()) {
+    m_tree_dirty = true;
+    m_widgets.insert(m_widgets.end(), std::move_iterator(m_widgets_to_add.begin()),
+                     std::move_iterator(m_widgets_to_add.end()));
+    m_widgets_to_add.clear();
   }
 
-  if (tree_dirty) { construct_traversal_order(); }
+  if (m_tree_dirty) { construct_traversal_order(); }
   if (process_mutations()) { construct_traversal_order(); }
 
-  for (auto it_layer = widget_traversal_order.rbegin(); it_layer != widget_traversal_order.rend(); ++it_layer) {
+  for (auto it_layer = m_widget_traversal_order.rbegin(); it_layer != m_widget_traversal_order.rend(); ++it_layer) {
     for (auto it = (*it_layer).rbegin(); it != (*it_layer).rend(); ++it) {
-      (*it)->set_window_width(window_width);
-      (*it)->set_window_height(window_height);
+      (*it)->set_window_width(m_window_width);
+      (*it)->set_window_height(m_window_height);
       if ((*it)->updated_) {
         for (auto& ev : Input::get_event_queue()) {
           std::visit([it](auto& ev_) { (*it)->event(ev_); }, ev);
@@ -252,23 +254,23 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
 
   bool tree_changed = false;
   do {
-    for (auto& layer : widget_traversal_order) {
+    for (auto& layer : m_widget_traversal_order) {
       for (auto* widget : layer) {
-        if (widget->updated_ && widget->last_update_frame_ != current_frame) {
-          widget->last_update_frame_ = current_frame;
+        if (widget->updated_ && widget->last_update_frame_ != m_current_frame) {
+          widget->last_update_frame_ = m_current_frame;
           widget->input();
           widget->update();
         }
       }
     }
 
-    if (tree_dirty) { construct_traversal_order(); }
+    if (m_tree_dirty) { construct_traversal_order(); }
     tree_changed = process_mutations();
     if (tree_changed) { construct_traversal_order(); }
   } while (tree_changed);
 
-  hovered_widgets.clear();
-  for (auto&& w : widgets) {
+  m_hovered_widgets.clear();
+  for (auto&& w : m_widgets) {
     update_hovered_widgets_recursive(w.get());
   }
 }
@@ -277,19 +279,19 @@ void zincgui::Root::draw() {
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_SCISSOR_TEST);
 
-  shader.use();
-  shader.set_uniform_mat4("matrix", get_matrix());
-  shader.set_uniform_float("tex_size", texture_atlas.size(), texture_atlas.size());
-  if (!fonts.empty()) { fonts[0]->bind(0); }
-  texture_atlas.bind(1);
-  for (auto& layer : widget_traversal_order) {
+  m_shader.use();
+  m_shader.set_uniform_mat4("matrix", get_matrix());
+  m_shader.set_uniform_float("tex_size", m_texture_atlas.size(), m_texture_atlas.size());
+  if (!m_fonts.empty()) { m_fonts[0]->bind(0); }
+  m_texture_atlas.bind(1);
+  for (auto& layer : m_widget_traversal_order) {
     for (auto* widget : layer) {
       if (widget->visible_ && widget->is_self_drawn) {
         if (widget->scissor_.has_value()) {
           rect2i scissor_rect = widget->scissor_.value();
           if (widget->get_clip()) {
             rect2i widget_rect = {.begin = {widget->get_position(Anchor::TOP_LEFT).x,
-                                            window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
+                                            m_window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
                                   .size = {widget->get_width(), widget->get_height()}};
             scissor_rect = scissor_rect.intersected(widget_rect);
           }

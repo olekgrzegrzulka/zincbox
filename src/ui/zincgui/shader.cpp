@@ -199,7 +199,7 @@ u32 zincgui::Shader::create_shader_program() const {
   glAttachShader(shader_program_, vertex_shader);
   glAttachShader(shader_program_, fragment_shader);
   glLinkProgram(shader_program_);
-  i32 success;
+  i32 success = 0;
   glGetProgramiv(shader_program_, GL_LINK_STATUS, &success);
   if (!success) {
     out::critical("failed to link shader program");

@@ -84,22 +84,21 @@ struct PlaylistTrackSerialized {
     std::vector<std::string> album_artist;
     std::string genre;
     std::optional<i32> year;
-    i32 bitrate_kb_s;
-    i32 duration_ms;
+    i32 bitrate_kb_s{};
+    i32 duration_ms{};
     std::string path;
 
     PlaylistTrackSerialized() = default;
-    PlaylistTrackSerialized(const db::Track& track) {
-      track_number = track.metadata.track_number;
-      title = track.metadata.title;
-      artist = track.metadata.artist;
-      album_artist = track.metadata.album_artist;
-      genre = track.metadata.genre;
-      year = track.metadata.year;
-      bitrate_kb_s = track.metadata.bitrate_kb_s;
-      duration_ms = track.metadata.duration_ms;
-      path = path_to_utf8(track.file_path);
-    }
+    PlaylistTrackSerialized(const PlaylistTrackSerialized&) = default;
+    PlaylistTrackSerialized(PlaylistTrackSerialized&&) = default;
+    PlaylistTrackSerialized& operator=(const PlaylistTrackSerialized&) = default;
+    PlaylistTrackSerialized& operator=(PlaylistTrackSerialized&&) = default;
+    ~PlaylistTrackSerialized() = default;
+    PlaylistTrackSerialized(const db::Track& track)
+      : track_number(track.metadata.track_number), title(track.metadata.title), artist(track.metadata.artist),
+        album_artist(track.metadata.album_artist), genre(track.metadata.genre), year(track.metadata.year),
+        bitrate_kb_s(track.metadata.bitrate_kb_s), duration_ms(track.metadata.duration_ms),
+        path(path_to_utf8(track.file_path)) {}
 };
 
 template <> struct glz::meta<PlaylistTrackSerialized> {
@@ -141,8 +140,8 @@ struct PlayerSerialized {
 struct InterfaceSerialized {
     bool mini_player = false;
     i32 playlists_scroll_offset = 0;
-    std::string selected_tab{};
-    std::vector<std::string> tabs_order{};
+    std::string selected_tab;
+    std::vector<std::string> tabs_order;
     i32 tracks_scroll_offset = 0;
     i32 window_width = 0;
     i32 window_height = 0;
@@ -157,5 +156,5 @@ struct AppSerialized {
 
 template <> struct glz::meta<Settings::CoverPreference> {
     using enum Settings::CoverPreference;
-    static constexpr auto value = glz::enumerate("album", Album, "playlist", Playlist);
+    static constexpr auto value = glz::enumerate("album", ALBUM, "playlist", PLAYLIST);
 };

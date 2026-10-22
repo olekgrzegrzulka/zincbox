@@ -22,8 +22,8 @@
 #include "theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/tr.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
-#include "ui/zincgui/ui.hpp"
 #include "zincbox.hpp"
 
 namespace fs = std::filesystem;
@@ -36,95 +36,125 @@ struct StringHash {
     size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
 };
 
-static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> resources;
-static std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> languages;
-static std::string resources_ttf_path;
-static ThemeConfig config_;
+namespace {
+  std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> resources;
+  std::unordered_map<std::string, std::vector<uint8_t>, StringHash, std::equal_to<>> languages;
+  std::string resources_ttf_path;
+  ThemeConfig config_;
+
+  void load_resources() {
+    if (!resources.empty()) { return; }
+
+    resources.clear();
+    resources_ttf_path.clear();
+
+    auto cmrc_fs = cmrc::zincbox_resources::get_filesystem();
+
+    if (!cmrc_fs.exists("theme.zip")) {
+      out::critical("theme.zip not found in cmrc");
+      exit(1);
+    }
+
+    {
+      auto theme_zip = cmrc_fs.open("theme.zip");
+      mz_zip_archive zip_archive{};
+      if (!mz_zip_reader_init_mem(&zip_archive, theme_zip.begin(), theme_zip.size(), 0)) {
+        out::critical("failed to load resources from memory");
+        exit(1);
+      }
+
+      for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
+        if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
+
+        std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
+        mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
+
+        std::string filename(file_stat.m_filename);
+
+        if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
+
+        resources[std::move(filename)] = std::move(buffer);
+      }
+      mz_zip_reader_end(&zip_archive);
+    }
+
+    {
+      auto lang_zip = cmrc_fs.open("lang.zip");
+      mz_zip_archive zip_archive{};
+      if (!mz_zip_reader_init_mem(&zip_archive, lang_zip.begin(), lang_zip.size(), 0)) {
+        out::critical("failed to load languages from memory");
+        exit(1);
+      }
+
+      for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
+        if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
+
+        std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
+        mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
+
+        std::string filename(file_stat.m_filename);
+
+        if (filename.ends_with(".json")) {
+          fs::path file_path{file_stat.m_filename};
+          languages[file_path.stem().c_str()] = std::move(buffer);
+        }
+      }
+      mz_zip_reader_end(&zip_archive);
+    }
+  }
+
+  bool load_language_from_resource(std::string_view language) {
+    load_resources();
+    auto it = languages.find(language);
+    if (it == resources.end()) { return false; }
+
+    std::string content(reinterpret_cast<const char*>(it->second.data()), it->second.size());
+    return tr::load_from_string(content);
+  }
+
+  bool load_language_from_theme_path(const fs::path& theme_path, std::string_view language) {
+    fs::path file_path = theme_path / "lang" / (std::string(language) + ".json");
+    if (!fs::is_regular_file(file_path)) { return false; }
+    return tr::load_from_file(file_path);
+  }
+
+  void load_translations(std::string_view theme_name, std::string_view language) {
+    bool loaded = false;
+    if (theme_name != "") {
+      fs::path theme_path(io::get_themes_path() / theme_name);
+      loaded = load_language_from_theme_path(theme_path, language);
+    }
+
+    if (!loaded) { loaded = load_language_from_resource(language); }
+    if (!loaded && language != "en-US") { loaded = load_language_from_resource("en-US"); }
+    if (!loaded) {
+      out::critical("failed to load translations for language {}", std::string(language));
+      exit(1);
+    }
+  }
+
+} // namespace
 
 static const std::vector<uint8_t> NO_RESOURCE = {};
 
 const std::vector<uint8_t>& theme::get_raw_resource(const std::string& path) {
   auto it = resources.find(path);
-  if (it == resources.end()) {
-    return NO_RESOURCE;
-  } else {
-    return it->second;
-  }
+  if (it == resources.end()) { return NO_RESOURCE; }
+  return it->second;
 }
 
 const ThemeConfig& theme::config() { return config_; }
-
-void load_resources() {
-  if (!resources.empty()) { return; }
-
-  resources.clear();
-  resources_ttf_path.clear();
-
-  auto cmrc_fs = cmrc::zincbox_resources::get_filesystem();
-
-  if (!cmrc_fs.exists("theme.zip")) {
-    out::critical("theme.zip not found in cmrc");
-    exit(1);
-  }
-
-  {
-    auto theme_zip = cmrc_fs.open("theme.zip");
-    mz_zip_archive zip_archive{};
-    if (!mz_zip_reader_init_mem(&zip_archive, theme_zip.begin(), theme_zip.size(), 0)) {
-      out::critical("failed to load resources from memory");
-      exit(1);
-    }
-
-    for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
-      mz_zip_archive_file_stat file_stat;
-      if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
-      if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
-
-      std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
-      mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
-
-      std::string filename(file_stat.m_filename);
-
-      if (resources_ttf_path.empty() && filename.ends_with(".ttf")) { resources_ttf_path = file_stat.m_filename; }
-
-      resources[std::move(filename)] = std::move(buffer);
-    }
-    mz_zip_reader_end(&zip_archive);
-  }
-
-  {
-    auto lang_zip = cmrc_fs.open("lang.zip");
-    mz_zip_archive zip_archive{};
-    if (!mz_zip_reader_init_mem(&zip_archive, lang_zip.begin(), lang_zip.size(), 0)) {
-      out::critical("failed to load languages from memory");
-      exit(1);
-    }
-
-    for (mz_uint i = 0; i < mz_zip_reader_get_num_files(&zip_archive); i++) {
-      mz_zip_archive_file_stat file_stat;
-      if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) { continue; }
-      if (mz_zip_reader_is_file_a_directory(&zip_archive, i)) { continue; }
-
-      std::vector<uint8_t> buffer(file_stat.m_uncomp_size);
-      mz_zip_reader_extract_to_mem(&zip_archive, i, buffer.data(), buffer.size(), 0);
-
-      std::string filename(file_stat.m_filename);
-
-      if (filename.ends_with(".json")) {
-        fs::path file_path{file_stat.m_filename};
-        languages[file_path.stem().c_str()] = std::move(buffer);
-      }
-    }
-    mz_zip_reader_end(&zip_archive);
-  }
-}
 
 std::set<std::string> theme::get_themes() {
   std::set<std::string> ret;
 
   for (const auto& entry : fs::directory_iterator(io::get_themes_path())) {
     if (fs::is_regular_file(entry.path() / "theme.json")) {
-      const std::string name = path_to_utf8(entry.path().filename());
+      std::string name = path_to_utf8(entry.path().filename());
       ret.insert(name);
     }
   }
@@ -141,45 +171,15 @@ std::set<std::string> theme::get_languages() {
   return ret;
 }
 
-static bool load_language_from_resource(std::string_view language) {
-  load_resources();
-  auto it = languages.find(language);
-  if (it == resources.end()) { return false; }
-
-  std::string content(reinterpret_cast<const char*>(it->second.data()), it->second.size());
-  return tr::load_from_string(content);
-}
-
-static bool load_language_from_theme_path(const fs::path& theme_path, std::string_view language) {
-  fs::path file_path = theme_path / "lang" / (std::string(language) + ".json");
-  if (!fs::is_regular_file(file_path)) { return false; }
-  return tr::load_from_file(file_path);
-}
-
-static void load_translations(std::string_view theme_name, std::string_view language) {
-  bool loaded = false;
-  if (theme_name != "") {
-    fs::path theme_path(io::get_themes_path() / theme_name);
-    loaded = load_language_from_theme_path(theme_path, language);
-  }
-
-  if (!loaded) { loaded = load_language_from_resource(language); }
-  if (!loaded && language != "en-US") { loaded = load_language_from_resource("en-US"); }
-  if (!loaded) {
-    out::critical("failed to load translations for language {}", std::string(language));
-    exit(1);
-  }
-}
-
 void theme::load_default_theme(Root& ui, std::string_view language) { load_theme("", ui, language); }
 
 void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view language) {
-  const bool load_theme_from_resources = theme_name == "";
-  if (load_theme_from_resources) { load_resources(); }
+  const bool LOAD_THEME_FROM_RESOURCES = theme_name == "";
+  if (LOAD_THEME_FROM_RESOURCES) { load_resources(); }
 
   fs::path theme_path(io::get_themes_path() / theme_name);
 
-  if (!load_theme_from_resources) {
+  if (!LOAD_THEME_FROM_RESOURCES) {
     // Check if the theme exists in the themes directory
     if (!fs::is_directory(theme_path)) {
       out::warn("no theme found at {}", path_to_utf8(theme_path));
@@ -188,7 +188,7 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
     }
 
     fs::path theme_json_path = io::get_themes_path() / theme_name / "theme.json";
-    auto error = glz::read_file_json(config_, path_to_utf8(theme_json_path).c_str(), std::string{});
+    auto error = glz::read_file_json(config_, path_to_utf8(theme_json_path), std::string{});
     if (error) {
       out::warn("failed to load theme {} invalid or missing theme.json", theme_name);
       load_theme("", ui, language);
@@ -197,14 +197,14 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
     config_.clamp_values();
 
     // Try to load a font file, else fallback to default theme
-    std::string font_path = "";
+    std::string font_path;
     for (auto const& dir_entry : fs::recursive_directory_iterator(theme_path)) {
       if (dir_entry.is_regular_file() && dir_entry.path().extension() == ".ttf") {
         font_path = path_to_utf8(dir_entry.path());
         break;
       }
     }
-    if (font_path != "") {
+    if (!font_path.empty()) {
       ui.set_default_font_size(zincbox::settings().interface.font_size);
       ui.add_font("default", font_path);
     } else {
@@ -240,11 +240,11 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
   auto& atlas = ui.get_texture_atlas();
 
-  auto atlas_add_texture = [&load_theme_from_resources, &theme_path,
+  auto atlas_add_texture = [&LOAD_THEME_FROM_RESOURCES, &theme_path,
                             &atlas](const std::string& id, std::vector<std::string> paths = {}) -> bool {
     if (paths.empty()) { return false; }
 
-    if (!load_theme_from_resources) {
+    if (!LOAD_THEME_FROM_RESOURCES) {
       for (const std::string& path : paths) {
         if (fs::is_regular_file((theme_path / path))) {
           atlas.add_texture(id, path_to_utf8(theme_path / path));
@@ -259,7 +259,9 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
       auto it = resources.find(path);
       if (it == resources.end()) { continue; }
 
-      i32 w, h, channels;
+      i32 w = 0;
+      i32 h = 0;
+      i32 channels = 0;
       u8* img = stbi_load_from_memory(it->second.data(), it->second.size(), &w, &h, &channels, STBI_rgb_alpha);
       if (!img) { continue; }
       atlas.add_texture(id, img, w, h);
@@ -273,7 +275,7 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   auto atlas_add_texture_row = [&](std::span<const std::string> ids, std::span<const std::string> paths = {}) -> bool {
     if (paths.empty()) { return false; }
 
-    if (!load_theme_from_resources) {
+    if (!LOAD_THEME_FROM_RESOURCES) {
       for (const std::string& path : paths) {
         if (fs::is_regular_file((theme_path / path))) {
           atlas.add_texture_row(ids, path_to_utf8(theme_path / path));
@@ -288,7 +290,9 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
       auto it = resources.find(path);
       if (it == resources.end()) { continue; }
 
-      i32 w, h, channels;
+      i32 w = 0;
+      i32 h = 0;
+      i32 channels = 0;
       u8* img = stbi_load_from_memory(it->second.data(), it->second.size(), &w, &h, &channels, STBI_rgb_alpha);
       if (!img) { continue; }
 

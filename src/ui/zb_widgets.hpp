@@ -4,7 +4,7 @@
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "zincbox.hpp"
 
 class ZincboxButton final : public zincgui::Button {
@@ -20,7 +20,7 @@ class ZincboxButton final : public zincgui::Button {
       set_nine_slice_margin(config.nine_slice_margin);
     }
 
-    void set_texture_all(std::string texture_name) {
+    void set_texture_all(const std::string& texture_name) {
       set_texture_disabled(texture_name + "_disabled");
       set_texture_hovered(texture_name + "_hovered");
       set_texture_idle(texture_name + "_idle");
@@ -46,15 +46,15 @@ class ZincboxSlider final : public zincgui::Slider {
 class ZincboxScrollbar final : public zincgui::ScrollBar {
   public:
     ZincboxScrollbar(zincgui::Root& ui_) : ScrollBar(ui_) {
-      static const float scale = zincbox::ui_scale();
-      set_thumb_thickness(10 * scale);
-      set_track_thickness(10 * scale);
-      set_min_width(10 * scale);
-      set_max_width(10 * scale);
-      set_width(10 * scale);
+      const float SCALE = zincbox::ui_scale();
+      set_thumb_thickness(10 * SCALE);
+      set_track_thickness(10 * SCALE);
+      set_min_width(10 * SCALE);
+      set_max_width(10 * SCALE);
+      set_width(10 * SCALE);
     }
 
-    void update() {
+    void update() override {
       sensitivity = zincbox::settings().interface.scrolling_speed;
       ScrollBar::update();
     }

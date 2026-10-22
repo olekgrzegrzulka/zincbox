@@ -13,9 +13,9 @@
 #include "playlist.hpp"
 #include "track.hpp"
 
-namespace fs = std::filesystem;
-
 namespace db {
+  namespace fs = std::filesystem;
+
   void create_empty_db();
   void serialize(std::ofstream&);
   void deserialize(std::ifstream&);
@@ -42,8 +42,8 @@ namespace db {
   collection_id_t add_collection(std::string_view);
   playlist_id_t add_playlist_to_collection(collection_id_t, Playlist);
   void mark_collection_as_tombstone(collection_id_t);
-  bool add_path_to_collection(collection_id_t, fs::path);
-  bool remove_path_from_collection(collection_id_t, fs::path);
+  bool add_path_to_collection(collection_id_t, const fs::path&);
+  bool remove_path_from_collection(collection_id_t, const fs::path&);
   void rename_collection(collection_id_t, std::string_view new_name);
 
   // playlist getters
@@ -53,7 +53,7 @@ namespace db {
   const std::vector<Playlist>& all_playlists();
   size_t playlist_count();
   playlist_id_t get_album_id(collection_id_t, std::string album_name, std::string album_artist,
-                             std::filesystem::path parent_dir_name);
+                             const fs::path& parent_dir_name);
 
   // playlist setters
   void mark_playlist_as_tombstone(playlist_id_t);
@@ -77,7 +77,7 @@ namespace db {
   std::unordered_set<track_id_t> track_by_title(std::string_view);
   std::unordered_set<track_id_t> track_by_file_name(const std::filesystem::path&);
   std::unordered_set<track_id_t> track_by_artist_title(std::string_view, std::string_view);
-  std::optional<track_id_t> track_by_path(const std::filesystem::path&);
+  std::optional<track_id_t> track_by_path(const fs::path&);
   const std::vector<Track>& all_tracks();
   size_t track_count();
 
@@ -89,7 +89,7 @@ namespace db {
   void set_track_flag(track_id_t, TrackFlag, bool);
   void set_track_file_size(track_id_t, u64);
   void set_track_last_modified(track_id_t, i64);
-  void set_track_file_path(track_id_t, fs::path);
+  void set_track_file_path(track_id_t, const fs::path&);
   void set_track_metadata(track_id_t, zincbox::TrackMetadata);
 
   // search

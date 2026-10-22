@@ -20,6 +20,7 @@ namespace zincbox {
         TrackFile(const fs::path& path);
 
         TrackFile() = default;
+        ~TrackFile() = default;
         TrackFile(const TrackFile&) = delete;
         TrackFile& operator=(const TrackFile&) = delete;
         TrackFile(TrackFile&&) noexcept = default;

@@ -15,7 +15,7 @@ zincbox::scanner::TrackFile::TrackFile(const fs::path& path) {
   TagLib::FileStream fstream(file_path.c_str(), true);
   TagLib::FileRef f(&fstream);
 
-  if (f.isNull() || !f.file()) {
+  if (f.isNull() || (f.file() == nullptr)) {
     error = true;
     return;
   }
@@ -32,8 +32,8 @@ zincbox::scanner::TrackFile::TrackFile(const fs::path& path) {
   }
 
   if (properties.contains("ALBUMARTIST")) {
-    auto artistList = properties["ALBUMARTIST"];
-    for (const auto& artist_ : artistList) {
+    auto artist_list = properties["ALBUMARTIST"];
+    for (const auto& artist_ : artist_list) {
       metadata.album_artist.emplace_back(artist_.to8Bit(true));
     }
   }

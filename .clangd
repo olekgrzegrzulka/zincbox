@@ -1,0 +1,5 @@
+If:
+  PathMatch: lib/.*
+
+Diagnostics:
+  Suppress: ["*"]

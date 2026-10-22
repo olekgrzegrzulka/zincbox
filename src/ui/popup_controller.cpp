@@ -10,8 +10,8 @@
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/label.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/sprite.hpp"
-#include "ui/zincgui/ui.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -20,15 +20,15 @@ using namespace zincgui;
 void PopupController::on_popup_closed(Popup* popup) {
   close_all_popovers();
   popup->set_marked_for_deletion(true);
-  auto it = std::find(popups.begin(), popups.end(), popup);
-  if (it != popups.end()) { popups.erase(it); }
+  auto it = std::find(m_popups.begin(), m_popups.end(), popup);
+  if (it != m_popups.end()) { m_popups.erase(it); }
 }
 
-PopupController::PopupController(Root& ui_) : Widget(ui_), ui(ui_) {
-  dimmer = &add_child<Dimmer>();
-  dimmer->on_pressed = [this]() { on_dimmer_pressed(); };
-  dimmer->on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };
-  dimmer->on_escape_pressed = [this]() { on_dimmer_escape_pressed(); };
+PopupController::PopupController(Root& ui_) : Widget(ui_), m_ui(ui_) {
+  m_dimmer = &add_child<Dimmer>();
+  m_dimmer->on_pressed = [this]() { on_dimmer_pressed(); };
+  m_dimmer->on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };
+  m_dimmer->on_escape_pressed = [this]() { on_dimmer_escape_pressed(); };
 }
 
 void PopupController::on_dimmer_pressed() { close_all_popovers(); }
@@ -40,10 +40,10 @@ void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 void PopupController::create_popover(const popover_descriptor& d) {
   float scale = zincbox::ui_scale();
   i32 space_needed = (8 + (4 + 24) * d.buttons.size() + 12) * scale;
-  bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
+  bool arrow_on_top = m_ui.get_window_height() - d.at.y >= space_needed;
 
   auto& popover = add_child<Popover>(arrow_on_top);
-  popovers.emplace(d.id, &popover);
+  m_popovers.emplace(d.id, &popover);
 
   popover.set_nine_slice_margin(8.0f);
   popover.set_anchor(arrow_on_top ? Anchor::TOP : Anchor::BOTTOM);
@@ -63,7 +63,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
   if (!d.title.empty()) {
     auto& label = popover.add_child<Label>(d.title);
     // label.update_text();
-    popover.set_width(std::max<i32>(popover.get_width(), label.get_width() + 30 * scale));
+    popover.set_width(std::max<i32>(popover.get_width(), label.get_width() + (30 * scale)));
     label.set_text_color(theme::config().text_color_muted);
     label.set_label_anchor(Anchor::TOP);
     label.set_resize_to_text_extents(false);
@@ -86,7 +86,7 @@ void PopupController::create_popover(const popover_descriptor& d) {
 
     if (!icon_id.empty()) {
       auto& icon = btn.get_label().add_child<Sprite>(icon_id);
-      btn.get_label().set_x(btn.get_label().get_x() + icon.get_width() / 2);
+      btn.get_label().set_x(btn.get_label().get_x() + (icon.get_width() / 2));
       icon.set_ignore_parents_layout(true);
       icon.set_ignore_parents_layout(true);
       icon.set_anchor(Anchor::RIGHT);
@@ -99,49 +99,49 @@ void PopupController::create_popover(const popover_descriptor& d) {
 
     auto lambda = [this, action, popover_id, &popover]() -> void {
       if (action) { action(); }
-      popovers.erase(popover_id);
+      m_popovers.erase(popover_id);
       popover.set_marked_for_deletion(true);
     };
     btn.on_press(lambda);
   }
 };
 
-bool PopupController::is_popup_open() const { return popups.size() > 0; }
+bool PopupController::is_popup_open() const { return m_popups.size() > 0; }
 
 void PopupController::close_all_popups() {
-  for (auto [_, popover] : popovers) {
+  for (auto [_, popover] : m_popovers) {
     popover->set_marked_for_deletion(true);
   }
-  popovers.clear();
+  m_popovers.clear();
 
-  for (auto popup : popups) {
+  for (auto popup : m_popups) {
     popup->set_marked_for_deletion(true);
   }
-  popups.clear();
+  m_popups.clear();
 }
 
 void PopupController::close_all_popovers() {
-  for (auto [_, popover] : popovers) {
+  for (auto [_, popover] : m_popovers) {
     popover->set_marked_for_deletion(true);
   }
-  popovers.clear();
+  m_popovers.clear();
 }
 
 void PopupController::input() {
   if (children.size() >= 2) {
     children.back()->input();
-    dimmer->input();
+    m_dimmer->input();
   }
 }
 
 void PopupController::update() {
-  set_size(ui.get_window_size());
-  bool dimmer_block_events = (popovers.size() + popups.size()) > 0;
-  bool dimmer_visible = popups.size() > 0;
+  set_size(m_ui.get_window_size());
+  bool dimmer_block_events = (m_popovers.size() + m_popups.size()) > 0;
+  bool dimmer_visible = m_popups.size() > 0;
   float dimmer_opacity = dimmer_visible ? 0.6f : 0.0f;
-  dimmer->set_is_active(dimmer_block_events);
-  dimmer->set_is_drawn(dimmer_visible || dimmer->get_opacity() > 0.01f);
-  dimmer->set_opacity(std::lerp(dimmer->get_opacity(), dimmer_opacity, 0.25f));
+  m_dimmer->set_is_active(dimmer_block_events);
+  m_dimmer->set_is_drawn(dimmer_visible || m_dimmer->get_opacity() > 0.01f);
+  m_dimmer->set_opacity(std::lerp(m_dimmer->get_opacity(), dimmer_opacity, 0.25f));
 
   Widget::update();
 }

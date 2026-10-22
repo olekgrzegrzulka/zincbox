@@ -13,27 +13,25 @@
 #include "core/settings.hpp"
 #include "zincbox.hpp"
 
-namespace player {
+namespace {
+  player::AudioEngine engine{};
+  float volume = 0.5f;
+  i32 crossfade_ms = 0;
+  player::EqualizerGains eq_gains{};
+  i32 remaining_retry_attempts = 10;
+  bool last_direction_was_prev = false;
+} // namespace
 
-  static AudioEngine engine{};
-  static float volume = 0.5f;
-  static i32 crossfade_ms = 0;
-  static EqualizerGains eq_gains{};
-  static i32 remaining_retry_attempts = 10;
-  static bool last_direction_was_prev = false;
+namespace {
 
-  const Signal<> signal_on_track_changed{};
-  const Signal<bool> signal_on_queue_changed{};
-  const Signal<size_t> signal_on_queue_changed_at{};
-
-  static void notify_active_track_changed(size_t loaded_track_id) {
+  void notify_active_track_changed(size_t loaded_track_id) {
     db::set_track_playback_error(loaded_track_id, false);
-    signal_on_track_changed.emit();
+    player::signal_on_track_changed.emit();
 
     mpris::notify_playback_status_playing();
     mpris::notify_volume(volume);
 
-    auto playing = get_playing_track();
+    auto playing = player::get_playing_track();
     if (playing.has_value() && playing->track_id == loaded_track_id) {
       auto track_opt = db::track_by_id(playing->track_id);
       auto playlist_opt = db::playlist_by_id(playing->playlist_id);
@@ -43,7 +41,7 @@ namespace player {
         auto originating_album = db::playlist_by_id(track.originating_album_id);
 
         std::string_view cover_path = playlist.art_file_path;
-        if (zincbox::settings().general.cover_preference == Settings::CoverPreference::Album &&
+        if (zincbox::settings().general.cover_preference == Settings::CoverPreference::ALBUM &&
             originating_album.has_value()) {
           cover_path = originating_album->get().art_file_path;
         }
@@ -59,10 +57,10 @@ namespace player {
     }
   }
 
-  static bool dispatch_play_track(bool use_crossfade) {
-    auto playing = get_playing_track();
+  bool dispatch_play_track(bool use_crossfade) {
+    auto playing = player::get_playing_track();
     if (!playing.has_value()) {
-      stop();
+      player::stop();
       return true;
     }
 
@@ -71,7 +69,7 @@ namespace player {
     if (!track_opt.has_value() || !playlist_opt.has_value()) { return false; }
 
     auto& track = track_opt->get();
-    engine.push_command(CmdPlay{
+    engine.push_command(player::CmdPlay{
       .track_id = playing->track_id,
       .file_path = track.file_path,
       .crossfade = use_crossfade,
@@ -79,45 +77,54 @@ namespace player {
     return true;
   }
 
-  static void start_auto_crossfade(i32 tries) {
+  void start_auto_crossfade(i32 tries) {
     if (tries <= 0) { return; }
+    tries = std::min(tries, 50);
     remaining_retry_attempts = tries;
     last_direction_was_prev = false;
 
-    auto next_ti = queue::prepare_next_track();
+    auto next_ti = player::queue::prepare_next_track();
     if (!next_ti.has_value()) { return; }
 
     auto track_opt = db::track_by_id(next_ti->track_id);
     auto playlist_opt = db::playlist_by_id(next_ti->playlist_id);
     if (!track_opt.has_value() || !playlist_opt.has_value()) {
-      queue::commit_pending_next();
+      player::queue::commit_pending_next();
       start_auto_crossfade(tries - 1);
       return;
     }
 
-    engine.push_command(CmdStartAutoCrossfade{
+    engine.push_command(player::CmdStartAutoCrossfade{
       .track_id = next_ti->track_id,
       .file_path = track_opt->get().file_path,
     });
   }
 
-  static void step_next_internal(i32 tries, bool use_crossfade) {
+  void step_next_internal(i32 tries, bool use_crossfade) {
     if (tries <= 0) { return; }
+    tries = std::min(tries, 50);
     remaining_retry_attempts = tries;
     last_direction_was_prev = false;
 
-    auto action = queue::advance_next();
-    if (action == queue::NavAction::SEEK_ZERO_AND_PLAY) {
+    auto action = player::queue::advance_next();
+    if (action == player::queue::NavAction::SEEK_ZERO_AND_PLAY) {
       if (use_crossfade && crossfade_ms > 0) {
         dispatch_play_track(true);
       } else {
-        seek_ms(0);
+        player::seek_ms(0);
         dispatch_play_track(false);
       }
-    } else if (action == queue::NavAction::PLAY_CURRENT) {
+    } else if (action == player::queue::NavAction::PLAY_CURRENT) {
       if (!dispatch_play_track(use_crossfade)) { step_next_internal(tries - 1, use_crossfade); }
     }
   }
+} // namespace
+
+namespace player {
+
+  const Signal<> signal_on_track_changed{};
+  const Signal<bool> signal_on_queue_changed{};
+  const Signal<size_t> signal_on_queue_changed_at{};
 
   void init() {
     engine.init();
@@ -269,6 +276,7 @@ namespace player {
 
   void prev_track(i32 tries) {
     if (tries <= 0) { return; }
+    tries = std::min(tries, 50);
     remaining_retry_attempts = tries;
     last_direction_was_prev = true;
 

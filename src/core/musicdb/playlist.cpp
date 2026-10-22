@@ -14,6 +14,7 @@
 #include "lib/stb_image/stb_image.h"
 
 db::Playlist::Playlist(std::ifstream& is) {
+
   read_str(is, name);
   size_t author_size = 0;
   read_bin(is, author_size);
@@ -26,6 +27,7 @@ db::Playlist::Playlist(std::ifstream& is) {
     read_str(is, author[i]);
   }
 
+  type = {};
   read_bin(is, type);
   size_t track_ids_size = 0;
   read_bin(is, track_ids_size);
@@ -35,7 +37,7 @@ db::Playlist::Playlist(std::ifstream& is) {
   }
   track_ids.resize(track_ids_size);
   for (size_t i = 0; i < track_ids_size; i += 1) {
-    size_t value;
+    size_t value = 0;
     read_bin(is, value);
     track_ids[i] = value;
   }
@@ -141,12 +143,14 @@ void db::Playlist::sort_by_track_number() {
     auto& rhs = db::track_by_id(rhs_id)->get();
     if (lhs.metadata.track_number != rhs.metadata.track_number) {
       return lhs.metadata.track_number < rhs.metadata.track_number;
-    } else if (!lhs.metadata.artist.empty() && !rhs.metadata.artist.empty() && !lhs.metadata.title.empty() &&
-               !rhs.metadata.title.empty()) {
-      return std::tie(lhs.metadata.artist, lhs.metadata.title) < std::tie(rhs.metadata.artist, rhs.metadata.title);
-    } else {
-      return lhs.pretty_name() < rhs.pretty_name();
     }
+
+    if (!lhs.metadata.artist.empty() && !rhs.metadata.artist.empty() && !lhs.metadata.title.empty() &&
+        !rhs.metadata.title.empty()) {
+      return std::tie(lhs.metadata.artist, lhs.metadata.title) < std::tie(rhs.metadata.artist, rhs.metadata.title);
+    }
+
+    return lhs.pretty_name() < rhs.pretty_name();
   });
 }
 
@@ -215,29 +219,19 @@ std::string db::Playlist::pretty_length() const {
 
 std::optional<size_t> db::Playlist::next_track_id(size_t track_id) const {
   auto index = find_track_index(track_id);
-  if (index.has_value() && index.value() + 1 < track_ids.size()) {
-    return track_ids[index.value() + 1];
-  } else {
-    return std::nullopt;
-  }
+  if (index.has_value() && index.value() + 1 < track_ids.size()) { return track_ids[index.value() + 1]; }
+  return std::nullopt;
 }
 
 std::optional<size_t> db::Playlist::prev_track_id(size_t track_id) const {
   auto index = find_track_index(track_id);
-  if (index.has_value() && index.value() > 0) {
-    return track_ids[index.value() - 1];
-  } else {
-    return std::nullopt;
-  }
+  if (index.has_value() && index.value() > 0) { return track_ids[index.value() - 1]; }
+  return std::nullopt;
 }
 
 bool db::Playlist::has_track_id(size_t track_id) const {
   auto index = find_track_index(track_id);
-  if (index.has_value()) {
-    return true;
-  } else {
-    return false;
-  }
+  return index.has_value();
 }
 
 std::optional<size_t> db::Playlist::find_track_index(size_t track_id) const {

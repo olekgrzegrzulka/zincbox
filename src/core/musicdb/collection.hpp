@@ -8,12 +8,12 @@
 #include <unordered_set>
 #include <vector>
 
-namespace fs = std::filesystem;
-
 namespace db {
 
+  namespace fs = std::filesystem;
+
   struct Collection final {
-    protected:
+    private:
       std::string m_name;
       std::vector<size_t> m_playlist_ids;
       bool m_tombstone = false;
@@ -27,7 +27,7 @@ namespace db {
       const std::vector<size_t>& playlist_ids() const { return m_playlist_ids; }
       const std::unordered_set<fs::path>& paths() const { return m_paths; }
       void set_name(std::string_view name_) { m_name = name_; }
-      bool has_path(const fs::path& path) const { return m_paths.find(path) != m_paths.end(); }
+      bool has_path(const fs::path& path) const { return m_paths.contains(path); }
       bool add_path(const fs::path&);
       bool remove_path(const fs::path&);
       size_t add_playlist(size_t playlist_id) {

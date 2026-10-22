@@ -25,7 +25,7 @@
 #include "ui/zincgui/slider.hpp"
 #include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/text_input.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -130,7 +130,7 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   label_title->set_is_drawn(config.show_title);
   label_author->set_is_drawn(config.show_author);
 
-  i32 current_y = cover_size.y + 8 * scale;
+  i32 current_y = cover_size.y + (8 * scale);
   if (config.show_title) {
     label_title->set_y(current_y);
     current_y += 16 * scale;
@@ -153,12 +153,12 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   sprite_playing->set_size(cover_size.x, cover_size.y);
   sprite_playing->set_is_drawn(false);
 
-  slot_on_track_changed =
+  m_slot_on_track_changed =
     player::signal_on_track_changed.connect([this]() -> void { update_highlight_status_from_player(); });
   update_highlight_status_from_player();
 }
 
-WidgetAlbumCover::~WidgetAlbumCover() { player::signal_on_track_changed.disconnect(slot_on_track_changed); }
+WidgetAlbumCover::~WidgetAlbumCover() { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
 
 void WidgetAlbumCover::draw() {
   // Button::draw();
@@ -187,72 +187,72 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
 }
 
 PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
-  i32 PANEL_SEARCH_HEIGHT = 2 * PANEL_SEARCH_PADDING + 8 * zincbox::ui_scale() + zincbox::font_size();
+  const i32 PANEL_SEARCH_HEIGHT = (2 * PANEL_SEARCH_PADDING) + (8 * zincbox::ui_scale()) + zincbox::font_size();
 
   auto& config = theme::config().panel_playlists;
   set_color(config.color);
   set_clip_children(true);
 
-  scrollbar = &add_child<ZincboxScrollbar>();
-  scrollbar->set_anchor(Anchor::RIGHT);
-  scrollbar->set_parent_anchor(Anchor::RIGHT);
-  scrollbar->set_orientation(SliderOrientation::VERTICAL);
-  scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
+  m_scrollbar = &add_child<ZincboxScrollbar>();
+  m_scrollbar->set_anchor(Anchor::RIGHT);
+  m_scrollbar->set_parent_anchor(Anchor::RIGHT);
+  m_scrollbar->set_orientation(SliderOrientation::VERTICAL);
+  m_scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { m_target_scroll_px = scroll_offset; });
 
-  albums_container = &add_child<Widget>();
-  albums_container->set_pos(0, PANEL_SEARCH_HEIGHT + 2 * PANEL_SEARCH_PADDING);
+  m_albums_container = &add_child<Widget>();
+  m_albums_container->set_pos(0, PANEL_SEARCH_HEIGHT + (2 * PANEL_SEARCH_PADDING));
 
-  panel_search = &add_child<Sprite>("panel_playlists_searchbar");
-  panel_search->set_pos(PANEL_SEARCH_PADDING, PANEL_SEARCH_PADDING);
-  panel_search->set_height(PANEL_SEARCH_HEIGHT);
-  panel_search->set_layout("m:6 s:6 ltr fill expand");
-  panel_search->set_nine_slice_margin(8.0f);
-  panel_search->set_ignore_parents_layout(true);
+  m_panel_search = &add_child<Sprite>("panel_playlists_searchbar");
+  m_panel_search->set_pos(PANEL_SEARCH_PADDING, PANEL_SEARCH_PADDING);
+  m_panel_search->set_height(PANEL_SEARCH_HEIGHT);
+  m_panel_search->set_layout("m:6 s:6 ltr fill expand");
+  m_panel_search->set_nine_slice_margin(8.0f);
+  m_panel_search->set_ignore_parents_layout(true);
 
-  search_bar = &panel_search->add_child<TextInput>();
-  search_bar->set_fixed_height(8 * zincbox::ui_scale() + zincbox::font_size());
-  search_bar->set_on_text_changed([this]() { recreate(); });
-  button_clear_search = &search_bar->add_child<Button>();
+  m_search_bar = &m_panel_search->add_child<TextInput>();
+  m_search_bar->set_fixed_height((8 * zincbox::ui_scale()) + zincbox::font_size());
+  m_search_bar->set_on_text_changed([this]() { recreate(); });
+  m_button_clear_search = &m_search_bar->add_child<Button>();
 
-  button_sort_by = &panel_search->add_child<Button>();
-  button_sort_by->set_max_width(24);
-  button_sort_by->set_max_height(24);
-  button_sort_by->on_press([this]() {
-    if (this->on_button_sort_by_pressed) { this->on_button_sort_by_pressed(this->button_sort_by); }
+  m_button_sort_by = &m_panel_search->add_child<Button>();
+  m_button_sort_by->set_max_width(24);
+  m_button_sort_by->set_max_height(24);
+  m_button_sort_by->on_press([this]() {
+    if (this->on_button_sort_by_pressed) { this->on_button_sort_by_pressed(this->m_button_sort_by); }
   });
-  button_sort_by->add_image("sort_by");
+  m_button_sort_by->add_image("sort_by");
 
-  button_clear_search->set_x(-2);
-  button_clear_search->set_ignore_parents_layout(true);
-  button_clear_search->set_texture("clear_search_idle", true);
-  button_clear_search->set_texture_idle("clear_search_idle");
-  button_clear_search->set_texture_hovered("clear_search_hovered");
-  button_clear_search->set_texture_pressed("clear_search_pressed");
-  button_clear_search->set_nine_slice_margin(0);
-  button_clear_search->set_anchor(Anchor::RIGHT);
-  button_clear_search->set_parent_anchor(Anchor::RIGHT);
+  m_button_clear_search->set_x(-2);
+  m_button_clear_search->set_ignore_parents_layout(true);
+  m_button_clear_search->set_texture("clear_search_idle", true);
+  m_button_clear_search->set_texture_idle("clear_search_idle");
+  m_button_clear_search->set_texture_hovered("clear_search_hovered");
+  m_button_clear_search->set_texture_pressed("clear_search_pressed");
+  m_button_clear_search->set_nine_slice_margin(0);
+  m_button_clear_search->set_anchor(Anchor::RIGHT);
+  m_button_clear_search->set_parent_anchor(Anchor::RIGHT);
 
-  button_clear_search->on_press([this]() { this->search_bar->clear(); });
+  m_button_clear_search->on_press([this]() { this->m_search_bar->clear(); });
 }
 
 void PanelPlaylists::clear() {
-  for (auto& w : album_widgets) {
+  for (auto& w : m_album_widgets) {
     w->set_marked_for_deletion(true);
   }
-  album_widgets.clear();
+  m_album_widgets.clear();
 }
 
 void PanelPlaylists::recreate() {
   clear();
 
-  panel_search->set_is_updated(props.panel_search_visible);
-  panel_search->set_is_drawn(props.panel_search_visible);
+  m_panel_search->set_is_updated(props.panel_search_visible);
+  m_panel_search->set_is_drawn(props.panel_search_visible);
 
-  scrollbar->set_is_updated(props.is_scrollable);
-  scrollbar->set_is_drawn(props.is_scrollable && (scrollbar->get_content_size() > scrollbar->get_page_size()));
+  m_scrollbar->set_is_updated(props.is_scrollable);
+  m_scrollbar->set_is_drawn(props.is_scrollable && (m_scrollbar->get_content_size() > m_scrollbar->get_page_size()));
 
-  button_sort_by->set_is_updated(props.button_sort_by_visible);
-  button_sort_by->set_is_drawn(props.button_sort_by_visible);
+  m_button_sort_by->set_is_updated(props.button_sort_by_visible);
+  m_button_sort_by->set_is_drawn(props.button_sort_by_visible);
 
   std::vector<size_t> playlist_ids_sorted;
   if (props.collection_id.has_value()) {
@@ -291,11 +291,11 @@ void PanelPlaylists::recreate() {
   }
 
   std::vector<size_t> playlist_ids_sorted_filtered =
-    db::search_playlists(search_bar->label.get_text(), playlist_ids_sorted, 512);
+    db::search_playlists(m_search_bar->label.get_text(), playlist_ids_sorted, 512);
 
   for (size_t playlist_id : playlist_ids_sorted_filtered) {
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(playlist_id);
-    album_widgets.emplace_back(album_widget);
+    auto* album_widget = &m_albums_container->add_child<WidgetAlbumCover>(playlist_id);
+    m_album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, playlist_id, album_widget]() {
       if (on_playlist_lmb) { on_playlist_lmb(playlist_id, album_widget); }
@@ -306,8 +306,8 @@ void PanelPlaylists::recreate() {
   }
 
   if (props.collection_id.has_value() && props.collection_id == 0 && props.button_add_playlist_visible) {
-    auto* album_widget = &albums_container->add_child<WidgetAlbumCover>(std::nullopt, true);
-    album_widgets.emplace_back(album_widget);
+    auto* album_widget = &m_albums_container->add_child<WidgetAlbumCover>(std::nullopt, true);
+    m_album_widgets.emplace_back(album_widget);
 
     album_widget->on_press([this, album_widget]() {
       if (on_add_playlist_button_pressed) { on_add_playlist_button_pressed(album_widget); }
@@ -318,14 +318,14 @@ void PanelPlaylists::recreate() {
 }
 
 void PanelPlaylists::scroll_to_playlist(size_t playlist_id, bool immediate) {
-  for (auto& album_widget : album_widgets) {
+  for (auto& album_widget : m_album_widgets) {
     if (album_widget->playlist_id == playlist_id) {
-      target_scroll_px = album_widget->get_y();
-      target_scroll_px = std::clamp(target_scroll_px, 0.0, std::max(0.0, (double)(content_height - height)));
-      scrollbar->set_scroll_offset(target_scroll_px);
+      m_target_scroll_px = album_widget->get_y();
+      m_target_scroll_px = std::clamp(m_target_scroll_px, 0.0, std::max(0.0, (double)(m_content_height - height)));
+      m_scrollbar->set_scroll_offset(m_target_scroll_px);
       if (immediate) {
-        scroll_px = target_scroll_px;
-        scrollbar->skip_anim();
+        m_scroll_px = m_target_scroll_px;
+        m_scrollbar->skip_anim();
       }
       break;
     }
@@ -335,21 +335,21 @@ void PanelPlaylists::scroll_to_playlist(size_t playlist_id, bool immediate) {
 void PanelPlaylists::reflow() {
   auto& config = theme::config().panel_playlists;
   auto& settings = zincbox::settings();
-  const float scale = zincbox::ui_scale();
+  const float SCALE = zincbox::ui_scale();
 
   i32 cover_w = settings.interface.cover_size;
   i32 text_space = 0;
-  if (config.show_title || config.show_author) { text_space += 8 * scale; }
-  if (config.show_title) { text_space += 16 * scale; }
-  if (config.show_author) { text_space += 16 * scale; }
+  if (config.show_title || config.show_author) { text_space += 8 * SCALE; }
+  if (config.show_title) { text_space += 16 * SCALE; }
+  if (config.show_author) { text_space += 16 * SCALE; }
 
   i32 item_w = cover_w;
   i32 item_h = cover_w + text_space;
 
-  i32 min_spacing_x = std::max<i32>(0, config.horizontal_spacing * scale);
-  i32 spacing_y = config.vertical_spacing * scale;
+  i32 min_spacing_x = std::max<i32>(0, config.horizontal_spacing * SCALE);
+  i32 spacing_y = config.vertical_spacing * SCALE;
 
-  i32 albums_area_width = albums_container->get_width();
+  i32 albums_area_width = m_albums_container->get_width();
   if (albums_area_width <= 0) { return; }
 
   i32 album_covers_in_one_row = (albums_area_width - min_spacing_x) / (item_w + min_spacing_x);
@@ -364,7 +364,7 @@ void PanelPlaylists::reflow() {
   i32 column = 0;
   i32 cover_y = spacing_y;
 
-  for (auto& album_widget : album_widgets) {
+  for (auto& album_widget : m_album_widgets) {
     bool group_by_author = props.group && (props.sort_by == SortBy::AUTHOR_AZ || props.sort_by == SortBy::AUTHOR_ZA);
     bool group_by_name = props.group && (props.sort_by == SortBy::NAME_AZ || props.sort_by == SortBy::NAME_ZA);
     bool force_new_row = false;
@@ -387,7 +387,7 @@ void PanelPlaylists::reflow() {
     }
 
     i32 gap_before = (total_gap_space * (column + 1)) / total_gaps_count;
-    i32 x_ = gap_before + column * item_w;
+    i32 x_ = gap_before + (column * item_w);
     album_widget->set_pos(x_, cover_y);
 
     column += 1;
@@ -395,33 +395,33 @@ void PanelPlaylists::reflow() {
     prev_name_first_letter = name_first_letter;
   }
 
-  i32 covers_total_bounds = album_widgets.empty() ? 0 : (cover_y + item_h + spacing_y);
-  content_height = covers_total_bounds + (props.panel_search_visible ? (8 + panel_search->get_height()) : 0);
+  i32 covers_total_bounds = m_album_widgets.empty() ? 0 : (cover_y + item_h + spacing_y);
+  m_content_height = covers_total_bounds + (props.panel_search_visible ? (8 + m_panel_search->get_height()) : 0);
 
-  scrollbar->set_content_size(content_height);
-  scrollbar->set_page_size(height);
-  scrollbar->set_height(height);
-  scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(content_height - height)));
-  albums_container->set_height(content_height);
+  m_scrollbar->set_content_size(m_content_height);
+  m_scrollbar->set_page_size(height);
+  m_scrollbar->set_height(height);
+  m_scroll_px = std::clamp(m_scroll_px, 0.0, std::max(0.0, (double)(m_content_height - height)));
+  m_albums_container->set_height(m_content_height);
 }
 
 void PanelPlaylists::input() { ColorRect::input(); }
 
 void PanelPlaylists::update() {
-  if (props_old != props) {
+  if (m_props_old != props) {
     recreate();
-    props_old = props;
+    m_props_old = props;
   }
-  panel_search->set_width(width - (2 * PANEL_SEARCH_PADDING + scrollbar->get_width()));
-  albums_container->set_width(props.is_scrollable ? width - scrollbar->get_width() : width);
+  m_panel_search->set_width(width - (2 * PANEL_SEARCH_PADDING + m_scrollbar->get_width()));
+  m_albums_container->set_width(props.is_scrollable ? width - m_scrollbar->get_width() : width);
   reflow();
-  auto albums_container_prev_y = albums_container->get_y();
-  albums_container->set_y(props.panel_search_visible
-                            ? (panel_search->get_height() + 2 * PANEL_SEARCH_PADDING) - std::floor(scroll_px)
-                            : -std::floor(scroll_px));
+  auto albums_container_prev_y = m_albums_container->get_y();
+  m_albums_container->set_y(props.panel_search_visible
+                              ? (m_panel_search->get_height() + 2 * PANEL_SEARCH_PADDING) - std::floor(m_scroll_px)
+                              : -std::floor(m_scroll_px));
 
-  double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
-  scroll_px = std::lerp(scroll_px, target_scroll_px, t);
+  double t = std::clamp(std::abs(m_scroll_px - m_target_scroll_px) * 0.004, 0.4, 0.8);
+  m_scroll_px = std::lerp(m_scroll_px, m_target_scroll_px, t);
 
   ColorRect::update();
 }
@@ -441,21 +441,21 @@ void PanelPlaylists::draw() { ColorRect::draw(); }
 
 void PanelPlaylists::event(Input::InputEventMouseScroll& e) {
   if (props.is_scrollable && is_mouse_hovering()) {
-    scrollbar->scroll(e.offset.y);
+    m_scrollbar->scroll(e.offset.y);
     e.handled = true;
   }
 }
 
 float PanelPlaylists::get_scroll_px() const {
   if (!props.is_scrollable) { return 0.0f; }
-  return target_scroll_px;
+  return m_target_scroll_px;
 }
 
 void PanelPlaylists::set_scroll_px(float px, bool immediate) {
-  scroll_px = px;
-  target_scroll_px = px;
-  scrollbar->set_scroll_offset(px);
-  if (immediate) { scrollbar->skip_anim(); }
+  m_scroll_px = px;
+  m_target_scroll_px = px;
+  m_scrollbar->set_scroll_offset(px);
+  if (immediate) { m_scrollbar->skip_anim(); }
 }
 
-vec2i PanelPlaylists::get_content_size() const { return {width, content_height}; }
+vec2i PanelPlaylists::get_content_size() const { return {width, m_content_height}; }

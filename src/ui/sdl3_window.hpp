@@ -9,6 +9,10 @@ namespace zincbox {
   class SDL3Window final {
     public:
       SDL3Window();
+      SDL3Window(const SDL3Window&) = delete;
+      SDL3Window(SDL3Window&&) = delete;
+      SDL3Window& operator=(const SDL3Window&) = delete;
+      SDL3Window& operator=(SDL3Window&&) = delete;
       SDL3Window(const char* title, i32 width, i32 height);
       ~SDL3Window();
 

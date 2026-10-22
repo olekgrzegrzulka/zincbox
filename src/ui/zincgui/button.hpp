@@ -5,11 +5,11 @@
 #include <utility>
 #include "common/color.hpp"
 #include "common/types.hpp"
-#include "label.hpp"
-#include "sprite.hpp"
 #include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
 #include "ui/theme_config.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 
@@ -21,9 +21,9 @@ namespace zincgui {
     protected:
       Label& label;
       Sprite* image{};
-      std::function<void()> lambda_press{};
-      std::function<void()> lambda_press_rmb{};
-      std::function<void()> lambda_depress{};
+      std::function<void()> lambda_press;
+      std::function<void()> lambda_press_rmb;
+      std::function<void()> lambda_depress;
       ButtonState state = ButtonState::IDLE;
       bool switch_mode = false;
       bool is_switched = false;
