@@ -5,7 +5,7 @@
 #include "common/color.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 

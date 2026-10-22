@@ -15,7 +15,7 @@ namespace zincbox::ui {
   i32 get_playlists_scroll_offset();
 
   void set_mini_player(bool);
-  void set_selected_tab(std::string);
+  void set_selected_tab(const std::string&);
   void set_tabs_order(std::vector<std::string>);
   void set_tracks_scroll_offset(i32);
   void set_playlists_scroll_offset(i32);

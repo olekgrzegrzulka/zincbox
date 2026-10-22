@@ -7,7 +7,6 @@
 #include <type_traits>
 #include "common/color.hpp"
 #include "common/debug.hpp"
-#include "common/logger.hpp"
 #include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
@@ -25,7 +24,7 @@
 #include "ui/zincgui/slider.hpp"
 #include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/tooltip.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "widget_playlist_header.hpp"
 #include "zincbox.hpp"
@@ -74,15 +73,15 @@ void PanelTracklist::set_item_selected(Item& item, bool selected) {
 }
 
 std::optional<size_t> PanelTracklist::find_item_track(db::track_info ti) const {
-  auto it = track_lookup.find(ti);
-  if (it != track_lookup.end()) { return it->second; }
+  auto it = m_track_lookup.find(ti);
+  if (it != m_track_lookup.end()) { return it->second; }
   return std::nullopt;
 }
 
 void PanelTracklist::rebuild_lookup() {
-  track_lookup.clear();
-  for (size_t i = 0; i < items.size(); ++i) {
-    if (auto* t = std::get_if<ItemTrack>(&items[i])) { track_lookup[t->track_info] = i; }
+  m_track_lookup.clear();
+  for (size_t i = 0; i < m_items.size(); ++i) {
+    if (auto* t = std::get_if<ItemTrack>(&m_items[i])) { m_track_lookup[t->track_info] = i; }
   }
 }
 
@@ -90,35 +89,35 @@ PanelTracklist::PanelTracklist(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_tracklist.color);
   set_clip_children(true);
 
-  scrollbar = &add_child<ZincboxScrollbar>();
-  scrollbar->set_anchor(Anchor::LEFT);
-  scrollbar->set_parent_anchor(Anchor::LEFT);
-  scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { target_scroll_px = scroll_offset; });
-  scrollbar->set_orientation(SliderOrientation::VERTICAL);
+  m_scrollbar = &add_child<ZincboxScrollbar>();
+  m_scrollbar->set_anchor(Anchor::LEFT);
+  m_scrollbar->set_parent_anchor(Anchor::LEFT);
+  m_scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { m_target_scroll_px = scroll_offset; });
+  m_scrollbar->set_orientation(SliderOrientation::VERTICAL);
 
-  button_play_tooltip = &add_child<ToolTip>(tr::get("tooltip.play"), ToolTipPosition::BELOW, 8);
-  button_play_next_tooltip = &add_child<ToolTip>(tr::get("tooltip.play_next"), ToolTipPosition::BELOW, 8);
-  button_sort_tooltip = &add_child<ToolTip>(tr::get("tooltip.sort_by"), ToolTipPosition::BELOW, 8);
-  button_more_tooltip = &add_child<ToolTip>(tr::get("tooltip.more_options"), ToolTipPosition::BELOW, 8);
-  button_play_tooltip->set_is_drawn(false);
-  button_play_next_tooltip->set_is_drawn(false);
-  button_sort_tooltip->set_is_drawn(false);
-  button_more_tooltip->set_is_drawn(false);
-  button_play_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
-  button_play_tooltip->set_anchor(Anchor::TOP_LEFT);
-  button_play_next_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
-  button_play_next_tooltip->set_anchor(Anchor::TOP_LEFT);
-  button_sort_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
-  button_sort_tooltip->set_anchor(Anchor::TOP_LEFT);
-  button_more_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
-  button_more_tooltip->set_anchor(Anchor::TOP_LEFT);
+  m_button_play_tooltip = &add_child<ToolTip>(tr::get("tooltip.play"), ToolTipPosition::BELOW, 8);
+  m_button_play_next_tooltip = &add_child<ToolTip>(tr::get("tooltip.play_next"), ToolTipPosition::BELOW, 8);
+  m_button_sort_tooltip = &add_child<ToolTip>(tr::get("tooltip.sort_by"), ToolTipPosition::BELOW, 8);
+  m_button_more_tooltip = &add_child<ToolTip>(tr::get("tooltip.more_options"), ToolTipPosition::BELOW, 8);
+  m_button_play_tooltip->set_is_drawn(false);
+  m_button_play_next_tooltip->set_is_drawn(false);
+  m_button_sort_tooltip->set_is_drawn(false);
+  m_button_more_tooltip->set_is_drawn(false);
+  m_button_play_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  m_button_play_tooltip->set_anchor(Anchor::TOP_LEFT);
+  m_button_play_next_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  m_button_play_next_tooltip->set_anchor(Anchor::TOP_LEFT);
+  m_button_sort_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  m_button_sort_tooltip->set_anchor(Anchor::TOP_LEFT);
+  m_button_more_tooltip->set_parent_anchor(Anchor::TOP_LEFT);
+  m_button_more_tooltip->set_anchor(Anchor::TOP_LEFT);
 
-  items_container = &add_child<Widget>();
+  m_items_container = &add_child<Widget>();
 
-  insert_cursor = &add_child<ColorRect>(theme::config().panel_tracklist.insert_cursor_color);
-  insert_cursor->set_height(2);
-  insert_cursor->set_anchor(Anchor::CENTER_LEFT);
-  insert_cursor->set_is_drawn(false);
+  m_insert_cursor = &add_child<ColorRect>(theme::config().panel_tracklist.insert_cursor_color);
+  m_insert_cursor->set_height(2);
+  m_insert_cursor->set_anchor(Anchor::CENTER_LEFT);
+  m_insert_cursor->set_is_drawn(false);
 }
 
 PanelTracklist::~PanelTracklist() {}
@@ -129,20 +128,20 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
   zincgui::Widget* generic_widget = nullptr;
 
   if (auto* t = std::get_if<ItemTrack>(&item)) {
-    auto* w = &items_container->add_child<WidgetTrack>();
+    auto* w = &m_items_container->add_child<WidgetTrack>();
     w->collection_id(t->track_info.collection_id)
       .playlist_id(t->track_info.playlist_id)
       .track_id(t->track_info.track_id)
       .track_number(t->track_info.index + 1)
       .item_index(t->item_index)
-      .highlight_mode(track_highlight_mode);
+      .highlight_mode(m_track_highlight_mode);
 
     w->set_ignore_parents_layout(true);
     w->set_is_drawn(false);
     t->widget = w;
     generic_widget = w;
   } else if (auto* qt = std::get_if<ItemQueueTrack>(&item)) {
-    auto* w = &items_container->add_child<WidgetTrack>();
+    auto* w = &m_items_container->add_child<WidgetTrack>();
     if (qt->queue_index < player::get_playing_queue().size()) {
       auto q_elem = player::get_playing_queue()[qt->queue_index];
       if (q_elem.is_track()) {
@@ -151,7 +150,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
           .track_id(q_elem.track()->track_info.track_id)
           .track_number(qt->queue_index + 1)
           .item_index(qt->item_index)
-          .highlight_mode(track_highlight_mode);
+          .highlight_mode(m_track_highlight_mode);
       }
     }
     w->set_ignore_parents_layout(true);
@@ -159,7 +158,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
     qt->widget = w;
     generic_widget = w;
   } else if (auto* qp = std::get_if<ItemQueuePlaylist>(&item)) {
-    auto* w = &items_container->add_child<WidgetQueuePlaylistCollection>();
+    auto* w = &m_items_container->add_child<WidgetQueuePlaylistCollection>();
     if (qp->queue_index < player::get_playing_queue().size()) {
       auto q_elem = player::get_playing_queue()[qp->queue_index];
       if (q_elem.is_playlist()) {
@@ -176,7 +175,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
     qp->widget = w;
     generic_widget = w;
   } else if (auto* qc = std::get_if<ItemQueueCollection>(&item)) {
-    auto* w = &items_container->add_child<WidgetQueuePlaylistCollection>();
+    auto* w = &m_items_container->add_child<WidgetQueuePlaylistCollection>();
     if (qc->queue_index < player::get_playing_queue().size()) {
       auto q_elem = player::get_playing_queue()[qc->queue_index];
       if (q_elem.is_collection()) {
@@ -192,7 +191,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
     qc->widget = w;
     generic_widget = w;
   } else if (auto* h = std::get_if<ItemPlaylistHeader>(&item)) {
-    auto* w = &items_container->add_child<WidgetPlaylistHeader>(h->collection_id, h->playlist_id);
+    auto* w = &m_items_container->add_child<WidgetPlaylistHeader>(h->collection_id, h->playlist_id);
     w->set_ignore_parents_layout(true);
     w->set_is_drawn(false);
     h->widget = w;
@@ -222,7 +221,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
         } else {
           m_selection.insert(item_index);
         }
-        selection_modified = true;
+        m_selection_modified = true;
       } else if (shift) {
         std::optional<size_t> index_last;
         if (m_selection.back().has_value()) {
@@ -235,17 +234,17 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
         if (index_last.has_value()) {
           if (item_index < *index_last) {
             for (size_t j = item_index; j <= *index_last; j += 1) {
-              if (is_item_selectable(items[j]) && m_selection.insert(j)) { selection_modified = true; }
+              if (is_item_selectable(m_items[j]) && m_selection.insert(j)) { m_selection_modified = true; }
             }
           } else {
             for (size_t j = *index_last; j <= item_index; j += 1) {
-              if (is_item_selectable(items[j]) && m_selection.insert(j)) { selection_modified = true; }
+              if (is_item_selectable(m_items[j]) && m_selection.insert(j)) { m_selection_modified = true; }
             }
           }
         }
       } else if (on_item_lmb) {
         on_item_lmb(item_index);
-        if (m_selection.clear()) { selection_modified = true; }
+        if (m_selection.clear()) { m_selection_modified = true; }
       }
     };
 
@@ -286,104 +285,104 @@ void PanelTracklist::hide() {
 
 void PanelTracklist::scroll_to_playlist(size_t target_playlist_id, bool immediate) {
   i32 offset = 0;
-  for (auto& item : items) {
+  for (auto& item : m_items) {
     if (auto* h = std::get_if<ItemPlaylistHeader>(&item)) {
       if (h->playlist_id == target_playlist_id) { break; }
     }
     offset += get_item_height(item);
   }
-  target_scroll_px = offset;
-  target_scroll_px = std::clamp<double>(target_scroll_px, 0.0, std::max<double>(0.0, max_scroll_px - height));
-  scrollbar->set_scroll_offset(target_scroll_px);
+  m_target_scroll_px = offset;
+  m_target_scroll_px = std::clamp<double>(m_target_scroll_px, 0.0, std::max<double>(0.0, m_max_scroll_px - height));
+  m_scrollbar->set_scroll_offset(m_target_scroll_px);
   if (immediate) {
-    scroll_px = target_scroll_px;
-    scrollbar->skip_anim();
+    m_scroll_px = m_target_scroll_px;
+    m_scrollbar->skip_anim();
   }
 }
 
 void PanelTracklist::scroll_to_track(size_t playlist_id, size_t track_id, bool immediate) {
   i32 offset = 0;
-  for (auto& item : items) {
+  for (auto& item : m_items) {
     if (auto* t = std::get_if<ItemTrack>(&item)) {
       if (t->track_info.track_id == track_id && t->track_info.playlist_id == playlist_id) { break; }
     }
     offset += get_item_height(item);
   }
-  target_scroll_px = std::clamp<double>(offset, 0.0, std::max<double>(0.0, max_scroll_px - height));
-  scrollbar->set_scroll_offset(target_scroll_px);
+  m_target_scroll_px = std::clamp<double>(offset, 0.0, std::max<double>(0.0, m_max_scroll_px - height));
+  m_scrollbar->set_scroll_offset(m_target_scroll_px);
   if (immediate) {
-    scroll_px = target_scroll_px;
-    scrollbar->skip_anim();
+    m_scroll_px = m_target_scroll_px;
+    m_scrollbar->skip_anim();
   }
 }
 
 void PanelTracklist::input() {}
 
 void PanelTracklist::update() {
-  items_container->set_pos(scrollbar->get_width(), 0);
-  items_container->set_size(width - scrollbar->get_width(), height);
+  m_items_container->set_pos(m_scrollbar->get_width(), 0);
+  m_items_container->set_size(width - m_scrollbar->get_width(), height);
 
   // scroll on the edges of view when dragging
-  if (is_dragged && is_mouse_hovering()) {
-    static i32 THRESHOLD = 50 * zincbox::ui_scale();
+  if (m_is_dragged && is_mouse_hovering()) {
+    const i32 THRESHOLD = 50 * zincbox::ui_scale();
     i32 mouse_y = Input::get_mouse_y() - get_position().y;
 
     if (mouse_y < THRESHOLD) {
-      scroll_edge_factor = (mouse_y - THRESHOLD) / (float)THRESHOLD;
+      m_scroll_edge_factor = (mouse_y - THRESHOLD) / (float)THRESHOLD;
     } else if (mouse_y > height - THRESHOLD && mouse_y < height) {
-      scroll_edge_factor = (THRESHOLD - (height - mouse_y)) / (float)THRESHOLD;
+      m_scroll_edge_factor = (THRESHOLD - (height - mouse_y)) / (float)THRESHOLD;
     } else {
-      scroll_edge_factor *= 0.5f;
+      m_scroll_edge_factor *= 0.5f;
     }
   } else {
-    scroll_edge_factor *= 0.5f;
+    m_scroll_edge_factor *= 0.5f;
   }
 
-  if (std::abs(scroll_edge_factor) > 0.01f) {
-    scroll_edge_factor = std::clamp(scroll_edge_factor, -1.0f, 1.0f);
-    scrollbar->set_scroll_offset(target_scroll_px + (double)scroll_edge_factor * 8.0);
+  if (std::abs(m_scroll_edge_factor) > 0.01f) {
+    m_scroll_edge_factor = std::clamp(m_scroll_edge_factor, -1.0f, 1.0f);
+    m_scrollbar->set_scroll_offset(m_target_scroll_px + ((double)m_scroll_edge_factor * 8.0));
   }
 
-  if ((i32)scroll_px != (i32)old_scroll_px || vec2i{width, height} != old_size || just_recreated ||
-      selection_modified) {
+  if ((i32)m_scroll_px != (i32)m_old_scroll_px || vec2i{width, height} != m_old_size || m_just_recreated ||
+      m_selection_modified) {
 
-    insert_cursor->set_x(items_container->get_x());
-    insert_cursor->set_width(items_container->get_width());
+    m_insert_cursor->set_x(m_items_container->get_x());
+    m_insert_cursor->set_width(m_items_container->get_width());
 
     static constexpr i32 MARGIN = 100;
     i32 current_item_top_y = 0;
-    for (size_t i = 0; i < items.size(); i += 1) {
-      i32 item_h = get_item_height(items[i]);
+    for (size_t i = 0; i < m_items.size(); i += 1) {
+      i32 item_h = get_item_height(m_items[i]);
       i32 current_item_bottom_y = current_item_top_y + item_h;
       bool item_visible =
-        current_item_top_y + MARGIN >= scroll_px && current_item_bottom_y - MARGIN <= scroll_px + height;
+        current_item_top_y + MARGIN >= m_scroll_px && current_item_bottom_y - MARGIN <= m_scroll_px + height;
       if (item_visible) {
-        set_item_index(items[i], i);
-        create_item_widget_if_null(items[i]);
-        auto* item_widget = get_item_widget(items[i]);
+        set_item_index(m_items[i], i);
+        create_item_widget_if_null(m_items[i]);
+        auto* item_widget = get_item_widget(m_items[i]);
         ensure(item_widget);
-        item_widget->set_width(items_container->get_width());
-        item_widget->set_y(current_item_top_y - scroll_px);
+        item_widget->set_width(m_items_container->get_width());
+        item_widget->set_y(current_item_top_y - m_scroll_px);
         item_widget->set_is_drawn(item_visible);
-        set_item_selected(items[i], m_selection.has(i));
-      } else if (get_item_widget(items[i])) {
-        delete_item_widget(items[i]);
+        set_item_selected(m_items[i], m_selection.has(i));
+      } else if (get_item_widget(m_items[i])) {
+        delete_item_widget(m_items[i]);
       }
 
       current_item_top_y += item_h;
     }
-    old_scroll_px = scroll_px;
-    old_size = vec2i{width, height};
-    just_recreated = false;
-    selection_modified = false;
+    m_old_scroll_px = m_scroll_px;
+    m_old_size = vec2i{width, height};
+    m_just_recreated = false;
+    m_selection_modified = false;
   }
-  scroll_px = std::clamp(scroll_px, 0.0, std::max(0.0, (double)(max_scroll_px - get_height())));
+  m_scroll_px = std::clamp(m_scroll_px, 0.0, std::max(0.0, (double)(m_max_scroll_px - get_height())));
 
   std::optional<size_t> tooltip_visible_index;
 
   bool draw_insert_cursor = false;
 
-  for (auto&& widget : items_container->get_children()) {
+  for (auto&& widget : m_items_container->get_children()) {
     WidgetPlaylistHeader* widget_header = dynamic_cast<WidgetPlaylistHeader*>(widget.get());
     WidgetTrack* widget_track = dynamic_cast<WidgetTrack*>(widget.get());
 
@@ -391,64 +390,65 @@ void PanelTracklist::update() {
 
     if (widget_header->button_play->is_mouse_hovering()) {
       tooltip_visible_index = 0;
-      button_play_tooltip->set_pos(widget_header->button_play->get_position() - get_position());
-      button_play_tooltip->set_x(button_play_tooltip->get_x() - button_play_tooltip->get_width() / 2);
-      button_play_tooltip->set_y(button_play_tooltip->get_y() + 26);
+      m_button_play_tooltip->set_pos(widget_header->button_play->get_position() - get_position());
+      m_button_play_tooltip->set_x(m_button_play_tooltip->get_x() - (m_button_play_tooltip->get_width() / 2));
+      m_button_play_tooltip->set_y(m_button_play_tooltip->get_y() + 26);
       break;
     }
     if (widget_header->button_play_next->is_mouse_hovering()) {
       tooltip_visible_index = 1;
-      button_play_next_tooltip->set_pos(widget_header->button_play_next->get_position() - get_position());
-      button_play_next_tooltip->set_x(button_play_next_tooltip->get_x() - button_play_next_tooltip->get_width() / 2);
-      button_play_next_tooltip->set_y(button_play_next_tooltip->get_y() + 26);
+      m_button_play_next_tooltip->set_pos(widget_header->button_play_next->get_position() - get_position());
+      m_button_play_next_tooltip->set_x(m_button_play_next_tooltip->get_x() -
+                                        (m_button_play_next_tooltip->get_width() / 2));
+      m_button_play_next_tooltip->set_y(m_button_play_next_tooltip->get_y() + 26);
       break;
     }
     if (widget_header->button_sort->is_mouse_hovering()) {
       tooltip_visible_index = 2;
-      button_sort_tooltip->set_pos(widget_header->button_sort->get_position() - get_position());
-      button_sort_tooltip->set_x(button_sort_tooltip->get_x() - button_sort_tooltip->get_width() / 2);
-      button_sort_tooltip->set_y(button_sort_tooltip->get_y() + 26);
+      m_button_sort_tooltip->set_pos(widget_header->button_sort->get_position() - get_position());
+      m_button_sort_tooltip->set_x(m_button_sort_tooltip->get_x() - (m_button_sort_tooltip->get_width() / 2));
+      m_button_sort_tooltip->set_y(m_button_sort_tooltip->get_y() + 26);
       break;
     }
     if (widget_header->button_more->is_mouse_hovering()) {
       tooltip_visible_index = 3;
-      button_more_tooltip->set_pos(widget_header->button_more->get_position() - get_position());
-      button_more_tooltip->set_x(button_more_tooltip->get_x() - button_more_tooltip->get_width() / 2);
-      button_more_tooltip->set_y(button_more_tooltip->get_y() + 26);
+      m_button_more_tooltip->set_pos(widget_header->button_more->get_position() - get_position());
+      m_button_more_tooltip->set_x(m_button_more_tooltip->get_x() - (m_button_more_tooltip->get_width() / 2));
+      m_button_more_tooltip->set_y(m_button_more_tooltip->get_y() + 26);
       break;
     }
   }
 
-  button_play_tooltip->set_is_drawn(tooltip_visible_index == 0);
-  button_play_next_tooltip->set_is_drawn(tooltip_visible_index == 1);
-  button_sort_tooltip->set_is_drawn(tooltip_visible_index == 2);
-  button_more_tooltip->set_is_drawn(tooltip_visible_index == 3);
+  m_button_play_tooltip->set_is_drawn(tooltip_visible_index == 0);
+  m_button_play_next_tooltip->set_is_drawn(tooltip_visible_index == 1);
+  m_button_sort_tooltip->set_is_drawn(tooltip_visible_index == 2);
+  m_button_more_tooltip->set_is_drawn(tooltip_visible_index == 3);
 
-  double t = std::clamp(std::abs(scroll_px - target_scroll_px) * 0.004, 0.4, 0.8);
-  scroll_px = std::lerp(scroll_px, target_scroll_px, t);
+  double t = std::clamp(std::abs(m_scroll_px - m_target_scroll_px) * 0.004, 0.4, 0.8);
+  m_scroll_px = std::lerp(m_scroll_px, m_target_scroll_px, t);
 
-  if (!draw_insert_cursor && insert_cursor_index.has_value() && *insert_cursor_index < items.size()) {
-    insert_cursor->set_is_drawn(true);
-    if (auto* w = get_item_widget(items[*insert_cursor_index])) {
+  if (!draw_insert_cursor && m_insert_cursor_index.has_value() && *m_insert_cursor_index < m_items.size()) {
+    m_insert_cursor->set_is_drawn(true);
+    if (auto* w = get_item_widget(m_items[*m_insert_cursor_index])) {
       draw_insert_cursor = true;
-      if (insert_cursor_pos == InsertCursorPos::ABOVE) {
-        insert_cursor->set_y(w->get_y());
-      } else if (insert_cursor_pos == InsertCursorPos::BELOW) {
-        insert_cursor->set_y(w->get_y() + w->get_height());
+      if (m_insert_cursor_pos == InsertCursorPos::ABOVE) {
+        m_insert_cursor->set_y(w->get_y());
+      } else if (m_insert_cursor_pos == InsertCursorPos::BELOW) {
+        m_insert_cursor->set_y(w->get_y() + w->get_height());
       }
     }
   } else {
-    insert_cursor->set_is_drawn(false);
+    m_insert_cursor->set_is_drawn(false);
   }
 
-  scrollbar->set_page_size(height);
-  scrollbar->set_height(height);
+  m_scrollbar->set_page_size(height);
+  m_scrollbar->set_height(height);
   ColorRect::update();
 }
 
 void PanelTracklist::event(Input::InputEventMouseScroll& e) {
   if (is_mouse_hovering()) {
-    scrollbar->scroll(e.offset.y);
+    m_scrollbar->scroll(e.offset.y);
     e.handled = true;
   }
 }
@@ -458,7 +458,7 @@ void PanelTracklist::event(Input::InputEventMouseButton& e) {
     if (!m_selection.empty() && e.button == Input::MouseButton::MOUSE_BUTTON_LEFT &&
         e.action == Input::MouseAction::PRESS) {
       m_selection.clear();
-      selection_modified = true;
+      m_selection_modified = true;
     }
     e.handled = true;
   }
@@ -467,175 +467,175 @@ void PanelTracklist::event(Input::InputEventMouseButton& e) {
 void PanelTracklist::event(Input::InputEventKey& e) {
   if (e.key == Input::Key::KEY_ESCAPE && e.action == Input::KeyAction::PRESS) {
     m_selection.clear();
-    selection_modified = true;
+    m_selection_modified = true;
   }
 }
 
 void PanelTracklist::clear() {
-  collection_id = std::nullopt;
-  items.clear();
-  for (auto&& widget : items_container->get_children()) {
+  m_collection_id = std::nullopt;
+  m_items.clear();
+  for (auto&& widget : m_items_container->get_children()) {
     widget->set_marked_for_deletion(true);
   }
-  max_scroll_px = 0;
-  just_recreated = true;
+  m_max_scroll_px = 0;
+  m_just_recreated = true;
   m_selection.clear();
-  scrollbar->set_content_size(0);
+  m_scrollbar->set_content_size(0);
   rebuild_lookup();
 }
 
-float PanelTracklist::get_scroll_px() const { return target_scroll_px; }
+float PanelTracklist::get_scroll_px() const { return m_target_scroll_px; }
 
 void PanelTracklist::set_scroll_px(float px, bool immediate) {
-  scroll_px = px;
-  target_scroll_px = px;
-  scrollbar->set_scroll_offset(px);
-  if (immediate) { scrollbar->skip_anim(); }
+  m_scroll_px = px;
+  m_target_scroll_px = px;
+  m_scrollbar->set_scroll_offset(px);
+  if (immediate) { m_scrollbar->skip_anim(); }
 }
 
 void PanelTracklist::recreate(std::optional<size_t> collection_id_) {
   clear();
-  collection_id = collection_id_;
-  if (!collection_id.has_value()) { return; }
+  m_collection_id = collection_id_;
+  if (!m_collection_id.has_value()) { return; }
 
-  auto& collection = db::collection_by_id(*collection_id)->get();
+  auto& collection = db::collection_by_id(*m_collection_id)->get();
   for (auto playlist_id : collection.playlist_ids()) {
     auto& playlist = db::playlist_by_id(playlist_id)->get();
     if (playlist.is_tombstone()) { continue; }
     ItemPlaylistHeader item_header;
-    item_header.collection_id = *collection_id;
+    item_header.collection_id = *m_collection_id;
     item_header.playlist_id = playlist_id;
-    item_header.item_index = items.size();
-    max_scroll_px += item_header.height();
-    items.emplace_back(item_header);
+    item_header.item_index = m_items.size();
+    m_max_scroll_px += item_header.height();
+    m_items.emplace_back(item_header);
     for (size_t track_index = 0; track_index < playlist.track_ids.size(); track_index += 1) {
       auto track_id = playlist.track_ids[track_index];
       db::track_info track_info = {
-        .collection_id = *collection_id, .playlist_id = playlist_id, .track_id = track_id, .index = track_index};
+        .collection_id = *m_collection_id, .playlist_id = playlist_id, .track_id = track_id, .index = track_index};
       ItemTrack item_track;
       item_track.track_info = track_info;
-      item_track.item_index = items.size();
-      max_scroll_px += item_track.height();
-      items.emplace_back(item_track);
+      item_track.item_index = m_items.size();
+      m_max_scroll_px += item_track.height();
+      m_items.emplace_back(item_track);
     }
   }
 
-  scrollbar->set_content_size(max_scroll_px);
-  set_scroll_px(scroll_px);
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  set_scroll_px(m_scroll_px);
   rebuild_lookup();
 }
 
 void PanelTracklist::recreate(std::span<const db::track_info> tracks) {
   clear();
-  collection_id = std::nullopt;
+  m_collection_id = std::nullopt;
 
   for (auto& ti : tracks) {
     ItemTrack item_track;
     item_track.track_info = ti;
-    item_track.item_index = items.size();
-    max_scroll_px += item_track.height();
-    items.emplace_back(item_track);
+    item_track.item_index = m_items.size();
+    m_max_scroll_px += item_track.height();
+    m_items.emplace_back(item_track);
   }
 
-  scrollbar->set_content_size(max_scroll_px);
-  set_scroll_px(scroll_px);
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  set_scroll_px(m_scroll_px);
   rebuild_lookup();
 }
 
 void PanelTracklist::insert_track(size_t index, db::track_info ti) {
-  index = std::min(index, items.size());
+  index = std::min(index, m_items.size());
   ItemTrack item_track;
   item_track.track_info = ti;
   item_track.item_index = index;
-  items.insert(items.begin() + index, item_track);
-  for (size_t i = index; i < items.size(); i += 1) {
-    set_item_index(items[i], i);
+  m_items.insert(m_items.begin() + index, item_track);
+  for (size_t i = index; i < m_items.size(); i += 1) {
+    set_item_index(m_items[i], i);
   }
-  max_scroll_px += item_track.height();
-  scrollbar->set_content_size(max_scroll_px);
-  just_recreated = true;
+  m_max_scroll_px += item_track.height();
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  m_just_recreated = true;
   m_selection.clear();
   rebuild_lookup();
 }
 
-void PanelTracklist::insert_track(db::track_info ti) { insert_track(items.size(), ti); }
+void PanelTracklist::insert_track(db::track_info ti) { insert_track(m_items.size(), ti); }
 
 void PanelTracklist::recreate(std::span<const Item> new_items) {
   clear();
-  collection_id = std::nullopt;
+  m_collection_id = std::nullopt;
 
   for (auto& new_item : new_items) {
     Item item = new_item;
-    set_item_index(item, items.size());
-    max_scroll_px += get_item_height(item);
-    items.emplace_back(item);
+    set_item_index(item, m_items.size());
+    m_max_scroll_px += get_item_height(item);
+    m_items.emplace_back(item);
   }
 
-  scrollbar->set_content_size(max_scroll_px);
-  set_scroll_px(scroll_px);
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  set_scroll_px(m_scroll_px);
   rebuild_lookup();
 }
 
 void PanelTracklist::insert_item(size_t index, const Item& item) {
-  index = std::min(index, items.size());
+  index = std::min(index, m_items.size());
   Item new_item = item;
   set_item_index(new_item, index);
-  items.insert(items.begin() + index, new_item);
-  for (size_t i = index; i < items.size(); i += 1) {
-    set_item_index(items[i], i);
+  m_items.insert(m_items.begin() + index, new_item);
+  for (size_t i = index; i < m_items.size(); i += 1) {
+    set_item_index(m_items[i], i);
   }
-  max_scroll_px += get_item_height(new_item);
-  scrollbar->set_content_size(max_scroll_px);
-  just_recreated = true;
+  m_max_scroll_px += get_item_height(new_item);
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  m_just_recreated = true;
   m_selection.clear();
   rebuild_lookup();
 }
 
-void PanelTracklist::insert_item(const Item& item) { insert_item(items.size(), item); }
+void PanelTracklist::insert_item(const Item& item) { insert_item(m_items.size(), item); }
 
 void PanelTracklist::set_item(size_t index, const Item& item) {
-  if (index >= items.size()) { return; }
-  i32 prev_height = get_item_height(items[index]);
+  if (index >= m_items.size()) { return; }
+  i32 prev_height = get_item_height(m_items[index]);
   Item new_item = item;
   set_item_index(new_item, index);
-  items[index] = new_item;
-  max_scroll_px += (get_item_height(new_item) - prev_height);
-  scrollbar->set_content_size(max_scroll_px);
-  just_recreated = true;
+  m_items[index] = new_item;
+  m_max_scroll_px += (get_item_height(new_item) - prev_height);
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  m_just_recreated = true;
   m_selection.clear();
   rebuild_lookup();
 }
 
 void PanelTracklist::insert_to_selection_index(size_t index) {
-  if (index < items.size()) {
-    if (m_selection.insert(index)) { selection_modified = true; }
+  if (index < m_items.size()) {
+    if (m_selection.insert(index)) { m_selection_modified = true; }
   }
 }
 
 void PanelTracklist::set_track(size_t index, db::track_info ti) {
-  if (index >= items.size()) { return; }
-  i32 prev_height = get_item_height(items[index]);
+  if (index >= m_items.size()) { return; }
+  i32 prev_height = get_item_height(m_items[index]);
   ItemTrack item_track;
   item_track.track_info = ti;
   item_track.item_index = index;
-  items[index] = item_track;
-  max_scroll_px += (item_track.height() - prev_height);
-  scrollbar->set_content_size(max_scroll_px);
-  just_recreated = true;
+  m_items[index] = item_track;
+  m_max_scroll_px += (item_track.height() - prev_height);
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  m_just_recreated = true;
   m_selection.clear();
   rebuild_lookup();
 }
 
 void PanelTracklist::remove_item(size_t index) {
-  if (index >= items.size()) { return; }
-  i32 h = get_item_height(items[index]);
-  items.erase(items.begin() + index);
-  for (size_t i = index; i < items.size(); i += 1) {
-    set_item_index(items[i], i);
+  if (index >= m_items.size()) { return; }
+  i32 h = get_item_height(m_items[index]);
+  m_items.erase(m_items.begin() + index);
+  for (size_t i = index; i < m_items.size(); i += 1) {
+    set_item_index(m_items[i], i);
   }
-  max_scroll_px -= h;
-  scrollbar->set_content_size(max_scroll_px);
-  just_recreated = true;
+  m_max_scroll_px -= h;
+  m_scrollbar->set_content_size(m_max_scroll_px);
+  m_just_recreated = true;
   m_selection.clear();
   rebuild_lookup();
 }

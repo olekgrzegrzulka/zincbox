@@ -9,7 +9,9 @@
 
 using enum out::LogLevel;
 
-static std::unordered_set<std::string> filtered_files = {};
+namespace {
+  std::unordered_set<std::string> filtered_files = {};
+}
 
 void out::add_file_to_blacklist(std::string_view filename) { filtered_files.emplace(filename); }
 

@@ -1,6 +1,5 @@
 
 #include "track.hpp"
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <optional>
@@ -11,8 +10,6 @@
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "core/musicdb/types.hpp"
-
-namespace fs = std::filesystem;
 
 db::Track::Track() {}
 
@@ -97,14 +94,10 @@ std::string db::Track::pretty_title() const {
 
 std::string db::Track::pretty_name() const {
   if (!metadata.title.empty()) {
-    if (!metadata.artist.empty()) {
-      return metadata.artist + " - " + metadata.title;
-    } else {
-      return metadata.title;
-    }
-  } else {
-    return path_to_utf8(file_name_with_extension());
+    if (!metadata.artist.empty()) { return metadata.artist + " - " + metadata.title; }
+    return metadata.title;
   }
+  return path_to_utf8(file_name_with_extension());
 }
 std::string db::Track::pretty_length() const {
   i32 length_s = metadata.duration_ms / 1000;

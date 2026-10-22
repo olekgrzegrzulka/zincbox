@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 #include "common/types.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 
@@ -34,8 +34,8 @@ namespace zincgui {
       float sensitivity = 40.0f;
 
       bool is_dragged = false;
-      std::function<void(float, float)> lambda_value_changed = nullptr;
-      std::function<void(float, float)> lambda_drag_end = nullptr;
+      std::function<void(float, float)> lambda_value_changed;
+      std::function<void(float, float)> lambda_drag_end;
 
       i32 drag_start_mouse_pos = 0;
       i32 drag_start_thumb_pos = 0;

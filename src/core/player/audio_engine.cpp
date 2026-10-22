@@ -20,232 +20,232 @@ namespace player {
     config.dataCallback = &AudioEngine::data_callback;
     config.pUserData = this;
 
-    ma_result res = ma_device_init(nullptr, &config, &device_);
+    ma_result res = ma_device_init(nullptr, &config, &m_device);
     if (res != MA_SUCCESS) {
       out::critical("couldn't initialize player, error {}", static_cast<i32>(res));
       return false;
     }
 
-    sample_rate_ = device_.sampleRate > 0 ? device_.sampleRate : 48000;
-    eq_.init(sample_rate_);
-    device_initialized_ = true;
+    m_sample_rate = m_device.sampleRate > 0 ? m_device.sampleRate : 48000;
+    m_eq.init(m_sample_rate);
+    m_device_initialized = true;
 
-    res = ma_device_start(&device_);
+    res = ma_device_start(&m_device);
     if (res != MA_SUCCESS) {
       out::critical("couldn't start audio device, error {}", static_cast<i32>(res));
-      ma_device_uninit(&device_);
-      device_initialized_ = false;
+      ma_device_uninit(&m_device);
+      m_device_initialized = false;
       return false;
     }
 
-    worker_thread_ = std::jthread([this](std::stop_token st) { worker_loop(st); });
+    m_worker_thread = std::jthread([this](std::stop_token st) { worker_loop(st); });
 
     return true;
   }
 
   void AudioEngine::deinit() {
-    if (worker_thread_.joinable()) {
+    if (m_worker_thread.joinable()) {
       push_command(CmdQuit{});
-      worker_thread_.request_stop();
-      worker_thread_.join();
+      m_worker_thread.request_stop();
+      m_worker_thread.join();
     }
 
-    if (device_initialized_) {
-      ma_device_uninit(&device_);
-      device_initialized_ = false;
+    if (m_device_initialized) {
+      ma_device_uninit(&m_device);
+      m_device_initialized = false;
     }
 
-    if (primary_.decoder != nullptr) {
-      ma_decoder_uninit(primary_.decoder.get());
-      primary_.decoder.reset();
+    if (m_primary.decoder != nullptr) {
+      ma_decoder_uninit(m_primary.decoder.get());
+      m_primary.decoder.reset();
     }
-    if (outgoing_.decoder != nullptr) {
-      ma_decoder_uninit(outgoing_.decoder.get());
-      outgoing_.decoder.reset();
+    if (m_outgoing.decoder != nullptr) {
+      ma_decoder_uninit(m_outgoing.decoder.get());
+      m_outgoing.decoder.reset();
     }
-    if (incoming_.decoder != nullptr) {
-      ma_decoder_uninit(incoming_.decoder.get());
-      incoming_.decoder.reset();
+    if (m_incoming.decoder != nullptr) {
+      ma_decoder_uninit(m_incoming.decoder.get());
+      m_incoming.decoder.reset();
     }
   }
 
   void AudioEngine::push_command(AudioCommand cmd) {
     {
-      std::lock_guard lock(cmd_mutex_);
-      cmd_queue_.push_back(std::move(cmd));
+      std::lock_guard lock(m_cmd_mutex);
+      m_cmd_queue.push_back(std::move(cmd));
     }
-    cmd_cv_.notify_one();
+    m_cmd_cv.notify_one();
   }
 
-  void AudioEngine::set_user_playing(bool playing) { user_playing_.store(playing, std::memory_order_relaxed); }
+  void AudioEngine::set_user_playing(bool playing) { m_user_playing.store(playing, std::memory_order_relaxed); }
 
   std::optional<AudioEvent> AudioEngine::pop_event() {
-    std::lock_guard lock(evt_mutex_);
-    if (evt_queue_.empty()) { return std::nullopt; }
-    AudioEvent evt = std::move(evt_queue_.front());
-    evt_queue_.pop_front();
+    std::lock_guard lock(m_evt_mutex);
+    if (m_evt_queue.empty()) { return std::nullopt; }
+    AudioEvent evt = std::move(m_evt_queue.front());
+    m_evt_queue.pop_front();
     return evt;
   }
 
   void AudioEngine::push_event(AudioEvent evt) {
-    std::lock_guard lock(evt_mutex_);
-    evt_queue_.push_back(std::move(evt));
+    std::lock_guard lock(m_evt_mutex);
+    m_evt_queue.push_back(std::move(evt));
   }
 
-  i32 AudioEngine::get_current_time_ms() const { return current_time_ms_.load(std::memory_order_relaxed); }
+  i32 AudioEngine::get_current_time_ms() const { return m_current_time_ms.load(std::memory_order_relaxed); }
 
-  i32 AudioEngine::get_total_duration_ms() const { return total_duration_ms_.load(std::memory_order_relaxed); }
+  i32 AudioEngine::get_total_duration_ms() const { return m_total_duration_ms.load(std::memory_order_relaxed); }
 
-  bool AudioEngine::is_playing() const { return user_playing_.load(std::memory_order_relaxed); }
+  bool AudioEngine::is_playing() const { return m_user_playing.load(std::memory_order_relaxed); }
 
-  bool AudioEngine::is_at_end() const { return is_at_end_.load(std::memory_order_relaxed); }
+  bool AudioEngine::is_at_end() const { return m_is_at_end.load(std::memory_order_relaxed); }
 
   void AudioEngine::process_audio(float* output, u32 frame_count) {
     size_t sample_count = static_cast<size_t>(frame_count) * 2;
     std::fill_n(output, sample_count, 0.0f);
 
-    std::lock_guard lock(audio_mutex_);
-    if (!primary_.active || primary_.decoder == nullptr) { return; }
+    std::lock_guard lock(m_audio_mutex);
+    if (!m_primary.active || m_primary.decoder == nullptr) { return; }
 
-    i32 xfade_ms = crossfade_ms_.load(std::memory_order_relaxed);
-    if (xfade_ms <= 0) { pause_gain_ = pause_state_ ? 0.0f : 1.0f; }
+    i32 xfade_ms = m_crossfade_ms.load(std::memory_order_relaxed);
+    if (xfade_ms <= 0) { m_pause_gain = m_pause_state ? 0.0f : 1.0f; }
 
-    if (pause_state_ && pause_gain_ <= 0.0f) { return; }
+    if (m_pause_state && m_pause_gain <= 0.0f) { return; }
 
-    if (mix_buffer_a_.size() < sample_count) { mix_buffer_a_.resize(sample_count, 0.0f); }
+    if (m_mix_buffer_a.size() < sample_count) { m_mix_buffer_a.resize(sample_count, 0.0f); }
 
     ma_uint64 frames_read_a = 0;
-    ma_decoder_read_pcm_frames(primary_.decoder.get(), mix_buffer_a_.data(), frame_count, &frames_read_a);
+    ma_decoder_read_pcm_frames(m_primary.decoder.get(), m_mix_buffer_a.data(), frame_count, &frames_read_a);
     if (frames_read_a < frame_count) {
-      std::fill(mix_buffer_a_.begin() + frames_read_a * 2, mix_buffer_a_.begin() + sample_count, 0.0f);
-      primary_.reached_eof = true;
+      std::fill(m_mix_buffer_a.begin() + frames_read_a * 2, m_mix_buffer_a.begin() + sample_count, 0.0f);
+      m_primary.reached_eof = true;
     }
-    primary_.cursor_frames.fetch_add(frames_read_a, std::memory_order_relaxed);
+    m_primary.cursor_frames.fetch_add(frames_read_a, std::memory_order_relaxed);
 
-    if (manual_xfade_active_ && outgoing_.active && outgoing_.decoder != nullptr) {
-      if (mix_buffer_b_.size() < sample_count) { mix_buffer_b_.resize(sample_count, 0.0f); }
+    if (m_manual_xfade_active && m_outgoing.active && m_outgoing.decoder != nullptr) {
+      if (m_mix_buffer_b.size() < sample_count) { m_mix_buffer_b.resize(sample_count, 0.0f); }
 
       ma_uint64 frames_read_b = 0;
-      ma_decoder_read_pcm_frames(outgoing_.decoder.get(), mix_buffer_b_.data(), frame_count, &frames_read_b);
+      ma_decoder_read_pcm_frames(m_outgoing.decoder.get(), m_mix_buffer_b.data(), frame_count, &frames_read_b);
       if (frames_read_b < frame_count) {
-        std::fill(mix_buffer_b_.begin() + frames_read_b * 2, mix_buffer_b_.begin() + sample_count, 0.0f);
-        outgoing_.reached_eof = true;
+        std::fill(m_mix_buffer_b.begin() + frames_read_b * 2, m_mix_buffer_b.begin() + sample_count, 0.0f);
+        m_outgoing.reached_eof = true;
       }
-      outgoing_.cursor_frames.fetch_add(frames_read_b, std::memory_order_relaxed);
+      m_outgoing.cursor_frames.fetch_add(frames_read_b, std::memory_order_relaxed);
 
       for (u32 f = 0; f < frame_count; ++f) {
-        float t = manual_xfade_total_frames_ > 0 ? std::clamp(static_cast<float>(manual_xfade_current_frame_) /
-                                                                static_cast<float>(manual_xfade_total_frames_),
-                                                              0.0f, 1.0f)
-                                                 : 1.0f;
+        float t = m_manual_xfade_total_frames > 0 ? std::clamp(static_cast<float>(m_manual_xfade_current_frame) /
+                                                                 static_cast<float>(m_manual_xfade_total_frames),
+                                                               0.0f, 1.0f)
+                                                  : 1.0f;
 
         float gain_in = std::sin(t * 0.5f * std::numbers::pi_v<float>);
-        float gain_out = outgoing_.start_gain * std::cos(t * 0.5f * std::numbers::pi_v<float>);
+        float gain_out = m_outgoing.start_gain * std::cos(t * 0.5f * std::numbers::pi_v<float>);
 
-        primary_.current_gain = gain_in;
-        outgoing_.current_gain = gain_out;
+        m_primary.current_gain = gain_in;
+        m_outgoing.current_gain = gain_out;
 
         size_t idx = static_cast<size_t>(f) * 2;
-        output[idx] = mix_buffer_a_[idx] * gain_in + mix_buffer_b_[idx] * gain_out;
-        output[idx + 1] = mix_buffer_a_[idx + 1] * gain_in + mix_buffer_b_[idx + 1] * gain_out;
+        output[idx] = (m_mix_buffer_a[idx] * gain_in) + (m_mix_buffer_b[idx] * gain_out);
+        output[idx + 1] = (m_mix_buffer_a[idx + 1] * gain_in) + (m_mix_buffer_b[idx + 1] * gain_out);
 
-        if (manual_xfade_current_frame_ < manual_xfade_total_frames_) { ++manual_xfade_current_frame_; }
+        if (m_manual_xfade_current_frame < m_manual_xfade_total_frames) { ++m_manual_xfade_current_frame; }
       }
 
-      if (manual_xfade_current_frame_ >= manual_xfade_total_frames_ || outgoing_.reached_eof) {
-        outgoing_.active = false;
-        manual_xfade_active_ = false;
-        primary_.current_gain = 1.0f;
+      if (m_manual_xfade_current_frame >= m_manual_xfade_total_frames || m_outgoing.reached_eof) {
+        m_outgoing.active = false;
+        m_manual_xfade_active = false;
+        m_primary.current_gain = 1.0f;
       }
-    } else if (auto_xfade_active_ && incoming_.active && incoming_.decoder != nullptr) {
-      if (mix_buffer_b_.size() < sample_count) { mix_buffer_b_.resize(sample_count, 0.0f); }
+    } else if (m_auto_xfade_active && m_incoming.active && m_incoming.decoder != nullptr) {
+      if (m_mix_buffer_b.size() < sample_count) { m_mix_buffer_b.resize(sample_count, 0.0f); }
 
       ma_uint64 frames_read_b = 0;
-      ma_decoder_read_pcm_frames(incoming_.decoder.get(), mix_buffer_b_.data(), frame_count, &frames_read_b);
+      ma_decoder_read_pcm_frames(m_incoming.decoder.get(), m_mix_buffer_b.data(), frame_count, &frames_read_b);
       if (frames_read_b < frame_count) {
-        std::fill(mix_buffer_b_.begin() + frames_read_b * 2, mix_buffer_b_.begin() + sample_count, 0.0f);
-        incoming_.reached_eof = true;
+        std::fill(m_mix_buffer_b.begin() + frames_read_b * 2, m_mix_buffer_b.begin() + sample_count, 0.0f);
+        m_incoming.reached_eof = true;
       }
-      incoming_.cursor_frames.fetch_add(frames_read_b, std::memory_order_relaxed);
+      m_incoming.cursor_frames.fetch_add(frames_read_b, std::memory_order_relaxed);
 
       for (u32 f = 0; f < frame_count; ++f) {
         float t =
-          auto_xfade_total_frames_ > 0
-            ? std::clamp(static_cast<float>(auto_xfade_current_frame_) / static_cast<float>(auto_xfade_total_frames_),
+          m_auto_xfade_total_frames > 0
+            ? std::clamp(static_cast<float>(m_auto_xfade_current_frame) / static_cast<float>(m_auto_xfade_total_frames),
                          0.0f, 1.0f)
             : 1.0f;
 
-        float gain_out = primary_.start_gain * std::cos(t * 0.5f * std::numbers::pi_v<float>);
+        float gain_out = m_primary.start_gain * std::cos(t * 0.5f * std::numbers::pi_v<float>);
         float gain_in = std::sin(t * 0.5f * std::numbers::pi_v<float>);
 
-        primary_.current_gain = gain_out;
-        incoming_.current_gain = gain_in;
+        m_primary.current_gain = gain_out;
+        m_incoming.current_gain = gain_in;
 
         size_t idx = static_cast<size_t>(f) * 2;
-        output[idx] = mix_buffer_a_[idx] * gain_out + mix_buffer_b_[idx] * gain_in;
-        output[idx + 1] = mix_buffer_a_[idx + 1] * gain_out + mix_buffer_b_[idx + 1] * gain_in;
+        output[idx] = (m_mix_buffer_a[idx] * gain_out) + (m_mix_buffer_b[idx] * gain_in);
+        output[idx + 1] = (m_mix_buffer_b[idx + 1] * gain_in) + (m_mix_buffer_a[idx + 1] * gain_out);
 
-        if (auto_xfade_current_frame_ < auto_xfade_total_frames_) { ++auto_xfade_current_frame_; }
+        if (m_auto_xfade_current_frame < m_auto_xfade_total_frames) { ++m_auto_xfade_current_frame; }
       }
 
-      if (auto_xfade_current_frame_ >= auto_xfade_total_frames_ || primary_.reached_eof) {
-        if (outgoing_.decoder == nullptr) {
-          outgoing_ = std::move(primary_);
-          outgoing_.active = false;
+      if (m_auto_xfade_current_frame >= m_auto_xfade_total_frames || m_primary.reached_eof) {
+        if (m_outgoing.decoder == nullptr) {
+          m_outgoing = std::move(m_primary);
+          m_outgoing.active = false;
         }
-        primary_ = std::move(incoming_);
-        primary_.current_gain = 1.0f;
-        primary_.start_gain = 1.0f;
-        incoming_.active = false;
-        auto_xfade_active_ = false;
-        crossfade_triggered_for_current_ = false;
+        m_primary = std::move(m_incoming);
+        m_primary.current_gain = 1.0f;
+        m_primary.start_gain = 1.0f;
+        m_incoming.active = false;
+        m_auto_xfade_active = false;
+        m_crossfade_triggered_for_current = false;
 
-        i32 new_dur = static_cast<i32>((primary_.total_frames * 1000) / sample_rate_);
-        total_duration_ms_.store(new_dur, std::memory_order_relaxed);
+        i32 new_dur = static_cast<i32>((m_primary.total_frames * 1000) / m_sample_rate);
+        m_total_duration_ms.store(new_dur, std::memory_order_relaxed);
         push_event(EvtAutoCrossfadePromoted{
-          .track_id = primary_.track_id,
+          .track_id = m_primary.track_id,
           .duration_ms = new_dur,
         });
       }
     } else {
-      std::copy_n(mix_buffer_a_.data(), sample_count, output);
-      primary_.current_gain = 1.0f;
+      std::copy_n(m_mix_buffer_a.data(), sample_count, output);
+      m_primary.current_gain = 1.0f;
     }
 
-    eq_.process_stereo(std::span<float>(output, sample_count));
+    m_eq.process_stereo(std::span<float>(output, sample_count));
 
-    float vol = volume_.load(std::memory_order_relaxed);
+    float vol = m_volume.load(std::memory_order_relaxed);
     float pause_step =
-      xfade_ms > 0 ? 1.0f / static_cast<float>(std::max<u64>(1, (static_cast<u64>(xfade_ms) * sample_rate_) / 1000))
+      xfade_ms > 0 ? 1.0f / static_cast<float>(std::max<u64>(1, (static_cast<u64>(xfade_ms) * m_sample_rate) / 1000))
                    : 1.0f;
 
     for (u32 f = 0; f < frame_count; ++f) {
-      if (pause_state_) {
-        pause_gain_ = std::max(0.0f, pause_gain_ - pause_step);
+      if (m_pause_state) {
+        m_pause_gain = std::max(0.0f, m_pause_gain - pause_step);
       } else {
-        pause_gain_ = std::min(1.0f, pause_gain_ + pause_step);
+        m_pause_gain = std::min(1.0f, m_pause_gain + pause_step);
       }
-      float gain = vol * pause_gain_;
+      float gain = vol * m_pause_gain;
       size_t idx = static_cast<size_t>(f) * 2;
       output[idx] *= gain;
       output[idx + 1] *= gain;
     }
 
-    u64 cur_frames = primary_.cursor_frames.load(std::memory_order_relaxed);
-    current_time_ms_.store(static_cast<i32>((cur_frames * 1000) / sample_rate_), std::memory_order_relaxed);
+    u64 cur_frames = m_primary.cursor_frames.load(std::memory_order_relaxed);
+    m_current_time_ms.store(static_cast<i32>((cur_frames * 1000) / m_sample_rate), std::memory_order_relaxed);
   }
 
   void AudioEngine::worker_loop(std::stop_token st) {
     while (!st.stop_requested()) {
       std::deque<AudioCommand> local_cmds;
       {
-        std::unique_lock lock(cmd_mutex_);
-        cmd_cv_.wait_for(lock, std::chrono::milliseconds(15),
-                         [this, &st] { return !cmd_queue_.empty() || st.stop_requested(); });
+        std::unique_lock lock(m_cmd_mutex);
+        m_cmd_cv.wait_for(lock, std::chrono::milliseconds(15),
+                          [this, &st] { return !m_cmd_queue.empty() || st.stop_requested(); });
 
         if (st.stop_requested()) { break; }
 
-        local_cmds.swap(cmd_queue_);
+        local_cmds.swap(m_cmd_queue);
       }
 
       for (const auto& cmd : local_cmds) {
@@ -263,35 +263,36 @@ namespace player {
       bool emit_ended = false;
 
       {
-        std::lock_guard lock(audio_mutex_);
-        if (!manual_xfade_active_ && !outgoing_.active && outgoing_.decoder != nullptr) {
-          inactive_out = std::move(outgoing_.decoder);
+        std::lock_guard lock(m_audio_mutex);
+        if (!m_manual_xfade_active && !m_outgoing.active && m_outgoing.decoder != nullptr) {
+          inactive_out = std::move(m_outgoing.decoder);
         }
-        if (!auto_xfade_active_ && !incoming_.active && incoming_.decoder != nullptr) {
-          inactive_in = std::move(incoming_.decoder);
+        if (!m_auto_xfade_active && !m_incoming.active && m_incoming.decoder != nullptr) {
+          inactive_in = std::move(m_incoming.decoder);
         }
 
-        if (!pause_state_ && user_playing_.load(std::memory_order_relaxed) && primary_.active &&
-            primary_.decoder != nullptr) {
-          u64 cursor = primary_.cursor_frames.load(std::memory_order_relaxed);
-          u64 total = primary_.total_frames;
-          i32 xfade_ms = crossfade_ms_.load(std::memory_order_relaxed);
+        if (!m_pause_state && m_user_playing.load(std::memory_order_relaxed) && m_primary.active &&
+            m_primary.decoder != nullptr) {
+          u64 cursor = m_primary.cursor_frames.load(std::memory_order_relaxed);
+          u64 total = m_primary.total_frames;
+          i32 xfade_ms = m_crossfade_ms.load(std::memory_order_relaxed);
 
-          if (!auto_xfade_active_ && !crossfade_triggered_for_current_ && xfade_ms > 0 && total > 0 && cursor < total) {
-            i32 remaining_ms = static_cast<i32>(((total - cursor) * 1000) / sample_rate_);
-            i32 total_ms = static_cast<i32>((total * 1000) / sample_rate_);
+          if (!m_auto_xfade_active && !m_crossfade_triggered_for_current && xfade_ms > 0 && total > 0 &&
+              cursor < total) {
+            i32 remaining_ms = static_cast<i32>(((total - cursor) * 1000) / m_sample_rate);
+            i32 total_ms = static_cast<i32>((total * 1000) / m_sample_rate);
             if (total_ms > xfade_ms && remaining_ms <= xfade_ms) {
-              crossfade_triggered_for_current_ = true;
+              m_crossfade_triggered_for_current = true;
               emit_crossfade = true;
             }
           }
 
-          if (!auto_xfade_active_ && primary_.reached_eof) {
-            primary_.active = false;
-            pause_state_ = true;
-            pause_gain_ = 0.0f;
-            user_playing_.store(false, std::memory_order_relaxed);
-            is_at_end_.store(true, std::memory_order_relaxed);
+          if (!m_auto_xfade_active && m_primary.reached_eof) {
+            m_primary.active = false;
+            m_pause_state = true;
+            m_pause_gain = 0.0f;
+            m_user_playing.store(false, std::memory_order_relaxed);
+            m_is_at_end.store(true, std::memory_order_relaxed);
             emit_ended = true;
           }
         }
@@ -308,9 +309,9 @@ namespace player {
                                    std::unique_ptr<ma_decoder>& garbage_b) {
     if (const auto* play_cmd = std::get_if<CmdPlay>(&cmd)) {
       auto new_decoder = std::make_unique<ma_decoder>();
-      ma_decoder_config dec_cfg = ma_decoder_config_init(ma_format_f32, 2, sample_rate_);
+      ma_decoder_config dec_cfg = ma_decoder_config_init(ma_format_f32, 2, m_sample_rate);
 
-      ma_result res;
+      ma_result res{};
 #if defined(_WIN32)
       res = ma_decoder_init_file_w(play_cmd->file_path.c_str(), &dec_cfg, new_decoder.get());
 #else
@@ -340,81 +341,81 @@ namespace player {
         return;
       }
 
-      i32 duration_ms = static_cast<i32>((total_frames * 1000) / sample_rate_);
+      i32 duration_ms = static_cast<i32>((total_frames * 1000) / m_sample_rate);
 
       {
-        std::lock_guard lock(audio_mutex_);
-        i32 xfade_ms = crossfade_ms_.load(std::memory_order_relaxed);
-        bool had_audible_primary = primary_.active && !primary_.reached_eof && pause_gain_ > 0.01f;
+        std::lock_guard lock(m_audio_mutex);
+        i32 xfade_ms = m_crossfade_ms.load(std::memory_order_relaxed);
+        bool had_audible_primary = m_primary.active && !m_primary.reached_eof && m_pause_gain > 0.01f;
         bool do_manual_xfade = play_cmd->crossfade && xfade_ms > 0 && had_audible_primary;
 
-        if (auto_xfade_active_ && incoming_.active) {
-          if (incoming_.current_gain > primary_.current_gain) {
-            garbage_a = std::move(primary_.decoder);
-            primary_ = std::move(incoming_);
+        if (m_auto_xfade_active && m_incoming.active) {
+          if (m_incoming.current_gain > m_primary.current_gain) {
+            garbage_a = std::move(m_primary.decoder);
+            m_primary = std::move(m_incoming);
           } else {
-            garbage_a = std::move(incoming_.decoder);
+            garbage_a = std::move(m_incoming.decoder);
           }
-          incoming_.active = false;
-          auto_xfade_active_ = false;
+          m_incoming.active = false;
+          m_auto_xfade_active = false;
         } else {
-          garbage_a = std::move(incoming_.decoder);
-          incoming_.active = false;
-          auto_xfade_active_ = false;
+          garbage_a = std::move(m_incoming.decoder);
+          m_incoming.active = false;
+          m_auto_xfade_active = false;
         }
 
         if (do_manual_xfade) {
-          garbage_b = std::move(outgoing_.decoder);
-          outgoing_ = std::move(primary_);
-          outgoing_.start_gain = outgoing_.current_gain * pause_gain_;
-          outgoing_.active = true;
+          garbage_b = std::move(m_outgoing.decoder);
+          m_outgoing = std::move(m_primary);
+          m_outgoing.start_gain = m_outgoing.current_gain * m_pause_gain;
+          m_outgoing.active = true;
 
-          primary_.decoder = std::move(new_decoder);
-          primary_.track_id = play_cmd->track_id;
-          primary_.total_frames = total_frames;
-          primary_.cursor_frames.store(0, std::memory_order_relaxed);
-          primary_.current_gain = 0.0f;
-          primary_.start_gain = 1.0f;
-          primary_.active = true;
-          primary_.reached_eof = false;
+          m_primary.decoder = std::move(new_decoder);
+          m_primary.track_id = play_cmd->track_id;
+          m_primary.total_frames = total_frames;
+          m_primary.cursor_frames.store(0, std::memory_order_relaxed);
+          m_primary.current_gain = 0.0f;
+          m_primary.start_gain = 1.0f;
+          m_primary.active = true;
+          m_primary.reached_eof = false;
 
-          manual_xfade_active_ = true;
-          manual_xfade_total_frames_ = std::max<u64>(1, (static_cast<u64>(xfade_ms) * sample_rate_) / 1000);
-          manual_xfade_current_frame_ = 0;
+          m_manual_xfade_active = true;
+          m_manual_xfade_total_frames = std::max<u64>(1, (static_cast<u64>(xfade_ms) * m_sample_rate) / 1000);
+          m_manual_xfade_current_frame = 0;
         } else {
-          garbage_b = std::move(outgoing_.decoder);
-          outgoing_.active = false;
-          manual_xfade_active_ = false;
+          garbage_b = std::move(m_outgoing.decoder);
+          m_outgoing.active = false;
+          m_manual_xfade_active = false;
 
-          if (primary_.decoder != nullptr) {
+          if (m_primary.decoder != nullptr) {
             if (garbage_a == nullptr) {
-              garbage_a = std::move(primary_.decoder);
+              garbage_a = std::move(m_primary.decoder);
             } else {
-              ma_decoder_uninit(primary_.decoder.get());
-              primary_.decoder.reset();
+              ma_decoder_uninit(m_primary.decoder.get());
+              m_primary.decoder.reset();
             }
           }
 
-          primary_.decoder = std::move(new_decoder);
-          primary_.track_id = play_cmd->track_id;
-          primary_.total_frames = total_frames;
-          primary_.cursor_frames.store(0, std::memory_order_relaxed);
-          primary_.current_gain = 1.0f;
-          primary_.start_gain = 1.0f;
-          primary_.active = true;
-          primary_.reached_eof = false;
+          m_primary.decoder = std::move(new_decoder);
+          m_primary.track_id = play_cmd->track_id;
+          m_primary.total_frames = total_frames;
+          m_primary.cursor_frames.store(0, std::memory_order_relaxed);
+          m_primary.current_gain = 1.0f;
+          m_primary.start_gain = 1.0f;
+          m_primary.active = true;
+          m_primary.reached_eof = false;
 
-          eq_.reset_state();
+          m_eq.reset_state();
         }
 
-        crossfade_triggered_for_current_ = false;
-        pause_state_ = false;
-        pause_gain_ = 1.0f;
+        m_crossfade_triggered_for_current = false;
+        m_pause_state = false;
+        m_pause_gain = 1.0f;
 
-        current_time_ms_.store(0, std::memory_order_relaxed);
-        total_duration_ms_.store(duration_ms, std::memory_order_relaxed);
-        is_at_end_.store(false, std::memory_order_relaxed);
-        user_playing_.store(true, std::memory_order_relaxed);
+        m_current_time_ms.store(0, std::memory_order_relaxed);
+        m_total_duration_ms.store(duration_ms, std::memory_order_relaxed);
+        m_is_at_end.store(false, std::memory_order_relaxed);
+        m_user_playing.store(true, std::memory_order_relaxed);
       }
 
       push_event(EvtTrackLoaded{
@@ -423,9 +424,9 @@ namespace player {
       });
     } else if (const auto* auto_cmd = std::get_if<CmdStartAutoCrossfade>(&cmd)) {
       auto new_decoder = std::make_unique<ma_decoder>();
-      ma_decoder_config dec_cfg = ma_decoder_config_init(ma_format_f32, 2, sample_rate_);
+      ma_decoder_config dec_cfg = ma_decoder_config_init(ma_format_f32, 2, m_sample_rate);
 
-      ma_result res;
+      ma_result res{};
 #if defined(_WIN32)
       res = ma_decoder_init_file_w(auto_cmd->file_path.c_str(), &dec_cfg, new_decoder.get());
 #else
@@ -455,105 +456,105 @@ namespace player {
         return;
       }
 
-      std::lock_guard lock(audio_mutex_);
-      i32 xfade_ms = crossfade_ms_.load(std::memory_order_relaxed);
-      if (!primary_.active || primary_.reached_eof || xfade_ms <= 0) {
+      std::lock_guard lock(m_audio_mutex);
+      i32 xfade_ms = m_crossfade_ms.load(std::memory_order_relaxed);
+      if (!m_primary.active || m_primary.reached_eof || xfade_ms <= 0) {
         garbage_a = std::move(new_decoder);
         return;
       }
 
-      garbage_a = std::move(incoming_.decoder);
-      incoming_.decoder = std::move(new_decoder);
-      incoming_.track_id = auto_cmd->track_id;
-      incoming_.total_frames = total_frames;
-      incoming_.cursor_frames.store(0, std::memory_order_relaxed);
-      incoming_.current_gain = 0.0f;
-      incoming_.start_gain = 1.0f;
-      incoming_.active = true;
-      incoming_.reached_eof = false;
+      garbage_a = std::move(m_incoming.decoder);
+      m_incoming.decoder = std::move(new_decoder);
+      m_incoming.track_id = auto_cmd->track_id;
+      m_incoming.total_frames = total_frames;
+      m_incoming.cursor_frames.store(0, std::memory_order_relaxed);
+      m_incoming.current_gain = 0.0f;
+      m_incoming.start_gain = 1.0f;
+      m_incoming.active = true;
+      m_incoming.reached_eof = false;
 
-      u64 cur = primary_.cursor_frames.load(std::memory_order_relaxed);
-      u64 rem = primary_.total_frames > cur ? (primary_.total_frames - cur) : 1;
-      u64 requested_frames = std::max<u64>(1, (static_cast<u64>(xfade_ms) * sample_rate_) / 1000);
+      u64 cur = m_primary.cursor_frames.load(std::memory_order_relaxed);
+      u64 rem = m_primary.total_frames > cur ? (m_primary.total_frames - cur) : 1;
+      u64 requested_frames = std::max<u64>(1, (static_cast<u64>(xfade_ms) * m_sample_rate) / 1000);
 
-      primary_.start_gain = primary_.current_gain;
-      auto_xfade_total_frames_ = std::max<u64>(1, std::min(requested_frames, rem));
-      auto_xfade_current_frame_ = 0;
-      auto_xfade_active_ = true;
+      m_primary.start_gain = m_primary.current_gain;
+      m_auto_xfade_total_frames = std::max<u64>(1, std::min(requested_frames, rem));
+      m_auto_xfade_current_frame = 0;
+      m_auto_xfade_active = true;
     } else if (std::holds_alternative<CmdCancelAutoCrossfade>(cmd)) {
-      std::lock_guard lock(audio_mutex_);
-      if (auto_xfade_active_ || incoming_.active) {
-        garbage_a = std::move(incoming_.decoder);
-        incoming_.active = false;
-        auto_xfade_active_ = false;
-        primary_.current_gain = 1.0f;
-        primary_.start_gain = 1.0f;
-        crossfade_triggered_for_current_ = false;
+      std::lock_guard lock(m_audio_mutex);
+      if (m_auto_xfade_active || m_incoming.active) {
+        garbage_a = std::move(m_incoming.decoder);
+        m_incoming.active = false;
+        m_auto_xfade_active = false;
+        m_primary.current_gain = 1.0f;
+        m_primary.start_gain = 1.0f;
+        m_crossfade_triggered_for_current = false;
       }
     } else if (std::holds_alternative<CmdPause>(cmd)) {
-      std::lock_guard lock(audio_mutex_);
-      pause_state_ = true;
-      if (primary_.cursor_frames.load(std::memory_order_relaxed) == 0) { pause_gain_ = 0.0f; }
-      user_playing_.store(false, std::memory_order_relaxed);
+      std::lock_guard lock(m_audio_mutex);
+      m_pause_state = true;
+      if (m_primary.cursor_frames.load(std::memory_order_relaxed) == 0) { m_pause_gain = 0.0f; }
+      m_user_playing.store(false, std::memory_order_relaxed);
     } else if (std::holds_alternative<CmdResume>(cmd)) {
-      std::lock_guard lock(audio_mutex_);
-      if (primary_.active) {
-        pause_state_ = false;
-        user_playing_.store(true, std::memory_order_relaxed);
+      std::lock_guard lock(m_audio_mutex);
+      if (m_primary.active) {
+        m_pause_state = false;
+        m_user_playing.store(true, std::memory_order_relaxed);
       }
     } else if (std::holds_alternative<CmdStop>(cmd)) {
-      std::lock_guard lock(audio_mutex_);
-      pause_state_ = true;
-      pause_gain_ = 0.0f;
-      user_playing_.store(false, std::memory_order_relaxed);
+      std::lock_guard lock(m_audio_mutex);
+      m_pause_state = true;
+      m_pause_gain = 0.0f;
+      m_user_playing.store(false, std::memory_order_relaxed);
 
-      garbage_a = std::move(outgoing_.decoder);
-      outgoing_.active = false;
-      manual_xfade_active_ = false;
+      garbage_a = std::move(m_outgoing.decoder);
+      m_outgoing.active = false;
+      m_manual_xfade_active = false;
 
-      garbage_b = std::move(incoming_.decoder);
-      incoming_.active = false;
-      auto_xfade_active_ = false;
-      crossfade_triggered_for_current_ = false;
+      garbage_b = std::move(m_incoming.decoder);
+      m_incoming.active = false;
+      m_auto_xfade_active = false;
+      m_crossfade_triggered_for_current = false;
 
-      if (primary_.decoder != nullptr) {
-        ma_decoder_seek_to_pcm_frame(primary_.decoder.get(), 0);
-        primary_.cursor_frames.store(0, std::memory_order_relaxed);
-        primary_.reached_eof = false;
-        primary_.current_gain = 1.0f;
+      if (m_primary.decoder != nullptr) {
+        ma_decoder_seek_to_pcm_frame(m_primary.decoder.get(), 0);
+        m_primary.cursor_frames.store(0, std::memory_order_relaxed);
+        m_primary.reached_eof = false;
+        m_primary.current_gain = 1.0f;
       }
-      current_time_ms_.store(0, std::memory_order_relaxed);
+      m_current_time_ms.store(0, std::memory_order_relaxed);
     } else if (const auto* seek_cmd = std::get_if<CmdSeek>(&cmd)) {
-      std::lock_guard lock(audio_mutex_);
-      if (auto_xfade_active_ || incoming_.active) {
-        garbage_a = std::move(incoming_.decoder);
-        incoming_.active = false;
-        auto_xfade_active_ = false;
+      std::lock_guard lock(m_audio_mutex);
+      if (m_auto_xfade_active || m_incoming.active) {
+        garbage_a = std::move(m_incoming.decoder);
+        m_incoming.active = false;
+        m_auto_xfade_active = false;
       }
-      if (manual_xfade_active_ || outgoing_.active) {
-        garbage_b = std::move(outgoing_.decoder);
-        outgoing_.active = false;
-        manual_xfade_active_ = false;
+      if (m_manual_xfade_active || m_outgoing.active) {
+        garbage_b = std::move(m_outgoing.decoder);
+        m_outgoing.active = false;
+        m_manual_xfade_active = false;
       }
 
-      if (primary_.decoder != nullptr) {
-        u64 target_frame = (static_cast<u64>(std::max(0, seek_cmd->position_ms)) * sample_rate_) / 1000;
-        target_frame = std::min(target_frame, primary_.total_frames);
-        ma_decoder_seek_to_pcm_frame(primary_.decoder.get(), target_frame);
-        primary_.cursor_frames.store(target_frame, std::memory_order_relaxed);
-        primary_.reached_eof = false;
-        primary_.current_gain = 1.0f;
-        primary_.start_gain = 1.0f;
-        crossfade_triggered_for_current_ = false;
-        current_time_ms_.store(seek_cmd->position_ms, std::memory_order_relaxed);
+      if (m_primary.decoder != nullptr) {
+        u64 target_frame = (static_cast<u64>(std::max(0, seek_cmd->position_ms)) * m_sample_rate) / 1000;
+        target_frame = std::min(target_frame, m_primary.total_frames);
+        ma_decoder_seek_to_pcm_frame(m_primary.decoder.get(), target_frame);
+        m_primary.cursor_frames.store(target_frame, std::memory_order_relaxed);
+        m_primary.reached_eof = false;
+        m_primary.current_gain = 1.0f;
+        m_primary.start_gain = 1.0f;
+        m_crossfade_triggered_for_current = false;
+        m_current_time_ms.store(seek_cmd->position_ms, std::memory_order_relaxed);
       }
     } else if (const auto* vol_cmd = std::get_if<CmdSetVolume>(&cmd)) {
-      volume_.store(std::clamp(vol_cmd->volume, 0.0f, 1.0f), std::memory_order_relaxed);
+      m_volume.store(std::clamp(vol_cmd->volume, 0.0f, 1.0f), std::memory_order_relaxed);
     } else if (const auto* xfade_cmd = std::get_if<CmdSetCrossfade>(&cmd)) {
-      crossfade_ms_.store(std::max(0, xfade_cmd->crossfade_ms), std::memory_order_relaxed);
+      m_crossfade_ms.store(std::max(0, xfade_cmd->crossfade_ms), std::memory_order_relaxed);
     } else if (const auto* eq_cmd = std::get_if<CmdSetEqualizer>(&cmd)) {
-      std::lock_guard lock(audio_mutex_);
-      eq_.set_gains(eq_cmd->gains);
+      std::lock_guard lock(m_audio_mutex);
+      m_eq.set_gains(eq_cmd->gains);
     }
   }
 

@@ -13,9 +13,14 @@ namespace zincgui {
 class Tab;
 class TabBar;
 
-class PanelTop : public zincgui::ColorRect {
+class PanelTop final : public zincgui::ColorRect {
   public:
+    PanelTop(const PanelTop&) = delete;
+    PanelTop(PanelTop&&) = delete;
+    PanelTop& operator=(const PanelTop&) = delete;
+    PanelTop& operator=(PanelTop&&) = delete;
     PanelTop(zincgui::Root& ui_);
+    ~PanelTop() override = default;
     void update() override;
     void recreate(std::optional<size_t> selected_collection_id);
     void select(size_t selected_collection_id);
@@ -31,16 +36,16 @@ class PanelTop : public zincgui::ColorRect {
     std::function<void()> on_queue_view_opened{};
     std::function<void(Tab*)> on_queue_rmb{};
     std::function<void(size_t collection_id, Widget*)> on_show_collection_actions_popover{};
-    TabBar* get_tab_bar() { return tab_bar; }
+    TabBar* get_tab_bar() { return m_tab_bar; }
     const Tab* get_queue_tab() const;
 
-  protected:
-    zincgui::Widget* container_tabbar{};
-    zincgui::Widget* container_drag_region{};
-    zincgui::Widget* container_buttons{};
-    TabBar* tab_bar{};
-    zincgui::Button* button_hamburger{};
-    zincgui::Button* button_decor_minimize{};
-    zincgui::Button* button_decor_maximize{};
-    zincgui::Button* button_decor_close{};
+  private:
+    zincgui::Widget* m_container_tabbar{};
+    zincgui::Widget* m_container_drag_region{};
+    zincgui::Widget* m_container_buttons{};
+    TabBar* m_tab_bar{};
+    zincgui::Button* m_button_hamburger{};
+    zincgui::Button* m_button_decor_minimize{};
+    zincgui::Button* m_button_decor_maximize{};
+    zincgui::Button* m_button_decor_close{};
 };

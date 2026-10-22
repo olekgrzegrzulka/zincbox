@@ -2,7 +2,7 @@
 #include <vector>
 #include "common/color.hpp"
 #include "common/types.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 
@@ -11,7 +11,7 @@ namespace zincgui {
   class ColorRect : public Widget {
       struct vertex final {
           i32 type = 2;
-          vec2f pos;
+          vec2f pos{};
           vec3f color{1.0f};
           float opacity{1.0f};
 
@@ -30,6 +30,10 @@ namespace zincgui {
       std::vector<ColorRect::vertex> vertices{};
 
     public:
+      ColorRect(const ColorRect&) = delete;
+      ColorRect(ColorRect&&) = delete;
+      ColorRect& operator=(const ColorRect&) = delete;
+      ColorRect& operator=(ColorRect&&) = delete;
       ColorRect(Root& ui_);
       ColorRect(Root& ui_, i32 width_, i32 height_);
       ColorRect(Root& ui_, rgba color);

@@ -5,7 +5,6 @@
 #include <set>
 #include <string>
 #include <string_view>
-#include "common/debug.hpp"
 #include "common/logger.hpp"
 #include "common/random.hpp"
 #include "core/musicdb/musicdb.hpp"
@@ -13,7 +12,7 @@
 #include "core/settings.hpp"
 #include "zincbox.hpp"
 
-namespace player::queue {
+namespace {
 
   enum class PendingType : u8 {
     NONE,
@@ -29,14 +28,14 @@ namespace player::queue {
       db::track_info track{};
   };
 
-  static Random rng{};
-  static std::vector<QueueElement> playing_queue{};
-  static std::optional<size_t> playing_index{};
-  static ShuffleMode shuffle_mode = ShuffleMode::OFF;
-  static RepeatMode repeat_mode = RepeatMode::OFF;
-  static PendingNext pending_next{};
+  Random rng{};
+  std::vector<player::QueueElement> playing_queue{};
+  std::optional<size_t> playing_index{};
+  player::ShuffleMode shuffle_mode = player::ShuffleMode::OFF;
+  player::RepeatMode repeat_mode = player::RepeatMode::OFF;
+  PendingNext pending_next{};
 
-  static std::optional<i32> get_track_history_distance(size_t track_id, i32 from_index, i32 to_index) {
+  std::optional<i32> get_track_history_distance(size_t track_id, i32 from_index, i32 to_index) {
     if (playing_queue.empty()) { return std::nullopt; }
     from_index = std::max(from_index, 0);
     to_index = std::min(to_index, static_cast<i32>(playing_queue.size()) - 1);
@@ -48,6 +47,9 @@ namespace player::queue {
     }
     return std::nullopt;
   }
+} // namespace
+
+namespace player::queue {
 
   void cancel_pending_next() { pending_next = PendingNext{}; }
 
@@ -348,7 +350,8 @@ namespace player::queue {
           .track = ti,
         };
         return ti;
-      } else if (repeat_mode == RepeatMode::OFF) {
+      }
+      if (repeat_mode == RepeatMode::OFF) {
         auto next_playlist_id = collection.next_playlist_id(playing.playlist_id);
         if (next_playlist_id.has_value()) {
           auto next_playlist = db::playlist_by_id(next_playlist_id.value());
@@ -421,9 +424,9 @@ namespace player::queue {
             if (allow_album && allow_artist && score - 6 > last_tracks_to_check / 2) {
               candidates = {{score, candidate}};
               break;
-            } else {
-              candidates.insert({score, candidate});
             }
+            candidates.insert({score, candidate});
+
           } else {
             candidates = {{score, candidate}};
             break;
@@ -458,7 +461,7 @@ namespace player::queue {
           if (!playing_queue.empty()) {
             bool same_playlist_as_prev = false;
             bool same_artist_as_prev = false;
-            bool is_album = (playlist.type == db::PlaylistType::Album);
+            bool is_album = (playlist.type == db::PlaylistType::ALBUM);
             if (!is_album) {
               auto prev_originating_album_id = track.originating_album_id;
               auto rand_originating_album_id = db::track_by_id(rand_track_id)->get().originating_album_id;
@@ -474,9 +477,9 @@ namespace player::queue {
             if (allow_album && allow_artist && score - 6 > last_tracks_to_check / 2) {
               candidates = {{score, candidate}};
               break;
-            } else {
-              candidates.insert({score, candidate});
             }
+            candidates.insert({score, candidate});
+
           } else {
             candidates = {{score, candidate}};
             break;
@@ -505,9 +508,9 @@ namespace player::queue {
 
     if (!playing_index.has_value() || playing_index.value() >= playing_queue.size()) { return false; }
 
-    if (local.type == PendingType::REPEAT_CURRENT_TRACK) {
-      return true;
-    } else if (local.type == PendingType::STEP_PLAYLIST_ELEMENT) {
+    if (local.type == PendingType::REPEAT_CURRENT_TRACK) { return true; }
+
+    if (local.type == PendingType::STEP_PLAYLIST_ELEMENT) {
       if (playing_queue[*playing_index].is_playlist()) {
         std::get<QueuePlaylist>(playing_queue[*playing_index]).next();
         signal_on_queue_changed_at.emit(*playing_index);
@@ -556,7 +559,9 @@ namespace player::queue {
       qp->prev();
       signal_on_queue_changed_at.emit(*playing_index);
       return NavAction::PLAY_CURRENT;
-    } else if (auto* qc = std::get_if<QueueCollection>(&current_elem); qc != nullptr && !qc->is_start()) {
+    }
+
+    if (auto* qc = std::get_if<QueueCollection>(&current_elem); qc != nullptr && !qc->is_start()) {
       qc->prev();
       signal_on_queue_changed_at.emit(*playing_index);
       return NavAction::PLAY_CURRENT;
@@ -623,13 +628,9 @@ namespace player::queue {
   std::optional<db::track_info> get_playing_track() {
     auto playing = get_playing();
     if (!playing.has_value()) { return std::nullopt; }
-    if (playing->is_track()) {
-      return playing->track()->track_info;
-    } else if (playing->is_playlist()) {
-      return playing->playlist()->get_track();
-    } else if (playing->is_collection()) {
-      return playing->collection()->get_track();
-    }
+    if (playing->is_track()) { return playing->track()->track_info; }
+    if (playing->is_playlist()) { return playing->playlist()->get_track(); }
+    if (playing->is_collection()) { return playing->collection()->get_track(); }
     return std::nullopt;
   }
 

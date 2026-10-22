@@ -8,17 +8,17 @@
 
 using namespace zincgui::Input;
 
-namespace detail {
-  static SDL_Window* sdl_window{};
-  static i32 mouse_x{};
-  static i32 mouse_y{};
-  static i32 last_mouse_x{};
-  static i32 last_mouse_y{};
-  static i32 window_x{};
-  static i32 window_y{};
-  static std::vector<InputEvent> event_queue{};
-  static std::vector<std::string> dropped_paths{};
-  static std::array<SDL_Cursor*, (size_t)Cursor::CURSOR_SIZE> cursors{};
+namespace {
+  SDL_Window* sdl_window{};
+  i32 mouse_x{};
+  i32 mouse_y{};
+  i32 last_mouse_x{};
+  i32 last_mouse_y{};
+  i32 window_x{};
+  i32 window_y{};
+  std::vector<InputEvent> event_queue{};
+  std::vector<std::string> dropped_paths{};
+  std::array<SDL_Cursor*, (size_t)Cursor::CURSOR_SIZE> cursors{};
 
   enum class ButtonState : u8 { RELEASED, PRESSED, JUST_RELEASED, JUST_PRESSED };
 
@@ -28,15 +28,15 @@ namespace detail {
   std::string keyboard_characters_curr;
   vec2f accumulated_scroll_next{};
   vec2f accumulated_scroll{};
-} // namespace detail
+} // namespace
 
 void zincgui::Input::process_event(const SDL_Event& event) {
   switch (event.type) {
   case SDL_EVENT_MOUSE_MOTION: {
     InputEventMouseMove ev{.to = {static_cast<double>(event.motion.x), static_cast<double>(event.motion.y)}};
-    detail::event_queue.emplace_back(ev);
-    detail::mouse_x = event.motion.x;
-    detail::mouse_y = event.motion.y;
+    event_queue.emplace_back(ev);
+    mouse_x = event.motion.x;
+    mouse_y = event.motion.y;
     break;
   }
   case SDL_EVENT_MOUSE_BUTTON_DOWN: [[fallthrough]];
@@ -45,23 +45,23 @@ void zincgui::Input::process_event(const SDL_Event& event) {
       .button = static_cast<MouseButton>(event.button.button),
       .action = (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) ? MouseAction::PRESS : MouseAction::RELEASE,
     };
-    detail::event_queue.emplace_back(ev);
+    event_queue.emplace_back(ev);
     break;
   }
   case SDL_EVENT_DROP_FILE: {
-    detail::dropped_paths.emplace_back(event.drop.data);
+    dropped_paths.emplace_back(event.drop.data);
     break;
   }
   case SDL_EVENT_MOUSE_WHEEL: {
-    detail::accumulated_scroll_next += vec2f{event.wheel.x, event.wheel.y};
+    accumulated_scroll_next += vec2f{event.wheel.x, event.wheel.y};
     InputEventMouseScroll ev = {
       .offset = {static_cast<double>(event.wheel.x), static_cast<double>(event.wheel.y)},
     };
-    detail::event_queue.emplace_back(ev);
+    event_queue.emplace_back(ev);
     break;
   }
   case SDL_EVENT_TEXT_INPUT: {
-    detail::keyboard_characters_curr += event.text.text;
+    keyboard_characters_curr += event.text.text;
     break;
   }
   case SDL_EVENT_KEY_DOWN:
@@ -73,27 +73,27 @@ void zincgui::Input::process_event(const SDL_Event& event) {
       .action = key_action,
       .scancode = static_cast<i32>(event.key.scancode),
     };
-    detail::event_queue.emplace_back(ev);
+    event_queue.emplace_back(ev);
     break;
   }
-  case SDL_EVENT_WINDOW_MOUSE_ENTER: detail::event_queue.emplace_back(InputEventMouseEntered{}); break;
-  case SDL_EVENT_WINDOW_MOUSE_LEAVE: detail::event_queue.emplace_back(InputEventMouseLeft{}); break;
+  case SDL_EVENT_WINDOW_MOUSE_ENTER: event_queue.emplace_back(InputEventMouseEntered{}); break;
+  case SDL_EVENT_WINDOW_MOUSE_LEAVE: event_queue.emplace_back(InputEventMouseLeft{}); break;
   default: break;
   }
 }
 
 void zincgui::Input::init(SDL_Window* window) {
-  detail::sdl_window = window;
+  sdl_window = window;
   SDL_StartTextInput(window);
 
-  detail::cursors[(size_t)Cursor::ARROW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
-  detail::cursors[(size_t)Cursor::IBEAM] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT);
-  detail::cursors[(size_t)Cursor::CROSSHAIR] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-  detail::cursors[(size_t)Cursor::HAND] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
-  detail::cursors[(size_t)Cursor::RESIZE_HORIZONTAL] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE);
-  detail::cursors[(size_t)Cursor::RESIZE_VERTICAL] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE);
-  detail::cursors[(size_t)Cursor::RESIZE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_MOVE);
-  detail::cursors[(size_t)Cursor::NOT_ALLOWED] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NOT_ALLOWED);
+  cursors[(size_t)Cursor::ARROW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
+  cursors[(size_t)Cursor::IBEAM] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_TEXT);
+  cursors[(size_t)Cursor::CROSSHAIR] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+  cursors[(size_t)Cursor::HAND] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
+  cursors[(size_t)Cursor::RESIZE_HORIZONTAL] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE);
+  cursors[(size_t)Cursor::RESIZE_VERTICAL] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE);
+  cursors[(size_t)Cursor::RESIZE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_MOVE);
+  cursors[(size_t)Cursor::NOT_ALLOWED] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NOT_ALLOWED);
 }
 
 void zincgui::Input::update() {
@@ -104,109 +104,105 @@ void zincgui::Input::update() {
   float global_x = 0.0f;
   float global_y = 0.0f;
   SDL_MouseButtonFlags mouse_mask = SDL_GetGlobalMouseState(&global_x, &global_y);
-  SDL_GetWindowPosition(detail::sdl_window, &detail::window_x, &detail::window_y);
-  x = global_x - static_cast<float>(detail::window_x);
-  y = global_y - static_cast<float>(detail::window_y);
+  SDL_GetWindowPosition(sdl_window, &window_x, &window_y);
+  x = global_x - static_cast<float>(window_x);
+  y = global_y - static_cast<float>(window_y);
 #else
   // on Linux/Wayland global window and mouse queries return (0, 0); use local coordinates instead
   SDL_MouseButtonFlags mouse_mask = SDL_GetMouseState(&x, &y);
 #endif
-  detail::last_mouse_x = detail::mouse_x;
-  detail::last_mouse_y = detail::mouse_y;
-  detail::mouse_x = static_cast<i32>(x);
-  detail::mouse_y = static_cast<i32>(y);
+  last_mouse_x = mouse_x;
+  last_mouse_y = mouse_y;
+  mouse_x = static_cast<i32>(x);
+  mouse_y = static_cast<i32>(y);
 
-  for (size_t i = 0; i < detail::mouse_states.size(); i += 1) {
-    using enum detail::ButtonState;
+  for (size_t i = 0; i < mouse_states.size(); i += 1) {
+    using enum ButtonState;
     bool is_pressed = (mouse_mask & SDL_BUTTON_MASK(i)) != 0;
 
-    if (detail::mouse_states[i] == RELEASED && is_pressed) {
-      detail::mouse_states[i] = JUST_PRESSED;
-    } else if (detail::mouse_states[i] == PRESSED && !is_pressed) {
-      detail::mouse_states[i] = JUST_RELEASED;
-    } else if (detail::mouse_states[i] == JUST_RELEASED) {
-      detail::mouse_states[i] = is_pressed ? JUST_PRESSED : RELEASED;
-    } else if (detail::mouse_states[i] == JUST_PRESSED) {
-      detail::mouse_states[i] = is_pressed ? PRESSED : JUST_RELEASED;
+    if (mouse_states[i] == RELEASED && is_pressed) {
+      mouse_states[i] = JUST_PRESSED;
+    } else if (mouse_states[i] == PRESSED && !is_pressed) {
+      mouse_states[i] = JUST_RELEASED;
+    } else if (mouse_states[i] == JUST_RELEASED) {
+      mouse_states[i] = is_pressed ? JUST_PRESSED : RELEASED;
+    } else if (mouse_states[i] == JUST_PRESSED) {
+      mouse_states[i] = is_pressed ? PRESSED : JUST_RELEASED;
     }
   }
 
   i32 num_keys = 0;
   const bool* keyboard_state = SDL_GetKeyboardState(&num_keys);
-  for (size_t scancode = 0; scancode < detail::key_states.size(); scancode += 1) {
-    using enum detail::ButtonState;
+  for (size_t scancode = 0; scancode < key_states.size(); scancode += 1) {
+    using enum ButtonState;
     bool is_pressed = keyboard_state[scancode];
 
-    if (detail::key_states[scancode] == RELEASED && is_pressed) {
-      detail::key_states[scancode] = JUST_PRESSED;
-    } else if (detail::key_states[scancode] == PRESSED && !is_pressed) {
-      detail::key_states[scancode] = JUST_RELEASED;
-    } else if (detail::key_states[scancode] == JUST_RELEASED) {
-      detail::key_states[scancode] = is_pressed ? JUST_PRESSED : RELEASED;
-    } else if (detail::key_states[scancode] == JUST_PRESSED) {
-      detail::key_states[scancode] = is_pressed ? PRESSED : JUST_RELEASED;
+    if (key_states[scancode] == RELEASED && is_pressed) {
+      key_states[scancode] = JUST_PRESSED;
+    } else if (key_states[scancode] == PRESSED && !is_pressed) {
+      key_states[scancode] = JUST_RELEASED;
+    } else if (key_states[scancode] == JUST_RELEASED) {
+      key_states[scancode] = is_pressed ? JUST_PRESSED : RELEASED;
+    } else if (key_states[scancode] == JUST_PRESSED) {
+      key_states[scancode] = is_pressed ? PRESSED : JUST_RELEASED;
     }
   }
   // clang-format on
 }
 
 void zincgui::Input::clear() {
-  detail::keyboard_characters_prev = detail::keyboard_characters_curr;
-  detail::keyboard_characters_curr.clear();
+  keyboard_characters_prev = keyboard_characters_curr;
+  keyboard_characters_curr.clear();
 
-  detail::accumulated_scroll = detail::accumulated_scroll_next;
-  detail::accumulated_scroll_next = vec2f{};
+  accumulated_scroll = accumulated_scroll_next;
+  accumulated_scroll_next = vec2f{};
 
-  detail::event_queue.clear();
+  event_queue.clear();
 
-  detail::dropped_paths.clear();
+  dropped_paths.clear();
 }
 
-vec2i zincgui::Input::get_mouse_pos() { return {detail::mouse_x, detail::mouse_y}; }
+vec2i zincgui::Input::get_mouse_pos() { return {mouse_x, mouse_y}; }
 
-i32 zincgui::Input::get_mouse_x() { return detail::mouse_x; }
+i32 zincgui::Input::get_mouse_x() { return mouse_x; }
 
-i32 zincgui::Input::get_mouse_y() { return detail::mouse_y; }
+i32 zincgui::Input::get_mouse_y() { return mouse_y; }
 
-i32 zincgui::Input::get_window_x() { return detail::window_x; }
+i32 zincgui::Input::get_window_x() { return window_x; }
 
-i32 zincgui::Input::get_window_y() { return detail::window_y; }
+i32 zincgui::Input::get_window_y() { return window_y; }
 
 std::vector<InputEvent>& zincgui::Input::get_event_queue() {
-  auto new_end = std::remove_if(detail::event_queue.begin(), detail::event_queue.end(), [](const InputEvent& ev) {
+  auto new_end = std::remove_if(event_queue.begin(), event_queue.end(), [](const InputEvent& ev) {
     return std::visit([](auto&& e) { return e.handled; }, ev);
   });
-  detail::event_queue.erase(new_end, detail::event_queue.end());
-  return detail::event_queue;
+  event_queue.erase(new_end, event_queue.end());
+  return event_queue;
 }
 
 bool zincgui::Input::mouse_pressed(MouseButton button) {
-  using enum detail::ButtonState;
-  auto state = detail::mouse_states[(size_t)button];
+  using enum ButtonState;
+  auto state = mouse_states[(size_t)button];
   return state == JUST_PRESSED || state == PRESSED;
 }
 
 bool zincgui::Input::mouse_just_pressed(MouseButton button) {
-  return detail::mouse_states[(size_t)button] == detail::ButtonState::JUST_PRESSED;
+  return mouse_states[(size_t)button] == ButtonState::JUST_PRESSED;
 }
 
 bool zincgui::Input::mouse_just_released(MouseButton button) {
-  return detail::mouse_states[(size_t)button] == detail::ButtonState::JUST_RELEASED;
+  return mouse_states[(size_t)button] == ButtonState::JUST_RELEASED;
 }
 
 bool zincgui::Input::key_pressed(Key button) {
-  using enum detail::ButtonState;
-  auto state = detail::key_states[(size_t)button];
+  using enum ButtonState;
+  auto state = key_states[(size_t)button];
   return state == JUST_PRESSED || state == PRESSED;
 }
 
-bool zincgui::Input::key_just_pressed(Key button) {
-  return detail::key_states[(size_t)button] == detail::ButtonState::JUST_PRESSED;
-}
+bool zincgui::Input::key_just_pressed(Key button) { return key_states[(size_t)button] == ButtonState::JUST_PRESSED; }
 
-bool zincgui::Input::key_just_released(Key button) {
-  return detail::key_states[(size_t)button] == detail::ButtonState::JUST_RELEASED;
-}
+bool zincgui::Input::key_just_released(Key button) { return key_states[(size_t)button] == ButtonState::JUST_RELEASED; }
 
 bool zincgui::Input::ctrl_pressed() {
   return key_pressed(Key::KEY_LEFT_CONTROL) || key_pressed(Key::KEY_RIGHT_CONTROL);
@@ -214,20 +210,18 @@ bool zincgui::Input::ctrl_pressed() {
 
 bool zincgui::Input::shift_pressed() { return key_pressed(Key::KEY_LEFT_SHIFT) || key_pressed(Key::KEY_RIGHT_SHIFT); }
 
-vec2f zincgui::Input::get_mouse_scroll() { return detail::accumulated_scroll; }
+vec2f zincgui::Input::get_mouse_scroll() { return accumulated_scroll; }
 
-vec2i zincgui::Input::get_mouse_delta() {
-  return {detail::mouse_x - detail::last_mouse_x, detail::mouse_y - detail::last_mouse_y};
-}
+vec2i zincgui::Input::get_mouse_delta() { return {mouse_x - last_mouse_x, mouse_y - last_mouse_y}; }
 
 vec2i zincgui::Input::get_window_size() {
   i32 width = 0;
   i32 height = 0;
-  SDL_GetWindowSize(detail::sdl_window, &width, &height);
+  SDL_GetWindowSize(sdl_window, &width, &height);
   return {width, height};
 }
 
-std::string zincgui::Input::get_typed_characters() { return detail::keyboard_characters_prev; }
+std::string zincgui::Input::get_typed_characters() { return keyboard_characters_prev; }
 
 std::string zincgui::Input::key_to_string(Input::Key key) {
   switch ((i32)key) {
@@ -355,7 +349,7 @@ std::string zincgui::Input::key_to_string(Input::Key key) {
   };
 }
 
-const std::vector<std::string>& zincgui::Input::get_dropped_paths() { return detail::dropped_paths; }
+const std::vector<std::string>& zincgui::Input::get_dropped_paths() { return dropped_paths; }
 
 void zincgui::Input::reset_cursor() { SDL_SetCursor(SDL_GetDefaultCursor()); }
-void zincgui::Input::set_cursor(Input::Cursor cursor) { SDL_SetCursor(detail::cursors[(size_t)cursor]); }
+void zincgui::Input::set_cursor(Input::Cursor cursor) { SDL_SetCursor(cursors[(size_t)cursor]); }

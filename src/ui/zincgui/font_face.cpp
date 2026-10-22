@@ -13,113 +13,113 @@
 namespace zincgui {
 
   FontFace::FontFace(FT_Library freetype_lib, const std::string& path) {
-    if (FT_New_Face(freetype_lib, path.c_str(), 0, &ft_face_)) {
+    if (FT_New_Face(freetype_lib, path.c_str(), 0, &m_ft_face)) {
       out::critical("failed to load font at {}", path);
       std::exit(1);
     }
-    hb_buffer_ = hb_buffer_create();
+    m_hb_buffer = hb_buffer_create();
     init_atlas(1024, 1024);
   }
 
   FontFace::FontFace(FT_Library freetype_lib, const void* data, size_t data_size) {
-    memory_buffer_.resize(data_size);
-    std::memcpy(memory_buffer_.data(), data, data_size);
+    m_memory_buffer.resize(data_size);
+    std::memcpy(m_memory_buffer.data(), data, data_size);
 
-    if (FT_New_Memory_Face(freetype_lib, memory_buffer_.data(), static_cast<FT_Long>(data_size), 0, &ft_face_)) {
+    if (FT_New_Memory_Face(freetype_lib, m_memory_buffer.data(), static_cast<FT_Long>(data_size), 0, &m_ft_face)) {
       out::critical("failed to load font from memory");
       std::exit(1);
     }
-    hb_buffer_ = hb_buffer_create();
+    m_hb_buffer = hb_buffer_create();
     init_atlas(1024, 1024);
   }
 
   FontFace::~FontFace() { cleanup(); }
 
   FontFace::FontFace(FontFace&& other) noexcept
-    : ft_face_(other.ft_face_), memory_buffer_(std::move(other.memory_buffer_)), hb_buffer_(other.hb_buffer_),
-      texture_(other.texture_), sampler_(other.sampler_), atlas_width_(other.atlas_width_),
-      atlas_height_(other.atlas_height_), shelf_x_(other.shelf_x_), shelf_y_(other.shelf_y_),
-      shelf_height_(other.shelf_height_), white_uv_(other.white_uv_), atlas_version_(other.atlas_version_),
-      atlas_pixels_(std::move(other.atlas_pixels_)), metrics_cache_(std::move(other.metrics_cache_)),
-      glyph_map_(std::move(other.glyph_map_)) {
-    other.ft_face_ = nullptr;
-    other.hb_buffer_ = nullptr;
-    other.texture_ = 0;
-    other.sampler_ = 0;
+    : m_ft_face(other.m_ft_face), m_memory_buffer(std::move(other.m_memory_buffer)), m_hb_buffer(other.m_hb_buffer),
+      m_texture(other.m_texture), m_sampler(other.m_sampler), m_atlas_width(other.m_atlas_width),
+      m_atlas_height(other.m_atlas_height), m_shelf_x(other.m_shelf_x), m_shelf_y(other.m_shelf_y),
+      m_shelf_height(other.m_shelf_height), m_white_uv(other.m_white_uv), m_atlas_version(other.m_atlas_version),
+      m_atlas_pixels(std::move(other.m_atlas_pixels)), m_metrics_cache(std::move(other.m_metrics_cache)),
+      m_glyph_map(std::move(other.m_glyph_map)) {
+    other.m_ft_face = nullptr;
+    other.m_hb_buffer = nullptr;
+    other.m_texture = 0;
+    other.m_sampler = 0;
   }
 
   FontFace& FontFace::operator=(FontFace&& other) noexcept {
     if (this != &other) {
       cleanup();
-      ft_face_ = other.ft_face_;
-      memory_buffer_ = std::move(other.memory_buffer_);
-      hb_buffer_ = other.hb_buffer_;
-      texture_ = other.texture_;
-      sampler_ = other.sampler_;
-      atlas_width_ = other.atlas_width_;
-      atlas_height_ = other.atlas_height_;
-      shelf_x_ = other.shelf_x_;
-      shelf_y_ = other.shelf_y_;
-      shelf_height_ = other.shelf_height_;
-      white_uv_ = other.white_uv_;
-      atlas_version_ = other.atlas_version_;
-      atlas_pixels_ = std::move(other.atlas_pixels_);
-      metrics_cache_ = std::move(other.metrics_cache_);
-      glyph_map_ = std::move(other.glyph_map_);
+      m_ft_face = other.m_ft_face;
+      m_memory_buffer = std::move(other.m_memory_buffer);
+      m_hb_buffer = other.m_hb_buffer;
+      m_texture = other.m_texture;
+      m_sampler = other.m_sampler;
+      m_atlas_width = other.m_atlas_width;
+      m_atlas_height = other.m_atlas_height;
+      m_shelf_x = other.m_shelf_x;
+      m_shelf_y = other.m_shelf_y;
+      m_shelf_height = other.m_shelf_height;
+      m_white_uv = other.m_white_uv;
+      m_atlas_version = other.m_atlas_version;
+      m_atlas_pixels = std::move(other.m_atlas_pixels);
+      m_metrics_cache = std::move(other.m_metrics_cache);
+      m_glyph_map = std::move(other.m_glyph_map);
 
-      other.ft_face_ = nullptr;
-      other.hb_buffer_ = nullptr;
-      other.texture_ = 0;
-      other.sampler_ = 0;
+      other.m_ft_face = nullptr;
+      other.m_hb_buffer = nullptr;
+      other.m_texture = 0;
+      other.m_sampler = 0;
     }
     return *this;
   }
 
   void FontFace::cleanup() {
-    for (auto& [size, m] : metrics_cache_) {
+    for (auto& [size, m] : m_metrics_cache) {
       if (m.hb_font != nullptr) { hb_font_destroy(m.hb_font); }
       if (m.ft_size != nullptr) { FT_Done_Size(m.ft_size); }
     }
-    metrics_cache_.clear();
+    m_metrics_cache.clear();
 
-    if (hb_buffer_ != nullptr) {
-      hb_buffer_destroy(hb_buffer_);
-      hb_buffer_ = nullptr;
+    if (m_hb_buffer != nullptr) {
+      hb_buffer_destroy(m_hb_buffer);
+      m_hb_buffer = nullptr;
     }
-    if (ft_face_ != nullptr) {
-      FT_Done_Face(ft_face_);
-      ft_face_ = nullptr;
+    if (m_ft_face != nullptr) {
+      FT_Done_Face(m_ft_face);
+      m_ft_face = nullptr;
     }
-    if (texture_ != 0) {
-      glDeleteTextures(1, &texture_);
-      texture_ = 0;
+    if (m_texture != 0) {
+      glDeleteTextures(1, &m_texture);
+      m_texture = 0;
     }
-    if (sampler_ != 0) {
-      glDeleteSamplers(1, &sampler_);
-      sampler_ = 0;
+    if (m_sampler != 0) {
+      glDeleteSamplers(1, &m_sampler);
+      m_sampler = 0;
     }
   }
 
   void FontFace::init_atlas(i32 width, i32 height) {
-    atlas_width_ = width;
-    atlas_height_ = height;
-    atlas_pixels_.assign(static_cast<size_t>(width) * static_cast<size_t>(height), 0);
+    m_atlas_width = width;
+    m_atlas_height = height;
+    m_atlas_pixels.assign(static_cast<size_t>(width) * static_cast<size_t>(height), 0);
 
-    for (i32 y = 0; y < 4; ++y) {
-      for (i32 x = 0; x < 4; ++x) {
-        atlas_pixels_[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] = 255;
+    for (i32 y = 0; y < 4; y += 1) {
+      for (i32 x = 0; x < 4; x += 1) {
+        m_atlas_pixels[(static_cast<size_t>(y) * static_cast<size_t>(width)) + static_cast<size_t>(x)] = 255;
       }
     }
 
-    shelf_x_ = 5;
-    shelf_y_ = 0;
-    shelf_height_ = 5;
-    white_uv_ = vec2f{2.0f / static_cast<float>(width), 2.0f / static_cast<float>(height)};
+    m_shelf_x = 5;
+    m_shelf_y = 0;
+    m_shelf_height = 5;
+    m_white_uv = vec2f{2.0f / static_cast<float>(width), 2.0f / static_cast<float>(height)};
 
-    glGenTextures(1, &texture_);
-    glBindTexture(GL_TEXTURE_2D, texture_);
+    glGenTextures(1, &m_texture);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, atlas_pixels_.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, m_atlas_pixels.data());
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -131,16 +131,16 @@ namespace zincgui {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    glCreateSamplers(1, &sampler_);
-    glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glSamplerParameteri(sampler_, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glCreateSamplers(1, &m_sampler);
+    glSamplerParameteri(m_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(m_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(m_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glSamplerParameteri(m_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   }
 
   bool FontFace::grow_atlas() const {
-    i32 new_w = atlas_width_;
-    i32 new_h = atlas_height_ * 2;
+    i32 new_w = m_atlas_width;
+    i32 new_h = m_atlas_height * 2;
     if (new_h > 4096) {
       if (new_w < 4096) {
         new_w = 4096;
@@ -151,73 +151,73 @@ namespace zincgui {
     }
 
     std::vector<u8> new_pixels(static_cast<size_t>(new_w) * static_cast<size_t>(new_h), 0);
-    for (i32 y = 0; y < atlas_height_; ++y) {
-      std::memcpy(new_pixels.data() + static_cast<size_t>(y) * static_cast<size_t>(new_w),
-                  atlas_pixels_.data() + static_cast<size_t>(y) * static_cast<size_t>(atlas_width_),
-                  static_cast<size_t>(atlas_width_));
+    for (i32 y = 0; y < m_atlas_height; y += 1) {
+      std::memcpy(new_pixels.data() + (static_cast<size_t>(y) * static_cast<size_t>(new_w)),
+                  m_atlas_pixels.data() + (static_cast<size_t>(y) * static_cast<size_t>(m_atlas_width)),
+                  static_cast<size_t>(m_atlas_width));
     }
 
-    float scale_x = static_cast<float>(atlas_width_) / static_cast<float>(new_w);
-    float scale_y = static_cast<float>(atlas_height_) / static_cast<float>(new_h);
-    for (auto& [k, g] : glyph_map_) {
+    float scale_x = static_cast<float>(m_atlas_width) / static_cast<float>(new_w);
+    float scale_y = static_cast<float>(m_atlas_height) / static_cast<float>(new_h);
+    for (auto& [k, g] : m_glyph_map) {
       g.uv_start.x *= scale_x;
       g.uv_start.y *= scale_y;
       g.uv_end.x *= scale_x;
       g.uv_end.y *= scale_y;
     }
 
-    atlas_width_ = new_w;
-    atlas_height_ = new_h;
-    atlas_pixels_ = std::move(new_pixels);
-    white_uv_ = vec2f{2.0f / static_cast<float>(new_w), 2.0f / static_cast<float>(new_h)};
-    atlas_version_ += 1;
+    m_atlas_width = new_w;
+    m_atlas_height = new_h;
+    m_atlas_pixels = std::move(new_pixels);
+    m_white_uv = vec2f{2.0f / static_cast<float>(new_w), 2.0f / static_cast<float>(new_h)};
+    m_atlas_version += 1;
 
-    glBindTexture(GL_TEXTURE_2D, texture_);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, new_w, new_h, 0, GL_RED, GL_UNSIGNED_BYTE, atlas_pixels_.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, new_w, new_h, 0, GL_RED, GL_UNSIGNED_BYTE, m_atlas_pixels.data());
     glBindTexture(GL_TEXTURE_2D, 0);
     return true;
   }
 
   void FontFace::bind(u32 slot) const {
-    ensure(texture_ != 0);
+    ensure(m_texture != 0);
     glActiveTexture(GL_TEXTURE0 + slot);
-    glBindTexture(GL_TEXTURE_2D, texture_);
-    glBindSampler(slot, sampler_);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+    glBindSampler(slot, m_sampler);
   }
 
   const FontSizeMetrics& FontFace::get_metrics(i32 pixel_height) const {
     pixel_height = std::clamp(pixel_height, 4, 256);
-    auto it = metrics_cache_.find(pixel_height);
-    if (it != metrics_cache_.end()) {
+    auto it = m_metrics_cache.find(pixel_height);
+    if (it != m_metrics_cache.end()) {
       FT_Activate_Size(it->second.ft_size);
       return it->second;
     }
 
     FontSizeMetrics m{};
-    FT_New_Size(ft_face_, &m.ft_size);
+    FT_New_Size(m_ft_face, &m.ft_size);
     FT_Activate_Size(m.ft_size);
-    FT_Set_Pixel_Sizes(ft_face_, 0, static_cast<FT_UInt>(pixel_height));
+    FT_Set_Pixel_Sizes(m_ft_face, 0, static_cast<FT_UInt>(pixel_height));
 
-    m.hb_font = hb_ft_font_create(ft_face_, nullptr);
+    m.hb_font = hb_ft_font_create(m_ft_face, nullptr);
     hb_ft_font_set_funcs(m.hb_font);
 
-    m.ascender = static_cast<float>(ft_face_->size->metrics.ascender) / 64.0f;
-    m.descender = static_cast<float>(ft_face_->size->metrics.descender) / 64.0f;
-    m.line_height = static_cast<float>(ft_face_->size->metrics.height) / 64.0f;
+    m.ascender = static_cast<float>(m_ft_face->size->metrics.ascender) / 64.0f;
+    m.descender = static_cast<float>(m_ft_face->size->metrics.descender) / 64.0f;
+    m.line_height = static_cast<float>(m_ft_face->size->metrics.height) / 64.0f;
 
-    FT_Fixed y_scale = ft_face_->size->metrics.y_scale;
-    if (FT_IS_SCALABLE(ft_face_)) {
-      m.underline_position = static_cast<float>(FT_MulFix(ft_face_->underline_position, y_scale)) / 64.0f;
+    FT_Fixed y_scale = m_ft_face->size->metrics.y_scale;
+    if (FT_IS_SCALABLE(m_ft_face)) {
+      m.underline_position = static_cast<float>(FT_MulFix(m_ft_face->underline_position, y_scale)) / 64.0f;
       m.underline_thickness =
-        std::max(1.0f, static_cast<float>(FT_MulFix(ft_face_->underline_thickness, y_scale)) / 64.0f);
+        std::max(1.0f, static_cast<float>(FT_MulFix(m_ft_face->underline_thickness, y_scale)) / 64.0f);
     } else {
       m.underline_position = -2.0f;
       m.underline_thickness = 1.0f;
     }
 
-    auto* os2 = static_cast<TT_OS2*>(FT_Get_Sfnt_Table(ft_face_, FT_SFNT_OS2));
-    if (os2 != nullptr && FT_IS_SCALABLE(ft_face_)) {
+    auto* os2 = static_cast<TT_OS2*>(FT_Get_Sfnt_Table(m_ft_face, FT_SFNT_OS2));
+    if (os2 != nullptr && FT_IS_SCALABLE(m_ft_face)) {
       m.strikeout_position = static_cast<float>(FT_MulFix(os2->yStrikeoutPosition, y_scale)) / 64.0f;
       m.strikeout_thickness = std::max(1.0f, static_cast<float>(FT_MulFix(os2->yStrikeoutSize, y_scale)) / 64.0f);
     } else {
@@ -225,79 +225,80 @@ namespace zincgui {
       m.strikeout_thickness = m.underline_thickness;
     }
 
-    auto [ins_it, _] = metrics_cache_.emplace(pixel_height, m);
+    auto [ins_it, _] = m_metrics_cache.emplace(pixel_height, m);
     return ins_it->second;
   }
 
   const FontGlyph* FontFace::get_glyph(u32 glyph_index, i32 pixel_height, bool bold, bool italic) const {
     pixel_height = std::clamp(pixel_height, 4, 256);
     u64 key = make_glyph_key(glyph_index, pixel_height, bold, italic);
-    auto it = glyph_map_.find(key);
-    if (it != glyph_map_.end()) { return &it->second; }
+    auto it = m_glyph_map.find(key);
+    if (it != m_glyph_map.end()) { return &it->second; }
     return rasterize_glyph(key, glyph_index, pixel_height, bold, italic);
   }
 
   u32 FontFace::get_codepoint_glyph_index(u32 codepoint) const {
-    if (ft_face_ == nullptr) { return 0; }
-    return FT_Get_Char_Index(ft_face_, codepoint);
+    if (m_ft_face == nullptr) { return 0; }
+    return FT_Get_Char_Index(m_ft_face, codepoint);
   }
 
   hb_buffer_t* FontFace::acquire_hb_buffer() const {
-    hb_buffer_clear_contents(hb_buffer_);
-    return hb_buffer_;
+    hb_buffer_clear_contents(m_hb_buffer);
+    return m_hb_buffer;
   }
 
   const FontGlyph* FontFace::rasterize_glyph(u64 key, u32 glyph_index, i32 pixel_height, bool bold, bool italic) const {
     get_metrics(pixel_height);
 
-    if (FT_Load_Glyph(ft_face_, glyph_index, FT_LOAD_DEFAULT)) { return nullptr; }
+    if (FT_Load_Glyph(m_ft_face, glyph_index, FT_LOAD_DEFAULT)) { return nullptr; }
 
-    if (ft_face_->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
+    if (m_ft_face->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
       if (bold) {
-        FT_Pos strength = FT_MulFix(ft_face_->units_per_EM, ft_face_->size->metrics.y_scale) / 28;
-        FT_Outline_Embolden(&ft_face_->glyph->outline, strength);
+        FT_Pos strength = FT_MulFix(m_ft_face->units_per_EM, m_ft_face->size->metrics.y_scale) / 28;
+        FT_Outline_Embolden(&m_ft_face->glyph->outline, strength);
       }
       if (italic) {
         FT_Matrix shear{0x10000L, 0x0366AL, 0, 0x10000L};
-        FT_Outline_Transform(&ft_face_->glyph->outline, &shear);
+        FT_Outline_Transform(&m_ft_face->glyph->outline, &shear);
       }
     }
 
-    if (FT_Render_Glyph(ft_face_->glyph, FT_RENDER_MODE_NORMAL)) { return nullptr; }
+    if (FT_Render_Glyph(m_ft_face->glyph, FT_RENDER_MODE_NORMAL)) { return nullptr; }
 
-    const FT_Bitmap& bmp = ft_face_->glyph->bitmap;
+    const FT_Bitmap& bmp = m_ft_face->glyph->bitmap;
     i32 bw = static_cast<i32>(bmp.width);
     i32 bh = static_cast<i32>(bmp.rows);
 
     if (bw <= 0 || bh <= 0 || bmp.buffer == nullptr) {
       FontGlyph empty_glyph{
         .size = {0, 0},
-        .bearing = {ft_face_->glyph->bitmap_left, ft_face_->glyph->bitmap_top},
+        .bearing = {m_ft_face->glyph->bitmap_left, m_ft_face->glyph->bitmap_top},
         .uv_start = {0.0f, 0.0f},
         .uv_end = {0.0f, 0.0f},
       };
-      auto [it, _] = glyph_map_.emplace(key, empty_glyph);
+      auto [it, _] = m_glyph_map.emplace(key, empty_glyph);
       return &it->second;
     }
 
-    if (shelf_x_ + bw + 1 >= atlas_width_) {
-      shelf_x_ = 0;
-      shelf_y_ += shelf_height_ + 1;
-      shelf_height_ = 0;
+    if (m_shelf_x + bw + 1 >= m_atlas_width) {
+      m_shelf_x = 0;
+      m_shelf_y += m_shelf_height + 1;
+      m_shelf_height = 0;
     }
 
-    while (shelf_y_ + bh + 1 >= atlas_height_) {
+    while (m_shelf_y + bh + 1 >= m_atlas_height) {
       if (!grow_atlas()) { return nullptr; }
     }
 
     i32 pitch = std::abs(bmp.pitch);
-    for (i32 row = 0; row < bh; ++row) {
-      const u8* src_row = bmp.buffer + static_cast<size_t>(row) * static_cast<size_t>(pitch);
-      u8* dst_row = atlas_pixels_.data() + static_cast<size_t>(shelf_y_ + row) * static_cast<size_t>(atlas_width_) +
-                    static_cast<size_t>(shelf_x_);
+    for (i32 row = 0; row < bh; row += 1) {
+      const u8* src_row = bmp.buffer + (static_cast<size_t>(row) * static_cast<size_t>(pitch));
+      u8* dst_row = m_atlas_pixels.data() +
+                    (static_cast<size_t>(m_shelf_y + row) * static_cast<size_t>(m_atlas_width)) +
+                    static_cast<size_t>(m_shelf_x);
 
       if (bmp.pixel_mode == FT_PIXEL_MODE_MONO) {
-        for (i32 col = 0; col < bw; ++col) {
+        for (i32 col = 0; col < bw; col += 1) {
           u8 byte_val = src_row[col >> 3];
           u8 bit_mask = static_cast<u8>(0x80 >> (col & 7));
           dst_row[col] = (byte_val & bit_mask) ? 255 : 0;
@@ -306,31 +307,31 @@ namespace zincgui {
         std::memcpy(dst_row, src_row, static_cast<size_t>(bw));
       }
 
-      glBindTexture(GL_TEXTURE_2D, texture_);
+      glBindTexture(GL_TEXTURE_2D, m_texture);
       glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      glTexSubImage2D(GL_TEXTURE_2D, 0, shelf_x_, shelf_y_ + row, bw, 1, GL_RED, GL_UNSIGNED_BYTE, dst_row);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, m_shelf_x, m_shelf_y + row, bw, 1, GL_RED, GL_UNSIGNED_BYTE, dst_row);
     }
     glBindTexture(GL_TEXTURE_2D, 0);
 
     FontGlyph font_glyph{
       .size = {bw, bh},
-      .bearing = {ft_face_->glyph->bitmap_left, ft_face_->glyph->bitmap_top},
+      .bearing = {m_ft_face->glyph->bitmap_left, m_ft_face->glyph->bitmap_top},
       .uv_start =
         {
-          static_cast<float>(shelf_x_) / static_cast<float>(atlas_width_),
-          static_cast<float>(shelf_y_) / static_cast<float>(atlas_height_),
+          static_cast<float>(m_shelf_x) / static_cast<float>(m_atlas_width),
+          static_cast<float>(m_shelf_y) / static_cast<float>(m_atlas_height),
         },
       .uv_end =
         {
-          static_cast<float>(shelf_x_ + bw) / static_cast<float>(atlas_width_),
-          static_cast<float>(shelf_y_ + bh) / static_cast<float>(atlas_height_),
+          static_cast<float>(m_shelf_x + bw) / static_cast<float>(m_atlas_width),
+          static_cast<float>(m_shelf_y + bh) / static_cast<float>(m_atlas_height),
         },
     };
 
-    shelf_x_ += bw + 1;
-    shelf_height_ = std::max(shelf_height_, bh);
+    m_shelf_x += bw + 1;
+    m_shelf_height = std::max(m_shelf_height, bh);
 
-    auto [it, _] = glyph_map_.emplace(key, font_glyph);
+    auto [it, _] = m_glyph_map.emplace(key, font_glyph);
     return &it->second;
   }
 

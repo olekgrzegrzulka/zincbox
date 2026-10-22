@@ -38,7 +38,9 @@ namespace tray {
     SDL_Surface* load_icon_surface(const std::string& path) {
       auto raw = theme::get_raw_resource(path);
       if (raw.empty()) { return nullptr; }
-      i32 w = 0, h = 0, ch = 0;
+      i32 w = 0;
+      i32 h = 0;
+      i32 ch = 0;
       stbi_uc* pixels = stbi_load_from_memory(raw.data(), static_cast<int>(raw.size()), &w, &h, &ch, 4);
       if (!pixels) { return nullptr; }
       SDL_Surface* surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_RGBA32);

@@ -86,7 +86,8 @@ std::optional<std::string> zincbox::ui::cover_art::get_texture_id_of_playlist(db
 }
 std::optional<std::string> zincbox::ui::cover_art::get_texture_id_of_collection(db::collection_id_t collection_id) {
   auto collection = db::collection_by_id(collection_id);
-  ensure(collection) if (!collection->get().playlist_ids().empty()) {
+  ensure(collection);
+  if (!collection->get().playlist_ids().empty()) {
     auto playlist = db::playlist_by_id(collection->get().playlist_ids().front());
     ensure(playlist);
     if (playlist->get().get_tracks_count() > 0) {

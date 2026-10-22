@@ -6,7 +6,7 @@
 
 struct Settings {
   public:
-    enum class CoverPreference : u8 { Album, Playlist };
+    enum class CoverPreference : u8 { ALBUM, PLAYLIST };
 
     bool must_reload(const Settings& other) const {
       return (interface.theme != other.interface.theme || interface.language != other.interface.language ||
@@ -28,7 +28,7 @@ struct Settings {
     bool operator==(const Settings&) const = default;
 
     struct General {
-        CoverPreference cover_preference = CoverPreference::Album;
+        CoverPreference cover_preference = CoverPreference::ALBUM;
         i32 volume_step = 2;
         bool operator==(const General&) const = default;
     } general;

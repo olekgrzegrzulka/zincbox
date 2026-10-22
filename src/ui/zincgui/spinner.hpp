@@ -3,15 +3,13 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include "button.hpp"
-#include "common/logger.hpp"
-#include "common/utf.hpp"
-#include "label.hpp"
-#include "sprite.hpp"
-#include "text_input.hpp"
 #include "ui/zb_widgets.hpp"
+#include "ui/zincgui/button.hpp"
 #include "ui/zincgui/input.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/text_input.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 

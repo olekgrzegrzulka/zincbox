@@ -1,8 +1,8 @@
 #pragma once
 #include <functional>
 #include <utility>
-#include "sprite.hpp"
 #include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {

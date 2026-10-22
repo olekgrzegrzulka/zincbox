@@ -10,7 +10,6 @@
 #include <optional>
 #include <sstream>
 #include <string>
-#include <string_view>
 #include <thread>
 #include <vector>
 #include <glaze/glaze.hpp>
@@ -31,26 +30,28 @@
 #include "core/settings.hpp"
 #ifdef ZINCBOX_HAS_GUI
 #include <glad/glad.h>
-#include "ui/interface.hpp"
 #include "ui/sdl3_window.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/tray.hpp"
+#include "ui/ui.hpp"
 #include "ui/zincgui/input.hpp"
 #endif
 
-static std::atomic<bool> s_running = false;
-static Settings s_settings;
-static AppSerialized s_loaded_state;
-static void update_mpris();
+namespace {
+  std::atomic<bool> s_running = false;
+  Settings s_settings;
+  AppSerialized s_loaded_state;
+  void update_mpris();
 
 #ifdef ZINCBOX_HAS_GUI
-static std::unique_ptr<zincbox::SDL3Window> s_window = nullptr;
-static void update_mini_player_state();
-static void update_window_title();
-static void check_opengl_errors();
-static SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*);
+  std::unique_ptr<zincbox::SDL3Window> s_window = nullptr;
+  void update_mini_player_state();
+  void update_window_title();
+  void check_opengl_errors();
+  SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*);
 #endif
+} // namespace
 
 float zincbox::ui_scale() { return s_settings.interface.scale * 0.01f; }
 
@@ -156,7 +157,7 @@ void zincbox::deinit() {
 #endif
 
 void zincbox::load_state_from_json() {
-  auto ec = glz::read_file_json(s_loaded_state, path_to_utf8(io::get_cfg_path()).c_str(), std::string{});
+  auto ec = glz::read_file_json(s_loaded_state, path_to_utf8(io::get_cfg_path()), std::string{});
   if (ec) {
     out::error("failed to read zincbox.json: {}", ec.custom_error_message);
     return;
@@ -273,8 +274,7 @@ void zincbox::save_state_to_json() {
   state.interface = s_loaded_state.interface;
 #endif
 
-  auto ec =
-    glz::write_file_json<glz::opts{.prettify = true}>(state, path_to_utf8(io::get_cfg_path()).c_str(), std::string{});
+  auto ec = glz::write_file_json<glz::opts{.prettify = true}>(state, path_to_utf8(io::get_cfg_path()), std::string{});
   if (ec) { out::error("failed to write zincbox.json: {}", ec.custom_error_message); }
 }
 
@@ -301,140 +301,144 @@ zincbox::SDL3Window* zincbox::window() { return s_window.get(); }
 #endif
 Settings& zincbox::settings() { return s_settings; }
 
+namespace {
 #ifdef ZINCBOX_HAS_GUI
-static void update_mini_player_state() {
-  static std::optional<bool> is_mini_player = std::nullopt;
-  if (is_mini_player != zincbox::ui::get_mini_player()) {
+  void update_mini_player_state() {
+    static std::optional<bool> is_mini_player = std::nullopt;
+    if (is_mini_player != zincbox::ui::get_mini_player()) {
 
-    is_mini_player = zincbox::ui::get_mini_player();
+      is_mini_player = zincbox::ui::get_mini_player();
 
-    if (is_mini_player.value()) {
-      s_loaded_state.interface.window_height = s_window->height();
+      if (is_mini_player.value()) {
+        s_loaded_state.interface.window_height = s_window->height();
 
-      int fixed_h = theme::config().panel_controls.height + 2 * theme::config().custom_window_decoration.border_size;
-      s_window->min_size(480, fixed_h);
-      s_window->max_size(7680, fixed_h);
-      s_window->resize(s_window->width(), fixed_h);
-    } else {
-      s_window->min_size(480, 320);
-      s_window->max_size(7680, 4320);
-      s_window->height(s_loaded_state.interface.window_height);
-    }
-  }
-}
-
-static void update_window_title() {
-  static std::optional<db::track_info> prev_playing;
-  auto playing = player::get_playing_track();
-  if (playing == prev_playing) { return; }
-  prev_playing = playing;
-
-  std::string window_title;
-  if (playing.has_value()) {
-    auto& track = db::track_by_id(playing->track_id)->get();
-    window_title = "zincbox (" + track.pretty_name() + ")";
-  } else {
-    window_title = "zincbox";
-  }
-
-  s_window->title(window_title.c_str());
-}
-#endif
-
-static void update_mpris() {
-  while (auto cmd = mpris::command_pop()) {
-    switch (cmd->type) {
-    case mpris::CommandType::PLAY: player::resume(); break;
-
-    case mpris::CommandType::PAUSE: player::pause(); break;
-
-    case mpris::CommandType::PLAY_PAUSE:
-      if (player::is_playing()) {
-        player::pause();
+        int fixed_h =
+          theme::config().panel_controls.height + (2 * theme::config().custom_window_decoration.border_size);
+        s_window->min_size(480, fixed_h);
+        s_window->max_size(7680, fixed_h);
+        s_window->resize(s_window->width(), fixed_h);
       } else {
-        player::resume();
+        s_window->min_size(480, 320);
+        s_window->max_size(7680, 4320);
+        s_window->height(s_loaded_state.interface.window_height);
       }
-      break;
-
-    case mpris::CommandType::NEXT: player::next_track(); break;
-
-    case mpris::CommandType::PREVIOUS: player::prev_track(); break;
-
-    case mpris::CommandType::STOP: player::stop(); break;
-
-    case mpris::CommandType::SEEK: {
-      i32 target = player::get_current_time_ms() + (i32)(cmd->value);
-      player::seek_ms(target);
-      break;
-    }
-
-    case mpris::CommandType::SET: {
-      // Absolute seek
-      player::seek_ms(static_cast<i32>(cmd->value));
-      break;
-    }
-
-    case mpris::CommandType::LOOP:
-      switch (static_cast<mpris::LoopStatus>(cmd->value)) {
-      case mpris::LoopStatus::NONE: player::set_repeat_mode(player::RepeatMode::OFF); break;
-      case mpris::LoopStatus::TRACK: player::set_repeat_mode(player::RepeatMode::TRACK); break;
-      case mpris::LoopStatus::PLAYLIST: player::set_repeat_mode(player::RepeatMode::ALBUM); break;
-      }
-      break;
-
-    case mpris::CommandType::SHUFFLE:
-      player::set_shuffle_mode(static_cast<bool>(cmd->value) ? player::ShuffleMode::ON : player::ShuffleMode::OFF);
-      break;
     }
   }
 
-  static i32 t = 0;
-  if (t++ >= 20) {
-    t = 0;
-    mpris::notify_seeked(player::get_current_time_ms());
+  void update_window_title() {
+    static std::optional<db::track_info> prev_playing;
+    auto playing = player::get_playing_track();
+    if (playing == prev_playing) { return; }
+    prev_playing = playing;
+
+    std::string window_title;
+    if (playing.has_value()) {
+      auto& track = db::track_by_id(playing->track_id)->get();
+      window_title = "zincbox (" + track.pretty_name() + ")";
+    } else {
+      window_title = "zincbox";
+    }
+
+    s_window->title(window_title);
   }
-}
+#endif
+
+  void update_mpris() {
+    while (auto cmd = mpris::command_pop()) {
+      switch (cmd->type) {
+      case mpris::CommandType::PLAY: player::resume(); break;
+
+      case mpris::CommandType::PAUSE: player::pause(); break;
+
+      case mpris::CommandType::PLAY_PAUSE:
+        if (player::is_playing()) {
+          player::pause();
+        } else {
+          player::resume();
+        }
+        break;
+
+      case mpris::CommandType::NEXT: player::next_track(); break;
+
+      case mpris::CommandType::PREVIOUS: player::prev_track(); break;
+
+      case mpris::CommandType::STOP: player::stop(); break;
+
+      case mpris::CommandType::SEEK: {
+        i32 target = player::get_current_time_ms() + (i32)(cmd->value);
+        player::seek_ms(target);
+        break;
+      }
+
+      case mpris::CommandType::SET: {
+        // Absolute seek
+        player::seek_ms(static_cast<i32>(cmd->value));
+        break;
+      }
+
+      case mpris::CommandType::LOOP:
+        switch (static_cast<mpris::LoopStatus>(cmd->value)) {
+        case mpris::LoopStatus::NONE: player::set_repeat_mode(player::RepeatMode::OFF); break;
+        case mpris::LoopStatus::TRACK: player::set_repeat_mode(player::RepeatMode::TRACK); break;
+        case mpris::LoopStatus::PLAYLIST: player::set_repeat_mode(player::RepeatMode::ALBUM); break;
+        }
+        break;
+
+      case mpris::CommandType::SHUFFLE:
+        player::set_shuffle_mode(static_cast<bool>(cmd->value) ? player::ShuffleMode::ON : player::ShuffleMode::OFF);
+        break;
+      }
+    }
+
+    static i32 t = 0;
+    if (t++ >= 20) {
+      t = 0;
+      mpris::notify_seeked(player::get_current_time_ms());
+    }
+  }
 
 #ifdef ZINCBOX_HAS_GUI
-static const char* get_opengl_error_string(GLenum err) {
-  switch (err) {
-  case GL_NO_ERROR: return "No error";
-  case GL_INVALID_ENUM: return "Invalid enum";
-  case GL_INVALID_VALUE: return "Invalid value";
-  case GL_INVALID_OPERATION: return "Invalid operation";
-  case GL_STACK_OVERFLOW: return "Stack overflow";
-  case GL_STACK_UNDERFLOW: return "Stack underflow";
-  case GL_OUT_OF_MEMORY: return "Out of memory";
-  case GL_INVALID_FRAMEBUFFER_OPERATION: return "Invalid framebuffer operation";
-  default: return "Unknown error";
+  const char* get_opengl_error_string(GLenum err) {
+    switch (err) {
+    case GL_NO_ERROR: return "No error";
+    case GL_INVALID_ENUM: return "Invalid enum";
+    case GL_INVALID_VALUE: return "Invalid value";
+    case GL_INVALID_OPERATION: return "Invalid operation";
+    case GL_STACK_OVERFLOW: return "Stack overflow";
+    case GL_STACK_UNDERFLOW: return "Stack underflow";
+    case GL_OUT_OF_MEMORY: return "Out of memory";
+    case GL_INVALID_FRAMEBUFFER_OPERATION: return "Invalid framebuffer operation";
+    default: return "Unknown error";
+    }
   }
-}
 
-static void check_opengl_errors() {
-  GLenum error;
-  while ((error = glGetError()) != GL_NO_ERROR) {
-    std::stringstream error_hex;
-    error_hex << std::hex << error << ": " << get_opengl_error_string(error);
-    out::debug_error("GL error 0x{}", error_hex.str());
+  void check_opengl_errors() {
+    GLenum error = GL_NO_ERROR;
+    while ((error = glGetError()) != GL_NO_ERROR) {
+      std::stringstream error_hex;
+      error_hex << std::hex << error << ": " << get_opengl_error_string(error);
+      out::debug_error("GL error 0x{}", error_hex.str());
+    }
   }
-}
 
-static SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*) {
-  using enum zincbox::ui::DecorationHover;
-  auto decoration_hover = zincbox::ui::get_decoration_hover(p->x, p->y);
+  SDL_HitTestResult SDLCALL hit_test_callback(SDL_Window*, const SDL_Point* p, void*) {
+    using enum zincbox::ui::DecorationHover;
+    auto decoration_hover = zincbox::ui::get_decoration_hover(p->x, p->y);
 
-  switch (decoration_hover) {
-  case TOP_LEFT: return SDL_HITTEST_RESIZE_TOPLEFT;
-  case TOP_RIGHT: return SDL_HITTEST_RESIZE_TOPRIGHT;
-  case BOTTOM_LEFT: return SDL_HITTEST_RESIZE_BOTTOMLEFT;
-  case BOTTOM_RIGHT: return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
-  case TOP: return SDL_HITTEST_RESIZE_TOP;
-  case LEFT: return SDL_HITTEST_RESIZE_LEFT;
-  case RIGHT: return SDL_HITTEST_RESIZE_RIGHT;
-  case BOTTOM: return SDL_HITTEST_RESIZE_BOTTOM;
-  case TITLEBAR: return SDL_HITTEST_DRAGGABLE;
-  case INSIDE: [[__fallthrough__]];
-  default: return SDL_HITTEST_NORMAL;
+    switch (decoration_hover) {
+    case TOP_LEFT: return SDL_HITTEST_RESIZE_TOPLEFT;
+    case TOP_RIGHT: return SDL_HITTEST_RESIZE_TOPRIGHT;
+    case BOTTOM_LEFT: return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+    case BOTTOM_RIGHT: return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+    case TOP: return SDL_HITTEST_RESIZE_TOP;
+    case LEFT: return SDL_HITTEST_RESIZE_LEFT;
+    case RIGHT: return SDL_HITTEST_RESIZE_RIGHT;
+    case BOTTOM: return SDL_HITTEST_RESIZE_BOTTOM;
+    case TITLEBAR: return SDL_HITTEST_DRAGGABLE;
+    case INSIDE: [[__fallthrough__]];
+    default: return SDL_HITTEST_NORMAL;
+    }
   }
-}
 #endif
+
+} // namespace

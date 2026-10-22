@@ -2,13 +2,13 @@
 #include <algorithm>
 #include <string>
 #include "common/types.hpp"
-#include "label.hpp"
-#include "sprite.hpp"
 #include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/input.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/label.hpp"
+#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
   class Root;

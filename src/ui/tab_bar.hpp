@@ -17,10 +17,10 @@ class Tab;
 struct tab_info {
     i32 id{};
     bool is_draggable{};
-    std::string label{};
+    std::string label;
     i32 padding = 0;
-    std::function<void()> on_open{};
-    std::function<void(Tab*)> on_right_click{};
+    std::function<void()> on_open;
+    std::function<void(Tab*)> on_right_click;
 };
 
 class Tab : public zincgui::Button {
@@ -54,7 +54,7 @@ class Tab : public zincgui::Button {
 class TabBar : public zincgui::Widget {
   public:
     TabBar(zincgui::Root& ui_);
-    virtual void event(zincgui::Input::InputEventMouseScroll&) override;
+    void event(zincgui::Input::InputEventMouseScroll&) override;
 
     void add_tab(const tab_info& info, bool select = false);
     void add_tab(const tab_info& info, size_t at, bool select = false);

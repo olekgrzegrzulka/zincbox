@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -27,13 +26,64 @@ using db::Collection;
 using db::Playlist;
 using db::Track;
 
-static std::vector<db::Collection> collections;
-static std::vector<db::Playlist> playlists;
-static std::vector<db::Track> tracks;
-static std::unordered_map<std::filesystem::path, size_t> path_to_track_id;
-static std::unordered_map<std::string, std::unordered_set<db::track_id_t>> title_to_track_ids;
-static std::unordered_map<std::filesystem::path, std::unordered_set<db::track_id_t>> file_name_to_track_ids;
-static std::vector<std::pair<db::collection_id_t, db::track_id_t>> orphaned_tracks;
+namespace {
+  std::vector<db::Collection> collections;
+  std::vector<db::Playlist> playlists;
+  std::vector<db::Track> tracks;
+  std::unordered_map<std::filesystem::path, size_t> path_to_track_id;
+  std::unordered_map<std::string, std::unordered_set<db::track_id_t>> title_to_track_ids;
+  std::unordered_map<std::filesystem::path, std::unordered_set<db::track_id_t>> file_name_to_track_ids;
+  std::vector<std::pair<db::collection_id_t, db::track_id_t>> orphaned_tracks;
+} // namespace
+
+namespace {
+  void assign_album_authors(Playlist& playlist) {
+    auto playlist_author = playlist.author_pretty();
+    if (playlist_author.empty() && playlist.get_tracks_count() > 0) {
+      std::unordered_map<std::string_view, i32> artist_counts;
+      for (size_t track_id : playlist.get_track_ids()) {
+        auto& track = tracks[track_id];
+        if (!track.metadata.artist.empty()) { artist_counts[track.metadata.artist] += 1; }
+        for (auto& artist : track.metadata.album_artist) {
+          if (artist.empty()) { continue; }
+          artist_counts[artist] += 1;
+        }
+      }
+
+      if (!artist_counts.empty()) {
+        std::vector<std::pair<std::string_view, i32>> sorted_artists(artist_counts.begin(), artist_counts.end());
+
+        std::sort(sorted_artists.begin(), sorted_artists.end(),
+                  [](const auto& a, const auto& b) { return a.second > b.second; });
+
+        for (auto& [artist, count] : sorted_artists) {
+          float ratio = count / (float)playlist.get_tracks_count();
+          if (ratio >= 0.5) { playlist.author.emplace_back(artist); }
+        }
+      }
+    }
+  }
+
+  void setup_albums(db::playlist_id_t playlist_id) {
+    auto& playlist = playlists[playlist_id];
+
+    if (playlist.type == db::PlaylistType::ALBUM) { playlist.sort_by_track_number(); }
+
+    // mark tracks not found during rescan as tombstone
+    for (size_t track_id : playlist.get_track_ids()) {
+      auto& track = tracks[track_id];
+      if (track.get_flag(db::NOT_FOUND_DURING_RESCAN)) { track.set_flag(db::TOMBSTONE); }
+    }
+
+    assign_album_authors(playlist);
+  }
+
+  bool sanitize_and_contains(const std::string& query_sanitized, const std::string& field) {
+    auto s = sanitize_query(field);
+    return s.contains(query_sanitized);
+  }
+
+} // namespace
 
 static constexpr size_t DB_MAGIC = 667667667;
 static constexpr size_t DB_VERSION = 4;
@@ -48,7 +98,7 @@ void db::create_empty_db() {
   file_name_to_track_ids.clear();
   orphaned_tracks.clear();
   db::add_collection("Playlists");
-  db::add_playlist_to_collection(0, db::Playlist{"Loved tracks", {""}, db::PlaylistType::User});
+  db::add_playlist_to_collection(0, db::Playlist{"Loved tracks", {""}, db::PlaylistType::USER});
 }
 
 void db::serialize(std::ofstream& os) {
@@ -187,7 +237,7 @@ void db::deserialize(std::ifstream& is) {
   zincbox::cover_art::deserialize(is);
 
   for (auto& p : playlists) {
-    if (p.type == PlaylistType::Album) { p.sort_by_track_number(); }
+    if (p.type == PlaylistType::ALBUM) { p.sort_by_track_number(); }
   }
 }
 
@@ -272,7 +322,7 @@ size_t db::playlist_loved_tracks_id() { return 0; }
 Playlist& db::playlist_loved_tracks() {
   if (playlists.size() == 0) {
     if (collections.size() == 0) { add_collection("Playlists"); }
-    db::add_playlist_to_collection(0, db::Playlist{"Loved tracks", {""}, PlaylistType::User});
+    db::add_playlist_to_collection(0, db::Playlist{"Loved tracks", {""}, PlaylistType::USER});
   }
   return playlists[0];
 }
@@ -316,22 +366,18 @@ void db::mark_collection_as_tombstone(size_t collection_id) {
   collection.set_tombstone(true);
 }
 
-bool db::add_path_to_collection(size_t collection_id, fs::path path) {
+bool db::add_path_to_collection(size_t collection_id, const fs::path& path) {
   ScopeTimer timer("add_path_to_collection");
 
   if (collection_id >= collections.size()) { return false; }
   auto& collection = collections[collection_id];
-  if (!fs::is_directory(path) || !collection.add_path(path)) { return false; }
-
-  return true;
+  return fs::is_directory(path) && collection.add_path(path);
 }
 
-bool db::remove_path_from_collection(size_t collection_id, fs::path path) {
+bool db::remove_path_from_collection(size_t collection_id, const fs::path& path) {
   if (collection_id >= collections.size()) { return false; }
   auto& collection = collections[collection_id];
-  if (!fs::is_directory(path) || !collection.remove_path(path)) { return false; }
-
-  return true;
+  return fs::is_directory(path) && collection.remove_path(path);
 }
 
 void db::rename_collection(size_t collection_id, std::string_view new_name) {
@@ -365,7 +411,7 @@ const std::vector<Playlist>& db::all_playlists() { return playlists; }
 size_t db::playlist_count() { return playlists.size(); }
 
 size_t db::get_album_id(size_t collection_id, std::string album_name, std::string album_artist,
-                        std::filesystem::path parent_dir_name) {
+                        const fs::path& parent_dir_name) {
   // if album_name is empty, album name becomes the name of the parent directory of the
   // track file
   if (album_name.empty()) {
@@ -389,7 +435,7 @@ size_t db::get_album_id(size_t collection_id, std::string album_name, std::strin
 
   // create a new playlist if none was found
   size_t playlist_id = playlists.size();
-  playlists.emplace_back(Playlist{album_name, {album_artist}, PlaylistType::Album});
+  playlists.emplace_back(Playlist{album_name, {album_artist}, PlaylistType::ALBUM});
   collections[collection_id].add_playlist(playlist_id);
   return playlist_id;
 }
@@ -535,47 +581,6 @@ db::track_id_t db::add_orphaned_track(db::collection_id_t collection_id, db::Tra
   return tracks.size() - 1;
 }
 
-void assign_album_authors(Playlist& playlist) {
-  auto playlist_author = playlist.author_pretty();
-  if (playlist_author.empty() && playlist.get_tracks_count() > 0) {
-    std::unordered_map<std::string_view, i32> artist_counts;
-    for (size_t track_id : playlist.get_track_ids()) {
-      auto& track = tracks[track_id];
-      if (!track.metadata.artist.empty()) { artist_counts[track.metadata.artist] += 1; }
-      for (auto& artist : track.metadata.album_artist) {
-        if (artist.empty()) { continue; }
-        artist_counts[artist] += 1;
-      }
-    }
-
-    if (!artist_counts.empty()) {
-      std::vector<std::pair<std::string_view, i32>> sorted_artists(artist_counts.begin(), artist_counts.end());
-
-      std::sort(sorted_artists.begin(), sorted_artists.end(),
-                [](const auto& a, const auto& b) { return a.second > b.second; });
-
-      for (auto& [artist, count] : sorted_artists) {
-        float ratio = count / (float)playlist.get_tracks_count();
-        if (ratio >= 0.5) { playlist.author.emplace_back(artist); }
-      }
-    }
-  }
-}
-
-void setup_albums(db::playlist_id_t playlist_id) {
-  auto& playlist = playlists[playlist_id];
-
-  if (playlist.type == db::PlaylistType::Album) { playlist.sort_by_track_number(); }
-
-  // mark tracks not found during rescan as tombstone
-  for (size_t track_id : playlist.get_track_ids()) {
-    auto& track = tracks[track_id];
-    if (track.get_flag(db::NOT_FOUND_DURING_RESCAN)) { track.set_flag(db::TOMBSTONE); }
-  }
-
-  assign_album_authors(playlist);
-}
-
 void db::assign_orphaned_tracks() {
 
   std::unordered_set<playlist_id_t> album_ids;
@@ -628,7 +633,7 @@ void db::set_track_last_modified(track_id_t track_id, i64 last_modified) {
   tracks[track_id].last_modified = last_modified;
 }
 
-void db::set_track_file_path(track_id_t track_id, fs::path file_path) {
+void db::set_track_file_path(track_id_t track_id, const fs::path& file_path) {
   if (track_id >= tracks.size()) { return; }
   auto& track = tracks[track_id];
   if (file_path == track.file_path) { return; }
@@ -746,11 +751,6 @@ std::vector<db::track_info> db::search_tracks(std::string_view search_text, size
   }
   return result;
 }
-
-bool sanitize_and_contains(const std::string& query_sanitized, const std::string& field) {
-  auto s = sanitize_query(field);
-  return s.contains(query_sanitized);
-};
 
 std::vector<db::track_info> db::search_tracks(std::string_view search_text, size_t collection_id, size_t max_size) {
   auto query_sanitized = sanitize_query(search_text);

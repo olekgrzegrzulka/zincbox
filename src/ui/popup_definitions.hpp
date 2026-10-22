@@ -21,7 +21,7 @@
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/text_input.hpp"
-#include "ui/zincgui/ui.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -34,7 +34,7 @@ class PopupInput : public Popup {
       title = &add_child<zincgui::Label>("");
       title->set_fixed_height(32 * zincbox::ui_scale());
       text_input = &add_child<zincgui::TextInput>();
-      text_input->set_fixed_height(8 * zincbox::ui_scale() + zincbox::font_size());
+      text_input->set_fixed_height((8 * zincbox::ui_scale()) + zincbox::font_size());
 
       buttons = &add_child<Widget>();
       buttons->set_layout("ltr expand fill m:0 s:8");
@@ -59,8 +59,8 @@ class PopupInput : public Popup {
     zincgui::Button* btn_cancel{};
     zincgui::Button* btn_ok{};
 
-    std::function<void()> on_ok_pressed{};
-    std::function<void()> on_cancel_pressed{};
+    std::function<void()> on_ok_pressed;
+    std::function<void()> on_cancel_pressed;
 };
 
 class PopupConfirm : public Popup {
@@ -102,8 +102,8 @@ class PopupConfirm : public Popup {
     zincgui::Button* btn_cancel{};
     zincgui::Button* btn_ok{};
 
-    std::function<void()> on_ok_pressed{};
-    std::function<void()> on_cancel_pressed{};
+    std::function<void()> on_ok_pressed;
+    std::function<void()> on_cancel_pressed;
 };
 
 class PopupImportFolders : public Popup {
@@ -184,8 +184,8 @@ class PopupImportFolders : public Popup {
     zincgui::Button* btn_add_collections{};
     zincgui::Button* btn_merge{};
 
-    std::function<void(const std::vector<std::string>&)> on_add_collections_pressed{};
-    std::function<void(const std::vector<std::string>&)> on_merge_pressed{};
+    std::function<void(const std::vector<std::string>&)> on_add_collections_pressed;
+    std::function<void(const std::vector<std::string>&)> on_merge_pressed;
 };
 
 class PopupSetSources : public Popup {
@@ -309,8 +309,8 @@ class PopupSetSources : public Popup {
     double target_scroll_px{};
     i32 max_path_label_width = 0;
 
-    std::function<void()> on_add_dir_pressed{};
-    std::function<void(const std::string&)> on_remove_path_pressed{};
+    std::function<void()> on_add_dir_pressed;
+    std::function<void(const std::string&)> on_remove_path_pressed;
 };
 
 class PopupAddToPlaylist : public Popup {
@@ -374,7 +374,7 @@ class PopupAddToPlaylist : public Popup {
     Widget* buttons{};
     zincgui::Button* btn_cancel{};
 
-    std::function<void(size_t)> on_playlist_selected{};
+    std::function<void(size_t)> on_playlist_selected;
 };
 
 class PopupCreateSmartPlaylist : public Popup {
@@ -391,13 +391,13 @@ class PopupCreateSmartPlaylist : public Popup {
       container_name.set_layout("ttb expand m:0 s:8");
       label_name = &container_name.add_child<zincgui::Label>(tr::get("popup.smart_playlist.add.label_input"));
       input_name = &container_name.add_child<zincgui::TextInput>();
-      input_name->set_height(8 * zincbox::ui_scale() + zincbox::font_size());
+      input_name->set_height((8 * zincbox::ui_scale()) + zincbox::font_size());
 
       Widget& container_artists = add_child<Widget>();
       container_artists.set_layout("ttb expand m:0 s:8");
       label_artists = &container_artists.add_child<zincgui::Label>(tr::get("popup.smart_playlist.add.label_artists"));
       input_artists = &container_artists.add_child<zincgui::TextInput>();
-      input_artists->set_height(8 * zincbox::ui_scale() + zincbox::font_size());
+      input_artists->set_height((8 * zincbox::ui_scale()) + zincbox::font_size());
 
       buttons = &add_child<Widget>();
       buttons->set_height(32 * zincbox::ui_scale());
@@ -423,8 +423,8 @@ class PopupCreateSmartPlaylist : public Popup {
     zincgui::TextInput* input_artists{};
     zincgui::Label* label_name{};
     zincgui::TextInput* input_name{};
-    std::function<void()> on_cancel{};
-    std::function<void()> on_add{};
+    std::function<void()> on_cancel;
+    std::function<void()> on_add;
     double scroll_px{};
     double target_scroll_px{};
 };
@@ -489,7 +489,7 @@ class PopupScanSummary : public Popup {
       title->set_anchor(zincgui::Anchor::TOP);
       title->set_parent_anchor(zincgui::Anchor::TOP);
 
-      std::string collection_name = "";
+      std::string collection_name;
       if (auto c = db::collection_by_id(summary.collection_id)) { collection_name = c->get().name(); }
 
       header = &add_child<zincgui::Label>(tr::format("popup.scan_summary.header", collection_name));
@@ -605,5 +605,5 @@ class PopupScanSummary : public Popup {
     zincgui::Widget* buttons{};
     zincgui::Button* btn_ok{};
 
-    std::function<void()> on_ok_pressed{};
+    std::function<void()> on_ok_pressed;
 };

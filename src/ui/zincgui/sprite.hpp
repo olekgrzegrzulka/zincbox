@@ -6,7 +6,7 @@
 #include <glm/vec2.hpp>
 #include "common/logger.hpp"
 #include "common/types.hpp"
-#include "widget.hpp"
+#include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
 
