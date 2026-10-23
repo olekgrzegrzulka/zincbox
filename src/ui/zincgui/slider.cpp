@@ -28,25 +28,27 @@ void zincgui::Slider::skip_anim() {
   bool is_invert = (orientation == HORIZONTAL_INVERTED || orientation == VERTICAL_INVERTED);
 
   i32 track_length = is_horiz ? width : height;
-  float thumb_pos_target = 0.0f;
   if ((max_value - min_value) != 0.0f) {
     float norm = (value - min_value) / (max_value - min_value);
     if (is_invert) { norm = 1.0f - norm; }
-    if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
-      thumb_pos_target = norm * (track_length);
-      thumb_pos_target -= thumb_length * 0.5f;
-    } else {
-      thumb_pos_target = norm * (track_length - thumb_length);
-    }
+    norm_pos_anim = norm;
   }
-  if (is_horiz) {
-    thumb.set_x(thumb_pos_target);
-    track_active.set_width(is_invert ? (track_length - (thumb_pos_target + thumb.get_width() * 0.5))
-                                     : (thumb_pos_target + (thumb.get_width() * 0.5)));
+
+  float thumb_pos = 0.0f;
+  if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
+    thumb_pos = (norm_pos_anim * track_length) - (thumb_length * 0.5f);
   } else {
-    thumb.set_y(thumb_pos_target);
-    track_active.set_height(is_invert ? (track_length - (thumb_pos_target + thumb.get_height() * 0.5))
-                                      : (thumb_pos_target + (thumb.get_height() * 0.5)));
+    thumb_pos = norm_pos_anim * (track_length - thumb_length);
+  }
+
+  if (is_horiz) {
+    thumb.set_x(thumb_pos);
+    track_active.set_width(is_invert ? (track_length - (thumb_pos + thumb.get_width() * 0.5))
+                                     : (thumb_pos + (thumb.get_width() * 0.5)));
+  } else {
+    thumb.set_y(thumb_pos);
+    track_active.set_height(is_invert ? (track_length - (thumb_pos + thumb.get_height() * 0.5))
+                                      : (thumb_pos + (thumb.get_height() * 0.5)));
   }
 }
 
@@ -99,73 +101,77 @@ void zincgui::Slider::input() {
     thumb.set_anchor(TOP_CENTER);
   }
 
-  bool lmb_pressed = Input::mouse_pressed(MOUSE_BUTTON_LEFT);
-  bool lmb_just_pressed = Input::mouse_just_pressed(MOUSE_BUTTON_LEFT);
-  bool lmb_just_released = Input::mouse_just_released(MOUSE_BUTTON_LEFT);
-  i32 mouse_x = Input::get_mouse_x();
-  i32 mouse_y = Input::get_mouse_y();
+  bool lmb_pressed = false;
   bool mouse_on_thumb = false;
-  bool mouse_on_track = false;
-  if (is_horiz) {
-    mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x && mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
-                      mouse_y >= thumb.get_position(TOP_LEFT).y - drag_area_inflation &&
-                      mouse_y <= thumb.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
-    mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x && mouse_x <= track.get_position(BOTTOM_RIGHT).x &&
-                      mouse_y >= track.get_position(TOP_LEFT).y - drag_area_inflation &&
-                      mouse_y <= track.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
-  } else {
-    mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x - drag_area_inflation &&
-                      mouse_x <= thumb.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
-                      mouse_y >= thumb.get_position(TOP_LEFT).y && mouse_y <= thumb.get_position(BOTTOM_RIGHT).y);
-    mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x - drag_area_inflation &&
-                      mouse_x <= track.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
-                      mouse_y >= track.get_position(TOP_LEFT).y && mouse_y <= track.get_position(BOTTOM_RIGHT).y);
-  }
 
-  if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
-    float new_value = 0.0f;
-    if (is_horiz && width != 0) {
-      new_value = (Input::get_mouse_x() - get_position().x) / (float)width;
-    } else if (height != 0) {
-      new_value = (Input::get_mouse_y() - get_position().y) / (float)height;
-    }
-    if (is_invert) { new_value = 1.0f - new_value; }
-    new_value *= (max_value - min_value);
-    new_value += min_value;
-    set_value(new_value);
-    mouse_on_thumb = true;
-  }
-
-  if (lmb_just_pressed && mouse_on_thumb) {
-    drag_start_value = value;
+  if (!disabled) {
+    lmb_pressed = Input::mouse_pressed(MOUSE_BUTTON_LEFT);
+    bool lmb_just_pressed = Input::mouse_just_pressed(MOUSE_BUTTON_LEFT);
+    bool lmb_just_released = Input::mouse_just_released(MOUSE_BUTTON_LEFT);
+    i32 mouse_x = Input::get_mouse_x();
+    i32 mouse_y = Input::get_mouse_y();
+    bool mouse_on_track = false;
     if (is_horiz) {
-      drag_start_mouse_pos = Input::get_mouse_x();
-      drag_start_thumb_pos = thumb.get_x();
+      mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x && mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
+                        mouse_y >= thumb.get_position(TOP_LEFT).y - drag_area_inflation &&
+                        mouse_y <= thumb.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
+      mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x && mouse_x <= track.get_position(BOTTOM_RIGHT).x &&
+                        mouse_y >= track.get_position(TOP_LEFT).y - drag_area_inflation &&
+                        mouse_y <= track.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
     } else {
-      drag_start_mouse_pos = Input::get_mouse_y();
-      drag_start_thumb_pos = thumb.get_y();
+      mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x - drag_area_inflation &&
+                        mouse_x <= thumb.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
+                        mouse_y >= thumb.get_position(TOP_LEFT).y && mouse_y <= thumb.get_position(BOTTOM_RIGHT).y);
+      mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x - drag_area_inflation &&
+                        mouse_x <= track.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
+                        mouse_y >= track.get_position(TOP_LEFT).y && mouse_y <= track.get_position(BOTTOM_RIGHT).y);
     }
-    is_dragged = true;
-  }
 
-  if (is_dragged) {
-    i32 drag_px =
-      is_horiz ? (Input::get_mouse_x() - drag_start_mouse_pos) : (Input::get_mouse_y() - drag_start_mouse_pos);
-    if (is_invert) { drag_px = -drag_px; }
-
-    if ((track_length - thumb_length) != 0) {
-      float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
-      set_value(drag_start_value + drag);
+    if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
+      float new_value = 0.0f;
+      if (is_horiz && width != 0) {
+        new_value = (Input::get_mouse_x() - get_position().x) / (float)width;
+      } else if (height != 0) {
+        new_value = (Input::get_mouse_y() - get_position().y) / (float)height;
+      }
+      if (is_invert) { new_value = 1.0f - new_value; }
+      new_value *= (max_value - min_value);
+      new_value += min_value;
+      set_value(new_value);
+      mouse_on_thumb = true;
     }
-  }
 
-  bool drag_ended = false;
-  if (lmb_just_released && is_dragged) {
-    is_dragged = false;
-    drag_ended = true;
-  }
+    if (lmb_just_pressed && mouse_on_thumb) {
+      drag_start_value = value;
+      if (is_horiz) {
+        drag_start_mouse_pos = Input::get_mouse_x();
+        drag_start_thumb_pos = thumb.get_x();
+      } else {
+        drag_start_mouse_pos = Input::get_mouse_y();
+        drag_start_thumb_pos = thumb.get_y();
+      }
+      is_dragged = true;
+    }
 
-  if (drag_ended && lambda_drag_end) { lambda_drag_end(drag_start_value, value); }
+    if (is_dragged) {
+      i32 drag_px =
+        is_horiz ? (Input::get_mouse_x() - drag_start_mouse_pos) : (Input::get_mouse_y() - drag_start_mouse_pos);
+      if (is_invert) { drag_px = -drag_px; }
+
+      if ((track_length - thumb_length) != 0) {
+        float drag = drag_px / (float)(track_length - thumb_length) * (max_value - min_value);
+        set_value(drag_start_value + drag);
+      }
+    }
+
+    bool drag_ended = false;
+    if (lmb_just_released && is_dragged) {
+      is_dragged = false;
+      drag_ended = true;
+    }
+
+    if (drag_ended && lambda_drag_end) { lambda_drag_end(drag_start_value, value); }
+  }
 
   if (is_dragged) {
     thumb.set_uv_start(uv_start_thumb_pressed);
@@ -178,20 +184,22 @@ void zincgui::Slider::input() {
     thumb.set_uv_end(uv_end_thumb_idle);
   }
 
-  float thumb_old_pos = is_horiz ? thumb.get_x() : thumb.get_y();
-  float thumb_pos_target = 0.0f;
+  float norm_target = norm_pos_anim;
   if ((max_value - min_value) != 0.0f) {
     float norm = (value - min_value) / (max_value - min_value);
     if (is_invert) { norm = 1.0f - norm; }
-    if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
-      thumb_pos_target = norm * (track_length);
-      thumb_pos_target -= thumb_length * 0.5f;
-    } else {
-      thumb_pos_target = norm * (track_length - thumb_length);
-    }
+    norm_target = norm;
   }
-  double t = std::clamp(std::abs(thumb_old_pos - thumb_pos_target) * 0.004, 0.6, 0.95);
-  float thumb_pos_lerped = std::lerp(thumb_old_pos, thumb_pos_target, t);
+  double t = std::clamp(std::abs(norm_pos_anim - norm_target) * (track_length * 0.003), 0.6, 0.9);
+  norm_pos_anim = std::lerp(norm_pos_anim, norm_target, static_cast<float>(t));
+
+  float thumb_pos_lerped = 0.0f;
+  if (thumb_constraint == ThumbConstraint::FULL_RANGE) {
+    thumb_pos_lerped = (norm_pos_anim * track_length) - (thumb_length * 0.5f);
+  } else {
+    thumb_pos_lerped = norm_pos_anim * (track_length - thumb_length);
+  }
+
   if (is_horiz) {
     thumb.set_x(thumb_pos_lerped);
     track_active.set_width(is_invert ? (track_length - (thumb_pos_lerped + thumb.get_width() * 0.5))

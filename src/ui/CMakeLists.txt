@@ -24,37 +24,38 @@ cmrc_add_resources(zincbox_resources
 )
 
 set(UI_SOURCES
-    sdl3_window.cpp
-    tray.cpp
-    tr.cpp
-    ui.cpp
-    ui_notifications.cpp
-    panel_playlists.cpp
+    cover_art.cpp
     panel_controls.cpp
-    panel_tracklist.cpp
+    panel_playlists.cpp
     panel_queue.cpp
     panel_top.cpp
-    theme.cpp
+    panel_tracklist.cpp
     popup_controller.cpp
     popup.cpp
-    tab_bar.cpp
     scrollable_view.cpp
-    cover_art.cpp
-    zincgui/input.cpp
-    zincgui/texture.cpp
-    zincgui/texture_atlas.cpp
-    zincgui/shader.cpp
-    zincgui/root.cpp
-    zincgui/font_face.cpp
+    sdl3_window.cpp
+    tab_bar.cpp
+    theme.cpp
+    tr.cpp
+    tray.cpp
+    ui_notifications.cpp
+    ui.cpp
+    widget_track.cpp
     zincgui/button.cpp
+    zincgui/color_rect.cpp
+    zincgui/font_face.cpp
+    zincgui/input.cpp
     zincgui/label.cpp
+    zincgui/layout.cpp
+    zincgui/root.cpp
+    zincgui/scrollbar.cpp
+    zincgui/shader.cpp
     zincgui/slider.cpp
     zincgui/sprite.cpp
-    zincgui/widget.cpp
     zincgui/text_input.cpp
-    zincgui/scrollbar.cpp
-    zincgui/color_rect.cpp
-    zincgui/layout.cpp
+    zincgui/texture_atlas.cpp
+    zincgui/texture.cpp
+    zincgui/widget.cpp
 )
 
 add_library(zincbox_ui STATIC ${UI_SOURCES})

@@ -1,27 +1,27 @@
 set(CORE_SOURCES
-    musicdb/musicdb.cpp
+    cover_art.cpp
+    io.cpp
+    queue_element.cpp
+    scanner.cpp
+    track_file.cpp
     musicdb/collection.cpp
+    musicdb/musicdb.cpp
     musicdb/playlist.cpp
     musicdb/track.cpp
     player/audio_engine.cpp
     player/equalizer.cpp
     player/player.cpp
     player/queue.cpp
-    io.cpp
-    track_file.cpp
-    scanner.cpp
-    cover_art.cpp
-    queue_element.cpp
     ${CMAKE_SOURCE_DIR}/lib/miniaudio/miniaudio.c
 )
 
 if(ZINCBOX_MPRIS)
-    list(APPEND CORE_SOURCES mpris.cpp)
+  list(APPEND CORE_SOURCES mpris.cpp)
 endif()
 
 add_library(zincbox_core STATIC ${CORE_SOURCES})
 
-target_include_directories(zincbox_core PUBLIC 
+target_include_directories(zincbox_core PUBLIC
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
 )
@@ -48,5 +48,5 @@ target_link_libraries(zincbox_core PUBLIC
 )
 
 if(ZINCBOX_MPRIS)
-    target_link_libraries(zincbox_core PUBLIC sdbus-c++)
+  target_link_libraries(zincbox_core PUBLIC sdbus-c++)
 endif()
