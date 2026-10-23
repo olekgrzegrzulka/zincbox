@@ -31,8 +31,9 @@ namespace zincgui {
       float value = 0.0f;
       float min_value = -10.0f;
       float max_value = 10.0f;
+      float norm_pos_anim = 0.0f;
       float sensitivity = 40.0f;
-
+      bool disabled = false;
       bool is_dragged = false;
       std::function<void(float, float)> lambda_value_changed;
       std::function<void(float, float)> lambda_drag_end;
@@ -75,6 +76,7 @@ namespace zincgui {
       WIDGET_DEF_GETTER(sensitivity)
       WIDGET_DEF_SETTER(drag_area_inflation)
       WIDGET_DEF_GETTER(drag_area_inflation)
+      WIDGET_DEF_GETTER(disabled)
 
       const Sprite& get_thumb() const { return thumb; }
       const Sprite& get_track() const { return track; }
@@ -97,6 +99,7 @@ namespace zincgui {
       WIDGET_DEF_SETTER_DIRTY(track_thickness)
       WIDGET_DEF_SETTER_DIRTY(thumb_length)
       WIDGET_DEF_SETTER_DIRTY(thumb_thickness)
+      WIDGET_DEF_SETTER_DIRTY(disabled)
 
       void set_texture_thumb_pressed(const std::string& id);
       void set_texture_thumb_hovered(const std::string& id);

@@ -21,11 +21,11 @@
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
 #include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/text_input.hpp"
-#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -160,9 +160,7 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
 
 WidgetAlbumCover::~WidgetAlbumCover() { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
 
-void WidgetAlbumCover::draw() {
-  // Button::draw();
-}
+void WidgetAlbumCover::draw() {}
 
 void WidgetAlbumCover::update() {
   if (!is_mouse_hovering()) { is_hovered = false; }
@@ -243,6 +241,7 @@ void PanelPlaylists::clear() {
 }
 
 void PanelPlaylists::recreate() {
+  m_props_old = props;
   clear();
 
   m_panel_search->set_is_updated(props.panel_search_visible);
@@ -261,6 +260,7 @@ void PanelPlaylists::recreate() {
   } else if (!props.playlist_ids.empty()) {
     playlist_ids_sorted = props.playlist_ids;
   } else {
+    reflow();
     return;
   }
 
@@ -333,6 +333,9 @@ void PanelPlaylists::scroll_to_playlist(size_t playlist_id, bool immediate) {
 }
 
 void PanelPlaylists::reflow() {
+  m_panel_search->set_width(width - (2 * PANEL_SEARCH_PADDING + m_scrollbar->get_width()));
+  m_albums_container->set_width(props.is_scrollable ? width - m_scrollbar->get_width() : width);
+
   auto& config = theme::config().panel_playlists;
   auto& settings = zincbox::settings();
   const float SCALE = zincbox::ui_scale();
@@ -350,7 +353,11 @@ void PanelPlaylists::reflow() {
   i32 spacing_y = config.vertical_spacing * SCALE;
 
   i32 albums_area_width = m_albums_container->get_width();
-  if (albums_area_width <= 0) { return; }
+  if (albums_area_width <= 0) {
+    m_content_height = 0;
+    m_albums_container->set_height(0);
+    return;
+  }
 
   i32 album_covers_in_one_row = (albums_area_width - min_spacing_x) / (item_w + min_spacing_x);
   if (album_covers_in_one_row <= 0) { album_covers_in_one_row = 1; }
@@ -410,12 +417,10 @@ void PanelPlaylists::input() { ColorRect::input(); }
 void PanelPlaylists::update() {
   if (m_props_old != props) {
     recreate();
-    m_props_old = props;
+  } else {
+    reflow();
   }
-  m_panel_search->set_width(width - (2 * PANEL_SEARCH_PADDING + m_scrollbar->get_width()));
-  m_albums_container->set_width(props.is_scrollable ? width - m_scrollbar->get_width() : width);
-  reflow();
-  auto albums_container_prev_y = m_albums_container->get_y();
+
   m_albums_container->set_y(props.panel_search_visible
                               ? (m_panel_search->get_height() + 2 * PANEL_SEARCH_PADDING) - std::floor(m_scroll_px)
                               : -std::floor(m_scroll_px));

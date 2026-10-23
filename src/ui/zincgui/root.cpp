@@ -112,9 +112,10 @@ void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
 void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_layer) {
   if (widget->parent && widget->parent->deleted_) { widget->deleted_ = true; }
 
-  if (widget->get_marked_for_deletion() && !widget->deleted_) {
+  if (widget->get_marked_for_deletion()) {
     widget->deleted_ = true;
     m_deleted_widgets.insert(widget);
+    return;
   }
 
   if (!widget->children_to_add.empty() && !widget->deleted_) { m_mutated_widgets.insert(widget); }
@@ -134,9 +135,9 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   std::optional<rect2i> parent_scissor = parent ? parent->scissor_ : std::nullopt;
   if (widget->is_drawn_on_top) { parent_scissor = std::nullopt; }
   if (widget->get_clip_children()) {
-    widget->scissor_ = {
-      .begin = {widget->get_position(Anchor::TOP_LEFT).x, m_window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
-      .size = {widget->get_width(), widget->get_height()}};
+    widget->scissor_ = {.begin = {widget->get_position(Anchor::TOP_LEFT).x,
+                                  m_window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
+                        .size = {widget->get_width(), widget->get_height()}};
     if (parent && parent->scissor_.has_value()) { widget->scissor_ = widget->scissor_->intersected(*parent->scissor_); }
   } else {
     widget->scissor_ = parent_scissor;
@@ -163,10 +164,8 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   }
 }
 
-static i32 construct_traversal_order_counter = 0;
 void zincgui::Root::construct_traversal_order() {
   m_tree_dirty = false;
-  construct_traversal_order_counter++;
   m_widget_traversal_order.clear();
   m_deleted_widgets.clear();
   m_mutated_widgets.clear();
@@ -194,6 +193,7 @@ bool zincgui::Root::process_mutations() {
         std::erase_if(m_widgets, [w](const auto& child) { return child.get() == w; });
       }
     }
+    m_deleted_widgets.clear();
   }
 
   if (!m_widgets_to_add.empty()) {
@@ -217,7 +217,6 @@ bool zincgui::Root::process_mutations() {
 }
 
 void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
-  construct_traversal_order_counter = 0;
   m_current_frame += 1;
 
   if (window_width_ != m_window_width || window_height_ != m_window_height) {
@@ -238,7 +237,10 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   }
 
   if (m_tree_dirty) { construct_traversal_order(); }
-  if (process_mutations()) { construct_traversal_order(); }
+
+  while (process_mutations()) {
+    construct_traversal_order();
+  }
 
   for (auto it_layer = m_widget_traversal_order.rbegin(); it_layer != m_widget_traversal_order.rend(); ++it_layer) {
     for (auto it = (*it_layer).rbegin(); it != (*it_layer).rend(); ++it) {
@@ -267,7 +269,7 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
     if (m_tree_dirty) { construct_traversal_order(); }
     tree_changed = process_mutations();
     if (tree_changed) { construct_traversal_order(); }
-  } while (tree_changed);
+  } while (tree_changed || !m_deleted_widgets.empty() || !m_mutated_widgets.empty() || !m_widgets_to_add.empty());
 
   m_hovered_widgets.clear();
   for (auto&& w : m_widgets) {

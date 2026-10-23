@@ -50,6 +50,13 @@ namespace player {
   std::optional<QueueElement> get_playing();
   std::optional<db::track_info> get_playing_track();
   const std::vector<QueueElement>& get_playing_queue();
+
+  struct FlattenedQueue {
+      std::vector<db::track_info> tracks;
+      std::optional<size_t> playing_index;
+  };
+
+  FlattenedQueue get_flattened_queue();
   std::optional<size_t> get_playing_index();
   void set_playing_index(std::optional<size_t>);
 

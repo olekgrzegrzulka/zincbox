@@ -1,4 +1,10 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <functional>
+#include <string>
+#include <utility>
+#include <vector>
 #include "common/search_utils.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/types.hpp"
@@ -16,6 +22,7 @@
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/text_input.hpp"
 #include "ui/zincgui/widget.hpp"
+#include "zincbox.hpp"
 
 class PopupSearch final : public Popup {
     using Widget::event;
@@ -57,9 +64,6 @@ class PopupSearch final : public Popup {
       m_playlists_container->props.playlist_ids = {};
       m_playlists_container->props.panel_search_visible = false;
       m_playlists_container->props.is_scrollable = false;
-      // playlists_container->props.cover_width = 48;
-      // playlists_container->props.cover_min_horizontal_spacing = 12;
-      // playlists_container->props.cover_min_vertical_spacing = 44;
 
       m_label_no_results = &m_scrollable_content->add_child<zincgui::Label>(tr::get("search.no_results"));
       m_label_no_results->set_text_color(theme::config().text_color_muted);
@@ -98,16 +102,21 @@ class PopupSearch final : public Popup {
       m_search_text = new_search_text;
       m_playlist_ids.clear();
       m_found_tracks.clear();
+
+      for (auto&& t : m_tracks_container->get_children()) {
+        t->set_marked_for_deletion(true);
+      }
+
       if (new_search_text.empty()) {
         m_playlists_container->props.playlist_ids = {};
-        for (auto&& t : m_tracks_container->get_children()) {
-          t->set_marked_for_deletion(true);
-        }
+        m_playlists_container->recreate();
         m_scrollbar->set_scroll_offset(0);
-        m_scroll_px = 0.1;
+        m_scroll_px = 0.0;
         m_target_scroll_px = 0.0;
+        relayout();
         return;
       }
+
       if (m_checkbox_search_all_collections->is_checked()) {
         auto res = db::search_playlists(m_search_text, MAX_PLAYLISTS);
         for (auto& r : res) {
@@ -123,7 +132,6 @@ class PopupSearch final : public Popup {
       }
 
       m_playlists_container->props.playlist_ids = m_playlist_ids;
-      m_playlists_container->recreate();
       m_playlists_container->on_playlist_lmb = [this](size_t playlist_id, Widget* w) -> void {
         if (on_playlist_lmb) { on_playlist_lmb(playlist_id, w); }
       };
@@ -131,15 +139,11 @@ class PopupSearch final : public Popup {
         if (on_playlist_rmb) { on_playlist_rmb(playlist_id, w); }
       };
 
-      for (auto&& t : m_tracks_container->get_children()) {
-        t->set_marked_for_deletion(true);
-      }
-
       i32 i = 1;
-      i32 track_height = theme::config().panel_tracklist.track_height;
+      i32 track_height = theme::config().panel_tracklist.track_height * zincbox::ui_scale();
       for (db::track_info& ti : m_found_tracks) {
         auto* w = &m_tracks_container->add_child<WidgetTrack>();
-        w->item_index(m_tracks_container->get_children().size() - 1);
+        w->item_index(i - 1);
         w->track_id(ti.track_id).track_number(i);
         w->set_fixed_height(track_height);
         w->on_press([this, ti, w]() {
@@ -152,15 +156,72 @@ class PopupSearch final : public Popup {
       }
 
       m_scrollbar->set_scroll_offset(0);
-      m_scroll_px = 0.1;
+      m_scroll_px = 0.0;
       m_target_scroll_px = 0.0;
 
-      // update();
+      m_playlists_container->recreate();
+      relayout();
+    }
+
+    void relayout() {
+      m_label_playlists->set_is_drawn(!m_playlist_ids.empty());
+      m_label_tracks->set_is_drawn(!m_found_tracks.empty());
+      if (m_playlist_ids.empty() && m_found_tracks.empty()) {
+        bool no_search_text = sanitize_query(m_search_bar->label.get_text()).empty();
+        m_label_no_results->set_is_drawn(!no_search_text);
+      } else {
+        m_label_no_results->set_is_drawn(false);
+      }
+
+      i32 results_w = m_search_results->get_width();
+      i32 page_size = m_search_results->get_height();
+      i32 track_height = theme::config().panel_tracklist.track_height * zincbox::ui_scale();
+      i32 track_total_height = static_cast<i32>(m_found_tracks.size()) * track_height;
+
+      auto compute_heights_for_width = [&](i32 w) -> i32 {
+        m_playlists_container->set_width(w);
+        if (!m_playlist_ids.empty()) {
+          m_playlists_container->reflow();
+          m_playlists_container->set_height(m_playlists_container->get_content_size().y);
+        } else {
+          m_playlists_container->set_height(0);
+        }
+
+        i32 total = m_playlists_container->get_height() + track_total_height;
+        if (m_label_playlists->get_is_drawn()) { total += m_label_playlists->get_height(); }
+        if (m_label_tracks->get_is_drawn()) { total += m_label_tracks->get_height(); }
+        return total;
+      };
+
+      i32 content_size = compute_heights_for_width(results_w);
+      bool needs_scrollbar = content_size > page_size;
+      i32 target_w = needs_scrollbar ? (results_w - m_scrollbar->get_width()) : results_w;
+
+      if (needs_scrollbar) { content_size = compute_heights_for_width(target_w); }
+
+      m_scrollable_content->set_width(target_w);
+      m_scrollable_content->set_height(page_size);
+      m_tracks_container->set_width(target_w);
+      m_tracks_container->set_height(track_total_height);
+
+      m_scrollbar->set_content_size(content_size);
+      m_scrollbar->set_page_size(page_size);
+      m_scrollbar->set_height(page_size);
+      m_scrollbar->set_is_drawn(needs_scrollbar);
+
+      i32 y_sum = 0;
+      for (Widget* w :
+           std::array<Widget*, 4>{m_label_playlists, m_playlists_container, m_label_tracks, m_tracks_container}) {
+        if (!w->get_is_drawn()) { continue; }
+        w->set_y(-std::floor(m_scroll_px) + y_sum);
+        y_sum += w->get_height();
+      }
     }
 
     void update() override {
       set_width(get_max_content_width());
       set_height(get_max_content_height());
+      Popup::update();
 
       if (m_checkbox_search_all_collections_state_old != m_checkbox_search_all_collections->is_checked()) {
         m_checkbox_search_all_collections_state_old = m_checkbox_search_all_collections->is_checked();
@@ -171,47 +232,9 @@ class PopupSearch final : public Popup {
       if (m_scroll_px != m_target_scroll_px) {
         double t = std::clamp(std::abs(m_scroll_px - m_target_scroll_px) * 0.004, 0.4, 0.8);
         m_scroll_px = std::lerp(m_scroll_px, m_target_scroll_px, t);
-
-        i32 y_sum = 0;
-        for (Widget* w :
-             std::array<Widget*, 4>{m_label_playlists, m_playlists_container, m_label_tracks, m_tracks_container}) {
-          if (!w->get_is_drawn()) { continue; }
-          w->set_y(-std::floor(m_scroll_px) + y_sum);
-          y_sum += w->get_height();
-        }
       }
 
-      m_label_tracks->set_is_drawn(m_found_tracks.size() > 0);
-      if (m_playlist_ids.size() == 0 && m_found_tracks.size() == 0) {
-        bool no_search_text = sanitize_query(m_search_bar->label.get_text()).empty();
-        m_label_no_results->set_is_drawn(!no_search_text);
-      } else {
-        m_label_no_results->set_is_drawn(false);
-      }
-
-      m_playlists_container->set_width(m_scrollable_content->get_width());
-      if (m_playlist_ids.size() > 0) {
-        m_playlists_container->set_height(m_playlists_container->get_content_size().y);
-        m_label_playlists->set_is_drawn(true);
-      } else {
-        m_playlists_container->set_height(0);
-        m_label_playlists->set_is_drawn(false);
-      }
-
-      static i32 track_height = theme::config().panel_tracklist.track_height;
-      i32 track_total_height = m_found_tracks.size() * track_height;
-      i32 content_size = m_playlists_container->get_height() + track_total_height;
-      if (m_label_playlists->get_is_drawn()) { content_size += m_label_playlists->get_height(); }
-      if (m_label_tracks->get_is_drawn()) { content_size += m_label_tracks->get_height(); }
-
-      i32 page_size = m_scrollable_content->get_height();
-      m_scrollbar->set_content_size(content_size);
-      m_scrollbar->set_page_size(page_size);
-
-      m_tracks_container->set_width(m_scrollable_content->get_width());
-      m_playlists_container->set_width(m_scrollable_content->get_width());
-
-      Popup::update();
+      relayout();
     }
 
     void event(zincgui::Input::InputEventKey& e) override {

@@ -1,5 +1,6 @@
 #include "core/player/player.hpp"
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include "common/logger.hpp"
@@ -75,7 +76,7 @@ namespace {
       .file_path = track.file_path,
       .crossfade = use_crossfade,
     });
-    
+
     display_time_ms = 0;
     return true;
   }
@@ -224,6 +225,8 @@ namespace player {
   void clear_queue() {
     queue::clear();
     stop();
+    set_playing_index(std::nullopt);
+    player::signal_on_track_changed.emit();
   }
 
   void resume() {
@@ -314,6 +317,43 @@ namespace player {
   std::optional<db::track_info> get_playing_track() { return queue::get_playing_track(); }
 
   const std::vector<QueueElement>& get_playing_queue() { return queue::get_elements(); }
+
+  FlattenedQueue get_flattened_queue() {
+    FlattenedQueue ret;
+    ret.tracks.reserve(get_playing_queue().size());
+
+    const auto& queue = get_playing_queue();
+    auto playing_index = queue::get_playing_index();
+
+    for (size_t i = 0; i < queue.size(); i += 1) {
+      auto& elem = queue[i];
+      size_t curr_size = ret.tracks.size();
+
+      if (elem.is_track()) {
+        ret.tracks.emplace_back(elem.track()->track_info);
+        if (playing_index == i) { ret.playing_index = curr_size; }
+      } else if (elem.is_playlist()) {
+        auto tracks = elem.playlist()->get_playback();
+        for (auto& t : tracks) {
+          ret.tracks.emplace_back(t);
+        }
+        if (playing_index == i) {
+          size_t internal_index = elem.playlist()->get_playback_index().value_or(0);
+          ret.playing_index = curr_size + internal_index;
+        }
+      } else if (elem.is_collection()) {
+        auto tracks = elem.collection()->get_playback();
+        for (auto& t : tracks) {
+          ret.tracks.emplace_back(t);
+        }
+        if (playing_index == i) {
+          size_t internal_index = elem.collection()->get_playback_index().value_or(0);
+          ret.playing_index = curr_size + internal_index;
+        }
+      }
+    }
+    return ret;
+  }
 
   std::optional<size_t> get_playing_index() { return queue::get_playing_index(); }
 
