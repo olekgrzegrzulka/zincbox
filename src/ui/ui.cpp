@@ -230,14 +230,11 @@ void zincbox::ui::init() {
   };
 
   panel_controls->on_love_button_pressed = []() -> void {
-    if (auto playing = player::get_playing()) {
-      if (!playing->track()) { return; }
-      auto& ti = playing->track()->track_info;
-
-      if (db::playlist_by_id(0)->get().has_track_id(ti.track_id)) {
-        unlove_track(ti.track_id);
+    if (auto ti = player::get_playing_track()) {
+      if (db::playlist_by_id(0)->get().has_track_id(ti->track_id)) {
+        unlove_track(ti->track_id);
       } else {
-        love_track(ti.track_id);
+        love_track(ti->track_id);
       }
     }
   };
@@ -1594,34 +1591,32 @@ namespace {
       },
       "clear_queue");
 
-    out::debug_warn("show_popover_queue_actions::save_as_playlist unimpl");
-    //   buttons.emplace_back(
-    //     tr::get("popover.queue.save_as_playlist"),
-    //     []() -> void {
-    //       auto* popup = popup_controller->show_popup<PopupInput>();
-    //       popup->set_size(300, 200);
-    //       popup->title->set_text(tr::get("popup.playlist.create_from_queue.title"));
-    //       popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
-    //       popup->text_input->set_focused(true);
-    //
-    //       popup->on_ok_pressed = [popup]() {
-    //         auto playlist_id = db::add_playlist_to_collection(
-    //           0, db::Playlist{popup->text_input->label.get_text(), {""}, db::PlaylistType::User});
-    //         for (const auto& play : player::get_playing_queue()) {
-    //           db::add_track_id_to_playlist(playlist_id, play.track_id);
-    //         }
-    //         if (active_collection_id == 0) {
-    //           panel_playlists->props.collection_id = 0;
-    //           panel_playlists->recreate();
-    //           panel_tracklist->recreate(active_collection_id);
-    //         }
-    //         notifications->push(tr::format("notification.saved_queue_as_playlist",
-    //         popup->text_input->label.get_text()));
-    //       };
-    //
-    //       popup->on_cancel_pressed = []() {};
-    //     },
-    //     "save_queue_as_playlist");
+    buttons.emplace_back(
+      tr::get("popover.queue.save_as_playlist"),
+      []() -> void {
+        auto* popup = popup_controller->show_popup<PopupInput>();
+        popup->set_size(300, 200);
+        popup->title->set_text(tr::get("popup.playlist.create_from_queue.title"));
+        popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
+        popup->text_input->set_focused(true);
+
+        popup->on_ok_pressed = [popup]() {
+          auto playlist_id = db::add_playlist_to_collection(
+            0, db::Playlist{popup->text_input->label.get_text(), {""}, db::PlaylistType::USER});
+          for (const auto& play : player::get_flattened_queue().tracks) {
+            db::add_track_id_to_playlist(playlist_id, play.track_id);
+          }
+          if (active_collection_id == 0) {
+            panel_playlists->props.collection_id = 0;
+            panel_playlists->recreate();
+            panel_tracklist->recreate(active_collection_id);
+          }
+          notifications->push(tr::format("notification.saved_queue_as_playlist", popup->text_input->label.get_text()));
+        };
+
+        popup->on_cancel_pressed = []() {};
+      },
+      "save_queue_as_playlist");
 
     popover_descriptor d{
       .id = "queue_actions",

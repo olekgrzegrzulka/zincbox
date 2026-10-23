@@ -154,9 +154,9 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   auto on_track_changed = [this]() -> void {
     auto playing = player::get_playing_track();
     if (!playing.has_value()) {
-      m_label_track->set_text("");
-      update_love_state(false);
+      set_disabled(true);
     } else {
+      set_disabled(false);
       auto& track = db::track_by_id(playing->track_id)->get();
       m_label_track->set_text(track.pretty_name());
       bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
@@ -270,20 +270,56 @@ void PanelControls::event(Input::InputEventKey& ev) {
   }
 }
 
-void PanelControls::update() {
+void PanelControls::on_width_changed() {
+  constexpr float TIMESTAMP_COMPACT_WIDTH = 650.0f;
+  constexpr float TIMESTAMP_HIDE_WIDTH = 500.0f;
+  constexpr float BREAKPOINT_WIDTH = 650.0f;
+  constexpr i32 MIN_BUTTON_WIDTH = 20;
+  constexpr i32 MIN_VOLUME_BAR_WIDTH = 20;
+  const float SCALE = zincbox::ui_scale();
+  const auto& cfg = theme::config().panel_controls;
 
-  m_seekbar->set_min_value(0);
-  m_seekbar->set_max_value(player::get_total_duration_ms());
+  float ratio = std::clamp(static_cast<float>(width) / BREAKPOINT_WIDTH, 0.0f, 1.0f);
 
-  m_volume_bar->set_sensitivity(zincbox::settings().general.volume_step * 0.01f);
-  if (!m_volume_bar->is_being_dragged()) { m_volume_bar->set_value(player::get_volume(), false); }
+  auto calc_width = [ratio, SCALE](i32 base_width, i32 min_width) -> i32 {
+    const auto SCALED = static_cast<i32>(base_width * ratio);
+    return static_cast<i32>(std::max(SCALED, min_width) * SCALE);
+  };
 
+  std::array buttons = {
+    std::pair{m_button_prev, cfg.button_previous.width},
+    std::pair{m_button_play_pause, cfg.button_play.width},
+    std::pair{m_button_stop, cfg.button_stop.width},
+    std::pair{m_button_next, cfg.button_next.width},
+    std::pair{m_button_shuffle, cfg.button_shuffle.width},
+    std::pair{m_button_repeat, cfg.button_repeat.width},
+    std::pair{m_button_expand_player, cfg.button_expand_player.width},
+  };
+
+  for (const auto& [button, base_width] : buttons) {
+    button->set_max_width(calc_width(base_width, MIN_BUTTON_WIDTH));
+  }
+
+  update_timestamp_label();
+
+  m_volume_bar->set_max_width(calc_width(theme::config().panel_controls.volume_bar.width, MIN_VOLUME_BAR_WIDTH));
+}
+
+void PanelControls::update_timestamp_label() {
+  bool compact = width <= 650;
+  bool hidden = width <= 500;
   i32 progress_ms = m_seekbar->is_being_dragged() ? m_seekbar->get_value() : player::get_display_time_ms();
   i32 total_ms = player::get_total_duration_ms();
   i32 progress_s = progress_ms / 1000;
   i32 total_s = total_ms / 1000;
 
-  if ((progress_s != m_progress_ms_prev / 1000) || (total_s != m_total_ms_prev / 1000)) {
+  if ((progress_s != m_progress_ms_prev / 1000) || (total_s != m_total_ms_prev / 1000) ||
+      compact != m_compact_timestamp || hidden != m_hidden_timestamp) {
+    m_progress_ms_prev = progress_s * 1000;
+    m_total_ms_prev = total_s * 1000;
+    m_compact_timestamp = compact;
+    m_hidden_timestamp = hidden;
+
     i32 progress_m = progress_s / 60;
     progress_s %= 60;
     i32 total_m = total_s / 60;
@@ -293,18 +329,33 @@ void PanelControls::update() {
     ss << std::right << std::setfill('0');
     ss << std::setw(2) << progress_m << ":";
     ss << std::setw(2) << progress_s;
-    ss << " / ";
-    ss << std::setw(2) << total_m << ":";
-    ss << std::setw(2) << total_s;
+    if (!compact) {
+      ss << " / ";
+      ss << std::setw(2) << total_m << ":";
+      ss << std::setw(2) << total_s;
+    }
     m_label_progress->set_text(ss.str());
+    m_label_progress->set_fixed_width(m_label_progress->get_text_extents().x);
+    m_label_progress->set_is_drawn(!hidden);
+  }
+}
+
+void PanelControls::update() {
+
+  if (width != m_width_prev) {
+    m_width_prev = width;
+    on_width_changed();
   }
 
-  m_label_progress->set_is_drawn(theme::config().panel_controls.timestamp.visible && width > 650);
-  m_label_progress->set_min_width(m_label_progress->get_text_extents().x);
-  m_label_progress->set_max_width(m_label_progress->get_text_extents().x);
+  m_seekbar->set_min_value(0);
+  m_seekbar->set_max_value(player::get_total_duration_ms());
 
-  m_seekbar->set_value(player::get_display_time_ms(), false);
+  m_volume_bar->set_sensitivity(zincbox::settings().general.volume_step * 0.01f);
+  if (!m_volume_bar->is_being_dragged()) { m_volume_bar->set_value(player::get_volume(), false); }
 
+  update_timestamp_label();
+
+  i32 progress_ms = m_seekbar->is_being_dragged() ? m_seekbar->get_value() : player::get_display_time_ms();
   if (m_seekbar->is_mouse_hovering()) {
     i32 x_rel = Input::get_mouse_x() - m_seekbar->get_position(Anchor::LEFT).x;
     i32 tooltip_ms = x_rel / (double)m_seekbar->get_width() * player::get_total_duration_ms();
@@ -325,6 +376,7 @@ void PanelControls::update() {
     // tooltip is centered - subtract half width to compensate
     m_tooltip_timestamp->set_x(x_rel - (m_seekbar->get_width() / 2));
   } else {
+    m_seekbar->set_value(progress_ms, false);
     m_tooltip_timestamp->set_is_drawn(false);
   }
 
@@ -450,4 +502,14 @@ bool PanelControls::can_drag_window() const {
           !m_button_expand_player->is_mouse_hovering() && !m_seekbar->is_mouse_hovering() &&
           !m_volume_bar->get_thumb().is_mouse_hovering() && !m_volume_bar->get_track().is_mouse_hovering() &&
           !m_label_track->is_mouse_hovering() && !m_love_button->is_mouse_hovering());
+}
+
+void PanelControls::set_disabled(bool disabled) {
+  m_button_play_pause->set_disabled(disabled);
+  m_button_stop->set_disabled(disabled);
+  m_button_next->set_disabled(disabled);
+  m_button_prev->set_disabled(disabled);
+  m_seekbar->set_disabled(disabled);
+  if (disabled) { m_label_track->set_text(""); }
+  m_love_button->set_is_drawn(!disabled);
 }

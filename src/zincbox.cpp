@@ -213,37 +213,12 @@ void zincbox::apply_loaded_state() {
 }
 
 void zincbox::save_state_to_json() {
-  std::vector<QueueTrackSerialized> queue;
-  std::optional<size_t> serialized_queue_index = std::nullopt;
-  auto& playing_queue = player::get_playing_queue();
-  auto playing_index = player::get_playing_index();
+  auto [flattened_queue, serialized_queue_index] = player::get_flattened_queue();
+  std::vector<QueueTrackSerialized> serialized_queue;
 
-  for (size_t i = 0; i < playing_queue.size(); i += 1) {
-    auto& elem = playing_queue[i];
-    size_t current_serialized_size = queue.size();
-
-    if (elem.is_track()) {
-      queue.emplace_back(QueueTrackSerialized(elem.track()->track_info));
-      if (playing_index == i) { serialized_queue_index = current_serialized_size; }
-    } else if (elem.is_playlist()) {
-      auto tracks = elem.playlist()->get_playback();
-      for (auto& t : tracks) {
-        queue.emplace_back(QueueTrackSerialized(t));
-      }
-      if (playing_index == i) {
-        size_t internal_index = elem.playlist()->get_playback_index().value_or(0);
-        serialized_queue_index = current_serialized_size + internal_index;
-      }
-    } else if (elem.is_collection()) {
-      auto tracks = elem.collection()->get_playback();
-      for (auto& t : tracks) {
-        queue.emplace_back(QueueTrackSerialized(t));
-      }
-      if (playing_index == i) {
-        size_t internal_index = elem.collection()->get_playback_index().value_or(0);
-        serialized_queue_index = current_serialized_size + internal_index;
-      }
-    }
+  serialized_queue.reserve(flattened_queue.size());
+  for (auto& ti : flattened_queue) {
+    serialized_queue.emplace_back(QueueTrackSerialized(ti));
   }
 
   AppSerialized state;
@@ -254,7 +229,7 @@ void zincbox::save_state_to_json() {
     .volume = player::get_volume(),
     .timestamp = player::get_current_time_ms(),
     .queue_index = serialized_queue_index,
-    .queue = queue,
+    .queue = serialized_queue,
   };
 
   state.settings = s_settings;

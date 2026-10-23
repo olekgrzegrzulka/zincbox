@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <optional>
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "ui/zb_widgets.hpp"
@@ -31,6 +32,7 @@ class PanelControls final : public zincgui::ColorRect {
     void set_button_expand_player_visibility(bool);
     void set_tooltip_visibility(bool);
     bool can_drag_window() const;
+    void set_disabled(bool);
 
   public:
     std::function<void(Widget*)> on_playing_track_lmb{};
@@ -62,16 +64,20 @@ class PanelControls final : public zincgui::ColorRect {
     bool m_label_track_underline_rmb = false;
     i32 m_progress_ms_prev = -1000;
     i32 m_total_ms_prev = -1000;
+    bool m_compact_timestamp = false;
+    bool m_hidden_timestamp = false;
     i32 m_tooltip_ms_prev = -1000;
     double m_volume_prev = -1.0;
-
+    i32 m_width_prev = -1;
     i32 m_repeat_mode_prev = -1;
     i32 m_shuffle_mode_prev = -1;
 
     Signal<>::slot_key m_slot_on_track_changed;
     bool m_is_playing = false;
 
-  protected:
+  private:
     void update_repeat_mode();
     void update_shuffle_mode();
+    void on_width_changed();
+    void update_timestamp_label();
 };
