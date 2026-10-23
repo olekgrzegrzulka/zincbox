@@ -214,7 +214,8 @@ namespace zincgui::layout_engine {
     };
 
     auto& children = container.get_children();
-    std::vector<FlexItem> items;
+    static std::vector<FlexItem> items;
+    items.clear();
     items.reserve(children.size());
 
     for (auto& c : children) {
@@ -263,7 +264,7 @@ namespace zincgui::layout_engine {
       }
     }
 
-    i32 container_size_minor = (x_major ? container.get_height() : container.get_width()) - 2 * get_margin_minor();
+    i32 container_size_minor = (x_major ? container.get_height() : container.get_width()) - (2 * get_margin_minor());
     for (auto& item : items) {
       item.w->set_anchor(child_anchor);
       item.w->set_parent_anchor(child_anchor);
