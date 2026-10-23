@@ -87,6 +87,7 @@ namespace player {
 
       i32 get_current_time_ms() const;
       i32 get_total_duration_ms() const;
+      bool get_is_seeking() const;
       bool is_playing() const;
       bool is_at_end() const;
 
@@ -173,6 +174,7 @@ namespace player {
       std::atomic<i32> m_crossfade_ms{0};
       std::atomic<i32> m_current_time_ms{0};
       std::atomic<i32> m_total_duration_ms{0};
+      std::atomic<i32> m_is_seeking{false};
       std::atomic<bool> m_user_playing{false};
       std::atomic<bool> m_is_at_end{false};
   };

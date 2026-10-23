@@ -172,7 +172,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   on_track_changed();
 
   m_seekbar->on_drag_ended([](float, float ms) {
-    if (std::abs(player::get_current_time_ms() - (i32)ms) > 100) { player::seek_ms(ms); }
+    if (std::abs(player::get_display_time_ms() - (i32)ms) > 100) { player::seek_ms(ms); }
   });
 
   m_button_play_pause->on_press([&]() {
@@ -243,14 +243,14 @@ void PanelControls::event(Input::InputEventKey& ev) {
       if (shift) {
         player::prev_track();
       } else {
-        player::seek_ms(player::get_current_time_ms() - 5000);
+        player::seek_ms(player::get_display_time_ms() - 5000);
       }
       ev.handled = true;
     } else if (ev.key == Input::Key::KEY_RIGHT) {
       if (shift) {
         player::next_track();
       } else {
-        player::seek_ms(player::get_current_time_ms() + 5000);
+        player::seek_ms(player::get_display_time_ms() + 5000);
       }
       ev.handled = true;
     } else if (ev.key == Input::Key::KEY_SPACE) {
@@ -278,7 +278,7 @@ void PanelControls::update() {
   m_volume_bar->set_sensitivity(zincbox::settings().general.volume_step * 0.01f);
   if (!m_volume_bar->is_being_dragged()) { m_volume_bar->set_value(player::get_volume(), false); }
 
-  i32 progress_ms = m_seekbar->is_being_dragged() ? m_seekbar->get_value() : player::get_current_time_ms();
+  i32 progress_ms = m_seekbar->is_being_dragged() ? m_seekbar->get_value() : player::get_display_time_ms();
   i32 total_ms = player::get_total_duration_ms();
   i32 progress_s = progress_ms / 1000;
   i32 total_s = total_ms / 1000;
@@ -303,7 +303,7 @@ void PanelControls::update() {
   m_label_progress->set_min_width(m_label_progress->get_text_extents().x);
   m_label_progress->set_max_width(m_label_progress->get_text_extents().x);
 
-  m_seekbar->set_value(player::get_current_time_ms(), false);
+  m_seekbar->set_value(player::get_display_time_ms(), false);
 
   if (m_seekbar->is_mouse_hovering()) {
     i32 x_rel = Input::get_mouse_x() - m_seekbar->get_position(Anchor::LEFT).x;
