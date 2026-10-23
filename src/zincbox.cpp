@@ -391,9 +391,9 @@ namespace {
     }
 
     static i32 t = 0;
-    if (t++ >= 20) {
+    if (t++ >= 200) {
       t = 0;
-      mpris::notify_seeked(player::get_current_time_ms());
+      mpris::notify_seeked(player::get_display_time_ms());
     }
   }
 

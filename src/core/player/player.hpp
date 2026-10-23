@@ -43,6 +43,7 @@ namespace player {
   void prev_track(i32 tries = 10);
 
   i32 get_current_time_ms();
+  i32 get_display_time_ms();
   i32 get_total_duration_ms();
   bool is_playing();
   bool is_at_end();
