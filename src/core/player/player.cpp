@@ -20,6 +20,7 @@ namespace {
   player::EqualizerGains eq_gains{};
   i32 remaining_retry_attempts = 10;
   bool last_direction_was_prev = false;
+  i32 display_time_ms = 0;
 } // namespace
 
 namespace {
@@ -74,6 +75,8 @@ namespace {
       .file_path = track.file_path,
       .crossfade = use_crossfade,
     });
+    
+    display_time_ms = 0;
     return true;
   }
 
@@ -245,6 +248,7 @@ namespace player {
   void seek_ms(i32 ms) {
     queue::cancel_pending_next();
     engine.push_command(CmdSeek{.position_ms = ms});
+    display_time_ms = ms;
     mpris::notify_seeked(ms);
   }
 
@@ -293,6 +297,11 @@ namespace player {
   }
 
   i32 get_current_time_ms() { return engine.get_current_time_ms(); }
+
+  i32 get_display_time_ms() {
+    if (!engine.get_is_seeking()) { display_time_ms = engine.get_current_time_ms(); }
+    return display_time_ms;
+  }
 
   i32 get_total_duration_ms() { return engine.get_total_duration_ms(); }
 

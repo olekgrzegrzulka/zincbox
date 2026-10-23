@@ -1,5 +1,6 @@
 #include "core/player/audio_engine.hpp"
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <numbers>
@@ -95,6 +96,8 @@ namespace player {
   i32 AudioEngine::get_current_time_ms() const { return m_current_time_ms.load(std::memory_order_relaxed); }
 
   i32 AudioEngine::get_total_duration_ms() const { return m_total_duration_ms.load(std::memory_order_relaxed); }
+
+  bool AudioEngine::get_is_seeking() const { return m_is_seeking.load(std::memory_order::relaxed); }
 
   bool AudioEngine::is_playing() const { return m_user_playing.load(std::memory_order_relaxed); }
 
@@ -518,7 +521,9 @@ namespace player {
       m_crossfade_triggered_for_current = false;
 
       if (m_primary.decoder != nullptr) {
+        m_is_seeking.store(true);
         ma_decoder_seek_to_pcm_frame(m_primary.decoder.get(), 0);
+        m_is_seeking.store(false);
         m_primary.cursor_frames.store(0, std::memory_order_relaxed);
         m_primary.reached_eof = false;
         m_primary.current_gain = 1.0f;
@@ -540,7 +545,9 @@ namespace player {
       if (m_primary.decoder != nullptr) {
         u64 target_frame = (static_cast<u64>(std::max(0, seek_cmd->position_ms)) * m_sample_rate) / 1000;
         target_frame = std::min(target_frame, m_primary.total_frames);
+        m_is_seeking.store(true);
         ma_decoder_seek_to_pcm_frame(m_primary.decoder.get(), target_frame);
+        m_is_seeking.store(false);
         m_primary.cursor_frames.store(target_frame, std::memory_order_relaxed);
         m_primary.reached_eof = false;
         m_primary.current_gain = 1.0f;
