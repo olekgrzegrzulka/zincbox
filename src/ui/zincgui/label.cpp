@@ -33,6 +33,7 @@ namespace {
 
   struct ShapedGlyph {
       u32 glyph_index = 0;
+      const zincgui::FontGlyph* cached_glyph = nullptr;
       float x_advance = 0.0f;
       float y_advance = 0.0f;
       float x_offset = 0.0f;
@@ -42,7 +43,7 @@ namespace {
   };
 
   struct ShapedLine {
-      std::vector<ShapedGlyph> glyphs{};
+      std::vector<ShapedGlyph> glyphs;
       float width = 0.0f;
       i32 space_count = 0;
       bool is_last_in_paragraph = true;
@@ -70,25 +71,11 @@ namespace {
     return true;
   }
 
-  void parse_paragraph_runs(std::string_view raw_paragraph, bool parse_tags, const vec3f& base_color, i32& bold_depth,
-                            i32& italic_depth, i32& underline_depth, i32& strike_depth, std::vector<vec3f>& color_stack,
-                            std::string& clean_text, std::vector<StyleRun>& runs) {
-    clean_text.clear();
+  std::string_view parse_paragraph_runs(std::string_view raw_paragraph, bool parse_tags, const vec3f& base_color,
+                                        i32& bold_depth, i32& italic_depth, i32& underline_depth, i32& strike_depth,
+                                        std::vector<vec3f>& color_stack, std::string& clean_text,
+                                        std::vector<StyleRun>& runs) {
     runs.clear();
-
-    if (!parse_tags) {
-      clean_text.assign(raw_paragraph);
-      if (!clean_text.empty()) {
-        runs.push_back(StyleRun{
-          .byte_offset = 0,
-          .byte_length = static_cast<u32>(clean_text.size()),
-          .style = TextStyle{.color = base_color},
-        });
-      }
-      return;
-    }
-
-    clean_text.reserve(raw_paragraph.size());
 
     auto current_style = [&]() -> TextStyle {
       return TextStyle{
@@ -99,6 +86,20 @@ namespace {
         .color = color_stack.empty() ? base_color : color_stack.back(),
       };
     };
+
+    if (!parse_tags || raw_paragraph.find('<') == std::string_view::npos) {
+      if (!raw_paragraph.empty()) {
+        runs.push_back(StyleRun{
+          .byte_offset = 0,
+          .byte_length = static_cast<u32>(raw_paragraph.size()),
+          .style = current_style(),
+        });
+      }
+      return raw_paragraph;
+    }
+
+    clean_text.clear();
+    clean_text.reserve(raw_paragraph.size());
 
     TextStyle active_style = current_style();
     u32 run_start = 0;
@@ -194,6 +195,7 @@ namespace {
     }
 
     flush_run();
+    return clean_text;
   }
 
 } // namespace
@@ -270,7 +272,7 @@ void zincgui::Label::draw() {
   }
 
   if (!vertices.empty()) {
-    if (active_font_idx != 0) { font.bind(0); }
+    font.bind(0);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
     if (active_font_idx != 0) { ui.get_font(0).bind(0); }
@@ -304,7 +306,7 @@ void zincgui::Label::update_text() {
   std::vector<vec3f> color_stack;
   color_stack.push_back(text_color);
 
-  std::string clean_paragraph;
+  std::string clean_paragraph_scratch;
   std::vector<StyleRun> paragraph_runs;
 
   size_t line_start = 0;
@@ -314,13 +316,14 @@ void zincgui::Label::update_text() {
                                   ? std::string_view(text).substr(line_start)
                                   : std::string_view(text).substr(line_start, next_nl - line_start);
 
-    parse_paragraph_runs(raw_para, parse_tags, text_color, bold_depth, italic_depth, underline_depth, strike_depth,
-                         color_stack, clean_paragraph, paragraph_runs);
+    std::string_view para_view =
+      parse_paragraph_runs(raw_para, parse_tags, text_color, bold_depth, italic_depth, underline_depth, strike_depth,
+                           color_stack, clean_paragraph_scratch, paragraph_runs);
 
     std::vector<ShapedGlyph> para_glyphs;
     for (const auto& run : paragraph_runs) {
       hb_buffer_clear_contents(hb_buf);
-      hb_buffer_add_utf8(hb_buf, clean_paragraph.data(), static_cast<int>(clean_paragraph.size()), run.byte_offset,
+      hb_buffer_add_utf8(hb_buf, para_view.data(), static_cast<int>(para_view.size()), run.byte_offset,
                          static_cast<int>(run.byte_length));
       hb_buffer_guess_segment_properties(hb_buf);
       hb_shape(metrics.hb_font, hb_buf, nullptr, 0);
@@ -332,8 +335,7 @@ void zincgui::Label::update_text() {
       para_glyphs.reserve(para_glyphs.size() + glyph_count);
       for (unsigned int g = 0; g < glyph_count; ++g) {
         u32 cluster = glyph_info[g].cluster;
-        bool is_ws =
-          (cluster < clean_paragraph.size()) && (clean_paragraph[cluster] == ' ' || clean_paragraph[cluster] == '\t');
+        bool is_ws = (cluster < para_view.size()) && (para_view[cluster] == ' ' || para_view[cluster] == '\t');
         float extra_bold_adv = run.style.bold ? 0.5f : 0.0f;
 
         para_glyphs.push_back(ShapedGlyph{
@@ -468,15 +470,20 @@ void zincgui::Label::update_text() {
   float block_offset_y = std::round(anchor_uv.y * (static_cast<float>(height) - text_extents.y));
   float target_box_width = static_cast<float>(width) > 0.0f ? static_cast<float>(width) : text_extents.x;
 
-  for (const auto& line : lines) {
-    for (const auto& sg : line.glyphs) {
-      font.get_glyph(sg.glyph_index, px_size, sg.style.bold, sg.style.italic);
+  u64 ver_before = font.get_atlas_version();
+  size_t total_glyph_estimate = 0;
+  for (auto& line : lines) {
+    total_glyph_estimate += line.glyphs.size();
+    for (auto& sg : line.glyphs) {
+      sg.cached_glyph = font.get_glyph(sg.glyph_index, px_size, sg.style.bold, sg.style.italic);
     }
   }
 
   last_atlas_version = font.get_atlas_version();
+  bool atlas_regrew = (last_atlas_version != ver_before);
   last_layout_size = vec2i{width, height};
   vec2f white_uv = font.get_white_uv();
+  local_quads.reserve(total_glyph_estimate);
 
   float pen_y = block_offset_y + metrics.ascender;
 
@@ -509,7 +516,8 @@ void zincgui::Label::update_text() {
     float pen_x = line_start_x;
 
     for (const auto& sg : line.glyphs) {
-      const FontGlyph* fg = font.get_glyph(sg.glyph_index, px_size, sg.style.bold, sg.style.italic);
+      const FontGlyph* fg =
+        atlas_regrew ? font.get_glyph(sg.glyph_index, px_size, sg.style.bold, sg.style.italic) : sg.cached_glyph;
       float adv_x = sg.x_advance + (sg.is_space ? extra_space_advance : 0.0f);
 
       if (fg != nullptr && fg->size.x > 0 && fg->size.y > 0) {

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <ft2build.h>
 #include FT_TRUETYPE_TABLES_H
 #include FT_OUTLINE_H
@@ -18,6 +19,8 @@ namespace zincgui {
       std::exit(1);
     }
     m_hb_buffer = hb_buffer_create();
+    m_metrics_cache.reserve(16);
+    m_glyph_map.reserve(512);
     init_atlas(1024, 1024);
   }
 
@@ -30,6 +33,8 @@ namespace zincgui {
       std::exit(1);
     }
     m_hb_buffer = hb_buffer_create();
+    m_metrics_cache.reserve(16);
+    m_glyph_map.reserve(512);
     init_atlas(1024, 1024);
   }
 
@@ -40,7 +45,8 @@ namespace zincgui {
       m_texture(other.m_texture), m_sampler(other.m_sampler), m_atlas_width(other.m_atlas_width),
       m_atlas_height(other.m_atlas_height), m_shelf_x(other.m_shelf_x), m_shelf_y(other.m_shelf_y),
       m_shelf_height(other.m_shelf_height), m_white_uv(other.m_white_uv), m_atlas_version(other.m_atlas_version),
-      m_atlas_pixels(std::move(other.m_atlas_pixels)), m_metrics_cache(std::move(other.m_metrics_cache)),
+      m_atlas_pixels(std::move(other.m_atlas_pixels)), m_needs_full_upload(other.m_needs_full_upload),
+      m_dirty_min(other.m_dirty_min), m_dirty_max(other.m_dirty_max), m_metrics_cache(std::move(other.m_metrics_cache)),
       m_glyph_map(std::move(other.m_glyph_map)) {
     other.m_ft_face = nullptr;
     other.m_hb_buffer = nullptr;
@@ -64,6 +70,11 @@ namespace zincgui {
       m_white_uv = other.m_white_uv;
       m_atlas_version = other.m_atlas_version;
       m_atlas_pixels = std::move(other.m_atlas_pixels);
+      m_needs_full_upload = other.m_needs_full_upload;
+      m_dirty_min = other.m_dirty_min;
+      m_dirty_max = other.m_dirty_max;
+      m_active_pixel_height = -1;
+      m_active_metrics = nullptr;
       m_metrics_cache = std::move(other.m_metrics_cache);
       m_glyph_map = std::move(other.m_glyph_map);
 
@@ -81,6 +92,8 @@ namespace zincgui {
       if (m.ft_size != nullptr) { FT_Done_Size(m.ft_size); }
     }
     m_metrics_cache.clear();
+    m_active_pixel_height = -1;
+    m_active_metrics = nullptr;
 
     if (m_hb_buffer != nullptr) {
       hb_buffer_destroy(m_hb_buffer);
@@ -115,21 +128,9 @@ namespace zincgui {
     m_shelf_y = 0;
     m_shelf_height = 5;
     m_white_uv = vec2f{2.0f / static_cast<float>(width), 2.0f / static_cast<float>(height)};
+    m_needs_full_upload = true;
 
     glGenTextures(1, &m_texture);
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, m_atlas_pixels.data());
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-    glBindTexture(GL_TEXTURE_2D, 0);
 
     glCreateSamplers(1, &m_sampler);
     glSamplerParameteri(m_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -171,11 +172,7 @@ namespace zincgui {
     m_atlas_pixels = std::move(new_pixels);
     m_white_uv = vec2f{2.0f / static_cast<float>(new_w), 2.0f / static_cast<float>(new_h)};
     m_atlas_version += 1;
-
-    glBindTexture(GL_TEXTURE_2D, m_texture);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, new_w, new_h, 0, GL_RED, GL_UNSIGNED_BYTE, m_atlas_pixels.data());
-    glBindTexture(GL_TEXTURE_2D, 0);
+    m_needs_full_upload = true;
     return true;
   }
 
@@ -184,13 +181,51 @@ namespace zincgui {
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, m_texture);
     glBindSampler(slot, m_sampler);
+
+    if (m_needs_full_upload) {
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, m_atlas_width, m_atlas_height, 0, GL_RED, GL_UNSIGNED_BYTE,
+                   m_atlas_pixels.data());
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+
+      m_needs_full_upload = false;
+      m_dirty_min = {std::numeric_limits<i32>::max(), std::numeric_limits<i32>::max()};
+      m_dirty_max = {0, 0};
+    } else if (m_dirty_max.x > m_dirty_min.x && m_dirty_max.y > m_dirty_min.y) {
+      i32 dx = m_dirty_min.x;
+      i32 dy = m_dirty_min.y;
+      i32 dw = m_dirty_max.x - dx;
+      i32 dh = m_dirty_max.y - dy;
+      const u8* sub_ptr = m_atlas_pixels.data() + (static_cast<size_t>(dy) * static_cast<size_t>(m_atlas_width)) +
+                          static_cast<size_t>(dx);
+
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, m_atlas_width);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, dx, dy, dw, dh, GL_RED, GL_UNSIGNED_BYTE, sub_ptr);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+      m_dirty_min = {std::numeric_limits<i32>::max(), std::numeric_limits<i32>::max()};
+      m_dirty_max = {0, 0};
+    }
   }
 
   const FontSizeMetrics& FontFace::get_metrics(i32 pixel_height) const {
     pixel_height = std::clamp(pixel_height, 4, 256);
+    if (m_active_pixel_height == pixel_height && m_active_metrics != nullptr) { return *m_active_metrics; }
+
     auto it = m_metrics_cache.find(pixel_height);
     if (it != m_metrics_cache.end()) {
       FT_Activate_Size(it->second.ft_size);
+      m_active_pixel_height = pixel_height;
+      m_active_metrics = &it->second;
       return it->second;
     }
 
@@ -226,6 +261,8 @@ namespace zincgui {
     }
 
     auto [ins_it, _] = m_metrics_cache.emplace(pixel_height, m);
+    m_active_pixel_height = pixel_height;
+    m_active_metrics = &ins_it->second;
     return ins_it->second;
   }
 
@@ -306,12 +343,12 @@ namespace zincgui {
       } else {
         std::memcpy(dst_row, src_row, static_cast<size_t>(bw));
       }
-
-      glBindTexture(GL_TEXTURE_2D, m_texture);
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      glTexSubImage2D(GL_TEXTURE_2D, 0, m_shelf_x, m_shelf_y + row, bw, 1, GL_RED, GL_UNSIGNED_BYTE, dst_row);
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
+
+    m_dirty_min.x = std::min(m_dirty_min.x, m_shelf_x);
+    m_dirty_min.y = std::min(m_dirty_min.y, m_shelf_y);
+    m_dirty_max.x = std::max(m_dirty_max.x, m_shelf_x + bw);
+    m_dirty_max.y = std::max(m_dirty_max.y, m_shelf_y + bh);
 
     FontGlyph font_glyph{
       .size = {bw, bh},

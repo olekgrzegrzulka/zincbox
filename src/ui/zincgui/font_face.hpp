@@ -1,4 +1,5 @@
 #pragma once
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -80,6 +81,12 @@ namespace zincgui {
       mutable u64 m_atlas_version = 1;
       mutable std::vector<u8> m_atlas_pixels;
 
+      mutable bool m_needs_full_upload = false;
+      mutable vec2i m_dirty_min{std::numeric_limits<i32>::max(), std::numeric_limits<i32>::max()};
+      mutable vec2i m_dirty_max{0, 0};
+
+      mutable i32 m_active_pixel_height = -1;
+      mutable const FontSizeMetrics* m_active_metrics = nullptr;
       mutable std::unordered_map<i32, FontSizeMetrics> m_metrics_cache;
       mutable std::unordered_map<u64, FontGlyph> m_glyph_map;
   };
