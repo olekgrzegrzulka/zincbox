@@ -25,7 +25,7 @@ extern "C" inline void handle_sigsegv(int) {
   out::critical("stack trace (most recent call first):");
 
   std::string formatted_trace;
-  int frame_num = 0;
+  i32 frame_num = 0;
 
   for (const auto& entry : std::stacktrace::current(1)) {
     std::string desc = entry.description();

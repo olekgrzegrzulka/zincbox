@@ -3,7 +3,7 @@
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
 
-class ButtonConfig;
+struct ButtonConfig;
 
 namespace zincgui {
   class Root;

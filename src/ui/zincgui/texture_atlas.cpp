@@ -25,7 +25,9 @@ zincgui::TextureAtlas::TextureAtlas(i32 atlas_size_px_, i32 margin_px_, i32 grid
 bool zincgui::TextureAtlas::add_texture(std::string_view id, const std::filesystem::path& path) {
   if (textures.contains(id)) { return false; }
 
-  i32 width, height, channels;
+  i32 width = 0;
+  i32 height = 0;
+  i32 channels = 0;
 #if defined(_WIN32)
   FILE* f = _wfopen(path.c_str(), L"rb");
 #else
@@ -119,7 +121,9 @@ bool zincgui::TextureAtlas::add_texture_row(std::span<const std::string> ids, co
     if (textures.contains(id)) { return false; }
   }
 
-  i32 width, height, channels;
+  i32 width = 0;
+  i32 height = 0;
+  i32 channels = 0;
 #if defined(_WIN32)
   FILE* f = _wfopen(path.c_str(), L"rb");
 #else

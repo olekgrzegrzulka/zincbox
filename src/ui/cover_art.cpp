@@ -1,10 +1,9 @@
 #include "cover_art.hpp"
+#include <array>
 #include <cstdio>
 #include <filesystem>
-#include <list>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "common/debug.hpp"
@@ -18,8 +17,26 @@
 #include "ui/theme.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 
-static LRU lru;
-static zincgui::TextureAtlas atlas;
+struct PendingTracksHash {
+    size_t operator()(const std::pair<size_t, bool>& a) const noexcept {
+      size_t seed = std::hash<size_t>{}(a.first);
+      seed ^= std::hash<bool>{}(a.second) + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+      return seed;
+    }
+};
+
+namespace {
+  std::unordered_set<std::pair<db::track_id_t, bool>, PendingTracksHash> pending_tracks;
+  zincgui::TextureAtlas atlas;
+  LRU lru;
+  constexpr i32 MAX_BATCH_SIZE = 16;
+
+  void clean() {
+    for (auto&& id : lru.evict(16)) {
+      atlas.remove_texture(id);
+    }
+  }
+} // namespace
 
 zincgui::TextureAtlas& zincbox::ui::cover_art::texture_atlas() { return atlas; }
 
@@ -33,30 +50,15 @@ void zincbox::ui::cover_art::init() {
   for (size_t i : {0, 1}) {
     auto res = theme::get_raw_resource(texture_paths[i]);
     if (res.empty()) { out::critical("failed to load " + textures[i] + ", empty"); }
-    int width, height, channels;
+    i32 width = 0;
+    i32 height = 0;
+    i32 channels = 0;
     stbi_uc* data = stbi_load_from_memory((stbi_uc*)res.data(), res.size(), &width, &height, &channels, STBI_rgb_alpha);
     if (!data) { out::critical("failed to load " + textures[i]); }
     atlas.add_texture(textures[i], (u8*)data, width, height);
   }
   atlas.set_fallback_texture("cover_unknown");
 }
-
-void clean() {
-  for (auto&& id : lru.evict(16)) {
-    atlas.remove_texture(id);
-  }
-}
-
-struct PendingTracksHash {
-    size_t operator()(const std::pair<size_t, bool>& a) const noexcept {
-      size_t seed = std::hash<size_t>{}(a.first);
-      seed ^= std::hash<bool>{}(a.second) + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
-      return seed;
-    }
-};
-
-static std::unordered_set<std::pair<db::track_id_t, bool>, PendingTracksHash> pending_tracks;
-static constexpr i32 MAX_BATCH_SIZE = 16;
 
 std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t track_id, bool high_res) {
   auto path = high_res ? zincbox::cover_art::get_256(track_id) : zincbox::cover_art::get_64(track_id);

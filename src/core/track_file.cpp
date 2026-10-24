@@ -4,11 +4,9 @@
 #include <taglib/audioproperties.h>
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
+#include <taglib/toolkit/tfile.h>
+#include <taglib/toolkit/tfilestream.h>
 #include <taglib/toolkit/tpropertymap.h>
-#include <tfile.h>
-#include <tfilestream.h>
-
-namespace fs = std::filesystem;
 
 zincbox::scanner::TrackFile::TrackFile(const fs::path& path) {
   file_path = path;

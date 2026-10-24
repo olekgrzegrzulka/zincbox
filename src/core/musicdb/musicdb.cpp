@@ -558,7 +558,7 @@ std::unordered_set<size_t> db::track_by_artist_title(std::string_view artist, st
 
 std::optional<size_t> db::track_by_path(const std::filesystem::path& path) {
   // ensure(tracks.size() == path_to_track_id.size());
-  auto it = path_to_track_id.find(std::string(path));
+  auto it = path_to_track_id.find(path);
   if (it == path_to_track_id.end()) { return std::nullopt; }
   return it->second;
 }

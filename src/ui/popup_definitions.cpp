@@ -20,9 +20,9 @@
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
 #include "ui/zincgui/label.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/text_input.hpp"
-#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -53,7 +53,7 @@ PopupInput::PopupInput(zincgui::Root& ui_, PopupController& controller_, std::fu
 }
 
 PopupConfirm::PopupConfirm(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                 std::string_view content_)
+                           std::string_view content_)
   : Popup(ui_, controller_, std::move(on_close_)) {
   set_layout("ttb fill fit expand m:8 s:8");
 
@@ -83,13 +83,14 @@ PopupConfirm::PopupConfirm(zincgui::Root& ui_, PopupController& controller_, std
   });
 }
 
-PopupImportFolders::PopupImportFolders(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                       std::span<std::string> dropped_directories)
+PopupImportFolders::PopupImportFolders(zincgui::Root& ui_, PopupController& controller_,
+                                       std::function<void(Popup*)> on_close_,
+                                       std::span<const std::filesystem::path> dropped_directories)
   : Popup(ui_, controller_, std::move(on_close_)) {
 
   set_layout("ttb expand fit fill m:8 s:8");
 
-  dirs = std::vector<std::string>(dropped_directories.begin(), dropped_directories.end());
+  dirs = std::vector<std::filesystem::path>(dropped_directories.begin(), dropped_directories.end());
 
   title = &add_child<zincgui::Label>("");
   title->set_anchor(zincgui::Anchor::TOP);
@@ -113,7 +114,7 @@ PopupImportFolders::PopupImportFolders(zincgui::Root& ui_, PopupController& cont
   std::string content_str;
   i32 index = 1;
   for (const auto& dir : dirs) {
-    content_str += std::to_string(index) + ". " + dir + "\n";
+    content_str += std::to_string(index) + ". " + path_to_utf8(dir) + "\n";
     index += 1;
   }
   // remove the last newline
@@ -151,8 +152,8 @@ PopupImportFolders::PopupImportFolders(zincgui::Root& ui_, PopupController& cont
   }
 }
 
-PopupSetSources::PopupSetSources(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                    size_t collection_id_)
+PopupSetSources::PopupSetSources(zincgui::Root& ui_, PopupController& controller_,
+                                 std::function<void(Popup*)> on_close_, size_t collection_id_)
   : Popup(ui_, controller_, std::move(on_close_)), collection_id(collection_id_) {
 
   set_layout("ttb expand fit m:8 s:8");
@@ -235,8 +236,7 @@ void PopupSetSources::update() {
     std::clamp<i32>(max_path_label_width + 60 + 24, 300, std::clamp(ui.get_window_width() - 100, 300, 600)));
 
   if (max_path_label_width != 0) {
-    content->set_height(
-      std::clamp(std::min(scrollable_content->get_height(), ui.get_window_height() - 200), 100, 500));
+    content->set_height(std::clamp(std::min(scrollable_content->get_height(), ui.get_window_height() - 200), 100, 500));
   } else {
     content->set_height(60);
   }
@@ -258,8 +258,8 @@ void PopupSetSources::update() {
   Popup::update();
 }
 
-PopupAddToPlaylist::PopupAddToPlaylist(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                       std::optional<size_t> track_id_)
+PopupAddToPlaylist::PopupAddToPlaylist(zincgui::Root& ui_, PopupController& controller_,
+                                       std::function<void(Popup*)> on_close_, std::optional<size_t> track_id_)
   : Popup(ui_, controller_, std::move(on_close_)), track_id(track_id_) {
 
   std::string pretty_track;
@@ -310,7 +310,8 @@ PopupAddToPlaylist::PopupAddToPlaylist(zincgui::Root& ui_, PopupController& cont
   set_height(playlists_view->get_height() + 100);
 }
 
-PopupCreateSmartPlaylist::PopupCreateSmartPlaylist(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
+PopupCreateSmartPlaylist::PopupCreateSmartPlaylist(zincgui::Root& ui_, PopupController& controller_,
+                                                   std::function<void(Popup*)> on_close_)
   : Popup(ui_, controller_, std::move(on_close_)) {
 
   set_layout("ttb fit expand m:8 s:12");
@@ -353,8 +354,8 @@ PopupAbout::PopupAbout(zincgui::Root& ui_, PopupController& controller_, std::fu
   auto& title = add_child<zincgui::Label>(tr::get("popup.about.title"));
   title.set_height(32 * zincbox::ui_scale());
   title.set_resize_to_text_extents(false);
-  auto& content = add_child<zincgui::Label>(
-    tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
+  auto& content =
+    add_child<zincgui::Label>(tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
   set_width(content.get_text_extents().x + 16);
   content.set_text_color(theme::config().text_color_muted);
   content.set_text_alignment(zincgui::TextAlign::JUSTIFY);
@@ -386,8 +387,9 @@ PopupWelcome::PopupWelcome(zincgui::Root& ui_, PopupController& controller_, std
   btn_ok.on_press([this]() -> void { close(); });
 }
 
-PopupScanSummary::PopupScanSummary(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                     const zincbox::scanner::ImportSummary& summary)
+PopupScanSummary::PopupScanSummary(zincgui::Root& ui_, PopupController& controller_,
+                                   std::function<void(Popup*)> on_close_,
+                                   const zincbox::scanner::ImportSummary& summary)
   : Popup(ui_, controller_, std::move(on_close_)) {
 
   set_layout("ttb fit expand m:12 s:8");
