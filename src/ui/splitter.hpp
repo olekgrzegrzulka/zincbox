@@ -1,43 +1,25 @@
 #pragma once
-#include "ui/theme.hpp"
-#include "ui/theme_config.hpp"
 #include "ui/zincgui/color_rect.hpp"
-#include "ui/zincgui/input.hpp"
-#include "ui/zincgui/root.hpp"
-#include "ui/zincgui/widget.hpp"
+
+namespace zincgui {
+  class Root;
+  namespace Input {
+    class InputEventMouseMove;
+    class InputEventMouseButton;
+  } // namespace Input
+} // namespace zincgui
 
 class Splitter final : public zincgui::ColorRect {
   public:
-    Splitter(zincgui::Root& ui_) : ColorRect(ui_) {
-      set_color(theme::config().splitter_color);
-      set_width(6);
-    }
+    Splitter(zincgui::Root& ui_);
 
-    double get_ratio() const { return m_ratio; }
-    void set_ratio(double r) { m_ratio = r; }
+    void input() override;
+    void event(zincgui::Input::InputEventMouseMove&) override;
+    void event(zincgui::Input::InputEventMouseButton&) override;
 
-    void event(zincgui::Input::InputEventMouseMove&) override {}
-
-    void input() override {
-      bool lmb = zincgui::Input::mouse_pressed(zincgui::Input::MouseButton::MOUSE_BUTTON_LEFT);
-      if (!is_mouse_hovering() && !lmb) { m_is_dragged = false; }
-
-      if (m_is_dragged && lmb) {
-        m_ratio = std::clamp(zincgui::Input::get_mouse_x() / (double)ui.get_window_width(), 0.01, 0.99);
-      }
-
-      ColorRect::input();
-    }
-
-    void event(zincgui::Input::InputEventMouseButton& ev) override {
-      if (is_mouse_hovering() && ev.button == zincgui::Input::MouseButton::MOUSE_BUTTON_LEFT &&
-          ev.action == zincgui::Input::MouseAction::PRESS) {
-        m_is_dragged = true;
-        ev.handled = true;
-      }
-    }
-
-    bool get_is_dragged() const { return m_is_dragged; }
+    double get_ratio() const;
+    void set_ratio(double r);
+    bool get_is_dragged() const;
 
   private:
     double m_ratio = 0.5;

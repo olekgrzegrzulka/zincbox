@@ -1,3 +1,4 @@
+#include "popup_controller.hpp"
 #include <algorithm>
 #include <functional>
 #include <memory>
@@ -5,10 +6,10 @@
 #include <unordered_map>
 #include "common/color.hpp"
 #include "ui/popup.hpp"
-#include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/sprite.hpp"
@@ -16,6 +17,47 @@
 #include "zincbox.hpp"
 
 using namespace zincgui;
+
+Dimmer::Dimmer(zincgui::Root& ui_) : ColorRect(ui_, 0x00000000) {}
+
+void Dimmer::set_is_active(bool active) {
+  set_is_updated(active);
+  if (!active) { prev_window_size = std::nullopt; }
+}
+
+void Dimmer::update() {
+  if (!prev_window_size.has_value()) { prev_window_size = ui.get_window_size(); }
+  if (prev_window_size != ui.get_window_size()) {
+    prev_window_size = ui.get_window_size();
+    if (on_pressed) { on_pressed(); }
+  }
+  set_size(ui.get_window_size());
+  ColorRect::update();
+}
+
+void Dimmer::event(zincgui::Input::InputEventMouseButton& ev) {
+  if (ev.action == zincgui::Input::MouseAction::PRESS) {
+    ev.handled = true;
+    if (on_pressed) { on_pressed(); }
+  }
+}
+
+void Dimmer::event(zincgui::Input::InputEventMouseScroll& ev) {
+  ev.handled = true;
+  if (on_pressed) { on_pressed(); }
+}
+
+void Dimmer::event(zincgui::Input::InputEventMouseMove& ev) { ev.handled = true; }
+
+void Dimmer::event(zincgui::Input::InputEventKey& ev) {
+  if (ev.action == zincgui::Input::KeyAction::RELEASE && ev.key == zincgui::Input::Key::KEY_ENTER) {
+    if (on_enter_pressed) { on_enter_pressed(); }
+    ev.handled = true;
+  } else if (ev.action == zincgui::Input::KeyAction::RELEASE && ev.key == zincgui::Input::Key::KEY_ESCAPE) {
+    if (on_escape_pressed) { on_escape_pressed(); }
+    ev.handled = true;
+  }
+}
 
 void PopupController::on_popup_closed(Popup* popup) {
   close_all_popovers();

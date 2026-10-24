@@ -8,55 +8,33 @@
 #include <vector>
 #include "common/types.hpp"
 #include "ui/zincgui/color_rect.hpp"
-#include "ui/zincgui/input.hpp"
-#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 
 class Popup;
 struct popover_descriptor;
 
+namespace zincgui {
+  class Root;
+
+  namespace Input {
+    struct InputEventMouseButton;
+    struct InputEventMouseScroll;
+    struct InputEventMouseMove;
+    struct InputEventKey;
+  } // namespace Input
+} // namespace zincgui
+
 class Dimmer : public zincgui::ColorRect {
   public:
-    Dimmer(zincgui::Root& ui_) : ColorRect(ui_, 0x00000000) {}
+    Dimmer(zincgui::Root& ui_);
 
-    void set_is_active(bool active) {
-      set_is_updated(active);
-      if (!active) { prev_window_size = std::nullopt; }
-    }
+    void update() override;
+    void event(zincgui::Input::InputEventMouseButton& ev) override;
+    void event(zincgui::Input::InputEventMouseScroll& ev) override;
+    void event(zincgui::Input::InputEventMouseMove& ev) override;
+    void event(zincgui::Input::InputEventKey& ev) override;
 
-    void update() override {
-      if (!prev_window_size.has_value()) { prev_window_size = ui.get_window_size(); }
-      if (prev_window_size != ui.get_window_size()) {
-        prev_window_size = ui.get_window_size();
-        if (on_pressed) { on_pressed(); }
-      }
-      set_size(ui.get_window_size());
-      ColorRect::update();
-    }
-
-    void event(zincgui::Input::InputEventMouseButton& ev) override {
-      if (ev.action == zincgui::Input::MouseAction::PRESS) {
-        ev.handled = true;
-        if (on_pressed) { on_pressed(); }
-      }
-    }
-
-    void event(zincgui::Input::InputEventMouseScroll& ev) override {
-      ev.handled = true;
-      if (on_pressed) { on_pressed(); }
-    }
-
-    void event(zincgui::Input::InputEventMouseMove& ev) override { ev.handled = true; }
-
-    void event(zincgui::Input::InputEventKey& ev) override {
-      if (ev.action == zincgui::Input::KeyAction::RELEASE && ev.key == zincgui::Input::Key::KEY_ENTER) {
-        if (on_enter_pressed) { on_enter_pressed(); }
-        ev.handled = true;
-      } else if (ev.action == zincgui::Input::KeyAction::RELEASE && ev.key == zincgui::Input::Key::KEY_ESCAPE) {
-        if (on_escape_pressed) { on_escape_pressed(); }
-        ev.handled = true;
-      }
-    }
+    void set_is_active(bool active);
 
   public:
     std::optional<vec2i> prev_window_size;
@@ -92,7 +70,7 @@ class PopupController final : public zincgui::Widget {
 
   private:
     void on_popup_closed(Popup* popup);
-    zincgui::Root& m_ui;
+    const zincgui::Root& m_ui;
     Dimmer* m_dimmer{};
     std::vector<Widget*> m_popups;
     std::unordered_map<std::string, Widget*> m_popovers;

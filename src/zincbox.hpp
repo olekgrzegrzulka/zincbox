@@ -2,8 +2,6 @@
 #include "common/types.hpp"
 
 #ifdef ZINCBOX_HAS_GUI
-#include "ui/sdl3_window.hpp"
-
 namespace zincbox {
   class SDL3Window;
 }

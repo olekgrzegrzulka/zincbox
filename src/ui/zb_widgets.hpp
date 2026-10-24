@@ -1,61 +1,31 @@
 #pragma once
-#include "core/settings.hpp"
-#include "ui/theme_config.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
-#include "ui/zincgui/root.hpp"
-#include "zincbox.hpp"
+
+class ButtonConfig;
+
+namespace zincgui {
+  class Root;
+} // namespace zincgui
 
 class ZincboxButton final : public zincgui::Button {
   public:
-    ZincboxButton(zincgui::Root& ui_, const std::string& name_) : Button(ui_) {
-      name = name_;
-      init();
-    }
-
-    ZincboxButton(zincgui::Root& ui_, const std::string& name_, const ButtonConfig& config) : Button(ui_) {
-      name = name_;
-      init();
-      set_nine_slice_margin(config.nine_slice_margin);
-    }
-
-    void set_texture_all(const std::string& texture_name) {
-      set_texture_disabled(texture_name + "_disabled");
-      set_texture_hovered(texture_name + "_hovered");
-      set_texture_idle(texture_name + "_idle");
-      set_texture_pressed(texture_name + "_pressed");
-      set_texture(texture_name + "_idle", true);
-    }
+    ZincboxButton(zincgui::Root& ui_, const std::string& name_);
+    ZincboxButton(zincgui::Root& ui_, const std::string& name_, const ButtonConfig& config);
+    void set_texture_all(const std::string& texture_name);
 
   private:
-    void init() { set_texture_all(name); }
+    void init();
 };
 
 class ZincboxSlider final : public zincgui::Slider {
   public:
-    ZincboxSlider(zincgui::Root& ui_, const std::string& name_) : Slider(ui_) {
-      set_texture_thumb_pressed(name_ + "_thumb_pressed");
-      set_texture_thumb_hovered(name_ + "_thumb_hovered");
-      set_texture_thumb_idle(name_ + "_thumb_idle");
-      set_texture_track_inactive(name_ + "_track_inactive");
-      set_texture_track_active(name_ + "_track_active");
-    }
+    ZincboxSlider(zincgui::Root& ui_, const std::string& name_);
 };
 
 class ZincboxScrollbar final : public zincgui::ScrollBar {
   public:
-    ZincboxScrollbar(zincgui::Root& ui_) : ScrollBar(ui_) {
-      const float SCALE = zincbox::ui_scale();
-      set_thumb_thickness(10 * SCALE);
-      set_track_thickness(10 * SCALE);
-      set_min_width(10 * SCALE);
-      set_max_width(10 * SCALE);
-      set_width(10 * SCALE);
-    }
-
-    void update() override {
-      sensitivity = zincbox::settings().interface.scrolling_speed;
-      ScrollBar::update();
-    }
+    ZincboxScrollbar(zincgui::Root& ui_);
+    void update() override;
 };
