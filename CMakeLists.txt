@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
@@ -17,6 +17,34 @@ set(OUTPUT_NAME "${PROJECT_NAME}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(BUILD_TESTS OFF)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT ENABLE_ASAN)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+endif()
+
+if(MSVC)
+  add_compile_options(/Gy /Gw)
+  add_link_options(
+        $<$<CONFIG:Release>:/OPT:REF>
+        $<$<CONFIG:Release>:/OPT:ICF>
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  add_compile_options(
+      -ffunction-sections
+      -fdata-sections
+  )
+  if(WIN32)
+    add_link_options(
+        -Wl,--gc-sections
+        $<$<CONFIG:Release>:-Wl,--strip-all>
+    )
+  else()
+    add_link_options(
+        -Wl,--gc-sections
+        $<$<CONFIG:Release>:-Wl,--strip-all>
+    )
+  endif()
+endif()
 
 add_compile_definitions(
     $<$<BOOL:${ZINCBOX_GUI}>:ZINCBOX_HAS_GUI>
@@ -37,6 +65,23 @@ set(MAIN_SOURCES
 )
 
 add_executable(${OUTPUT_NAME} ${MAIN_SOURCES})
+
+# Set entry point to main() on Windows
+if(WIN32)
+  set_target_properties(${OUTPUT_NAME} PROPERTIES
+      WIN32_EXECUTABLE $<CONFIG:Release>
+  )
+
+  if(MSVC)
+    target_link_options(${OUTPUT_NAME} PRIVATE
+        $<$<CONFIG:Release>:/ENTRY:mainCRTStartup>
+    )
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_link_options(${OUTPUT_NAME} PRIVATE
+        $<$<CONFIG:Release>:-mwindows>
+    )
+  endif()
+endif()
 
 target_include_directories(${OUTPUT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -80,7 +125,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   if(MSVC)
     target_compile_options(${OUTPUT_NAME} PRIVATE /O2 /DNDEBUG)
   else()
-    target_compile_options(${OUTPUT_NAME} PRIVATE -O3 -DNDEBUG)
+    target_compile_options(${OUTPUT_NAME} PRIVATE -O2 -DNDEBUG)
   endif()
 endif()
 

@@ -1,6 +1,5 @@
 #include "texture.hpp"
 #include <filesystem>
-#include <string>
 #include <glad/glad.h>
 #include "common/logger.hpp"
 #include "common/types.hpp"
@@ -8,8 +7,7 @@
 #include "lib/stb_image/stb_image.h"
 
 zincgui::Texture::Texture(const std::filesystem::path& file_name) {
-  std::string file_path = "./assets/" / file_name;
-  texture = Texture::load_texture(file_path);
+  texture = Texture::load_texture(file_name);
   sampler = Texture::create_sampler();
 }
 
@@ -20,7 +18,9 @@ void zincgui::Texture::bind(u32 slot) const {
 }
 
 u32 zincgui::Texture::load_texture(const std::filesystem::path& path) {
-  int width, height, channels;
+  i32 width = 0;
+  i32 height = 0;
+  i32 channels = 0;
 
 #if defined(_WIN32)
   FILE* f = _wfopen(path.c_str(), L"rb");

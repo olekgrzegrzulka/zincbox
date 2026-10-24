@@ -12,8 +12,9 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <shellapi.h>
 #include <windows.h>
+//
+#include <shellapi.h>
 #else
 #include <cstdlib>
 #endif
@@ -64,9 +65,9 @@ fs::path io::get_user_data_path() {
   if (user_data_path.has_value()) { return user_data_path.value(); }
 
 #if defined(_WIN32)
-  const std::string path = std::string(getenv("APPDATA")) + "\\zincbox\\";
+  const std::string PATH = std::string(getenv("APPDATA")) + "\\zincbox\\";
 #elif defined(__APPLE__)
-  const std::string path = std::string(getenv("HOME")) + "/Library/Application Support/zincbox/";
+  const std::string PATH = std::string(getenv("HOME")) + "/Library/Application Support/zincbox/";
 #elif defined(__linux__)
   const char* xdg_data = getenv("XDG_DATA_HOME");
   const std::string PATH =

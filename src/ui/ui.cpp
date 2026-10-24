@@ -623,21 +623,23 @@ namespace {
     panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
   }
 
-  void create_collection(std::vector<std::string> directories) {
+  void create_collection(std::span<const std::filesystem::path> directories) {
     if (directories.size() == 0) { return; }
+    if (!std::filesystem::is_directory(directories[0])) { return; }
     std::string collection_name = path_to_utf8(fs::path{directories[0]}.filename());
     auto collection_id = db::add_collection(collection_name);
     bool added = false;
-    for (auto& path_utf8 : directories) {
-      added |= db::add_path_to_collection(collection_id, utf8_to_path(path_utf8));
+    for (auto& path : directories) {
+      added |= db::add_path_to_collection(collection_id, path);
     }
     if (added) { zincbox::scanner::scan_collection(collection_id); }
     recreate_panel_top();
   }
 
-  void create_multiple_collections(const std::vector<std::string>& directories) {
-    for (auto& str : directories) {
-      fs::path path = utf8_to_path(str);
+  void create_multiple_collections(std::span<const std::filesystem::path> directories) {
+    if (directories.size() == 0) { return; }
+    for (auto& path : directories) {
+      if (!std::filesystem::is_directory(path)) { continue; }
       std::string collection_name = path_to_utf8(path.filename());
       auto collection_id = db::add_collection(collection_name);
       if (db::add_path_to_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
@@ -646,8 +648,9 @@ namespace {
   }
 
   void handle_dropped_files() {
-    std::vector<std::string> dropped_directories{};
-    for (auto& path : Input::get_dropped_paths()) {
+    std::vector<std::filesystem::path> dropped_directories{};
+    for (auto& path_utf8 : Input::get_dropped_paths()) {
+      auto path = utf8_to_path(path_utf8);
       if (std::filesystem::is_directory(path)) { dropped_directories.emplace_back(path); }
     }
 
@@ -655,7 +658,7 @@ namespace {
 
     auto* popup = popup_controller->show_popup<PopupImportFolders>(dropped_directories);
 
-    popup->on_add_collections_pressed = [](const std::vector<std::string>& dirs) {
+    popup->on_add_collections_pressed = [](std::span<const std::filesystem::path> dirs) -> void {
       if (dirs.size() > 1) {
         create_multiple_collections(dirs);
       } else {
@@ -663,7 +666,7 @@ namespace {
       }
     };
 
-    popup->on_merge_pressed = [](const std::vector<std::string>& dirs) { create_collection(dirs); };
+    popup->on_merge_pressed = [](std::span<const std::filesystem::path> dirs) -> void { create_collection(dirs); };
   }
 
   void delete_collection(db::collection_id_t collection_id) {
@@ -805,10 +808,8 @@ namespace {
   void show_popup_set_sources(db::collection_id_t collection_id) {
     auto* popup = popup_controller->show_popup<PopupSetSources>(collection_id);
 
-    popup->on_remove_path_pressed = [collection_id](const std::string& path) -> void {
-      if (db::remove_path_from_collection(collection_id, utf8_to_path(path))) {
-        zincbox::scanner::scan_collection(collection_id);
-      }
+    popup->on_remove_path_pressed = [collection_id](const std::filesystem::path& path) -> void {
+      if (db::remove_path_from_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
       if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
         panel_tracklist->recreate(active_collection_id);
         panel_playlists->props.collection_id = collection_id;

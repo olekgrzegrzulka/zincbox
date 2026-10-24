@@ -100,7 +100,7 @@ namespace {
 
         if (filename.ends_with(".json")) {
           fs::path file_path{file_stat.m_filename};
-          languages[file_path.stem().c_str()] = std::move(buffer);
+          languages[path_to_utf8(file_path.stem())] = std::move(buffer);
         }
       }
       mz_zip_reader_end(&zip_archive);
@@ -110,7 +110,7 @@ namespace {
   bool load_language_from_resource(std::string_view language) {
     load_resources();
     auto it = languages.find(language);
-    if (it == resources.end()) { return false; }
+    if (it == languages.end()) { return false; }
 
     std::string content(reinterpret_cast<const char*>(it->second.data()), it->second.size());
     return tr::load_from_string(content);

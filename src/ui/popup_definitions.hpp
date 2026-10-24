@@ -1,8 +1,8 @@
 #pragma once
+#include <filesystem>
 #include <functional>
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
 #include "common/types.hpp"
 #include "core/musicdb/types.hpp"
@@ -56,9 +56,9 @@ class PopupConfirm : public Popup {
 class PopupImportFolders final : public Popup {
   public:
     PopupImportFolders(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
-                       std::span<std::string> dropped_directories);
+                       std::span<const std::filesystem::path> dropped_directories);
 
-    std::vector<std::string> dirs;
+    std::vector<std::filesystem::path> dirs;
     zincgui::Label* title{};
     zincgui::Label* content{};
     zincgui::Widget* buttons{};
@@ -66,8 +66,8 @@ class PopupImportFolders final : public Popup {
     zincgui::Button* btn_add_collections{};
     zincgui::Button* btn_merge{};
 
-    std::function<void(const std::vector<std::string>&)> on_add_collections_pressed;
-    std::function<void(const std::vector<std::string>&)> on_merge_pressed;
+    std::function<void(std::span<const std::filesystem::path>)> on_add_collections_pressed;
+    std::function<void(std::span<const std::filesystem::path>)> on_merge_pressed;
 };
 
 class PopupSetSources final : public Popup {
@@ -90,7 +90,7 @@ class PopupSetSources final : public Popup {
     i32 max_path_label_width = 0;
 
     std::function<void()> on_add_dir_pressed;
-    std::function<void(const std::string&)> on_remove_path_pressed;
+    std::function<void(const std::filesystem::path&)> on_remove_path_pressed;
 };
 
 class PopupAddToPlaylist final : public Popup {
