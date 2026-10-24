@@ -58,6 +58,10 @@ namespace zincgui {
       u64 last_atlas_version = 0;
 
     public:
+      Label(const Label&) = delete;
+      Label(Label&&) = delete;
+      Label& operator=(const Label&) = delete;
+      Label& operator=(Label&&) = delete;
       Label(Root&);
       Label(Root&, std::string_view);
       ~Label() override;

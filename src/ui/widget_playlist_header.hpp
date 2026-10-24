@@ -6,6 +6,7 @@
 #include "theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zb_widgets.hpp"
+#include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"

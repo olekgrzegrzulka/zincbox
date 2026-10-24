@@ -25,15 +25,18 @@ cmrc_add_resources(zincbox_resources
 
 set(UI_SOURCES
     cover_art.cpp
+    popup.cpp
     panel_controls.cpp
     panel_playlists.cpp
     panel_queue.cpp
     panel_top.cpp
     panel_tracklist.cpp
     popup_controller.cpp
-    popup.cpp
+    popup_definitions.cpp
+    popup_settings.cpp
     scrollable_view.cpp
     sdl3_window.cpp
+    splitter.cpp
     tab_bar.cpp
     theme.cpp
     tr.cpp
@@ -41,6 +44,7 @@ set(UI_SOURCES
     ui_notifications.cpp
     ui.cpp
     widget_track.cpp
+    zb_widgets.cpp
     zincgui/button.cpp
     zincgui/color_rect.cpp
     zincgui/font_face.cpp
@@ -55,6 +59,7 @@ set(UI_SOURCES
     zincgui/text_input.cpp
     zincgui/texture_atlas.cpp
     zincgui/texture.cpp
+    zincgui/tooltip.cpp
     zincgui/widget.cpp
 )
 
