@@ -1,10 +1,11 @@
 #pragma once
 #include <functional>
-#include <optional>
 #include "common/signal.hpp"
 #include "common/types.hpp"
-#include "ui/zb_widgets.hpp"
 #include "ui/zincgui/color_rect.hpp"
+
+class ZincboxButton;
+
 namespace zincgui {
   class Button;
   class Label;
@@ -13,6 +14,11 @@ namespace zincgui {
   class ToolTip;
   class Root;
   class Widget;
+
+  namespace Input {
+    struct InputEventMouseButton;
+    struct InputEventKey;
+  } // namespace Input
 } // namespace zincgui
 
 class PanelControls final : public zincgui::ColorRect {
@@ -35,9 +41,9 @@ class PanelControls final : public zincgui::ColorRect {
     void set_disabled(bool);
 
   public:
-    std::function<void(Widget*)> on_playing_track_lmb{};
-    std::function<void(Widget*)> on_playing_track_rmb{};
-    std::function<void()> on_love_button_pressed{};
+    std::function<void(Widget*)> on_playing_track_lmb;
+    std::function<void(Widget*)> on_playing_track_rmb;
+    std::function<void()> on_love_button_pressed;
     void on_button_expand_player_pressed(std::function<void()>);
 
   private:

@@ -8,13 +8,13 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <freetype/freetype.h>
 #include <glm/mat4x4.hpp>
 #include <stddef.h>
 #include "common/types.hpp"
-#include "font_face.hpp"
-#include "freetype/freetype.h"
-#include "shader.hpp"
-#include "texture_atlas.hpp"
+#include "ui/zincgui/font_face.hpp"
+#include "ui/zincgui/shader.hpp"
+#include "ui/zincgui/texture_atlas.hpp"
 
 namespace zincgui {
   class Widget;

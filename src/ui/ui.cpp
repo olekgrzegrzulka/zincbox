@@ -40,6 +40,7 @@
 #include "ui/popup_definitions.hpp"
 #include "ui/popup_search.hpp"
 #include "ui/popup_settings.hpp"
+#include "ui/sdl3_window.hpp"
 #include "ui/splitter.hpp"
 #include "ui/tab_bar.hpp"
 #include "ui/theme.hpp"
