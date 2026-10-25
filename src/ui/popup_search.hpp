@@ -255,11 +255,11 @@ class PopupSearch final : public Popup {
     void set_collection_id(db::collection_id_t collection_id_) { m_collection_id = collection_id_; }
 
   public:
-    std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb{};
-    std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb{};
-    std::function<void(db::track_info, Widget*)> on_track_lmb{};
-    std::function<void(db::track_info, Widget*)> on_track_rmb{};
-    std::function<void()> on_closed{};
+    std::function<void(size_t playlist_id, Widget*)> on_playlist_lmb;
+    std::function<void(size_t playlist_id, Widget*)> on_playlist_rmb;
+    std::function<void(db::track_info, Widget*)> on_track_lmb;
+    std::function<void(db::track_info, Widget*)> on_track_rmb;
+    std::function<void()> on_closed;
 
   private:
     zincgui::TextInput* m_search_bar{};

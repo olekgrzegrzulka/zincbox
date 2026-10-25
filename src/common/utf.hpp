@@ -9,7 +9,7 @@ inline std::string utf32_to_utf8(std::u32string_view str) {
   std::string ret;
   try {
     utf8::utf32to8(str.begin(), str.end(), std::back_inserter(ret));
-  } catch (const utf8::invalid_utf8& e) { out::debug_error("utf32 to utf conversion failed: {}", e.what()); }
+  } catch (const utf8::exception& e) { out::debug_error("utf32 to utf8 conversion failed: {}", e.what()); }
   return ret;
 };
 
@@ -17,7 +17,7 @@ inline std::u32string utf8_to_utf32(std::string_view str) {
   std::u32string ret;
   try {
     utf8::utf8to32(str.begin(), str.end(), std::back_inserter(ret));
-  } catch (const utf8::invalid_utf8& e) { out::debug_error("utf32 to utf conversion failed: {}", e.what()); }
+  } catch (const utf8::exception& e) { out::debug_error("utf8 to utf32 conversion failed: {}", e.what()); }
   return ret;
 };
 
