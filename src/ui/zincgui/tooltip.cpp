@@ -5,17 +5,16 @@
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/sprite.hpp"
-#include "zincbox.hpp"
 
 using namespace zincgui;
 
-ToolTip::ToolTip(Root& ui_, std::string_view name_, ToolTipPosition pos_, i32 distance_) : Sprite(ui_, "tooltip") {
-  float scale = zincbox::ui_scale();
+ToolTip::ToolTip(Root& ui_, std::string_view name_, ToolTipPosition pos_, i32 distance_)
+  : Sprite(ui_, default_settings::tooltip_texture) {
   pos = pos_;
-  distance = distance_ * scale;
+  distance = distance_;
   set_ignore_parents_layout(true);
   set_is_drawn_on_top(true);
-  set_nine_slice_margin(4.0f);
+  set_nine_slice_margin(default_settings::tooltip_nine_slice_margin);
 
   label = &add_child<Label>(name_);
   label->set_parent_anchor(Anchor::CENTER);
@@ -36,7 +35,7 @@ void ToolTip::set_clamp(bool value) {
 
 void ToolTip::set_size_and_position() {
   label->set_size(vec2i{label->get_text_extents()});
-  set_size(vec2i{label->get_text_extents()} + vec2i{20, 20});
+  set_size(vec2i{label->get_text_extents()} + default_settings::tooltip_padding);
 
   if (pos == ToolTipPosition::LEFT) {
     set_parent_anchor(Anchor::CENTER_LEFT);

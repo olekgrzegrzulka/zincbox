@@ -3,6 +3,7 @@
 #include <optional>
 #include "common/types.hpp"
 #include "slider.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/sprite.hpp"
@@ -16,12 +17,13 @@ zincgui::Slider::Slider(Root& ui_, SliderOrientation orientation_)
 
   set_is_focusable(true);
 
-  set_size(100, 10);
-  set_texture_thumb_pressed("slider_thumb_pressed");
-  set_texture_thumb_hovered("slider_thumb_hovered");
-  set_texture_thumb_idle("slider_thumb_idle");
-  set_texture_track_inactive("slider_track_inactive");
-  set_texture_track_active("slider_track_active");
+  set_size(default_settings::slider_size);
+  if (default_settings::slider_fixed_height) { set_fixed_height(height); }
+  set_texture_thumb_pressed(default_settings::slider_texture_thumb_pressed);
+  set_texture_thumb_hovered(default_settings::slider_texture_thumb_hovered);
+  set_texture_thumb_idle(default_settings::slider_texture_thumb_idle);
+  set_texture_track_inactive(default_settings::slider_texture_track_inactive);
+  set_texture_track_active(default_settings::slider_texture_track_active);
 }
 
 void zincgui::Slider::skip_anim() {
@@ -192,7 +194,9 @@ void zincgui::Slider::input() {
     if (is_invert) { norm = 1.0f - norm; }
     norm_target = norm;
   }
-  double t = std::clamp(std::abs(norm_pos_anim - norm_target) * (track_length * 0.003), 0.6, 0.9);
+  double t =
+    std::clamp(std::abs(norm_pos_anim - norm_target) * (track_length * default_settings::slider_anim_speed_factor),
+               default_settings::slider_anim_lerp_min, default_settings::slider_anim_lerp_max);
   norm_pos_anim = std::lerp(norm_pos_anim, norm_target, static_cast<float>(t));
 
   float thumb_pos_lerped = 0.0f;
@@ -238,6 +242,22 @@ void zincgui::Slider::event(Input::InputEventMouseScroll& ev) {
 }
 
 void zincgui::Slider::event(Input::InputEventKey& ev) {}
+
+void zincgui::Slider::set_orientation(SliderOrientation o) {
+  if (orientation == o) { return; }
+
+  auto is_horiz = [](SliderOrientation orient) -> bool {
+    return orient == SliderOrientation::HORIZONTAL || orient == SliderOrientation::HORIZONTAL_INVERTED;
+  };
+
+  if (is_horiz(orientation) != is_horiz(o)) {
+    std::swap(min_width, min_height);
+    std::swap(max_width, max_height);
+  }
+
+  orientation = o;
+  mark_dirty();
+}
 
 void zincgui::Slider::set_texture_thumb_pressed(const std::string& id) {
   auto t_ = ui.get_texture_atlas().get(id);

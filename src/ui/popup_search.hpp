@@ -38,9 +38,7 @@ class PopupSearch final : public Popup {
 
       m_search_bar = &add_child<zincgui::TextInput>();
       m_search_bar->set_on_text_changed([this]() -> void { update_search_results(); });
-      m_search_bar->set_fixed_height((8 * zincbox::ui_scale()) + zincbox::font_size());
       ui.set_focused_widget(m_search_bar);
-      
 
       m_search_results = &add_child<zincgui::ColorRect>(theme::config().panel_playlists.color);
       m_search_results->set_layout("ltr fill expand");
@@ -49,7 +47,7 @@ class PopupSearch final : public Popup {
       m_scrollable_content = &m_search_results->add_child<Widget>();
       m_scrollable_content->set_clip_children(true);
 
-      m_scrollbar = &m_search_results->add_child<ZincboxScrollbar>();
+      m_scrollbar = &m_search_results->add_child<zincgui::ScrollBar>();
       m_scrollbar->set_anchor(zincgui::Anchor::TOP_RIGHT);
       m_scrollbar->set_parent_anchor(zincgui::Anchor::TOP_RIGHT);
       m_scrollbar->set_orientation(zincgui::SliderOrientation::VERTICAL);
@@ -87,7 +85,7 @@ class PopupSearch final : public Popup {
 
       m_buttons = &add_child<Widget>();
       m_buttons->set_layout("ltr expand fill m:0 s:8");
-      m_buttons->set_fixed_height(32 * zincbox::ui_scale());
+      m_buttons->set_fixed_height(zincgui::default_settings::button_size.y);
       m_button_close = &m_buttons->add_child<zincgui::Button>(tr::get("dialog.action.close"));
       m_button_close->on_press([this]() {
         if (on_closed) { on_closed(); }

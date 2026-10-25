@@ -20,6 +20,7 @@
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/checkbox.hpp"
 #include "ui/zincgui/combo_box.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/slider.hpp"
@@ -65,7 +66,7 @@ void PopupSettings::update() {
   }
 }
 
-i32 PopupSettings::control_row_height() { return static_cast<i32>((8 * zincbox::ui_scale()) + zincbox::font_size()); }
+i32 PopupSettings::control_row_height() { return zincgui::default_settings::text_input_size.y; }
 
 std::string PopupSettings::make_search_blob(std::string_view raw_key, std::string_view localized_text) {
   std::string combined = std::string(raw_key) + " " + std::string(localized_text);
@@ -97,7 +98,6 @@ void PopupSettings::build_header() {
   title.set_parent_anchor(zincgui::Anchor::TOP);
 
   m_search_bar = &add_child<zincgui::TextInput>();
-  m_search_bar->set_fixed_height(control_row_height());
   m_search_bar->set_on_text_changed([this]() -> void { filter_by_search(); });
 }
 
@@ -129,7 +129,6 @@ void PopupSettings::build_body() {
 
     auto& btn = sidebar.add_child<ZincboxButton>(tex);
     btn.get_label().set_text(localized);
-    btn.set_fixed_height(control_row_height());
     btn.set_switch_mode(false);
     btn.on_press([this, i]() -> void {
       select_sidebar_button(i);
@@ -144,7 +143,7 @@ void PopupSettings::build_footer() {
   buttons.set_anchor(zincgui::Anchor::BOTTOM);
   buttons.set_parent_anchor(zincgui::Anchor::BOTTOM);
   buttons.set_layout("ltr expand fill m:0 s:8");
-  buttons.set_fixed_height(static_cast<i32>(32 * zincbox::ui_scale()));
+  buttons.set_fixed_height(zincgui::default_settings::button_size.y);
 
   auto& btn_cancel = buttons.add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
   btn_cancel.set_weight(1.0f);
@@ -193,7 +192,6 @@ zincgui::ComboBox* PopupSettings::add_row_combobox(size_t section_idx, std::stri
   label.set_min_width(1);
 
   auto& combo = row.add_child<zincgui::ComboBox>();
-  combo.set_fixed_height(control_row_height());
   combo.on_item_selected([combo_ = &combo, this, cb = std::move(on_changed)]() -> void {
     cb(combo_->get_selected_item_id());
     refresh_save_button_state();
@@ -220,7 +218,6 @@ zincgui::Spinner* PopupSettings::add_row_spinner(size_t section_idx, std::string
   label.set_min_width(1);
 
   auto& spinner = row.add_child<zincgui::Spinner>();
-  spinner.set_fixed_height(control_row_height());
   if (!postfix.empty()) { spinner.set_postfix(std::string(postfix)); }
   spinner.set_min_value(min_val);
   spinner.set_max_value(max_val);
@@ -241,7 +238,6 @@ zincgui::Checkbox* PopupSettings::add_row_checkbox(size_t section_idx, std::stri
                                                    std::function<void(bool)> on_changed) {
   std::string localized = tr::get(std::string(tr_key));
   auto& checkbox = m_scroll_view->content()->add_child<zincgui::Checkbox>(localized);
-  checkbox.set_fixed_height(control_row_height());
   checkbox.set_checked(initial_checked);
   checkbox.on_value_changed([checkbox_ = &checkbox, this, cb = std::move(on_changed)]() -> void {
     cb(checkbox_->is_checked());

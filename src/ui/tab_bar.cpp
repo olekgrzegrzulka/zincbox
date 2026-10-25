@@ -155,6 +155,7 @@ void TabBar::add_tab(const tab_info& info, bool select) { add_tab(info, tabs.siz
 void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
   at = std::min(at, tabs.size());
   Tab* t = &tab_container->add_child<Tab>(info);
+  t->set_fixed_height(0);
   t->set_height(height);
   t->on_drag_start = [this](i32 id) -> void { on_tab_drag_start(id); };
   t->on_active = [this, info](Tab* tab) -> void {
@@ -244,9 +245,8 @@ void TabBar::scroll(double value) {
 }
 
 void TabBar::update() {
-  button_add->set_min_width(button_add->get_width());
-  button_add->set_max_width(button_add->get_width());
-  button_add->set_fixed_height(button_add->get_height());
+  button_add->set_fixed_width(button_add->get_width());
+  button_add->set_fixed_height(button_add->get_width());
 
   target_scroll_px = std::clamp<double>(target_scroll_px, 0, get_max_scroll_px());
   auto scroll_px_ = scroll_px;

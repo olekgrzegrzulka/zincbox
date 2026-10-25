@@ -19,6 +19,7 @@
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/scrollbar.hpp"
@@ -33,11 +34,11 @@ PopupInput::PopupInput(zincgui::Root& ui_, PopupController& controller_, std::fu
   title = &add_child<zincgui::Label>("");
   title->set_fixed_height(32 * zincbox::ui_scale());
   text_input = &add_child<zincgui::TextInput>();
-  text_input->set_fixed_height((8 * zincbox::ui_scale()) + zincbox::font_size());
+  text_input->set_fixed_height(text_input->get_height());
 
   buttons = &add_child<Widget>();
   buttons->set_layout("ltr expand fill m:0 s:8");
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
 
   btn_cancel = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
   btn_cancel->on_press([this]() {
@@ -66,9 +67,8 @@ PopupConfirm::PopupConfirm(zincgui::Root& ui_, PopupController& controller_, std
   content->set_fixed_height(content->get_text_extents().y);
 
   buttons = &add_child<Widget>();
-  buttons->set_height(32 * zincbox::ui_scale());
   buttons->set_layout("ltr expand fill m:0 s:8");
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
 
   btn_cancel = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
   btn_cancel->on_press([this]() {
@@ -106,7 +106,7 @@ PopupImportFolders::PopupImportFolders(zincgui::Root& ui_, PopupController& cont
   buttons->set_anchor(zincgui::Anchor::BOTTOM);
   buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
   buttons->set_layout("ltr expand fill m:0 s:8");
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
 
   btn_cancel = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
   btn_cancel->on_press([this]() { close(); });
@@ -173,7 +173,7 @@ PopupSetSources::PopupSetSources(zincgui::Root& ui_, PopupController& controller
   scrollable_content->set_clip_children(true);
   scrollable_content->set_layout("ttb s:0 m:0 expand fit");
 
-  scrollbar = &content->add_child<ZincboxScrollbar>();
+  scrollbar = &content->add_child<zincgui::ScrollBar>();
   scrollbar->set_ignore_parents_layout(true);
   scrollbar->set_anchor(zincgui::Anchor::TOP_RIGHT);
   scrollbar->set_parent_anchor(zincgui::Anchor::TOP_RIGHT);
@@ -184,7 +184,7 @@ PopupSetSources::PopupSetSources(zincgui::Root& ui_, PopupController& controller
   buttons->set_anchor(zincgui::Anchor::BOTTOM);
   buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
   buttons->set_layout("ltr expand fill m:0 s:8");
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
 
   btn_close = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.close"));
   btn_close->on_press([this]() { close(); });
@@ -296,8 +296,7 @@ PopupAddToPlaylist::PopupAddToPlaylist(zincgui::Root& ui_, PopupController& cont
   };
 
   buttons = &add_child<Widget>();
-  buttons->set_height(32 * zincbox::ui_scale());
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
   buttons->set_anchor(zincgui::Anchor::BOTTOM);
   buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
 
@@ -323,18 +322,15 @@ PopupCreateSmartPlaylist::PopupCreateSmartPlaylist(zincgui::Root& ui_, PopupCont
   container_name.set_layout("ttb expand m:0 s:8");
   label_name = &container_name.add_child<zincgui::Label>(tr::get("popup.smart_playlist.add.label_input"));
   input_name = &container_name.add_child<zincgui::TextInput>();
-  input_name->set_height((8 * zincbox::ui_scale()) + zincbox::font_size());
 
   Widget& container_artists = add_child<Widget>();
   container_artists.set_layout("ttb expand m:0 s:8");
   label_artists = &container_artists.add_child<zincgui::Label>(tr::get("popup.smart_playlist.add.label_artists"));
   input_artists = &container_artists.add_child<zincgui::TextInput>();
-  input_artists->set_height((8 * zincbox::ui_scale()) + zincbox::font_size());
 
   buttons = &add_child<Widget>();
-  buttons->set_height(32 * zincbox::ui_scale());
   buttons->set_layout("ltr expand fill m:0 s:8");
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
   btn_cancel = &buttons->add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
   btn_cancel->on_press([this]() -> void {
     if (on_cancel) { on_cancel(); }
@@ -362,7 +358,7 @@ PopupAbout::PopupAbout(zincgui::Root& ui_, PopupController& controller_, std::fu
 
   auto& buttons = add_child<Widget>();
   buttons.set_layout("ltr fill fit expand m:0 s:8");
-  buttons.set_height(32 * zincbox::ui_scale());
+  buttons.set_fixed_height(zincgui::default_settings::button_size.y);
   auto& btn_ok = buttons.add_child<zincgui::Button>(tr::get("dialog.action.ok"));
   btn_ok.on_press([this]() -> void { close(); });
 }
@@ -382,7 +378,8 @@ PopupWelcome::PopupWelcome(zincgui::Root& ui_, PopupController& controller_, std
 
   auto& buttons = add_child<Widget>();
   buttons.set_layout("ltr fill fit expand m:0 s:8");
-  buttons.set_height(32 * zincbox::ui_scale());
+  buttons.set_fixed_height(zincgui::default_settings::button_size.y);
+
   auto& btn_ok = buttons.add_child<zincgui::Button>(tr::get("dialog.action.ok"));
   btn_ok.on_press([this]() -> void { close(); });
 }
@@ -474,7 +471,7 @@ PopupScanSummary::PopupScanSummary(zincgui::Root& ui_, PopupController& controll
   }
   buttons = &add_child<Widget>();
   buttons->set_layout("ltr expand fill m:0 s:8");
-  buttons->set_fixed_height(32 * zincbox::ui_scale());
+  buttons->set_fixed_height(zincgui::default_settings::button_size.y);
   buttons->set_anchor(zincgui::Anchor::BOTTOM);
   buttons->set_parent_anchor(zincgui::Anchor::BOTTOM);
 

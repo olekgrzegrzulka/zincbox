@@ -5,6 +5,7 @@
 #include "common/color.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -33,11 +34,11 @@ namespace zincgui {
       std::string text{};
       size_t font_index = 0;
       i32 font_size = 0;
-      float line_spacing = 4.0f;
-      bool resize_to_text_extents = true;
-      bool parse_tags = true;
-      bool word_wrap = false;
-      bool ellipsis = false;
+      float line_spacing = default_settings::label_line_spacing;
+      bool resize_to_text_extents = default_settings::label_resize_to_text_extents;
+      bool parse_tags = default_settings::label_parse_tags;
+      bool word_wrap = default_settings::label_word_wrap;
+      bool ellipsis = default_settings::label_ellipsis;
       bool custom_alignment_set = false;
       TextAlign text_alignment = TextAlign::LEFT;
       Anchor label_anchor = Anchor::CENTER;

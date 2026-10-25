@@ -43,21 +43,25 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
 
   m_button_prev = &add_child<ZincboxButton>("prev", theme::config().panel_controls.button_previous);
   m_button_prev->set_max_width(theme::config().panel_controls.button_previous.width * SCALE);
+  m_button_prev->set_fixed_height(0);
   m_button_prev->set_is_drawn(theme::config().panel_controls.button_previous.visible);
   m_button_prev->add_image("prev");
 
   m_button_play_pause = &add_child<ZincboxButton>("play_pause", theme::config().panel_controls.button_play);
   m_button_play_pause->set_max_width(theme::config().panel_controls.button_play.width * SCALE);
+  m_button_play_pause->set_fixed_height(0);
   m_button_play_pause->set_is_drawn(theme::config().panel_controls.button_play.visible);
   m_button_play_pause->add_image("play");
 
   m_button_stop = &add_child<ZincboxButton>("stop", theme::config().panel_controls.button_stop);
   m_button_stop->set_max_width(theme::config().panel_controls.button_stop.width * SCALE);
+  m_button_stop->set_fixed_height(0);
   m_button_stop->set_is_drawn(theme::config().panel_controls.button_stop.visible);
   m_button_stop->add_image("stop");
 
   m_button_next = &add_child<ZincboxButton>("next", theme::config().panel_controls.button_next);
   m_button_next->set_max_width(theme::config().panel_controls.button_next.width * SCALE);
+  m_button_next->set_fixed_height(0);
   m_button_next->set_is_drawn(theme::config().panel_controls.button_next.visible);
   m_button_next->add_image("next");
 
@@ -135,6 +139,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
 
   m_button_shuffle = &add_child<ZincboxButton>("shuffle", theme::config().panel_controls.button_shuffle);
   m_button_shuffle->set_max_width(theme::config().panel_controls.button_shuffle.width * SCALE);
+  m_button_shuffle->set_fixed_height(0);
   m_button_shuffle->set_is_drawn(theme::config().panel_controls.button_shuffle.visible);
   m_button_shuffle->add_image("shuffle");
   update_shuffle_mode();
@@ -142,6 +147,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
 
   m_button_repeat = &add_child<ZincboxButton>("repeat", theme::config().panel_controls.button_repeat);
   m_button_repeat->set_max_width(theme::config().panel_controls.button_repeat.width * SCALE);
+  m_button_repeat->set_fixed_height(0);
   m_button_repeat->set_is_drawn(theme::config().panel_controls.button_repeat.visible);
   m_button_repeat->add_image("repeat");
   update_repeat_mode();

@@ -12,6 +12,7 @@
 #include <glm/mat4x4.hpp>
 #include <stddef.h>
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/shader.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
@@ -91,7 +92,7 @@ namespace zincgui {
       Shader m_shader;
       std::vector<std::unique_ptr<FontFace>> m_fonts;
       std::unordered_map<std::string, size_t> m_font_name_to_id;
-      i32 m_default_font_size = 14;
+      i32 m_default_font_size = default_settings::default_font_size;
       TextureAtlas m_texture_atlas;
       i32 m_window_width = 0;
       i32 m_window_height = 0;

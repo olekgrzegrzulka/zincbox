@@ -2,6 +2,7 @@
 #include <functional>
 #include <string>
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/text_input.hpp"
 
@@ -30,14 +31,11 @@ namespace zincgui {
       std::function<void()> lambda_value_changed = nullptr;
 
       i32 value = 0;
-      i32 min_value = 0;
-      i32 max_value = 100;
+      i32 min_value = default_settings::spinner_min_value;
+      i32 max_value = default_settings::spinner_max_value;
       bool buffer_changed = false;
       std::string postfix;
-      i32 button_step = 1;
-
-      static constexpr i32 BUTTONS_ECHO_LENGTH_INITIAL = 40;
-      static constexpr i32 BUTTONS_ECHO_LENGTH = 2;
+      i32 button_step = default_settings::spinner_button_step;
       i32 buttons_clock = 0;
       bool buttons_first_echo = true;
 

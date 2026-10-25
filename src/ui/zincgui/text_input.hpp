@@ -2,6 +2,7 @@
 #include <functional>
 #include <utility>
 #include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/widget.hpp"
 
@@ -24,10 +25,10 @@ namespace zincgui {
 
     protected:
       std::function<void()> lambda_on_text_changed;
-      static constexpr float caret_blink_time = 250.0f;
-      static constexpr float backspace_echo_length_initial = 250.0f;
-      static constexpr float backspace_echo_length = 19.0f;
-      float caret_blink_clock = caret_blink_time;
+      float caret_blink_time = default_settings::text_input_caret_blink_time;
+      float backspace_echo_length_initial = default_settings::text_input_backspace_echo_initial;
+      float backspace_echo_length = default_settings::text_input_backspace_echo;
+      float caret_blink_clock = default_settings::text_input_caret_blink_time;
       float backspace_clock = 0.0f;
       bool backspace_first_echo = true;
   };

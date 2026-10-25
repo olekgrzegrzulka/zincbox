@@ -22,9 +22,9 @@ void zincgui::Widget::update() {
       debug_rect = &add_child<Sprite>();
       debug_rect->is_debug_rect = true;
       debug_rect->ignore_parents_layout = true;
-      static_cast<Sprite*>(debug_rect)->set_texture("red");
-      static_cast<Sprite*>(debug_rect)->set_nine_slice_margin(1);
-      static_cast<Sprite*>(debug_rect)->set_nine_slice_scale(1);
+      static_cast<Sprite*>(debug_rect)->set_texture(default_settings::debug_rect_texture);
+      static_cast<Sprite*>(debug_rect)->set_nine_slice_margin(default_settings::debug_rect_nine_slice_margin);
+      static_cast<Sprite*>(debug_rect)->set_nine_slice_scale(default_settings::debug_rect_nine_slice_scale);
     }
     static_cast<Sprite*>(debug_rect)->set_size(width, height);
   }
@@ -37,7 +37,7 @@ bool zincgui::Widget::is_mouse_hovering() const { return is_mouse_hovering(Input
 
 bool zincgui::Widget::is_mouse_hovering(vec2i at) const {
   const Widget* tested = this;
-  i32 depth = hover_test_parent ? 127 : 1;
+  i32 depth = hover_test_parent ? default_settings::widget_hover_max_depth : 1;
   for (i32 i = 0; i < depth; i += 1) {
     if (!tested) { break; }
     bool test_x =

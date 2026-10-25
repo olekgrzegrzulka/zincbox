@@ -4,6 +4,7 @@
 #include <utility>
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/color_rect.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
@@ -19,12 +20,14 @@ namespace zincgui {
 
       void init(std::string_view label_text) {
         set_is_focusable(true);
+        set_size(default_settings::checkbox_size);
+        if (default_settings::checkbox_fixed_height) { set_fixed_height(height); }
 
-        uv_checkbox_idle = ui.get_texture_atlas().get("checkbox_idle")->get();
-        uv_checkbox_hovered = ui.get_texture_atlas().get("checkbox_hovered")->get();
-        uv_checkbox_pressed = ui.get_texture_atlas().get("checkbox_pressed")->get();
-        uv_checkbox_disabled = ui.get_texture_atlas().get("checkbox_disabled")->get();
-        uv_checkbox_check = ui.get_texture_atlas().get("checkbox_check")->get();
+        uv_checkbox_idle = ui.get_texture_atlas().get(default_settings::checkbox_texture_idle)->get();
+        uv_checkbox_hovered = ui.get_texture_atlas().get(default_settings::checkbox_texture_hovered)->get();
+        uv_checkbox_pressed = ui.get_texture_atlas().get(default_settings::checkbox_texture_pressed)->get();
+        uv_checkbox_disabled = ui.get_texture_atlas().get(default_settings::checkbox_texture_disabled)->get();
+        uv_checkbox_check = ui.get_texture_atlas().get(default_settings::checkbox_texture_check)->get();
 
         set_clip_children(true);
 
@@ -37,14 +40,14 @@ namespace zincgui {
 
         inner = &add_child<Widget>();
         inner->set_ignore_parents_layout(true);
-        inner->set_layout("ltr fill expand fit s:4");
+        inner->set_layout(default_settings::checkbox_layout);
         inner->set_anchor(Anchor::CENTER);
         inner->set_parent_anchor(Anchor::CENTER);
 
-        sprite_checkbox = &inner->add_child<Sprite>("checkbox_idle");
+        sprite_checkbox = &inner->add_child<Sprite>(default_settings::checkbox_texture_idle);
         sprite_checkbox->set_fixed_width(sprite_checkbox->get_width());
         sprite_checkbox->set_fixed_height(sprite_checkbox->get_height());
-        sprite_check = &sprite_checkbox->add_child<Sprite>("checkbox_check");
+        sprite_check = &sprite_checkbox->add_child<Sprite>(default_settings::checkbox_texture_check);
         sprite_check->set_parent_anchor(Anchor::CENTER);
         sprite_check->set_anchor(Anchor::CENTER);
 

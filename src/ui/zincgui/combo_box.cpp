@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
@@ -17,31 +18,32 @@ using namespace zincgui;
 ComboBoxItem::ComboBoxItem(Root& ui_) : Button(ui_) {
   set_parent_anchor(Anchor::TOP_CENTER);
   set_anchor(Anchor::TOP_CENTER);
-  set_nine_slice_margin(2);
-  set_texture_idle("combobox_item_idle");
-  set_texture_hovered("combobox_item_hovered");
-  set_texture_pressed("combobox_item_pressed");
-  set_texture_disabled("combobox_item_disabled");
-  set_nine_slice_margin(6.0);
+  set_texture_idle(default_settings::combobox_item_texture_idle);
+  set_texture_hovered(default_settings::combobox_item_texture_hovered);
+  set_texture_pressed(default_settings::combobox_item_texture_pressed);
+  set_texture_disabled(default_settings::combobox_item_texture_disabled);
+  set_nine_slice_margin(default_settings::combobox_item_nine_slice_margin);
   hover_test_parent = false;
   label.set_parent_anchor(Anchor::CENTER_LEFT);
   label.set_anchor(Anchor::CENTER_LEFT);
   label.set_label_anchor(Anchor::CENTER_LEFT);
-  label.set_x(2);
+  label.set_x(default_settings::combobox_item_label_offset_x);
 }
 
 ComboBox::ComboBox(Root& ui_)
-  : Button(ui_), icon(add_child<Sprite>("combobox_expand")), dropdown_bg(add_child<Sprite>("panel_combobox")),
-    sprite_focus(add_child<Sprite>("combobox_focus")) {
-  set_size(64, 24);
-  set_nine_slice_margin(10.0f);
-  sprite_focus.set_nine_slice_margin(10.0f);
+  : Button(ui_), icon(add_child<Sprite>(default_settings::combobox_texture_expand)),
+    dropdown_bg(add_child<Sprite>(default_settings::combobox_texture_panel)),
+    sprite_focus(add_child<Sprite>(default_settings::combobox_texture_focus)) {
+  set_size(default_settings::combobox_size);
+  if (default_settings::combobox_fixed_height) { set_fixed_height(height); }
+  set_nine_slice_margin(default_settings::combobox_nine_slice_margin);
+  sprite_focus.set_nine_slice_margin(default_settings::combobox_nine_slice_margin);
   set_is_focusable(true);
 
-  set_texture_idle("combobox_idle");
-  set_texture_hovered("combobox_hovered");
-  set_texture_pressed("combobox_pressed");
-  set_texture_disabled("combobox_disabled");
+  set_texture_idle(default_settings::combobox_texture_idle);
+  set_texture_hovered(default_settings::combobox_texture_hovered);
+  set_texture_pressed(default_settings::combobox_texture_pressed);
+  set_texture_disabled(default_settings::combobox_texture_disabled);
 
   set_switch_mode(true);
   on_press([&] { on_button_pressed(); });
@@ -50,7 +52,7 @@ ComboBox::ComboBox(Root& ui_)
   icon.set_anchor(Anchor::RIGHT);
   icon.set_parent_anchor(Anchor::RIGHT);
   icon.set_nine_slice_margin(0.0f);
-  icon.set_x(-8);
+  icon.set_x(default_settings::combobox_icon_offset_x);
   label.set_anchor(Anchor::LEFT);
   label.set_parent_anchor(Anchor::LEFT);
   label.set_label_anchor(Anchor::LEFT);
@@ -59,7 +61,7 @@ ComboBox::ComboBox(Root& ui_)
   dropdown_bg.set_anchor(Anchor::TOP_CENTER);
   dropdown_bg.set_clip_children(true);
   dropdown_bg.set_is_drawn_on_top(true);
-  dropdown_bg.set_nine_slice_margin(10.0f);
+  dropdown_bg.set_nine_slice_margin(default_settings::combobox_nine_slice_margin);
 
   for (i32 i = 0; i < dropdown_max_length + 1; i += 1) {
     auto& item = dropdown_bg.add_child<ComboBoxItem>();
@@ -81,8 +83,8 @@ void ComboBox::update() {
   target_scroll_progress =
     std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, items.size() - item_widgets.size() + 1));
 
-  if (std::abs(scroll_progress - target_scroll_progress) > 0.02f) {
-    scroll_progress = std::lerp(scroll_progress, target_scroll_progress, 0.4f);
+  if (std::abs(scroll_progress - target_scroll_progress) > default_settings::combobox_scroll_snap_threshold) {
+    scroll_progress = std::lerp(scroll_progress, target_scroll_progress, default_settings::combobox_scroll_lerp_weight);
   } else {
     scroll_progress = target_scroll_progress;
   }
@@ -107,7 +109,8 @@ void ComboBox::update() {
     }
   }
 
-  dropdown_animation_progress = std::min(dropdown_animation_progress + 0.3f, 1.0f);
+  dropdown_animation_progress =
+    std::min(dropdown_animation_progress + default_settings::combobox_dropdown_anim_speed, 1.0f);
   if (dropdown_animation_progress >= 1.0) {
     if (dropdown_state == DropDownState::APPEARING) {
       dropdown_state = DropDownState::VISIBLE;
@@ -198,13 +201,13 @@ void ComboBox::select_item_by_index(i32 index) {
 void ComboBox::on_button_pressed() {
   dropdown_state = DropDownState::APPEARING;
   dropdown_animation_progress = 0.0f;
-  icon.set_texture("combobox_contract");
+  icon.set_texture(default_settings::combobox_texture_contract);
 }
 
 void ComboBox::on_button_depressed() {
   dropdown_state = DropDownState::DISAPPEARING;
   dropdown_animation_progress = 0.0f;
-  icon.set_texture("combobox_expand");
+  icon.set_texture(default_settings::combobox_texture_expand);
 }
 
 void ComboBox::on_item_pressed(i32 i) {

@@ -3,6 +3,7 @@
 #include <glm/ext/vector_float2.hpp>
 #include "common/types.hpp"
 #include "slider.hpp"
+#include "ui/zincgui/default_settings.hpp"
 
 namespace zincgui {
 
@@ -10,8 +11,8 @@ namespace zincgui {
 
   class ScrollBar : public Slider {
     protected:
-      i32 page_size = 25;
-      i32 content_size = 100;
+      i32 page_size = default_settings::scrollbar_page_size;
+      i32 content_size = default_settings::scrollbar_content_size;
 
     public:
       ScrollBar(Root& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);

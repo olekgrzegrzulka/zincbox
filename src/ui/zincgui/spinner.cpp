@@ -3,7 +3,6 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
@@ -14,24 +13,27 @@
 using namespace zincgui;
 
 Spinner::Spinner(Root& ui_)
-  : TextInput(ui_), button_increase(add_child<ZincboxButton>("spinner_increase")),
-    button_decrease(add_child<ZincboxButton>("spinner_decrease")), label_postfix(add_child<Label>()) {
+  : TextInput(ui_), button_increase(add_child<Button>(default_settings::spinner_texture_increase)),
+    button_decrease(add_child<Button>(default_settings::spinner_texture_decrease)), label_postfix(add_child<Label>()) {
+
+  set_size(default_settings::spinner_size);
+  if (default_settings::spinner_fixed_height) { set_fixed_height(height); }
 
   set_is_focusable(true);
 
   button_decrease.set_parent_anchor(Anchor::LEFT);
-  button_decrease.set_nine_slice_margin(10.0f);
+  button_decrease.set_nine_slice_margin(default_settings::spinner_button_nine_slice_margin);
   button_decrease.set_anchor(Anchor::LEFT);
-  button_decrease.set_pos(1, 0);
-  button_decrease.add_image("spinner_decrease_icon");
+  button_decrease.set_pos(default_settings::spinner_button_offset_x, 0);
+  button_decrease.add_image(default_settings::spinner_texture_decrease_icon);
 
   button_increase.set_parent_anchor(Anchor::RIGHT);
-  button_increase.set_nine_slice_margin(10.0f);
+  button_increase.set_nine_slice_margin(default_settings::spinner_button_nine_slice_margin);
   button_increase.set_anchor(Anchor::RIGHT);
-  button_increase.set_pos(-1, 0);
-  button_increase.add_image("spinner_increase_icon");
+  button_increase.set_pos(-default_settings::spinner_button_offset_x, 0);
+  button_increase.add_image(default_settings::spinner_texture_increase_icon);
 
-  label.set_pos({button_increase.get_width() + 2, 0});
+  label.set_pos({button_increase.get_width() + default_settings::spinner_label_padding_x, 0});
   label.set_resize_to_text_extents(false);
 
   label.set_text(std::to_string(value));
@@ -84,10 +86,11 @@ void Spinner::update() {
   }
 
   label.set_height(height);
-  label.set_width(width - (button_increase.get_width() + button_decrease.get_width() + 4));
+  label.set_width(width - (button_increase.get_width() + button_decrease.get_width() +
+                           (2 * default_settings::spinner_label_padding_x)));
 
-  button_increase.set_height(height - 2);
-  button_decrease.set_height(height - 2);
+  button_increase.set_height(height - default_settings::spinner_button_height_padding);
+  button_decrease.set_height(height - default_settings::spinner_button_height_padding);
 
   auto scroll = Input::get_mouse_scroll();
 
@@ -116,7 +119,8 @@ void Spinner::update() {
     if (buttons_clock <= 0) {
       if ((increase_pressed && set_value(value + button_step)) ||
           (decrease_pressed && set_value(value - button_step))) {
-        buttons_clock = buttons_first_echo ? BUTTONS_ECHO_LENGTH_INITIAL : BUTTONS_ECHO_LENGTH;
+        buttons_clock =
+          buttons_first_echo ? default_settings::spinner_echo_length_initial : default_settings::spinner_echo_length;
         buttons_first_echo = false;
         caret_blink_clock = caret_blink_time;
         caret.set_is_updated(true);
@@ -130,7 +134,7 @@ void Spinner::update() {
     buttons_first_echo = true;
   }
 
-  label_postfix.set_x(label.get_x() + label.get_text_extents().x + 1);
+  label_postfix.set_x(label.get_x() + label.get_text_extents().x + default_settings::spinner_postfix_offset_x);
 }
 
 void zincgui::Spinner::event(Input::InputEventMouseButton&) {}

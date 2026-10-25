@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/default_settings.hpp"
 
 namespace zincgui {
 
@@ -56,8 +57,8 @@ namespace zincgui {
 
       std::function<void()> lambda_select = nullptr;
 
-      i32 item_height = 20;
-      i32 dropdown_padding = 1;
+      i32 item_height = default_settings::combobox_item_height;
+      i32 dropdown_padding = default_settings::combobox_dropdown_padding;
       static constexpr i32 dropdown_max_length = 10;
 
       enum class DropDownState : u8 { HIDDEN, APPEARING, DISAPPEARING, VISIBLE };

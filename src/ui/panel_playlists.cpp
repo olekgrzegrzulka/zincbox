@@ -19,6 +19,7 @@
 #include "ui/tr.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
@@ -77,6 +78,8 @@ void WidgetAlbumCover::update_highlight_status_from_player() {
 
 WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_, bool is_add_button_)
   : Button(ui_), playlist_id(playlist_id_) {
+  set_fixed_height(0);
+
   m_is_add_button = is_add_button_;
 
   auto& settings = zincbox::settings();
@@ -185,13 +188,13 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
 }
 
 PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
-  const i32 PANEL_SEARCH_HEIGHT = (2 * PANEL_SEARCH_PADDING) + (8 * zincbox::ui_scale()) + zincbox::font_size();
+  const i32 PANEL_SEARCH_HEIGHT = (2 * PANEL_SEARCH_PADDING) + zincgui::default_settings::text_input_size.y;
 
   auto& config = theme::config().panel_playlists;
   set_color(config.color);
   set_clip_children(true);
 
-  m_scrollbar = &add_child<ZincboxScrollbar>();
+  m_scrollbar = &add_child<zincgui::ScrollBar>();
   m_scrollbar->set_anchor(Anchor::RIGHT);
   m_scrollbar->set_parent_anchor(Anchor::RIGHT);
   m_scrollbar->set_orientation(SliderOrientation::VERTICAL);
@@ -208,7 +211,7 @@ PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
   m_panel_search->set_ignore_parents_layout(true);
 
   m_search_bar = &m_panel_search->add_child<TextInput>();
-  m_search_bar->set_fixed_height((8 * zincbox::ui_scale()) + zincbox::font_size());
+  m_search_bar->set_fixed_height(m_search_bar->get_height());
   m_search_bar->set_on_text_changed([this]() { recreate(); });
   m_button_clear_search = &m_search_bar->add_child<Button>();
 
