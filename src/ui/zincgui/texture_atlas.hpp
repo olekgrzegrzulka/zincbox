@@ -71,7 +71,7 @@ namespace zincgui {
 
       void mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, bool unmark = false);
 
-      std::optional<vec2i> paste_texture(stbi_uc* data, i32 width, i32 height);
+      std::optional<vec2i> paste_texture(const stbi_uc* data, i32 width, i32 height);
 
       void regenerate_texture();
 
