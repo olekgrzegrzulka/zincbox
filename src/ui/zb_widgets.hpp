@@ -1,6 +1,6 @@
 #pragma once
+#include <string>
 #include "ui/zincgui/button.hpp"
-#include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
 
 struct ButtonConfig;
@@ -22,10 +22,4 @@ class ZincboxButton final : public zincgui::Button {
 class ZincboxSlider final : public zincgui::Slider {
   public:
     ZincboxSlider(zincgui::Root& ui_, const std::string& name_);
-};
-
-class ZincboxScrollbar final : public zincgui::ScrollBar {
-  public:
-    ZincboxScrollbar(zincgui::Root& ui_);
-    void update() override;
 };

@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -23,16 +24,16 @@ namespace zincgui {
 
       ThumbConstraint thumb_constraint = ThumbConstraint::INSIDE_TRACK;
       SliderOrientation orientation = SliderOrientation::HORIZONTAL;
-      i32 track_thickness = 10;
-      i32 thumb_length = 10;
-      i32 thumb_thickness = 10;
-      i32 drag_area_inflation = 0;
+      i32 track_thickness = default_settings::slider_track_thickness;
+      i32 thumb_length = default_settings::slider_thumb_length;
+      i32 thumb_thickness = default_settings::slider_thumb_thickness;
+      i32 drag_area_inflation = default_settings::slider_drag_area_inflation;
 
       float value = 0.0f;
-      float min_value = -10.0f;
-      float max_value = 10.0f;
+      float min_value = default_settings::slider_min_value;
+      float max_value = default_settings::slider_max_value;
       float norm_pos_anim = 0.0f;
-      float sensitivity = 40.0f;
+      float sensitivity = default_settings::slider_sensitivity;
       bool disabled = false;
       bool is_dragged = false;
       bool is_scrollable = true;
@@ -97,7 +98,7 @@ namespace zincgui {
       WIDGET_DEF_SETTER_DIRTY(max_value)
       WIDGET_DEF_SETTER(sensitivity)
       WIDGET_DEF_SETTER_DIRTY(thumb_constraint)
-      WIDGET_DEF_SETTER_DIRTY(orientation)
+      void set_orientation(SliderOrientation);
       WIDGET_DEF_SETTER_DIRTY(track_thickness)
       WIDGET_DEF_SETTER_DIRTY(thumb_length)
       WIDGET_DEF_SETTER_DIRTY(thumb_thickness)
@@ -110,8 +111,8 @@ namespace zincgui {
       void set_texture_track_inactive(const std::string& id);
       void set_texture_track_active(const std::string& id);
 
-      float track_nine_slice_margin = 6.0f;
-      float thumb_nine_slice_margin = 6.0f;
+      float track_nine_slice_margin = default_settings::slider_track_nine_slice_margin;
+      float thumb_nine_slice_margin = default_settings::slider_thumb_nine_slice_margin;
       WIDGET_DEF_SETTER_DIRTY(track_nine_slice_margin)
       WIDGET_DEF_SETTER_DIRTY(thumb_nine_slice_margin)
   };

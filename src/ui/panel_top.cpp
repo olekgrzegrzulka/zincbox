@@ -53,6 +53,7 @@ PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
 
   m_button_decor_close = &m_container_buttons->add_child<ZincboxButton>("button_decor_close");
   m_button_decor_close->add_image("icon_decor_close");
+  m_button_decor_close->set_fixed_height(0);
   m_button_decor_close->set_is_drawn(theme::config().custom_window_decoration.enabled &&
                                      theme::config().custom_window_decoration.show_close_button);
   m_button_decor_close->on_press([this]() -> void {
@@ -61,6 +62,7 @@ PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
 
   m_button_decor_maximize = &m_container_buttons->add_child<ZincboxButton>("button_decor_maximize");
   m_button_decor_maximize->add_image("icon_decor_maximize");
+  m_button_decor_maximize->set_fixed_height(0);
   m_button_decor_maximize->set_is_drawn(theme::config().custom_window_decoration.enabled &&
                                         theme::config().custom_window_decoration.show_maximize_button);
   m_button_decor_maximize->on_press([this]() -> void {
@@ -69,6 +71,7 @@ PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
 
   m_button_decor_minimize = &m_container_buttons->add_child<ZincboxButton>("button_decor_minimize");
   m_button_decor_minimize->add_image("icon_decor_minimize");
+  m_button_decor_minimize->set_fixed_height(0);
   m_button_decor_minimize->set_is_drawn(theme::config().custom_window_decoration.enabled &&
                                         theme::config().custom_window_decoration.show_minimize_button);
   m_button_decor_minimize->on_press([this]() -> void {
@@ -78,6 +81,7 @@ PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
   m_button_hamburger = &m_container_buttons->add_child<zincgui::Button>("");
   m_button_hamburger->add_image("hamburger");
   m_button_hamburger->set_size(height - (4 * SCALE), height - (4 * SCALE));
+  m_button_hamburger->set_fixed_height(0);
   m_button_hamburger->on_press([this]() {
     if (this->on_hamburger_button_pressed) { this->on_hamburger_button_pressed(this->m_button_hamburger); }
   });

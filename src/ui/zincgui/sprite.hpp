@@ -5,6 +5,7 @@
 #include <vector>
 #include <glm/vec2.hpp>
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -27,13 +28,13 @@ namespace zincgui {
 
   class Sprite : public Widget {
     protected:
-      float nine_slice_margin = 1.0f; // FIXME: when this value is 0.0f, bad things happen
-      float nine_slice_scale = 1.0f;
+      float nine_slice_margin = default_settings::sprite_nine_slice_margin; // FIXME: when this value is 0.0f, bad things happen
+      float nine_slice_scale = default_settings::sprite_nine_slice_scale;
       vec2f uv_start = {0.0f, 0.0f};
       vec2f uv_end = {1.0f, 1.0f};
-      i32 texture_width = 16;
-      i32 texture_height = 16;
-      u32 atlas_index = 1;
+      i32 texture_width = default_settings::sprite_default_texture_width;
+      i32 texture_height = default_settings::sprite_default_texture_height;
+      u32 atlas_index = default_settings::sprite_default_atlas_index;
 
     protected:
       u32 vbo = 0;

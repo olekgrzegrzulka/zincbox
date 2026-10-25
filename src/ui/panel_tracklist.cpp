@@ -89,7 +89,7 @@ PanelTracklist::PanelTracklist(Root& ui_) : ColorRect(ui_) {
   set_color(theme::config().panel_tracklist.color);
   set_clip_children(true);
 
-  m_scrollbar = &add_child<ZincboxScrollbar>();
+  m_scrollbar = &add_child<zincgui::ScrollBar>();
   m_scrollbar->set_anchor(Anchor::LEFT);
   m_scrollbar->set_parent_anchor(Anchor::LEFT);
   m_scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { m_target_scroll_px = scroll_offset; });

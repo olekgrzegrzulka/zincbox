@@ -1,9 +1,9 @@
 #include "ui/scrollable_view.hpp"
 #include "common/types.hpp"
 #include "ui/zincgui/input.hpp"
+#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/sprite.hpp"
-#include "ui/zincgui/root.hpp"
 #include "ui/zincgui/widget.hpp"
 
 using namespace zincgui;
@@ -17,12 +17,6 @@ ScrollableView::ScrollableView(Root& ui_) : Widget(ui_) {
 
   m_scrollbar->set_anchor(Anchor::RIGHT);
   m_scrollbar->set_parent_anchor(Anchor::RIGHT);
-  m_scrollbar->set_width(10);
-  m_scrollbar->set_min_width(10);
-  m_scrollbar->set_max_width(10);
-  m_scrollbar->set_thumb_thickness(10);
-  m_scrollbar->set_orientation(SliderOrientation::VERTICAL);
-  m_scrollbar->set_track_thickness(10);
   m_scrollbar->on_value_changed([&](i32 /* old */, i32 scroll_offset) { m_target_scroll_px = scroll_offset; });
 
   m_container->set_clip_children(true);

@@ -10,6 +10,7 @@
 #include <glm/vec3.hpp>
 #include "common/types.hpp"
 #include "lib/stb_image/stb_image.h"
+#include "ui/zincgui/default_settings.hpp"
 
 namespace zincgui {
 
@@ -22,11 +23,13 @@ namespace zincgui {
 
   class TextureAtlas {
     public:
-      TextureAtlas(i32 atlas_size_ = 1024, i32 margin_px_ = 4, i32 grid_size_px_ = 4);
+      TextureAtlas(i32 atlas_size_ = default_settings::texture_atlas_size,
+                   i32 margin_px_ = default_settings::texture_atlas_margin,
+                   i32 grid_size_px_ = default_settings::texture_atlas_grid_size);
 
       i32 texture_count() const { return textures.size(); }
 
-      bool has_texture(std::string_view id, i32 max_depth = 16) const {
+      bool has_texture(std::string_view id, i32 max_depth = default_settings::texture_atlas_max_alias_depth) const {
         if (max_depth <= 0) { return false; }
         if (textures.contains(id)) { return true; }
         return (aliases.contains(id) && has_texture(aliases.at(std::string(id)), max_depth - 1));
@@ -44,7 +47,9 @@ namespace zincgui {
 
       void save_to_file(std::string filename);
 
-      std::optional<std::reference_wrapper<TextureAtlasData>> get(std::string_view id) { return get_internal(id, 16); }
+      std::optional<std::reference_wrapper<TextureAtlasData>> get(std::string_view id) {
+        return get_internal(id, default_settings::texture_atlas_max_alias_depth);
+      }
 
       void bind(u32 slot);
 
@@ -60,7 +65,8 @@ namespace zincgui {
       }
 
     protected:
-      std::optional<std::reference_wrapper<TextureAtlasData>> get_internal(std::string_view id, i32 max_depth = 16);
+      std::optional<std::reference_wrapper<TextureAtlasData>>
+      get_internal(std::string_view id, i32 max_depth = default_settings::texture_atlas_max_alias_depth);
       std::optional<std::pair<i32, i32>> find_space_for_texture(i32 width, i32 height);
 
       void mark_space_for_texture(i32 x, i32 y, i32 width, i32 height, bool unmark = false);
@@ -83,9 +89,9 @@ namespace zincgui {
 
       std::vector<bool> occupied_grid_space;
 
-      i32 atlas_size_px = 1024;
+      i32 atlas_size_px = default_settings::texture_atlas_size;
       i32 margin_px = 1;
-      i32 grid_size_px = 4;
+      i32 grid_size_px = default_settings::texture_atlas_grid_size;
       bool filter = false;
   };
 

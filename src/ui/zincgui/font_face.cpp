@@ -10,6 +10,7 @@
 #include <glad/glad.h>
 #include "common/debug.hpp"
 #include "common/logger.hpp"
+#include "ui/zincgui/default_settings.hpp"
 
 namespace zincgui {
 
@@ -21,7 +22,7 @@ namespace zincgui {
     m_hb_buffer = hb_buffer_create();
     m_metrics_cache.reserve(16);
     m_glyph_map.reserve(512);
-    init_atlas(1024, 1024);
+    init_atlas(default_settings::font_atlas_initial_size, default_settings::font_atlas_initial_size);
   }
 
   FontFace::FontFace(FT_Library freetype_lib, const void* data, size_t data_size) {
@@ -35,7 +36,7 @@ namespace zincgui {
     m_hb_buffer = hb_buffer_create();
     m_metrics_cache.reserve(16);
     m_glyph_map.reserve(512);
-    init_atlas(1024, 1024);
+    init_atlas(default_settings::font_atlas_initial_size, default_settings::font_atlas_initial_size);
   }
 
   FontFace::~FontFace() { cleanup(); }
@@ -142,10 +143,11 @@ namespace zincgui {
   bool FontFace::grow_atlas() const {
     i32 new_w = m_atlas_width;
     i32 new_h = m_atlas_height * 2;
-    if (new_h > 4096) {
-      if (new_w < 4096) {
-        new_w = 4096;
-        new_h = 4096;
+    i32 max_s = default_settings::font_atlas_max_size;
+    if (new_h > max_s) {
+      if (new_w < max_s) {
+        new_w = max_s;
+        new_h = max_s;
       } else {
         return false;
       }
@@ -218,7 +220,8 @@ namespace zincgui {
   }
 
   const FontSizeMetrics& FontFace::get_metrics(i32 pixel_height) const {
-    pixel_height = std::clamp(pixel_height, 4, 256);
+    pixel_height =
+      std::clamp(pixel_height, default_settings::font_min_pixel_height, default_settings::font_max_pixel_height);
     if (m_active_pixel_height == pixel_height && m_active_metrics != nullptr) { return *m_active_metrics; }
 
     auto it = m_metrics_cache.find(pixel_height);
@@ -267,7 +270,8 @@ namespace zincgui {
   }
 
   const FontGlyph* FontFace::get_glyph(u32 glyph_index, i32 pixel_height, bool bold, bool italic) const {
-    pixel_height = std::clamp(pixel_height, 4, 256);
+    pixel_height =
+      std::clamp(pixel_height, default_settings::font_min_pixel_height, default_settings::font_max_pixel_height);
     u64 key = make_glyph_key(glyph_index, pixel_height, bold, italic);
     auto it = m_glyph_map.find(key);
     if (it != m_glyph_map.end()) { return &it->second; }

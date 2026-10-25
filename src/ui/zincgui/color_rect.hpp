@@ -2,6 +2,7 @@
 #include <vector>
 #include "common/color.hpp"
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -23,8 +24,8 @@ namespace zincgui {
       };
 
     protected:
-      vec3f color{};
-      float opacity = 1.0f;
+      vec3f color = default_settings::color_rect_color;
+      float opacity = default_settings::color_rect_opacity;
       u32 vbo = 0;
       u32 vao = 0;
       std::vector<ColorRect::vertex> vertices{};

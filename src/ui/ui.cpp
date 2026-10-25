@@ -186,6 +186,22 @@ void zincbox::ui::init() {
   db::set_playlists_collection_name(tr::get("collection.playlists_collection_name"));
   db::set_loved_tracks_playlist_name(tr::get("playlist.loved_tracks_playlist_name"));
 
+  i32 button_height = (16 * zincbox::ui_scale()) + zincbox::font_size();
+  i32 control_height = (8 * zincbox::ui_scale()) + zincbox::font_size();
+  zincgui::default_settings::button_size.y = button_height;
+  zincgui::default_settings::text_input_size.y = control_height;
+  zincgui::default_settings::slider_size.y = control_height;
+  zincgui::default_settings::combobox_size.y = control_height;
+  zincgui::default_settings::text_input_size.y = control_height;
+  zincgui::default_settings::spinner_size.y = control_height;
+  zincgui::default_settings::slider_size.y = 10 * zincbox::ui_scale();
+  zincgui::default_settings::scrollbar_size.x = 10 * zincbox::ui_scale();
+  zincgui::default_settings::scrollbar_sensitivity = zincbox::settings().interface.scrolling_speed;
+  zincgui::default_settings::text_color = theme::config().text_color;
+  zincgui::default_settings::text_color_disabled = theme::config().text_color_disabled;
+  zincgui::default_settings::text_caret_color = theme::config().text_caret_color;
+  zincgui::default_settings::default_font_size = std::clamp(zincbox::font_size(), 8, 32);
+
   shortcut_interceptor = &root->add_widget<ShortcutInterceptor>();
   shortcut_interceptor->search_popup_invoked = show_search_popup;
 

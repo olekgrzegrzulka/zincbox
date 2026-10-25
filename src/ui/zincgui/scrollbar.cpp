@@ -3,13 +3,24 @@
 #include "common/types.hpp"
 #include "scrollbar.hpp"
 #include "slider.hpp"
+#include "ui/zincgui/default_settings.hpp"
 
 zincgui::ScrollBar::ScrollBar(Root& ui_, SliderOrientation o) : Slider(ui_, o) {
-  set_texture_track_inactive("scrollbar_track_inactive");
-  set_texture_track_active("scrollbar_track_active");
-  set_texture_thumb_pressed("scrollbar_thumb_pressed");
-  set_texture_thumb_hovered("scrollbar_thumb_hovered");
-  set_texture_thumb_idle("scrollbar_thumb_idle");
+  set_orientation(SliderOrientation::VERTICAL);
+  set_size(zincgui::default_settings::scrollbar_size);
+  min_width = 0;
+  max_width = 0;
+  min_height = 0;
+  max_height = 0;
+  sensitivity = zincgui::default_settings::scrollbar_sensitivity;
+  if (default_settings::scrollbar_fixed_width) { set_fixed_width(width); }
+  set_thumb_thickness(width);
+  set_track_thickness(width);
+  set_texture_track_inactive(default_settings::scrollbar_texture_track_inactive);
+  set_texture_track_active(default_settings::scrollbar_texture_track_active);
+  set_texture_thumb_pressed(default_settings::scrollbar_texture_thumb_pressed);
+  set_texture_thumb_hovered(default_settings::scrollbar_texture_thumb_hovered);
+  set_texture_thumb_idle(default_settings::scrollbar_texture_thumb_idle);
   set_is_focusable(true);
 }
 
@@ -25,7 +36,8 @@ void zincgui::ScrollBar::recalculate_values() {
   min_value = 0;
   max_value = std::max(0, content_size - page_size);
   i32 track_length = (orientation == HORIZONTAL) ? width : height;
-  float min_thumb_length = std::min(track_length * 0.2f, 40.0f);
+  float min_thumb_length =
+    std::min(track_length * default_settings::scrollbar_min_thumb_ratio, default_settings::scrollbar_min_thumb_max_px);
 
   float lo = std::min(min_thumb_length, (float)track_length);
   float hi = std::max(min_thumb_length, (float)track_length);

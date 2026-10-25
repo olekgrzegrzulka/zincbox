@@ -3,8 +3,7 @@
 #include <utility>
 #include "common/color.hpp"
 #include "common/logger.hpp"
-#include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
-#include "ui/theme_config.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
@@ -21,15 +20,16 @@ Button::Button(Root& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(
 void Button::init() {
   // set_is_focusable(true);
 
-  set_size(64, 24);
-  set_texture_idle("button_idle");
-  set_texture_hovered("button_hovered");
-  set_texture_pressed("button_pressed");
-  set_texture_disabled("button_disabled");
-  set_nine_slice_margin(10.0f);
-  set_nine_slice_scale(1.0f);
+  set_size(default_settings::button_size);
+  if (default_settings::button_fixed_height) { set_fixed_height(height); }
+  set_texture_idle(default_settings::button_texture_idle);
+  set_texture_hovered(default_settings::button_texture_hovered);
+  set_texture_pressed(default_settings::button_texture_pressed);
+  set_texture_disabled(default_settings::button_texture_disabled);
+  set_nine_slice_margin(default_settings::button_nine_slice_margin);
+  set_nine_slice_scale(default_settings::button_nine_slice_scale);
 
-  label.set_text_color(theme::config().text_color);
+  label.set_text_color(default_settings::text_color);
   label.set_parent_anchor(Anchor::CENTER_CENTER);
   label.set_anchor(Anchor::CENTER_CENTER);
 
@@ -210,15 +210,15 @@ void zincgui::Button::event(Input::InputEventMouseScroll&) {}
 void Button::on_state_changed(ButtonState /* prev_state */) {
   if (state == ButtonState::HOVERED) {
     set_sprite_hovered();
-    get_label().set_text_color(theme::config().text_color);
+    get_label().set_text_color(default_settings::text_color);
   } else if (state == ButtonState::IDLE) {
     set_sprite_idle();
-    get_label().set_text_color(theme::config().text_color);
+    get_label().set_text_color(default_settings::text_color);
   } else if (state == ButtonState::PRESSED) {
     set_sprite_pressed();
-    get_label().set_text_color(theme::config().text_color);
+    get_label().set_text_color(default_settings::text_color);
   } else if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
-    get_label().set_text_color(theme::config().text_color_disabled);
+    get_label().set_text_color(default_settings::text_color_disabled);
   }
 }

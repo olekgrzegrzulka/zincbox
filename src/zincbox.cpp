@@ -28,6 +28,7 @@
 #include "core/player/player.hpp"
 #include "core/queue_element.hpp"
 #include "core/settings.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #ifdef ZINCBOX_HAS_GUI
 #include <glad/glad.h>
 #include "ui/sdl3_window.hpp"
@@ -84,8 +85,8 @@ void zincbox::init(u64 flags) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     SDL_Window* sdl_window = zincbox::window()->native_handle();
     SDL_SetWindowHitTest(sdl_window, hit_test_callback, NULL);
-    zincgui::Input::init(sdl_window);
 
+    zincgui::Input::init(sdl_window);
     zincbox::ui::init();
   }
 #endif

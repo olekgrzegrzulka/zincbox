@@ -2,6 +2,7 @@
 #include <string>
 #include <string_view>
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/sprite.hpp"
 
 namespace zincgui {
@@ -13,7 +14,8 @@ namespace zincgui {
 
   class ToolTip : public Sprite {
     public:
-      ToolTip(Root& ui_, std::string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT, i32 distance_ = 16);
+      ToolTip(Root& ui_, std::string_view name_, ToolTipPosition pos_ = ToolTipPosition::RIGHT,
+              i32 distance_ = default_settings::tooltip_distance);
 
       void update() override;
       void draw() override;
@@ -26,7 +28,7 @@ namespace zincgui {
       Label* label{};
       ToolTipPosition pos{};
       i32 distance{};
-      bool clamp = true;
+      bool clamp = default_settings::tooltip_clamp;
   };
 
 } // namespace zincgui

@@ -1,11 +1,9 @@
 #include "zb_widgets.hpp"
-#include "core/settings.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/scrollbar.hpp"
 #include "ui/zincgui/slider.hpp"
-#include "zincbox.hpp"
 
 using namespace zincgui;
 
@@ -36,18 +34,4 @@ ZincboxSlider::ZincboxSlider(zincgui::Root& ui_, const std::string& name_) : Sli
   set_texture_thumb_idle(name_ + "_thumb_idle");
   set_texture_track_inactive(name_ + "_track_inactive");
   set_texture_track_active(name_ + "_track_active");
-}
-
-ZincboxScrollbar::ZincboxScrollbar(zincgui::Root& ui_) : ScrollBar(ui_) {
-  const float SCALE = zincbox::ui_scale();
-  set_thumb_thickness(10 * SCALE);
-  set_track_thickness(10 * SCALE);
-  set_min_width(10 * SCALE);
-  set_max_width(10 * SCALE);
-  set_width(10 * SCALE);
-}
-
-void ZincboxScrollbar::update() {
-  sensitivity = zincbox::settings().interface.scrolling_speed;
-  ScrollBar::update();
 }

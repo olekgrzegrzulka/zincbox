@@ -8,6 +8,7 @@
 #include <vector>
 #include "common/debug.hpp"
 #include "common/types.hpp"
+#include "ui/zincgui/default_settings.hpp"
 
 namespace zincgui {
 
@@ -122,8 +123,8 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       i32 x = 0;
       i32 y = 0;
       bool hover_test_parent = true;
-      i32 width = 64;
-      i32 height = 64;
+      i32 width = default_settings::widget_size.x;
+      i32 height = default_settings::widget_size.y;
 
       i32 min_width = 0;
       i32 max_width = 0;
@@ -143,7 +144,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool is_focusable = false;
       bool ignore_parents_layout = false;
       bool is_drawn_on_top = false;
-      float weight = 1.0; // FIXME: weight does nothing at the moment
+      float weight = default_settings::widget_weight; // FIXME: weight does nothing at the moment
       bool draw_behind_parent = false;
 
       bool hovered_ = false;
