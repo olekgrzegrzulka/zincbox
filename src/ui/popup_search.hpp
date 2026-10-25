@@ -12,6 +12,7 @@
 #include "ui/popup.hpp"
 #include "ui/popup_controller.hpp"
 #include "ui/theme.hpp"
+#include "ui/theme_config.hpp"
 #include "ui/tr.hpp"
 #include "ui/widget_track.hpp"
 #include "ui/zb_widgets.hpp"
@@ -38,7 +39,8 @@ class PopupSearch final : public Popup {
       m_search_bar = &add_child<zincgui::TextInput>();
       m_search_bar->set_on_text_changed([this]() -> void { update_search_results(); });
       m_search_bar->set_fixed_height((8 * zincbox::ui_scale()) + zincbox::font_size());
-      m_search_bar->set_focused(true);
+      ui.set_focused_widget(m_search_bar);
+      
 
       m_search_results = &add_child<zincgui::ColorRect>(theme::config().panel_playlists.color);
       m_search_results->set_layout("ltr fill expand");

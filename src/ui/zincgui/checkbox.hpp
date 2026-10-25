@@ -18,6 +18,8 @@ namespace zincgui {
       Checkbox(Root& ui_, std::string_view label_text) : Widget(ui_) { init(label_text); }
 
       void init(std::string_view label_text) {
+        set_is_focusable(true);
+
         uv_checkbox_idle = ui.get_texture_atlas().get("checkbox_idle")->get();
         uv_checkbox_hovered = ui.get_texture_atlas().get("checkbox_hovered")->get();
         uv_checkbox_pressed = ui.get_texture_atlas().get("checkbox_pressed")->get();

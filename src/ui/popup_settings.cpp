@@ -119,7 +119,7 @@ void PopupSettings::build_body() {
     "settings.category.general", "settings.category.playback", "settings.category.interface",
     "settings.category.system"};
 
-  for (size_t i = 0; i < SECTION_COUNT; ++i) {
+  for (size_t i = 0; i < SECTION_COUNT; i += 1) {
     std::string tex = (i % 2 == 0) ? "settings_page_button_odd" : "settings_page_button_even";
 
     m_sections[i].raw_title_key = std::string(CATEGORY_KEYS[i]);
@@ -354,7 +354,7 @@ void PopupSettings::build_equalizer_widget(size_t section_idx) {
   bands_row.set_layout("ltr fill expand m:4 s:4");
   bands_row.set_fixed_height(static_cast<i32>(150 * zincbox::ui_scale()));
 
-  for (size_t i = 0; i < player::EQ_BAND_COUNT; ++i) {
+  for (size_t i = 0; i < player::EQ_BAND_COUNT; i += 1) {
     auto& col = bands_row.add_child<zincgui::Widget>();
     col.set_layout("ttb fill expand m:0 s:4");
 
@@ -373,13 +373,14 @@ void PopupSettings::build_equalizer_widget(size_t section_idx) {
     slider.set_thumb_nine_slice_margin(6);
     slider.set_min_value(-12.0f);
     slider.set_max_value(12.0f);
+    slider.set_sensitivity(1.0f);
     slider.set_value(init_gain, false);
-    slider.on_value_changed([this, i](float, float new_val) {
-      float rounded = std::round(new_val * 2.0f) / 2.0f;
-      m_working_settings.playback.equalizer[i] = std::clamp(rounded, -12.0f, 12.0f);
+    slider.on_value_changed([this, i](float, float new_val) -> void {
+      m_working_settings.playback.equalizer[i] = std::clamp(new_val, -12.0f, 12.0f);
       m_eq_value_labels[i]->set_text(format_eq_db(m_working_settings.playback.equalizer[i]));
       refresh_save_button_state();
     });
+    slider.set_is_scrollable(false);
     m_eq_sliders[i] = &slider;
 
     auto& freq_label = col.add_child<zincgui::Label>(format_eq_freq(player::EQ_FREQUENCIES[i]));
@@ -442,7 +443,7 @@ void PopupSettings::build_system_section() {
 }
 
 void PopupSettings::select_sidebar_button(size_t active_idx) {
-  for (size_t j = 0; j < SECTION_COUNT; ++j) {
+  for (size_t j = 0; j < SECTION_COUNT; j += 1) {
     m_page_buttons[j]->set_is_switched(j == active_idx);
   }
 }
@@ -458,7 +459,7 @@ void PopupSettings::filter_by_search() {
   if (query == m_last_search_query) { return; }
   m_last_search_query = query;
 
-  for (size_t s = 0; s < SECTION_COUNT; ++s) {
+  for (size_t s = 0; s < SECTION_COUNT; s += 1) {
     auto& sec = m_sections[s];
     bool section_title_matches = !query.empty() && sec.search_blob.find(query) != std::string::npos;
     bool any_entry_visible = false;

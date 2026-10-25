@@ -47,6 +47,7 @@ set(UI_SOURCES
     zb_widgets.cpp
     zincgui/button.cpp
     zincgui/color_rect.cpp
+    zincgui/combo_box.cpp
     zincgui/font_face.cpp
     zincgui/input.cpp
     zincgui/label.cpp
@@ -55,6 +56,7 @@ set(UI_SOURCES
     zincgui/scrollbar.cpp
     zincgui/shader.cpp
     zincgui/slider.cpp
+    zincgui/spinner.cpp
     zincgui/sprite.cpp
     zincgui/text_input.cpp
     zincgui/texture_atlas.cpp

@@ -4,8 +4,8 @@
 #include "common/types.hpp"
 #include "ui/popup.hpp"
 #include "ui/zincgui/input.hpp"
-#include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/root.hpp"
+#include "ui/zincgui/sprite.hpp"
 #include "ui/zincgui/widget.hpp"
 
 using namespace zincgui;
@@ -15,9 +15,13 @@ Popup::Popup(Root& ui_, PopupController& controller_, std::function<void(Popup*)
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
   set_anchor(Anchor::CENTER);
+  // set_is_focusable(true);
 }
 
 void Popup::update() {
+
+  // if (!is_focused()) { is_dragged = false; }
+
   if (is_dragged) {
     vec2i delta = Input::get_mouse_pos() - drag_start_mouse_pos;
     vec2i new_pos = drag_start_pos + delta;

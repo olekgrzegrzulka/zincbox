@@ -140,6 +140,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool is_self_drawn = true;
       bool clip = false;
       bool clip_children = false;
+      bool is_focusable = false;
       bool ignore_parents_layout = false;
       bool is_drawn_on_top = false;
       float weight = 1.0; // FIXME: weight does nothing at the moment
@@ -203,6 +204,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_SETTER_DIRTY(is_self_drawn)
       WIDGET_DEF_SETTER_DIRTY(clip)
       WIDGET_DEF_SETTER_DIRTY(clip_children)
+      WIDGET_DEF_SETTER_DIRTY(is_focusable)
 
       void set_fixed_width(i32 value) {
         set_min_width(value);
@@ -234,6 +236,9 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_GETTER(is_updated)
       WIDGET_DEF_GETTER(x)
       WIDGET_DEF_GETTER(y)
+      bool is_focused() const;
+      bool is_focus_manager() const;
+      WIDGET_DEF_GETTER(is_focusable)
       i32 get_width() const {
         i32 lo = min_width > 0 ? min_width : std::numeric_limits<i32>::min();
         i32 hi = max_width > 0 ? max_width : std::numeric_limits<i32>::max();

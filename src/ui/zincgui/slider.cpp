@@ -14,6 +14,8 @@ zincgui::Slider::Slider(Root& ui_, SliderOrientation orientation_)
     thumb(track.add_child<Sprite>()) {
   orientation = orientation_;
 
+  set_is_focusable(true);
+
   set_size(100, 10);
   set_texture_thumb_pressed("slider_thumb_pressed");
   set_texture_thumb_hovered("slider_thumb_hovered");
@@ -220,21 +222,22 @@ void zincgui::Slider::draw() { Widget::draw(); }
 void zincgui::Slider::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 }
+
 void zincgui::Slider::event(Input::InputEventMouseMove& ev) {
-  if (is_mouse_hovering(ev.to)) { ev.handled = true; }
+  if (is_mouse_hovering()) { ev.handled = true; }
 }
+
 void zincgui::Slider::event(Input::InputEventMouseScroll& ev) {
-  if (is_mouse_hovering()) {
+  if (is_mouse_hovering() && is_scrollable) {
     if (!is_dragged) {
       i32 sign = ev.offset.y / std::abs(ev.offset.y);
       set_value(value + ((float)sign * sensitivity));
+      ev.handled = true;
     }
-    ev.handled = true;
   }
 }
-void zincgui::Slider::event(Input::InputEventKey& ev) {
-  if (is_mouse_hovering()) { ev.handled = true; }
-}
+
+void zincgui::Slider::event(Input::InputEventKey& ev) {}
 
 void zincgui::Slider::set_texture_thumb_pressed(const std::string& id) {
   auto t_ = ui.get_texture_atlas().get(id);

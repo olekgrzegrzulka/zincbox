@@ -795,7 +795,7 @@ namespace {
     popup->title->set_text(tr::get("popup.playlist.rename.title"));
     popup->btn_ok->get_label().set_text(tr::get("dialog.action.rename"));
     popup->text_input->label.set_text(std::string(db::collection_by_id(collection_id)->get().name()));
-    popup->text_input->set_focused(true);
+    root->set_focused_widget(popup->text_input);
 
     popup->on_ok_pressed = [popup, collection_id]() {
       std::string new_name = popup->text_input->label.get_text();
@@ -846,7 +846,7 @@ namespace {
     popup->title->set_text(tr::get("popup.playlist.rename.title"));
     popup->btn_ok->get_label().set_text(tr::get("dialog.action.rename"));
     popup->text_input->label.set_text(db::playlist_by_id(playlist_id)->get().name);
-    popup->text_input->set_focused(true);
+    root->set_focused_widget(popup->text_input);
 
     popup->on_ok_pressed = [popup, playlist_id]() {
       std::string new_name = popup->text_input->label.get_text();
@@ -1600,7 +1600,7 @@ namespace {
         popup->set_size(300, 200);
         popup->title->set_text(tr::get("popup.playlist.create_from_queue.title"));
         popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
-        popup->text_input->set_focused(true);
+        root->set_focused_widget(popup->text_input);
 
         popup->on_ok_pressed = [popup]() {
           auto playlist_id = db::add_playlist_to_collection(
@@ -1635,7 +1635,7 @@ namespace {
     popup->set_size(300, 200);
     popup->title->set_text(tr::get("popup.playlist.add.title"));
     popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
-    popup->text_input->set_focused(true);
+    root->set_focused_widget(popup->text_input);
 
     popup->on_ok_pressed = [popup, callback_close]() {
       auto playlist_id = db::add_playlist_to_collection(

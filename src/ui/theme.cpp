@@ -339,10 +339,12 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   // ui
   atlas_add_texture_row(std::array{"button_idle"s, "button_hovered"s, "button_pressed"s, "button_disabled"s},
                         std::array{"ui/button.png"s});
+  atlas_add_texture("button_focus", {"ui/button_focus.png"});
   atlas_add_texture("panel", {"ui/panel.png"});
   atlas_add_texture("panel_dark", {"ui/panel_dark.png"});
   add_custom_panel("panel_popup", "ui/panel_popup.png");
   add_custom_button("combobox", "ui/combobox.png");
+  atlas_add_texture("combobox_focus", {"ui/combobox_focus.png"});
   atlas_add_texture("combobox_contract", {"ui/combobox_contract.png"});
   atlas_add_texture("combobox_expand", {"ui/combobox_expand.png"});
   add_custom_panel("panel_combobox", "ui/panel_combobox.png");
