@@ -61,7 +61,14 @@ static inline std::string sanitize_query(std::string_view input) {
   auto end = input.end();
 
   while (start != end) {
-    char32_t c = utf8::next(start, end);
+    char32_t c = 0;
+    try {
+      c = utf8::next(start, end);
+    } catch (const utf8::exception& e) {
+      start += 1;
+      continue;
+    }
+
     char32_t new_char = transform_to_base_char(c);
 
     if (new_char == U' ') {
@@ -70,7 +77,15 @@ static inline std::string sanitize_query(std::string_view input) {
         last_was_space = true;
       }
     } else {
-      result += new_char;
+      if (new_char == U' ') {
+        if (!last_was_space) {
+          result.push_back(' ');
+          last_was_space = true;
+        }
+      } else {
+        utf8::append(new_char, std::back_inserter(result));
+        last_was_space = false;
+      }
       last_was_space = false;
     }
   }
