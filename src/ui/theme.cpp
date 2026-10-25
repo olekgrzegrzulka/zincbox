@@ -246,8 +246,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
     if (!LOAD_THEME_FROM_RESOURCES) {
       for (const std::string& path : paths) {
-        if (fs::is_regular_file((theme_path / path))) {
-          atlas.add_texture(id, path_to_utf8(theme_path / path));
+        if (fs::is_regular_file(theme_path / path)) {
+          atlas.add_texture(id, theme_path / path);
           return true;
         }
       }
@@ -277,8 +277,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
 
     if (!LOAD_THEME_FROM_RESOURCES) {
       for (const std::string& path : paths) {
-        if (fs::is_regular_file((theme_path / path))) {
-          atlas.add_texture_row(ids, path_to_utf8(theme_path / path));
+        if (fs::is_regular_file(theme_path / path)) {
+          atlas.add_texture_row(ids, theme_path / path);
           return true;
         }
       }
