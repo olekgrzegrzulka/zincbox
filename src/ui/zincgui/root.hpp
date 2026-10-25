@@ -53,6 +53,9 @@ namespace zincgui {
       void set_default_font_size(i32 pixel_height) { m_default_font_size = pixel_height; }
       i32 get_default_font_size() const { return m_default_font_size; }
 
+      void set_focused_widget(Widget*);
+      void set_focus_manager(Widget*);
+
       i32 get_window_width() const { return m_window_width; }
       i32 get_window_height() const { return m_window_height; }
       vec2i get_window_size() const { return vec2i{m_window_width, m_window_height}; }
@@ -60,6 +63,8 @@ namespace zincgui {
       const Shader& get_shader() const { return m_shader; }
       TextureAtlas& get_texture_atlas() { return m_texture_atlas; }
       std::span<Widget*> get_hovered_widgets() { return m_hovered_widgets; }
+      Widget* focused_widget() const { return m_focused_widget; }
+      Widget* focus_manager() const { return m_focus_manager; }
 
       void mark_tree_dirty() { m_tree_dirty = true; }
 
@@ -73,6 +78,8 @@ namespace zincgui {
       u64 m_current_frame = 0;
       std::unordered_set<Widget*> m_mutated_widgets;
       std::unordered_set<Widget*> m_deleted_widgets;
+      Widget* m_focused_widget{};
+      Widget* m_focus_manager{};
       bool m_root_mutated = true;
       bool m_tree_dirty = false;
       glm::mat4 m_matrix{};

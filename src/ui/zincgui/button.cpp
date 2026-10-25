@@ -19,6 +19,8 @@ Button::Button(Root& ui_) : Sprite::Sprite(ui_), label(add_child<Label>()) { ini
 Button::Button(Root& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) { init(); }
 
 void Button::init() {
+  // set_is_focusable(true);
+
   set_size(64, 24);
   set_texture_idle("button_idle");
   set_texture_hovered("button_hovered");

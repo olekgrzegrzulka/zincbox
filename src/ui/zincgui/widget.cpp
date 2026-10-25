@@ -108,3 +108,6 @@ void zincgui::Widget::mark_dirty() {
   dirty = true;
   ui.mark_tree_dirty();
 }
+
+bool zincgui::Widget::is_focused() const { return ui.focused_widget() == this; }
+bool zincgui::Widget::is_focus_manager() const { return ui.focus_manager() == this; }

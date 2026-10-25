@@ -70,6 +70,7 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   panel_middle.set_clip_children(true);
 
   m_seekbar = &panel_middle.add_child<ZincboxSlider>("seekbar");
+  m_seekbar->set_is_scrollable(false);
   m_seekbar->set_is_drawn(theme::config().panel_controls.seekbar.visible);
   i32 track_height = theme::config().panel_controls.seekbar.track_height;
   i32 thumb_width = theme::config().panel_controls.seekbar.thumb_width;
@@ -356,6 +357,7 @@ void PanelControls::update() {
   update_timestamp_label();
 
   i32 progress_ms = m_seekbar->is_being_dragged() ? m_seekbar->get_value() : player::get_display_time_ms();
+  if (!m_seekbar->is_being_dragged()) { m_seekbar->set_value(progress_ms, false); }
   if (m_seekbar->is_mouse_hovering()) {
     i32 x_rel = Input::get_mouse_x() - m_seekbar->get_position(Anchor::LEFT).x;
     i32 tooltip_ms = x_rel / (double)m_seekbar->get_width() * player::get_total_duration_ms();
@@ -376,7 +378,6 @@ void PanelControls::update() {
     // tooltip is centered - subtract half width to compensate
     m_tooltip_timestamp->set_x(x_rel - (m_seekbar->get_width() / 2));
   } else {
-    m_seekbar->set_value(progress_ms, false);
     m_tooltip_timestamp->set_is_drawn(false);
   }
 
