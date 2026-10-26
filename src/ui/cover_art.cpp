@@ -36,6 +36,8 @@ namespace {
       atlas.remove_texture(id);
     }
   }
+
+  std::string atlas_id(const std::string& id, bool high_res) { return id + (high_res ? "_256" : "_64"); }
 } // namespace
 
 zincgui::TextureAtlas& zincbox::ui::cover_art::texture_atlas() { return atlas; }
@@ -69,8 +71,8 @@ std::optional<std::string> zincbox::ui::cover_art::get_texture_id(db::track_id_t
 
   std::string id = path_to_utf8(path->stem());
   lru.touch(id);
-
-  if (atlas.has_texture(id, 1)) { return id; }
+  auto atlas_id_ = atlas_id(id, high_res);
+  if (atlas.has_texture(atlas_id_, 1)) { return atlas_id_; }
 
   pending_tracks.insert({track_id, high_res});
   return std::nullopt;
@@ -115,7 +117,7 @@ bool zincbox::ui::cover_art::update() {
     auto path = high_res ? zincbox::cover_art::get_256(track_id) : zincbox::cover_art::get_64(track_id);
     if (!path) { continue; }
     std::string id = path_to_utf8(path->stem());
-    if (atlas.has_texture(id, 1)) { continue; }
+    if (atlas.has_texture(atlas_id(id, high_res), 1)) { continue; }
     if (high_res) {
       if (!atlas.can_fit_texture(256, 256)) {
         clean();
@@ -140,7 +142,8 @@ bool zincbox::ui::cover_art::update() {
       }
     }
 
-    atlas.add_texture(id, *path);
+    atlas.add_texture(atlas_id(id, high_res), *path);
+
     modified = true;
   }
   return modified;
