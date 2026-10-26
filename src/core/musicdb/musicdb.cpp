@@ -22,6 +22,10 @@
 #include "playlist.hpp"
 #include "track.hpp"
 
+static constexpr size_t DB_MAGIC = 667667667;
+static constexpr size_t DB_VERSION = 5;
+static constexpr bool CHECK_DB_VERSION = true;
+
 using db::Collection;
 using db::Playlist;
 using db::Track;
@@ -84,9 +88,6 @@ namespace {
   }
 
 } // namespace
-
-static constexpr size_t DB_MAGIC = 667667667;
-static constexpr size_t DB_VERSION = 4;
 
 void db::create_empty_db() {
   collections.clear();
@@ -186,10 +187,12 @@ void db::deserialize(std::ifstream& is) {
   }
   size_t db_version{};
   read_bin(is, db_version);
-  if (db_version != DB_VERSION) {
+  if (CHECK_DB_VERSION && db_version != DB_VERSION) {
     out::critical("Database version number mismatch! Migration currently not supported");
     exit(1);
   }
+
+  if (!CHECK_DB_VERSION) { out::critical("Database version number checking is disabled!"); }
 
   collections.clear();
   playlists.clear();
