@@ -1,6 +1,5 @@
 #include "ui/zincgui/label.hpp"
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <string_view>
 #include <glad/glad.h>
@@ -10,6 +9,7 @@
 #include "ui/theme_config.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/root.hpp"
+#include "ui/zincgui/vertex.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -212,21 +212,19 @@ zincgui::Label::Label(Root& ui_, std::string_view text_) : Widget::Widget(ui_) {
   clip = true;
 }
 
-zincgui::Label::~Label() {
-  if (vbo != 0) { glDeleteBuffers(1, &vbo); }
-  if (vao != 0) { glDeleteVertexArrays(1, &vao); }
-}
+zincgui::Label::~Label() {}
 
 void zincgui::Label::set_font(size_t index) {
   if (font_index == index) { return; }
   font_index = index;
   shape_dirty = true;
+  last_atlas_version = -1;
   mark_dirty();
 }
 
 void zincgui::Label::set_font(std::string_view name) {
   auto id_opt = ui.find_font_id(name);
-  if (id_opt.has_value()) { set_font(*id_opt); }
+  if (id_opt) { set_font(*id_opt); }
 }
 
 i32 zincgui::Label::get_font_size() const {
@@ -251,35 +249,6 @@ void zincgui::Label::set_resize_to_text_extents(bool to) {
 }
 
 void zincgui::Label::update() { Widget::update(); }
-
-void zincgui::Label::draw() {
-  if (ui.get_font_count() == 0) {
-    Widget::draw();
-    return;
-  }
-
-  size_t active_font_idx = font_index < ui.get_font_count() ? font_index : 0;
-  const FontFace& font = ui.get_font(active_font_idx);
-
-  vec2i cur_size{width, height};
-  if (shape_dirty || cur_size != last_layout_size || font.get_atlas_version() != last_atlas_version) { update_text(); }
-
-  vec2i cur_screen_pos = get_position(Anchor::TOP_LEFT);
-  vec2i cur_win_size = ui.get_window_size();
-  if (vertices_dirty || cur_screen_pos != last_screen_pos || cur_win_size != last_window_size) {
-    rebuild_screen_vertices();
-    setup_buffers();
-  }
-
-  if (!vertices.empty()) {
-    font.bind(0);
-    glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
-    if (active_font_idx != 0) { ui.get_font(0).bind(0); }
-  }
-
-  Widget::draw();
-}
 
 void zincgui::Label::update_text() {
   shape_dirty = false;
@@ -565,6 +534,24 @@ void zincgui::Label::update_text() {
   }
 }
 
+std::vector<zincgui::Vertex> zincgui::Label::get_vertices() {
+  if (ui.get_font_count() == 0) { return {}; }
+
+  size_t active_font_idx = font_index < ui.get_font_count() ? font_index : 0;
+  const FontFace& font = ui.get_font(active_font_idx);
+
+  vec2i cur_size{width, height};
+  if (shape_dirty || cur_size != last_layout_size || font.get_atlas_version() != last_atlas_version) { update_text(); }
+
+  vec2i cur_screen_pos = get_position(Anchor::TOP_LEFT);
+  vec2i cur_win_size = ui.get_window_size();
+  if (vertices_dirty || cur_screen_pos != last_screen_pos || cur_win_size != last_window_size) {
+    rebuild_screen_vertices();
+  }
+
+  return vertices;
+}
+
 void zincgui::Label::rebuild_screen_vertices() {
   vertices_dirty = false;
   last_screen_pos = get_position(Anchor::TOP_LEFT);
@@ -581,53 +568,36 @@ void zincgui::Label::rebuild_screen_vertices() {
     vec2f start = (origin + q.pos_min) * inv_win - vec2f{1.0f, 1.0f};
     vec2f end = (origin + q.pos_max) * inv_win - vec2f{1.0f, 1.0f};
 
-    vertices.emplace_back(vertex_label{.pos = {start.x, end.y}, .uv = {q.uv_min.x, q.uv_max.y}, .color = q.color});
-    vertices.emplace_back(vertex_label{.pos = {end.x, end.y}, .uv = {q.uv_max.x, q.uv_max.y}, .color = q.color});
-    vertices.emplace_back(vertex_label{.pos = {start.x, start.y}, .uv = {q.uv_min.x, q.uv_min.y}, .color = q.color});
+    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+                                 .pos = {start.x, end.y},
+                                 .uv = {q.uv_min.x, q.uv_max.y},
+                                 .atlas_i = (u32)font_index,
+                                 .color = q.color});
+    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+                                 .pos = {end.x, end.y},
+                                 .uv = {q.uv_max.x, q.uv_max.y},
+                                 .atlas_i = (u32)font_index,
+                                 .color = q.color});
+    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+                                 .pos = {start.x, start.y},
+                                 .uv = {q.uv_min.x, q.uv_min.y},
+                                 .atlas_i = (u32)font_index,
+                                 .color = q.color});
 
-    vertices.emplace_back(vertex_label{.pos = {end.x, end.y}, .uv = {q.uv_max.x, q.uv_max.y}, .color = q.color});
-    vertices.emplace_back(vertex_label{.pos = {end.x, start.y}, .uv = {q.uv_max.x, q.uv_min.y}, .color = q.color});
-    vertices.emplace_back(vertex_label{.pos = {start.x, start.y}, .uv = {q.uv_min.x, q.uv_min.y}, .color = q.color});
+    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+                                 .pos = {end.x, end.y},
+                                 .uv = {q.uv_max.x, q.uv_max.y},
+                                 .atlas_i = (u32)font_index,
+                                 .color = q.color});
+    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+                                 .pos = {end.x, start.y},
+                                 .uv = {q.uv_max.x, q.uv_min.y},
+                                 .atlas_i = (u32)font_index,
+                                 .color = q.color});
+    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+                                 .pos = {start.x, start.y},
+                                 .uv = {q.uv_min.x, q.uv_min.y},
+                                 .atlas_i = (u32)font_index,
+                                 .color = q.color});
   }
-}
-
-void zincgui::Label::setup_buffers() {
-  if (vertices.empty()) { return; }
-
-  bool newly_created = false;
-  if (vbo == 0) {
-    glGenBuffers(1, &vbo);
-    newly_created = true;
-  }
-  if (vao == 0) {
-    glGenVertexArrays(1, &vao);
-    newly_created = true;
-  }
-
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-  size_t byte_size = vertices.size() * sizeof(vertex_label);
-  if (byte_size > vbo_capacity) {
-    vbo_capacity = std::max(byte_size, vbo_capacity * 2);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vbo_capacity), nullptr, GL_DYNAMIC_DRAW);
-  }
-  glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(byte_size), vertices.data());
-
-  if (newly_created) {
-    glVertexAttribIPointer(0, 1, GL_INT, sizeof(vertex_label), (void*)offsetof(vertex_label, type));
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, pos));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, uv));
-    glEnableVertexAttribArray(2);
-
-    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_label), (void*)offsetof(vertex_label, color));
-    glEnableVertexAttribArray(8);
-  }
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
 }

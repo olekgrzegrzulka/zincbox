@@ -72,5 +72,3 @@ void ToolTip::update() {
 
   Sprite::update();
 }
-
-void ToolTip::draw() { Sprite::draw(); }

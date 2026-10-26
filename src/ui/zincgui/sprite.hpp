@@ -6,6 +6,7 @@
 #include <glm/vec2.hpp>
 #include "common/types.hpp"
 #include "ui/zincgui/default_settings.hpp"
+#include "ui/zincgui/vertex.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -14,21 +15,10 @@ namespace zincgui {
   class Root;
   class Shader;
 
-  struct vertex_sprite {
-      i32 type = 0;
-      vec2f pos;
-      vec2f uv;
-      float nine_slice_margin = 0.0f;
-      float nine_slice_scale = 1.0f;
-      glm::vec<2, u32> widget_size = {1.0f, 1.0f};
-      vec2f uv_start = {0.0f, 0.0f};
-      vec2f uv_end = {1.0f, 1.0f};
-      u32 atlas_i = 1;
-  };
-
   class Sprite : public Widget {
     protected:
-      float nine_slice_margin = default_settings::sprite_nine_slice_margin; // FIXME: when this value is 0.0f, bad things happen
+      float nine_slice_margin =
+        default_settings::sprite_nine_slice_margin; // FIXME: when this value is 0.0f, bad things happen
       float nine_slice_scale = default_settings::sprite_nine_slice_scale;
       vec2f uv_start = {0.0f, 0.0f};
       vec2f uv_end = {1.0f, 1.0f};
@@ -37,36 +27,20 @@ namespace zincgui {
       u32 atlas_index = default_settings::sprite_default_atlas_index;
 
     protected:
-      u32 vbo = 0;
-      u32 vao = 0;
-      std::vector<vertex_sprite> vertices{};
-      std::optional<std::reference_wrapper<const zincgui::Shader>> shader{};
-
     public:
       Sprite(Root& ui_);
       Sprite(Root& ui_, const std::string& id_) : Widget(ui_) { set_texture(id_, true); }
       Sprite(Root& ui_, i32 width_, i32 height_);
 
+      std::vector<Vertex> get_vertices() override;
+
       ~Sprite() override;
 
       void update() override;
 
-      void draw() override;
-
-      void update_mesh();
-
-      void setup_buffers();
-
       virtual zincgui::TextureAtlas& get_texture_atlas();
 
       void set_texture(const std::string& id, bool resize_to_texture_size = true);
-
-      void set_shader(const zincgui::Shader& shader_) {
-        shader = std::reference_wrapper{shader_};
-        uv_start = {0.0f, 0.0f};
-        uv_end = {1.0f, 1.0f};
-        mark_dirty();
-      }
 
       WIDGET_DEF_SETTER_DIRTY(nine_slice_margin)
       WIDGET_DEF_SETTER_DIRTY(nine_slice_scale)

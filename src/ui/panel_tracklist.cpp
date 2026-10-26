@@ -271,8 +271,6 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
   }
 }
 
-void PanelTracklist::draw() { ColorRect::draw(); }
-
 void PanelTracklist::show() {
   set_is_drawn(true);
   set_is_updated(true);

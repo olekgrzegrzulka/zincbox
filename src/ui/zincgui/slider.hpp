@@ -65,7 +65,6 @@ namespace zincgui {
 
       void input() override;
       void update() override;
-      void draw() override;
 
       void event(Input::InputEventMouseButton&) override;
       void event(Input::InputEventMouseMove&) override;

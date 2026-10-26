@@ -31,8 +31,6 @@ PanelQueue::~PanelQueue() {
   player::signal_on_queue_changed_at.disconnect(m_slot_on_queue_changed_at);
 }
 
-void PanelQueue::draw() { Widget::draw(); }
-
 void PanelQueue::on_queue_appended_to_back() {
   if (player::get_playing_queue().empty()) { return; }
   size_t i = player::get_playing_queue().size() - 1;

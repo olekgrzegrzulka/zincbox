@@ -14,9 +14,11 @@ layout(location = 4) in float scale;
 layout(location = 5) in uvec2 widget_size;
 layout(location = 6) in vec2 uv_start;
 layout(location = 7) in vec2 uv_end;
-layout(location = 8) in vec3 color;
-layout(location = 9) in float opacity;
-layout(location = 10) in uint atlas_i;
+layout(location = 8) in uint atlas_i;
+layout(location = 9) in vec3 color;
+layout(location = 10) in float opacity;
+layout(location = 11) in vec2 scissor_begin;
+layout(location = 12) in vec2 scissor_end;
 
 layout(location = 0) out flat int type_;
 layout(location = 1) out vec2 uv_;
@@ -28,11 +30,15 @@ layout(location = 6) out vec2 uv_end_;
 layout(location = 7) out vec3 color_;
 layout(location = 8) out float opacity_;
 layout(location = 9) out flat uint atlas_i_;
-
+layout(location = 10) out flat vec2 scissor_begin_;
+layout(location = 11) out flat vec2 scissor_end_;
 
 void main() {
   gl_Position = vec4(vertex, 0.0f, 1.0f) * matrix;
   type_ = type;
+  scissor_begin_ = scissor_begin;
+  scissor_end_ = scissor_end;
+
   if (type == 0) {
     uv_ = uv;
     nine_slice_pixel_margin_ = nine_slice_pixel_margin;
@@ -52,7 +58,7 @@ void main() {
 
   static constexpr char shader_frag[] = R"(#version 450 core
 
-layout(binding = 0) uniform sampler2D atlas[5];
+layout(binding = 0) uniform sampler2D atlas[16];
 
 uniform vec2 tex_size;
 
@@ -66,10 +72,19 @@ layout(location = 6) in vec2 uv_end;
 layout(location = 7) in vec3 color;
 layout(location = 8) in float opacity;
 layout(location = 9) in flat uint atlas_i;
+layout(location = 10) in flat vec2 scissor_begin;
+layout(location = 11) in flat vec2 scissor_end;
 
 out vec4 FragColor;
 
 void main() {
+  if (scissor_begin.x >= 0.0) {
+    if (gl_FragCoord.x < scissor_begin.x || gl_FragCoord.x >= scissor_end.x ||
+        gl_FragCoord.y < scissor_begin.y || gl_FragCoord.y >= scissor_end.y) {
+      discard;
+    }
+  }
+
   if (type == 0) {
     vec2 uv_extents = uv_end - uv_start;
     vec2 sprite_size = uv_extents * tex_size;

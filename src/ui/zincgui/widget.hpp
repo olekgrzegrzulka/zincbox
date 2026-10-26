@@ -3,12 +3,15 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stacktrace>
 #include <string>
 #include <type_traits>
 #include <vector>
 #include "common/debug.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "ui/zincgui/default_settings.hpp"
+#include "ui/zincgui/vertex.hpp"
 
 namespace zincgui {
 
@@ -171,25 +174,21 @@ inline vec2f anchor_to_uv(Anchor anchor) {
 #endif
 
     public:
-      Widget(Root& ui_) : ui{ui_} {}
-      Widget(Root& ui_, i32 width_, i32 height_) : ui{ui_}, width{width_}, height{height_} {}
+      Widget(Root& ui_) : ui{ui_} { mark_dirty(); }
+      Widget(Root& ui_, i32 width_, i32 height_) : ui{ui_}, width{width_}, height{height_} { mark_dirty(); }
       virtual ~Widget() {};
 
       virtual void input();
       virtual void update();
-      virtual void draw();
 
       // Returns widget's scene position relative to some anchor
       // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
       vec2i get_position(Anchor relative_to = Anchor::TOP_LEFT) const;
 
       WIDGET_DEF_GETTER(name);
-      void set_name(std::string name_) {
-        if (name == name_) { return; }
-        name = std::move(name_);
-      }
-      WIDGET_DEF_SETTER_DIRTY(marked_for_deletion)
-      WIDGET_DEF_SETTER_DIRTY(is_updated)
+      void set_name(std::string name_);
+      void set_marked_for_deletion(bool value);
+      void set_is_updated(bool value);
       WIDGET_DEF_SETTER_DIRTY(x)
       WIDGET_DEF_SETTER_DIRTY(y)
       void set_width(i32);
@@ -202,11 +201,11 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_SETTER_DIRTY(parent_anchor)
       WIDGET_DEF_SETTER_DIRTY(window_width)
       WIDGET_DEF_SETTER_DIRTY(window_height)
-      WIDGET_DEF_SETTER_DIRTY(update_children_first)
-      WIDGET_DEF_SETTER_DIRTY(is_self_drawn)
-      WIDGET_DEF_SETTER_DIRTY(clip)
-      WIDGET_DEF_SETTER_DIRTY(clip_children)
       WIDGET_DEF_SETTER_DIRTY(is_focusable)
+      void set_update_children_first(bool);
+      void set_is_self_drawn(bool);
+      void set_clip(bool);
+      void set_clip_children(bool);
 
       void set_fixed_width(i32 value) {
         set_min_width(value);
@@ -218,11 +217,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
         set_max_height(value);
       }
 
-      void set_is_drawn(bool to) {
-        if (is_drawn == to) { return; }
-        is_drawn = to;
-        mark_dirty();
-      }
+      void set_is_drawn(bool);
 
       void set_ignore_parents_layout(bool to) {
         if (ignore_parents_layout == to) { return; }
@@ -230,9 +225,9 @@ inline vec2f anchor_to_uv(Anchor anchor) {
         mark_dirty();
       }
 
-      WIDGET_DEF_SETTER_DIRTY(is_drawn_on_top)
+      void set_is_drawn_on_top(bool);
       WIDGET_DEF_SETTER_DIRTY(weight)
-      WIDGET_DEF_SETTER_DIRTY(draw_behind_parent)
+      void set_draw_behind_parent(bool);
 
       WIDGET_DEF_GETTER(marked_for_deletion)
       WIDGET_DEF_GETTER(is_updated)
@@ -272,7 +267,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_GETTER(hover_test_parent)
 
       Layout& get_layout() {
-        mark_dirty();
+        // FIXME: mark layout as dirty if changed
         return layout;
       }
 
@@ -287,6 +282,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       void set_size(vec2i);
 
       void mark_dirty();
+      void ui_mark_tree_dirty();
 
       auto& get_children() { return children; }
 
@@ -302,6 +298,8 @@ inline vec2f anchor_to_uv(Anchor anchor) {
 
       bool is_mouse_hovering() const;
       bool is_mouse_hovering(vec2i) const;
+
+      virtual std::vector<Vertex> get_vertices() { return {}; }
 
       virtual void event(Input::InputEventMouseButton&) {}
       virtual void event(Input::InputEventMouseMove&) {}

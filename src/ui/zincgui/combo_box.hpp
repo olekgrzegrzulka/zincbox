@@ -29,7 +29,6 @@ namespace zincgui {
       ComboBox(Root& ui_);
 
       void update() override;
-      void draw() override;
       void event(Input::InputEventMouseScroll& ev) override;
       void event(Input::InputEventMouseButton& ev) override;
       void event(Input::InputEventKey& ev) override;

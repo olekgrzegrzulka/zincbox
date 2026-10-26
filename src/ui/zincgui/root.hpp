@@ -16,6 +16,7 @@
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/shader.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
+#include "ui/zincgui/vertex.hpp"
 
 namespace zincgui {
   class Widget;
@@ -75,6 +76,10 @@ namespace zincgui {
       void construct_traversal_order();
 
     private:
+      std::vector<Vertex> m_vertices;
+      u32 m_vbo = 0;
+      u32 m_vao = 0;
+
       u64 m_current_frame = 0;
       std::unordered_set<Widget*> m_mutated_widgets;
       std::unordered_set<Widget*> m_deleted_widgets;

@@ -137,7 +137,6 @@ class PanelTracklist final : public zincgui::ColorRect {
     void event(zincgui::Input::InputEventKey&) override;
     void input() override;
     void update() override;
-    void draw() override;
 
     void show();
     void hide();

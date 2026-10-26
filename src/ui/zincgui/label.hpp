@@ -6,6 +6,7 @@
 #include "common/types.hpp"
 #include "common/utf.hpp"
 #include "ui/zincgui/default_settings.hpp"
+#include "ui/zincgui/vertex.hpp"
 #include "ui/zincgui/widget.hpp"
 
 namespace zincgui {
@@ -13,13 +14,6 @@ namespace zincgui {
   class Root;
 
   enum class TextAlign : u8 { LEFT, CENTER, RIGHT, JUSTIFY };
-
-  struct vertex_label final {
-      i32 type = 1;
-      vec2f pos;
-      vec2f uv;
-      vec3f color{1.0f};
-  };
 
   class Label final : public Widget {
     private:
@@ -47,7 +41,7 @@ namespace zincgui {
       u32 vbo = 0;
       size_t vbo_capacity = 0;
       std::vector<LocalQuad> local_quads{};
-      std::vector<vertex_label> vertices{};
+      std::vector<Vertex> vertices;
       vec3f text_color = {1.0f, 1.0f, 1.0f};
       vec2f text_extents{};
 
@@ -65,6 +59,9 @@ namespace zincgui {
       Label& operator=(Label&&) = delete;
       Label(Root&);
       Label(Root&, std::string_view);
+
+      std::vector<Vertex> get_vertices() override;
+
       ~Label() override;
 
       void set_resize_to_text_extents(bool to);
@@ -175,7 +172,6 @@ namespace zincgui {
       }
 
       void update() override;
-      void draw() override;
 
     protected:
       void update_text();

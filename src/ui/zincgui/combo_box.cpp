@@ -138,8 +138,6 @@ void ComboBox::update() {
   // debug_warn(items_to_draw);
 }
 
-void ComboBox::draw() { Button::draw(); }
-
 void ComboBox::event(Input::InputEventMouseScroll& ev) {
   if (!is_focused()) { return; }
   target_scroll_progress += ev.offset.y * -1.0f;

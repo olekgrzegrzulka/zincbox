@@ -33,7 +33,6 @@ class WidgetAlbumCover final : public zincgui::Button {
     WidgetAlbumCover& operator=(WidgetAlbumCover&&) = delete;
     WidgetAlbumCover(zincgui::Root& ui_, std::optional<size_t> playlist_id, bool is_add_button_ = false);
     ~WidgetAlbumCover() override;
-    void draw() override;
     void update() override;
     void event(zincgui::Input::InputEventMouseMove& ev) override;
     bool is_add_button() const { return m_is_add_button; }
@@ -62,7 +61,6 @@ class PanelPlaylists final : public zincgui::ColorRect {
 
   public:
     PanelPlaylists(zincgui::Root& ui_);
-    void draw() override;
     void clear();
     void input() override;
     void update() override;

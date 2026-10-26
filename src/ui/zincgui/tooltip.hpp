@@ -18,7 +18,6 @@ namespace zincgui {
               i32 distance_ = default_settings::tooltip_distance);
 
       void update() override;
-      void draw() override;
 
       void set_text(const std::string& s);
       void set_clamp(bool value);
