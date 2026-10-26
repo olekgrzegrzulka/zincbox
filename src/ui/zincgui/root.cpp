@@ -18,7 +18,12 @@
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
+#include "ui/zincgui/tooltip.hpp"
 #include "ui/zincgui/widget.hpp"
+
+namespace {
+  void ensure_buffers(u32& vao, u32& vbo);
+}
 
 zincgui::Root::Root(i32 window_width_, i32 window_height_) : m_shader{shader_vert, shader_frag} {
   m_window_width = window_width_;
@@ -90,6 +95,9 @@ const zincgui::FontFace& zincgui::Root::get_font(size_t id) const {
 }
 
 void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_layer) {
+
+  widget->dirty = false;
+  
   if (widget->parent && widget->parent->deleted_) { widget->deleted_ = true; }
 
   if (widget->get_marked_for_deletion() && !widget->deleted_) {
@@ -159,10 +167,28 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       construct_traversal_order(child.get(), always_on_top_layer);
     }
   }
+
   if ((i32)m_widget_traversal_order.size() <= always_on_top_layer) {
     m_widget_traversal_order.resize(always_on_top_layer + 1);
   }
   m_widget_traversal_order[always_on_top_layer].emplace_back(widget);
+
+  if (!widget->deleted_ && widget->visible_ && widget->is_self_drawn) {
+    rect2i scissor_rect = widget->scissor_.value_or(rect2i{{-1, -1}, {0, 0}});
+    if (widget->scissor_ && widget->get_clip()) {
+      rect2i widget_rect = {.begin = {widget->get_position(Anchor::TOP_LEFT).x,
+                                      m_window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
+                            .size = {widget->get_width(), widget->get_height()}};
+      scissor_rect = widget->scissor_->intersected(widget_rect);
+    }
+    std::vector<Vertex> verts = widget->get_vertices();
+    for (auto&& v : verts) {
+      v.scissor_begin = scissor_rect.begin;
+      v.scissor_end = scissor_rect.begin + scissor_rect.size;
+    }
+
+    if (!verts.empty()) { m_vertices.insert(m_vertices.end(), verts.begin(), verts.end()); }
+  }
 
   for (auto&& child : widget->get_children()) {
     if (!child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) {
@@ -181,6 +207,7 @@ void zincgui::Root::construct_traversal_order() {
   m_deleted_widgets.clear();
   m_mutated_widgets.clear();
   m_hovered_widgets.clear();
+  m_vertices.clear();
 
   for (auto&& w : m_widgets) {
     if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
@@ -188,9 +215,13 @@ void zincgui::Root::construct_traversal_order() {
   for (auto&& w : m_widgets) {
     if (!w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
   }
-  for (const auto& w : m_widgets) {
+  for (auto&& w : m_widgets) {
     if (w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
   }
+
+  ensure_buffers(m_vao, m_vbo);
+  // std::reverse(m_vertices.begin(), m_vertices.end());
+  glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), m_vertices.data(), GL_DYNAMIC_DRAW);
 }
 
 bool zincgui::Root::process_mutations() {
@@ -315,38 +346,6 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   } while (tree_changed || !m_deleted_widgets.empty() || !m_mutated_widgets.empty() || !m_widgets_to_add.empty());
 }
 
-void zincgui::Root::draw() {
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_SCISSOR_TEST);
-
-  m_shader.use();
-  m_shader.set_uniform_mat4("matrix", get_matrix());
-  m_shader.set_uniform_float("tex_size", m_texture_atlas.size(), m_texture_atlas.size());
-  if (!m_fonts.empty()) { m_fonts[0]->bind(0); }
-  m_texture_atlas.bind(1);
-  for (auto& layer : m_widget_traversal_order) {
-    for (auto* widget : layer) {
-      if (widget->visible_ && widget->is_self_drawn) {
-        if (widget->scissor_.has_value()) {
-          rect2i scissor_rect = widget->scissor_.value();
-          if (widget->get_clip()) {
-            rect2i widget_rect = {.begin = {widget->get_position(Anchor::TOP_LEFT).x,
-                                            m_window_height - widget->get_position(Anchor::BOTTOM_RIGHT).y},
-                                  .size = {widget->get_width(), widget->get_height()}};
-            scissor_rect = scissor_rect.intersected(widget_rect);
-          }
-          glEnable(GL_SCISSOR_TEST);
-          glScissor(scissor_rect.begin.x, scissor_rect.begin.y, scissor_rect.size.x, scissor_rect.size.y);
-        } else {
-          glDisable(GL_SCISSOR_TEST);
-        }
-        widget->draw();
-        widget->dirty = false;
-      }
-    }
-  }
-}
-
 void zincgui::Root::set_focused_widget(Widget* w) {
   if (w && (w->get_marked_for_deletion() || w->deleted_)) { return; }
   m_focused_widget = w;
@@ -356,3 +355,76 @@ void zincgui::Root::set_focus_manager(Widget* w) {
   if (w && (w->get_marked_for_deletion() || w->deleted_)) { return; }
   m_focus_manager = w;
 }
+
+void zincgui::Root::draw() {
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_SCISSOR_TEST);
+
+  m_shader.use();
+  m_shader.set_uniform_mat4("matrix", get_matrix());
+  m_shader.set_uniform_float("tex_size", m_texture_atlas.size(), m_texture_atlas.size());
+  for (size_t i = 0; i < m_fonts.size(); i += 1) {
+    m_fonts[i]->bind(0);
+  }
+  m_texture_atlas.bind(1);
+
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  ensure_buffers(m_vao, m_vbo);
+  glBindVertexArray(m_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+  if (!m_vertices.empty()) { glDrawArrays(GL_TRIANGLES, 0, m_vertices.size()); }
+}
+
+namespace {
+  void ensure_buffers(u32& vao, u32& vbo) {
+    using zincgui::Vertex;
+    if (vao == 0) {
+      glGenVertexArrays(1, &vao);
+      glGenBuffers(1, &vbo);
+
+      glBindVertexArray(vao);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+      glEnableVertexAttribArray(0);
+      glVertexAttribIPointer(0, 1, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, type));
+
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
+
+      glEnableVertexAttribArray(2);
+      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+
+      glEnableVertexAttribArray(3);
+      glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, nine_slice_margin));
+
+      glEnableVertexAttribArray(4);
+      glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, nine_slice_scale));
+
+      glEnableVertexAttribArray(5);
+      glVertexAttribIPointer(5, 2, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, widget_size));
+
+      glEnableVertexAttribArray(6);
+      glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv_start));
+
+      glEnableVertexAttribArray(7);
+      glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv_end));
+
+      glEnableVertexAttribArray(8);
+      glVertexAttribIPointer(8, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, atlas_i));
+
+      glEnableVertexAttribArray(9);
+      glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
+      glEnableVertexAttribArray(10);
+      glVertexAttribPointer(10, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, opacity));
+
+      glEnableVertexAttribArray(11);
+      glVertexAttribPointer(11, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, scissor_begin));
+
+      glEnableVertexAttribArray(12);
+      glVertexAttribPointer(12, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, scissor_end));
+    }
+  }
+} // namespace

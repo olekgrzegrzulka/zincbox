@@ -18,7 +18,6 @@ namespace zincgui {
       ScrollBar(Root& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
 
       void update() override;
-      void draw() override;
       void recalculate_values();
 
       void scroll(float force);

@@ -96,6 +96,7 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   cover_size = vec2i{cover_w, cover_w};
   total_size = vec2i{cover_w, cover_w + text_space};
 
+  set_is_self_drawn(false);
   set_clip_children(true);
   set_size(total_size.x, total_size.y);
 
@@ -162,8 +163,6 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
 }
 
 WidgetAlbumCover::~WidgetAlbumCover() { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
-
-void WidgetAlbumCover::draw() {}
 
 void WidgetAlbumCover::update() {
   if (!is_mouse_hovering()) { is_hovered = false; }
@@ -444,8 +443,6 @@ void PanelPlaylists::hide() {
   set_is_drawn(false);
   set_is_updated(false);
 }
-
-void PanelPlaylists::draw() { ColorRect::draw(); }
 
 void PanelPlaylists::event(Input::InputEventMouseScroll& e) {
   if (props.is_scrollable && is_mouse_hovering()) {

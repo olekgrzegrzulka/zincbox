@@ -221,8 +221,6 @@ void zincgui::Slider::input() {
 
 void zincgui::Slider::update() { Widget::update(); }
 
-void zincgui::Slider::draw() { Widget::draw(); }
-
 void zincgui::Slider::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
 }

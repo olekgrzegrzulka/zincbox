@@ -24,7 +24,6 @@ class PanelQueue final : public zincgui::Widget {
     PanelQueue(zincgui::Root& ui_);
     ~PanelQueue() override;
     void update() override;
-    void draw() override;
 
     void show() {
       set_is_drawn(true);

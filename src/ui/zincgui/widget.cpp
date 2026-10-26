@@ -1,13 +1,16 @@
 #include "ui/zincgui/widget.hpp"
+#include <iostream>
+#include <stacktrace>
+#include "common/logger.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/layout.hpp"
 #include "ui/zincgui/root.hpp"
 
+using namespace zincgui;
+
 vec2i zincgui::Widget::get_position(Anchor relative_to) const {
   return global_position_ + vec2i(vec2f{width, height} * anchor_to_uv(relative_to));
 }
-
-void zincgui::Widget::draw() {}
 
 void zincgui::Widget::input() {}
 
@@ -101,9 +104,84 @@ void zincgui::Widget::set_height(i32 height_) {
 }
 
 void zincgui::Widget::mark_dirty() {
+  if (dirty) { return; }
   dirty = true;
+  ui.mark_tree_dirty();
+}
+
+void Widget::set_update_children_first(bool value) {
+  if (update_children_first != value) {
+    update_children_first = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+void Widget::set_is_self_drawn(bool value) {
+  if (is_self_drawn != value) {
+    is_self_drawn = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+void Widget::set_clip(bool value) {
+  if (clip != value) {
+    clip = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+void Widget::set_clip_children(bool value) {
+  if (clip_children != value) {
+    clip_children = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+
+void Widget::set_name(std::string name_) {
+  if (name == name_) { return; }
+  name = std::move(name_);
+}
+
+void Widget::set_marked_for_deletion(bool value) {
+  if (marked_for_deletion != value) {
+    marked_for_deletion = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+void Widget::set_is_updated(bool value) {
+  if (is_updated != value) {
+    is_updated = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+
+void Widget::set_is_drawn_on_top(bool value) {
+  if (is_drawn_on_top != value) {
+    is_drawn_on_top = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+
+void Widget::set_draw_behind_parent(bool value) {
+  if (draw_behind_parent != value) {
+    draw_behind_parent = value;
+    mark_dirty();
+    ui.mark_tree_dirty();
+  }
+}
+
+void Widget::set_is_drawn(bool to) {
+  if (is_drawn == to) { return; }
+  is_drawn = to;
+  mark_dirty();
   ui.mark_tree_dirty();
 }
 
 bool zincgui::Widget::is_focused() const { return ui.focused_widget() == this; }
 bool zincgui::Widget::is_focus_manager() const { return ui.focus_manager() == this; }
+
+// void Widget::ui_mark_tree_dirty() { ui.mark_tree_dirty(); }

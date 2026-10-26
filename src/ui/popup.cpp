@@ -108,5 +108,3 @@ void Popover::update() {
 
   Sprite::update();
 }
-
-void Popover::draw() { Sprite::draw(); }

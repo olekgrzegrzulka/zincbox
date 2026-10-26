@@ -43,7 +43,6 @@ namespace zincgui {
       Button(Root& ui_, std::string_view label_);
 
       void update() override;
-      void draw() override;
       void event(Input::InputEventMouseButton&) override;
       void event(Input::InputEventMouseMove&) override;
       void event(Input::InputEventMouseScroll&) override;

@@ -48,7 +48,6 @@ class Popover : public zincgui::Sprite {
   public:
     Popover(zincgui::Root& ui_, bool arrow_on_top);
     void update() override;
-    void draw() override;
 
   public:
     Sprite* arrow{};

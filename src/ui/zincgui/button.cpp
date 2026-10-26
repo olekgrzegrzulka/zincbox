@@ -39,8 +39,6 @@ void Button::init() {
 Label& Button::get_label() { return label; }
 const Label& Button::get_label() const { return label; }
 
-void Button::draw() { Sprite::draw(); }
-
 void Button::on_press(std::function<void()> lambda_press_) { lambda_press = std::move(lambda_press_); }
 void Button::on_depress(std::function<void()> lambda_depress_) { lambda_depress = std::move(lambda_depress_); }
 void Button::on_press_rmb(std::function<void()> lambda_press_rmb_) { lambda_press_rmb = std::move(lambda_press_rmb_); }
