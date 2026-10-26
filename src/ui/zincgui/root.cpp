@@ -89,26 +89,6 @@ const zincgui::FontFace& zincgui::Root::get_font(size_t id) const {
   return *m_fonts[id];
 }
 
-void zincgui::Root::update_hovered_widgets_recursive(Widget* widget) {
-  vec2i mouse_pos = Input::get_mouse_pos();
-  vec2i widget_top_left = widget->get_position(Anchor::TOP_LEFT);
-  vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
-  bool hovered = (mouse_pos.x >= widget_top_left.x && mouse_pos.x < widget_bottom_right.x) &&
-                 (mouse_pos.y >= widget_top_left.y && mouse_pos.y < widget_bottom_right.y);
-  bool parent_hovered = !widget->parent || widget->parent->hovered_;
-  if (!widget->get_marked_for_deletion() && widget->get_is_updated() && widget->get_is_drawn() &&
-      widget->get_is_self_drawn() && hovered && parent_hovered) {
-    m_hovered_widgets.emplace_back(widget);
-    widget->hovered_ = true;
-  } else {
-    widget->hovered_ = false;
-  }
-
-  for (auto&& child : widget->get_children()) {
-    update_hovered_widgets_recursive(child.get());
-  }
-}
-
 void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_layer) {
   if (widget->parent && widget->parent->deleted_) { widget->deleted_ = true; }
 
@@ -137,6 +117,16 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
     bool parent_dirty = parent ? parent->dirty : false;
     widget->dirty = parent_dirty || widget->dirty;
 
+    vec2i origin{};
+    if (widget->parent) {
+      origin = widget->parent->get_position(widget->parent_anchor);
+    } else {
+      origin = vec2i(anchor_to_uv(widget->parent_anchor) * vec2f{get_window_size()});
+    }
+
+    widget->global_position_ =
+      origin + vec2i(widget->x, widget->y) - vec2i(vec2f{widget->width, widget->height} * anchor_to_uv(widget->anchor));
+
     std::optional<rect2i> parent_scissor = parent ? parent->scissor_ : std::nullopt;
     if (widget->is_drawn_on_top) { parent_scissor = std::nullopt; }
     if (widget->get_clip_children()) {
@@ -148,6 +138,19 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       }
     } else {
       widget->scissor_ = parent_scissor;
+    }
+
+    vec2i mouse_pos = Input::get_mouse_pos();
+    vec2i widget_top_left = widget->get_position(Anchor::TOP_LEFT);
+    vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
+    bool hovered = (mouse_pos.x >= widget_top_left.x && mouse_pos.x < widget_bottom_right.x) &&
+                   (mouse_pos.y >= widget_top_left.y && mouse_pos.y < widget_bottom_right.y);
+    bool parent_hovered = !widget->parent || widget->parent->hovered_;
+    if (widget->updated_ && widget->get_is_self_drawn() && hovered && parent_hovered) {
+      m_hovered_widgets.emplace_back(widget);
+      widget->hovered_ = true;
+    } else {
+      widget->hovered_ = false;
     }
   }
 
@@ -177,6 +180,7 @@ void zincgui::Root::construct_traversal_order() {
   m_widget_traversal_order.clear();
   m_deleted_widgets.clear();
   m_mutated_widgets.clear();
+  m_hovered_widgets.clear();
 
   for (auto&& w : m_widgets) {
     if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
@@ -309,11 +313,6 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
     tree_changed = process_mutations();
     if (tree_changed) { construct_traversal_order(); }
   } while (tree_changed || !m_deleted_widgets.empty() || !m_mutated_widgets.empty() || !m_widgets_to_add.empty());
-
-  m_hovered_widgets.clear();
-  for (auto&& w : m_widgets) {
-    update_hovered_widgets_recursive(w.get());
-  }
 }
 
 void zincgui::Root::draw() {

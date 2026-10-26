@@ -154,6 +154,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool deleted_ = false;
       i32 always_on_top_layer_ = 0;
       std::optional<rect2i> scissor_;
+      vec2i global_position_{};
 
       Widget* parent = nullptr;
       std::vector<std::unique_ptr<Widget>> children;

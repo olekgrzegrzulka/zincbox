@@ -70,7 +70,6 @@ namespace zincgui {
       void mark_tree_dirty() { m_tree_dirty = true; }
 
     private:
-      void update_hovered_widgets_recursive(Widget* widget);
       bool process_mutations();
       void construct_traversal_order(Widget*, i32 always_on_top_layer = 0);
       void construct_traversal_order();
