@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "common/types.hpp"
+#include "core/musicdb/lyrics.hpp"
 
 namespace zincbox {
   struct TrackMetadata final {
@@ -16,6 +17,7 @@ namespace zincbox {
       std::optional<i32> year;
       i32 duration_ms{0};
       i32 bitrate_kb_s{0};
+      Lyrics lyrics;
 
       TrackMetadata() = default;
       TrackMetadata(const TrackMetadata&) = delete;

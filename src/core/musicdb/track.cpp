@@ -1,4 +1,3 @@
-
 #include "track.hpp"
 #include <fstream>
 #include <iomanip>
@@ -6,6 +5,7 @@
 #include <span>
 #include <sstream>
 #include <string>
+#include "common/logger.hpp"
 #include "common/serialize.hpp"
 #include "common/types.hpp"
 #include "common/utf.hpp"
@@ -23,16 +23,18 @@ db::Track::Track(std::ifstream& is) {
   read_str(is, metadata.title);
   read_str(is, metadata.artist);
   read_str(is, metadata.album);
+
   size_t album_artist_size = 0;
+  read_bin<size_t>(is, album_artist_size);
   if (album_artist_size > 1024) {
     out::critical("Database corrupted: invalid album_artist_size");
     exit(1);
   }
-  read_bin<size_t>(is, album_artist_size);
   metadata.album_artist.resize(album_artist_size);
   for (size_t i = 0; i < album_artist_size; i += 1) {
     read_str(is, metadata.album_artist[i]);
   }
+
   read_str(is, metadata.genre);
   i32 track_num = -1;
   i32 track_tot = -1;
@@ -46,6 +48,19 @@ db::Track::Track(std::ifstream& is) {
   metadata.year = (yr >= 0) ? std::optional<int32_t>(yr) : std::nullopt;
   read_bin(is, metadata.duration_ms);
   read_bin(is, metadata.bitrate_kb_s);
+
+  read_str(is, metadata.lyrics.unsynced);
+  size_t synced_lyrics_size = 0;
+  read_bin<size_t>(is, synced_lyrics_size);
+  if (synced_lyrics_size > 65536) {
+    out::critical("Database corrupted: invalid synced_lyrics_size");
+    exit(1);
+  }
+  metadata.lyrics.synced.resize(synced_lyrics_size);
+  for (size_t i = 0; i < synced_lyrics_size; i += 1) {
+    read_bin(is, metadata.lyrics.synced[i].timestamp_ms);
+    read_str(is, metadata.lyrics.synced[i].text);
+  }
 }
 
 void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old_playlist_id_to_new_playlist_id) const {
@@ -77,6 +92,13 @@ void db::Track::serialize(std::ostream& os, std::optional<std::span<size_t>> old
   write_bin(os, metadata.year.value_or(-1));
   write_bin(os, metadata.duration_ms);
   write_bin(os, metadata.bitrate_kb_s);
+
+  write_str(os, metadata.lyrics.unsynced);
+  write_bin<size_t>(os, metadata.lyrics.synced.size());
+  for (const auto& line : metadata.lyrics.synced) {
+    write_bin(os, line.timestamp_ms);
+    write_str(os, line.text);
+  }
 }
 
 std::string db::Track::to_string() const {
@@ -99,6 +121,7 @@ std::string db::Track::pretty_name() const {
   }
   return path_to_utf8(file_name_with_extension());
 }
+
 std::string db::Track::pretty_length() const {
   i32 length_s = metadata.duration_ms / 1000;
   i32 length_m = metadata.duration_ms / 1000 / 60;
