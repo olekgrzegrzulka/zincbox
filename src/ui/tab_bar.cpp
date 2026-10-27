@@ -368,6 +368,8 @@ void TabBar::update_tab_textures(i32 id) {
 void TabBar::skip_anim() { position_tabs(false); }
 
 void TabBar::sort_tabs_by_label(std::span<const std::string> labels) {
+  auto* selected_tab = get_selected_tab();
+
   std::unordered_map<std::string, i32> label_priority;
   for (size_t i = 0; i < labels.size(); i += 1) {
     label_priority[labels[i]] = i;
@@ -381,10 +383,11 @@ void TabBar::sort_tabs_by_label(std::span<const std::string> labels) {
     return it_lhs->second < it_rhs->second;
   });
 
+  selected_tab_index = -1;
   for (size_t i = 0; i < tabs.size(); i += 1) {
     tabs[i]->index = i;
+    if (tabs[i] == selected_tab) { selected_tab_index = i; }
   }
-  selected_tab_index = -1;
 
   skip_anim();
 }

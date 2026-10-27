@@ -28,6 +28,7 @@ namespace player {
       void assert_valid();
       std::optional<size_t> current();
       void next();
+      [[nodiscard]] std::optional<size_t> peek_next();
       void prev();
       bool is_start() const;
       bool is_end() const;
@@ -47,6 +48,15 @@ namespace player {
         }
         return ret;
       }
+
+      std::optional<db::track_info> get_queue_element(std::optional<size_t> queue_index) const {
+        if (!queue_index) { return std::nullopt; }
+        if (*queue_index >= m_playback.size()) { return std::nullopt; }
+        size_t track_index = m_playback[*queue_index];
+        if (track_index >= m_tracks.size()) { return std::nullopt; }
+        return m_tracks[track_index];
+      }
+
       std::optional<db::playlist_id_t> get_playlist_id() const { return m_playlist_id; }
       db::playlist_id_t get_collection_id() const { return m_collection_id; }
       std::optional<size_t> get_playback_index() const { return m_playback_i; }

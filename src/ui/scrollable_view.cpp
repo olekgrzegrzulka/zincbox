@@ -56,7 +56,7 @@ void ScrollableView::event(Input::InputEventMouseScroll& ev) {
 }
 
 void ScrollableView::set_scroll_offset(i32 scroll, bool instant) {
-  m_target_scroll_px = scroll;
-  m_scrollbar->set_scroll_offset(m_target_scroll_px);
+  m_scrollbar->set_scroll_offset(scroll);
+  m_target_scroll_px = m_scrollbar->get_scroll_offset();
   if (instant) { m_scroll_px = scroll; }
 }

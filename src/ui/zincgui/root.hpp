@@ -76,7 +76,8 @@ namespace zincgui {
       void construct_traversal_order();
 
     private:
-      std::vector<Vertex> m_vertices;
+      std::vector<std::vector<Vertex>> m_vertex_layers;
+      size_t m_vertices_count = 0;
       u32 m_vbo = 0;
       u32 m_vao = 0;
 

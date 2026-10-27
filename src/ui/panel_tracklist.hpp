@@ -173,7 +173,6 @@ class PanelTracklist final : public zincgui::ColorRect {
     std::optional<size_t> find_item_track(db::track_info ti) const;
 
     void insert_to_selection_track(db::track_info track_info) {
-      out::warn("! insert {}", track_info.index);
       auto idx = find_item_track(track_info);
       if (idx) {
         if (m_selection.insert(*idx)) { m_selection_modified = true; }

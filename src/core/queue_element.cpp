@@ -110,6 +110,22 @@ namespace player {
     }
   }
 
+  std::optional<size_t> player::QueuePlaylist::peek_next() {
+    assert_valid();
+
+    if (m_playback_i) {
+      if (*m_playback_i + 1 < m_playback.size()) { return *m_playback_i + 1; }
+    } else {
+      return std::nullopt;
+    }
+
+    auto old_ = m_playback_i;
+    next();
+    auto new_ = m_playback_i;
+    m_playback_i = old_;
+    return new_;
+  }
+
   void player::QueuePlaylist::prev() {
     assert_valid();
     if (m_playback_i.has_value()) {

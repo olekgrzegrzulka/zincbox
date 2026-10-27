@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -9,6 +10,7 @@
 #include "common/random.hpp"
 #include "core/musicdb/musicdb.hpp"
 #include "core/musicdb/playlist.hpp"
+#include "core/musicdb/types.hpp"
 #include "core/settings.hpp"
 #include "zincbox.hpp"
 
@@ -274,45 +276,45 @@ namespace player::queue {
 
     auto& current_elem = playing_queue[*playing_index];
     if (current_elem.is_playlist()) {
-      QueuePlaylist pl_copy = std::get<QueuePlaylist>(current_elem);
-      pl_copy.next();
-      if (!pl_copy.is_end()) {
-        auto next_ti = pl_copy.get_track();
-        if (next_ti.has_value()) {
+      auto* pl = current_elem.playlist();
+      auto index_opt = pl->peek_next();
+      if (index_opt) {
+        auto next_ti = pl->get_queue_element(index_opt);
+        if (next_ti) {
           pending_next = PendingNext{
             .type = PendingType::STEP_PLAYLIST_ELEMENT,
             .track = *next_ti,
           };
           return next_ti;
         }
+        return std::nullopt;
       }
     } else if (current_elem.is_collection()) {
-      QueueCollection col_copy = std::get<QueueCollection>(current_elem);
-      col_copy.next();
-      if (!col_copy.is_end()) {
-        auto next_ti = col_copy.get_track();
-        if (next_ti.has_value()) {
+      auto* pl = current_elem.collection();
+      auto index_opt = pl->peek_next();
+      if (index_opt) {
+        auto next_ti = pl->get_queue_element(index_opt);
+        if (next_ti) {
           pending_next = PendingNext{
             .type = PendingType::STEP_COLLECTION_ELEMENT,
             .track = *next_ti,
           };
           return next_ti;
         }
+        return std::nullopt;
       }
     }
 
     if (playing_index.value() < playing_queue.size() - 1) {
-      QueueElement next_copy = playing_queue[*playing_index + 1];
-      if (next_copy.is_playlist()) { next_copy.playlist()->rewind(); }
-      if (next_copy.is_collection()) { next_copy.collection()->rewind(); }
+      auto& next = playing_queue[*playing_index + 1];
 
       std::optional<db::track_info> next_ti;
-      if (next_copy.is_track()) {
-        next_ti = next_copy.track()->track_info;
-      } else if (next_copy.is_playlist()) {
-        next_ti = next_copy.playlist()->get_track();
-      } else if (next_copy.is_collection()) {
-        next_ti = next_copy.collection()->get_track();
+      if (next.is_track()) {
+        next_ti = next.track()->track_info;
+      } else if (next.is_playlist()) {
+        next_ti = next.playlist()->get_queue_element(0);
+      } else if (next.is_collection()) {
+        next_ti = next.collection()->get_queue_element(0);
       }
 
       if (next_ti.has_value()) {
@@ -328,8 +330,8 @@ namespace player::queue {
     if (current_elem.is_playlist() || current_elem.is_collection()) { return std::nullopt; }
 
     auto playing = current_elem.track()->track_info;
-    if (!db::track_by_id(playing.track_id).has_value() || !db::playlist_by_id(playing.playlist_id).has_value() ||
-        !db::collection_by_id(playing.collection_id).has_value()) {
+    if (!db::track_by_id(playing.track_id) || !db::playlist_by_id(playing.playlist_id) ||
+        !db::collection_by_id(playing.collection_id)) {
       return std::nullopt;
     }
 
@@ -352,14 +354,18 @@ namespace player::queue {
         return ti;
       }
       if (repeat_mode == RepeatMode::OFF) {
-        auto next_playlist_id = collection.next_playlist_id(playing.playlist_id);
-        if (next_playlist_id.has_value()) {
-          auto next_playlist = db::playlist_by_id(next_playlist_id.value());
-          if (!next_playlist.has_value() || next_playlist->get().get_tracks_count() == 0) { return std::nullopt; }
+        std::optional<db::playlist_id_t> playlist_id = playing.playlist_id;
+        for (i32 i = 0; i < 10; i += 1) {
+          if (!playlist_id) { break; }
+          playlist_id = collection.next_playlist_id(*playlist_id);
+          if (!playlist_id) { break; }
+          auto playlist = db::playlist_by_id(*playlist_id);
+          if (!playlist) { break; }
+          if (playlist->get().get_tracks_count() == 0) { continue; }
           db::track_info ti{
             .collection_id = playing.collection_id,
-            .playlist_id = next_playlist_id.value(),
-            .track_id = next_playlist->get().get_track_ids()[0],
+            .playlist_id = *playlist_id,
+            .track_id = playlist->get().get_track_ids()[0],
           };
           pending_next = PendingNext{
             .type = PendingType::APPEND_NEW_TRACK,
@@ -579,7 +585,6 @@ namespace player::queue {
     auto playing = current_elem.track()->track_info;
     auto& collection = db::collection_by_id(playing.collection_id)->get();
     auto& playlist = db::playlist_by_id(playing.playlist_id)->get();
-    auto prev_playlist_id = collection.prev_playlist_id(playing.playlist_id);
     auto prev_track_id = playlist.prev_track_id(playing.track_id);
 
     std::optional<db::track_info> play_prev;
@@ -591,17 +596,24 @@ namespace player::queue {
         .track_id = prev_track_id.value(),
       };
     } else if (repeat_mode == RepeatMode::OFF) {
-      if (prev_playlist_id.has_value()) {
-        auto prev_playlist = db::playlist_by_id(prev_playlist_id.value());
-        if (!prev_playlist.has_value() || prev_playlist->get().get_tracks_count() == 0) { return NavAction::NONE; }
+      std::optional<db::playlist_id_t> playlist_id = playing.playlist_id;
+      for (i32 i = 0; i < 10; i += 1) {
+        if (!playlist_id) { break; }
+        playlist_id = collection.prev_playlist_id(*playlist_id);
+        if (!playlist_id) { break; }
+        auto playlist = db::playlist_by_id(*playlist_id);
+        if (!playlist) { break; }
+        size_t count = playlist->get().get_tracks_count();
+        if (count == 0) { continue; }
         play_prev = db::track_info{
           .collection_id = playing.collection_id,
-          .playlist_id = prev_playlist_id.value(),
-          .track_id = prev_playlist->get().get_track_ids()[prev_playlist->get().get_tracks_count() - 1],
+          .playlist_id = *playlist_id,
+          .track_id = playlist->get().get_track_ids()[count - 1],
         };
-      } else {
-        return NavAction::SEEK_ZERO;
+        break;
       }
+
+      if (!play_prev.has_value()) { return NavAction::SEEK_ZERO; }
     } else if (repeat_mode == RepeatMode::ALBUM) {
       if (playlist.get_tracks_count() == 0) { return NavAction::NONE; }
       play_prev = db::track_info{
