@@ -120,6 +120,9 @@ namespace {
       }
     } else if (action == player::queue::NavAction::PLAY_CURRENT) {
       if (!dispatch_play_track(use_crossfade)) { step_next_internal(tries - 1, use_crossfade); }
+    } else {
+      dispatch_play_track(false);
+      player::stop();
     }
   }
 } // namespace

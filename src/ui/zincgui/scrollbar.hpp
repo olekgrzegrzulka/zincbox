@@ -39,6 +39,8 @@ namespace zincgui {
         set_value(std::clamp((float)v, lo, hi));
         recalculate_values();
       }
+
+      i32 get_scroll_offset() const { return value; }
   };
 
 } // namespace zincgui

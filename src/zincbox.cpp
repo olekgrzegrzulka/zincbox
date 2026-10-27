@@ -201,10 +201,10 @@ void zincbox::apply_loaded_state() {
 #ifdef ZINCBOX_HAS_GUI
   zincbox::ui::set_mini_player(s_loaded_state.interface.mini_player);
 
-  zincbox::ui::set_playlists_scroll_offset(s_loaded_state.interface.playlists_scroll_offset);
   zincbox::ui::set_selected_tab(s_loaded_state.interface.selected_tab);
   zincbox::ui::set_tabs_order(s_loaded_state.interface.tabs_order);
   zincbox::ui::set_tracks_scroll_offset(s_loaded_state.interface.tracks_scroll_offset);
+  zincbox::ui::set_playlists_scroll_offset(s_loaded_state.interface.playlists_scroll_offset);
   if (s_window) {
     s_window->resize(s_loaded_state.interface.window_width, s_loaded_state.interface.window_height);
     if (s_loaded_state.interface.window_maximized) { s_window->maximize(); }

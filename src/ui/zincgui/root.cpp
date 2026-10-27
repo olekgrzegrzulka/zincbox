@@ -187,7 +187,12 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       v.scissor_end = scissor_rect.begin + scissor_rect.size;
     }
 
-    if (!verts.empty()) { m_vertices.insert(m_vertices.end(), verts.begin(), verts.end()); }
+    if ((i32)m_vertex_layers.size() <= always_on_top_layer) { m_vertex_layers.resize(always_on_top_layer + 1); }
+    auto& dst = m_vertex_layers[always_on_top_layer];
+    if (!verts.empty()) {
+      dst.insert(dst.end(), verts.begin(), verts.end());
+      m_vertices_count += verts.size();
+    }
   }
 
   for (auto&& child : widget->get_children()) {
@@ -207,7 +212,8 @@ void zincgui::Root::construct_traversal_order() {
   m_deleted_widgets.clear();
   m_mutated_widgets.clear();
   m_hovered_widgets.clear();
-  m_vertices.clear();
+  m_vertex_layers.clear();
+  m_vertices_count = 0;
 
   for (auto&& w : m_widgets) {
     if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get()); }
@@ -220,8 +226,16 @@ void zincgui::Root::construct_traversal_order() {
   }
 
   ensure_buffers(m_vao, m_vbo);
-  // std::reverse(m_vertices.begin(), m_vertices.end());
-  glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), m_vertices.data(), GL_DYNAMIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+  glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(m_vertices_count * sizeof(Vertex)), nullptr, GL_DYNAMIC_DRAW);
+  GLintptr offset = 0;
+  for (auto& vertices : m_vertex_layers) {
+    if (vertices.empty()) { continue; }
+    GLsizeiptr size_bytes = static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex));
+    glBufferSubData(GL_ARRAY_BUFFER, offset, size_bytes, vertices.data());
+    offset += size_bytes;
+  }
 }
 
 bool zincgui::Root::process_mutations() {
@@ -374,7 +388,7 @@ void zincgui::Root::draw() {
   ensure_buffers(m_vao, m_vbo);
   glBindVertexArray(m_vao);
   glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-  if (!m_vertices.empty()) { glDrawArrays(GL_TRIANGLES, 0, m_vertices.size()); }
+  if (!m_vertex_layers.empty()) { glDrawArrays(GL_TRIANGLES, 0, m_vertices_count); }
 }
 
 namespace {

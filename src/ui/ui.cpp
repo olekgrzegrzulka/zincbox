@@ -161,12 +161,17 @@ namespace {
       ShortcutInterceptor(Root& ui_) : Widget(ui_) {}
 
       void event(Input::InputEventKey& ev) override {
-        if (ev.action != Input::KeyAction::RELEASE) { return; }
-        bool ctrl =
+        bool key_ctrl =
           Input::key_pressed(Input::Key::KEY_LEFT_CONTROL) || Input::key_pressed(Input::Key::KEY_RIGHT_CONTROL);
-        // bool shift = Input::key_pressed(Input::Key::KEY_LEFT_SHIFT) ||
-        //              Input::key_pressed(Input::Key::KEY_RIGHT_SHIFT);
-        if (ctrl && ev.key == Input::Key::KEY_F && search_popup_invoked) {
+        bool key_f = Input::key_pressed(Input::Key::KEY_F);
+
+        if (ev.action != Input::KeyAction::PRESS) { return; }
+        if (!search_popup_invoked) { return; }
+        bool show_search_popup = key_ctrl && ev.key == Input::Key::KEY_F;
+        show_search_popup |=
+          key_f && (ev.key == Input::Key::KEY_LEFT_CONTROL || ev.key == Input::Key::KEY_RIGHT_CONTROL);
+
+        if (show_search_popup) {
           ev.handled = true;
           search_popup_invoked();
         }
@@ -229,10 +234,9 @@ void zincbox::ui::init() {
 
   panel_controls->on_playing_track_lmb = [](Widget*) -> void {
     if (mini_player.value_or(false)) { return; }
-    auto playing = player::get_playing();
-    if (playing.has_value()) {
-      if (!playing->track()) { return; }
-      auto& ti = playing->track()->track_info;
+    auto ti_opt = player::get_playing_track();
+    if (ti_opt) {
+      auto ti = *ti_opt;
       bool immediate = active_collection_id != ti.collection_id;
       show_collection(ti.collection_id);
       panel_playlists->scroll_to_playlist(ti.playlist_id, immediate);
@@ -524,7 +528,7 @@ void zincbox::ui::update(vec2i window_size) {
   panel_playlists->set_width(width_albums);
   panel_playlists->set_height(content_height);
 
-  panel_controls->set_pos(content_x, -border);
+  panel_controls->set_y(-border);
   panel_controls->set_width(content_width);
   root->tick(window_size.x, window_size.y);
 }
@@ -708,10 +712,7 @@ namespace {
     panel_tracklist->recreate(active_collection_id);
   }
 
-  void show_collection(db::collection_id_t collection_id) {
-    if (collection_id == active_collection_id) { return; }
-    if (collection_id >= db::collection_count()) { return; }
-
+  void save_scroll_position(db::collection_id_t collection_id) {
     if (tracks_scroll_positions.size() <= collection_id) { tracks_scroll_positions.resize(collection_id + 1, 0.0f); }
     if (playlists_scroll_positions.size() <= collection_id) {
       playlists_scroll_positions.resize(collection_id + 1, 0.0f);
@@ -721,6 +722,13 @@ namespace {
       tracks_scroll_positions[active_collection_id.value()] = panel_tracklist->get_scroll_px();
       playlists_scroll_positions[active_collection_id.value()] = panel_playlists->get_scroll_px();
     }
+  }
+
+  void show_collection(db::collection_id_t collection_id) {
+    if (collection_id == active_collection_id) { return; }
+    if (collection_id >= db::collection_count()) { return; }
+
+    save_scroll_position(collection_id);
 
     active_collection_id = collection_id;
 
@@ -742,6 +750,9 @@ namespace {
   }
 
   void show_queue() {
+
+    if (active_collection_id) { save_scroll_position(*active_collection_id); }
+
     active_collection_id = std::nullopt;
     panel_tracklist->hide();
     panel_playlists->hide();
