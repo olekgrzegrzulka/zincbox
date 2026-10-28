@@ -407,6 +407,7 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   add_custom_panel("panel_playlists_searchbar", "panel_playlists/searchbar.png");
   add_custom_panel("panel_playlists_header", "panel_playlists/header.png");
   atlas_add_texture("playlist_hovered", {"panel_playlists/playlist_hovered.png"});
+  atlas_add_texture("playlist_focused", {"panel_playlists/playlist_focused.png"});
   atlas_add_texture_row(
     std::array{"clear_search_idle"s, "clear_search_hovered"s, "clear_search_pressed"s, "clear_search_disabled"s},
     std::array{"panel_playlists/clear_search.png"s});

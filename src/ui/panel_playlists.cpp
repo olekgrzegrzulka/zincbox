@@ -149,6 +149,14 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
   hover->set_size(cover_size.x, cover_size.y);
   hover->set_is_drawn(false);
 
+  sprite_focused = &sprite_cover.add_child<Sprite>("playlist_focused");
+  sprite_focused->set_parent_anchor(Anchor::TOP);
+  sprite_focused->set_anchor(Anchor::TOP);
+  sprite_focused->set_nine_slice_margin(8.0f);
+  sprite_focused->set_ignore_parents_layout(true);
+  sprite_focused->set_size(cover_size.x, cover_size.y);
+  sprite_focused->set_is_drawn(false);
+
   sprite_playing = &sprite_cover.add_child<Sprite>("playlist_playing");
   sprite_playing->set_parent_anchor(Anchor::TOP);
   sprite_playing->set_anchor(Anchor::TOP);
@@ -185,6 +193,10 @@ void WidgetAlbumCover::event(Input::InputEventMouseMove& ev) {
   is_hovered = is_mouse_hovering();
   Button::event(ev);
 }
+
+void WidgetAlbumCover::on_focused() { sprite_focused->set_is_drawn(true); }
+
+void WidgetAlbumCover::on_unfocused() { sprite_focused->set_is_drawn(false); }
 
 PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
   const i32 PANEL_SEARCH_HEIGHT = (2 * PANEL_SEARCH_PADDING) + zincgui::default_settings::text_input_size.y;
@@ -443,7 +455,8 @@ Widget* PanelPlaylists::advance_focus(std::ptrdiff_t delta) {
 
   m_focused_widget_index = static_cast<size_t>(next);
   auto* widget = m_album_widgets[*m_focused_widget_index];
-  if (widget->playlist_id) { scroll_to_playlist(*widget->playlist_id); }
+  bool widget_visible = widget->get_y() > m_scroll_px && widget->get_y() < m_scroll_px + height;
+  if (!widget_visible && widget->playlist_id) { scroll_to_playlist(*widget->playlist_id); }
   return widget;
 }
 

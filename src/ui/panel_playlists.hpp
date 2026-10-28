@@ -37,12 +37,16 @@ class WidgetAlbumCover final : public zincgui::Button {
     void event(zincgui::Input::InputEventMouseMove& ev) override;
     bool is_add_button() const { return m_is_add_button; }
 
+    void on_focused() override;
+    void on_unfocused() override;
+
   protected:
     void update_highlight_status_from_player();
 
   public:
     const std::optional<size_t> playlist_id = 0;
     zincgui::Sprite* hover{};
+    zincgui::Sprite* sprite_focused{};
     zincgui::Sprite* sprite_playing{};
     bool is_hovered = false;
     zincgui::Label* label_title{};

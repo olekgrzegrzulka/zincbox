@@ -310,6 +310,8 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_GETTER(is_focusable)
       bool is_focused() const;
       virtual void focus_accept() {}
+      virtual void on_focused() {}
+      virtual void on_unfocused() {}
 
       WIDGET_DEF_SETTER_DIRTY(can_be_focus_manager)
       WIDGET_DEF_GETTER(can_be_focus_manager)
