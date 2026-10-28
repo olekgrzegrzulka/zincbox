@@ -12,7 +12,7 @@ using namespace zincgui;
 
 Popup::Popup(Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
   : Sprite(ui_, "panel_popup"), controller(controller_), on_close(std::move(on_close_)) {
-    set_hit_test_behavior(zincgui::HitTestBehavior::BLOCK);
+  set_hit_test_behavior(zincgui::HitTestBehavior::BLOCK);
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
   set_anchor(Anchor::CENTER);
@@ -56,6 +56,13 @@ void Popup::event(Input::InputEventMouseButton& e) {
   }
 
   if (!e.handled) { Sprite::event(e); }
+}
+
+void Popup::event(zincgui::Input::InputEventKey& e) {
+  if (e.key == zincgui::Input::Key::KEY_ESCAPE && e.action == zincgui::Input::KeyAction::RELEASE) {
+    close();
+    e.handled = true;
+  }
 }
 
 i32 Popup::get_max_content_width() const {
