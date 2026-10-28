@@ -4,6 +4,7 @@
 #include <vector>
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
+#include "ui/zincgui/button.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/sprite.hpp"
@@ -22,8 +23,20 @@ constexpr auto NOTIFICATIONS_Y_OFFSET = -30;
 constexpr auto HIDE_TIMER_THRESHOLD = 20;
 constexpr auto LERP_FACTOR = 0.75f;
 
-Notification::Notification(zincgui::Root& ui_, bool error)
-  : Sprite(ui_, error ? "notification_error" : "notification") {
+Notification::Notification(zincgui::Root& ui_, bool error) : Button(ui_) {
+
+  std::string texture_id = error ? "notification_error" : "notification";
+  set_texture_disabled(texture_id);
+  set_texture_hovered(texture_id);
+  set_texture_idle(texture_id);
+  set_texture_pressed(texture_id);
+  set_texture(texture_id, false);
+
+  on_press([this]() -> void {
+    timer = HIDE_TIMER_THRESHOLD;
+    dismissed = true;
+  });
+
   set_nine_slice_margin(theme::config().notification.nine_slice_margin);
   label = &add_child<Label>();
   set_parent_anchor(Anchor::CENTER);
@@ -39,7 +52,7 @@ Notification::Notification(zincgui::Root& ui_, bool error)
 void Notification::update() {
   if (timer > 0) { timer -= 1; }
   set_size(label->get_text_extents() + vec2i{32, 24});
-  Sprite::update();
+  Button::update();
 }
 
 InterfaceNotifications::InterfaceNotifications(zincgui::Root& ui_) : Widget(ui_) {

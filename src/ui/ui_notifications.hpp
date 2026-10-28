@@ -2,7 +2,7 @@
 #include <string_view>
 #include <vector>
 #include "ui/theme.hpp"
-#include "ui/zincgui/sprite.hpp"
+#include "ui/zincgui/button.hpp"
 
 namespace zincgui {
   class Label;
@@ -10,7 +10,7 @@ namespace zincgui {
   class Widget;
 }; // namespace zincgui
 
-class Notification final : public zincgui::Sprite {
+class Notification final : public zincgui::Button {
   public:
     Notification(zincgui::Root& ui_, bool error = false);
 

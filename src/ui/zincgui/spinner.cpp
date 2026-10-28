@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include "ui/zincgui/button.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/input.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/sprite.hpp"
@@ -13,8 +14,8 @@
 using namespace zincgui;
 
 Spinner::Spinner(Root& ui_)
-  : TextInput(ui_), button_increase(add_child<Button>(default_settings::spinner_texture_increase)),
-    button_decrease(add_child<Button>(default_settings::spinner_texture_decrease)), label_postfix(add_child<Label>()) {
+  : TextInput(ui_), button_increase(add_child<Button>("")), button_decrease(add_child<Button>("")),
+    label_postfix(add_child<Label>()) {
 
   set_size(default_settings::spinner_size);
   if (default_settings::spinner_fixed_height) { set_fixed_height(height); }
@@ -26,14 +27,21 @@ Spinner::Spinner(Root& ui_)
   button_decrease.set_anchor(Anchor::LEFT);
   button_decrease.set_pos(default_settings::spinner_button_offset_x, 0);
   button_decrease.add_image(default_settings::spinner_texture_decrease_icon);
+  button_decrease.set_texture_idle(default_settings::spinner_texture_button_idle);
+  button_decrease.set_texture_hovered(default_settings::spinner_texture_button_hovered);
+  button_decrease.set_texture_pressed(default_settings::spinner_texture_button_pressed);
+  button_decrease.set_texture_disabled(default_settings::spinner_texture_button_disabled);
 
   button_increase.set_parent_anchor(Anchor::RIGHT);
   button_increase.set_nine_slice_margin(default_settings::spinner_button_nine_slice_margin);
   button_increase.set_anchor(Anchor::RIGHT);
   button_increase.set_pos(-default_settings::spinner_button_offset_x, 0);
   button_increase.add_image(default_settings::spinner_texture_increase_icon);
+  button_increase.set_texture_idle(default_settings::spinner_texture_button_idle);
+  button_increase.set_texture_hovered(default_settings::spinner_texture_button_hovered);
+  button_increase.set_texture_pressed(default_settings::spinner_texture_button_pressed);
+  button_increase.set_texture_disabled(default_settings::spinner_texture_button_disabled);
 
-  label.set_pos({button_increase.get_width() + default_settings::spinner_label_padding_x, 0});
   label.set_resize_to_text_extents(false);
 
   label.set_text(std::to_string(value));
@@ -85,12 +93,17 @@ void Spinner::update() {
     if (!set_value(new_value)) { label.set_text(std::to_string(new_value)); }
   }
 
+  button_increase.set_fixed_width(button_increase.get_height());
+  button_increase.set_fixed_height(height - default_settings::spinner_button_height_padding);
+  button_increase.set_size(button_increase.get_min_size());
+  button_decrease.set_fixed_width(button_decrease.get_height());
+  button_decrease.set_fixed_height(height - default_settings::spinner_button_height_padding);
+  button_decrease.set_size(button_increase.get_min_size());
+
   label.set_height(height);
   label.set_width(width - (button_increase.get_width() + button_decrease.get_width() +
                            (2 * default_settings::spinner_label_padding_x)));
-
-  button_increase.set_height(height - default_settings::spinner_button_height_padding);
-  button_decrease.set_height(height - default_settings::spinner_button_height_padding);
+  label.set_pos({button_increase.get_width() + default_settings::spinner_label_padding_x, 0});
 
   auto scroll = Input::get_mouse_scroll();
 

@@ -146,8 +146,10 @@ namespace zincgui::default_settings {
   inline i32 spinner_postfix_offset_x = 1;
   inline i32 spinner_echo_length_initial = 40;
   inline i32 spinner_echo_length = 2;
-  inline std::string spinner_texture_increase = "spinner_increase";
-  inline std::string spinner_texture_decrease = "spinner_decrease";
+  inline std::string spinner_texture_button_idle = "spinner_increase_idle";
+  inline std::string spinner_texture_button_hovered = "spinner_increase_hovered";
+  inline std::string spinner_texture_button_pressed = "spinner_increase_pressed";
+  inline std::string spinner_texture_button_disabled = "spinner_increase_disabled";
   inline std::string spinner_texture_increase_icon = "spinner_increase_icon";
   inline std::string spinner_texture_decrease_icon = "spinner_decrease_icon";
 
