@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(zincbox VERSION 0.0.0 LANGUAGES CXX C)
+project(zincbox VERSION 0.3.0 LANGUAGES CXX C)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(ZINCBOX_GUI "Build the graphical interface" ON)
