@@ -46,6 +46,8 @@ namespace zincgui {
       void event(Input::InputEventMouseMove&) override;
       void event(Input::InputEventMouseScroll&) override;
 
+      void focus_accept() override;
+
       Label& get_label();
       const Label& get_label() const;
       void on_press(std::function<void()> lambda_press_);

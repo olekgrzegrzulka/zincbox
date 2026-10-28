@@ -76,12 +76,23 @@ class PanelPlaylists final : public zincgui::ColorRect {
     std::optional<size_t> get_collection_id() const { return props.collection_id; }
     void reflow();
 
+    Widget* focus_manager_next() override;
+    Widget* focus_manager_previous() override;
+    Widget* focus_manager_left() override;
+    Widget* focus_manager_right() override;
+    Widget* focus_manager_up() override;
+    Widget* focus_manager_down() override;
+
   private:
+    Widget* advance_focus(std::ptrdiff_t);
+
     static constexpr i32 PANEL_SEARCH_PADDING = 4;
     double m_scroll_px = 0.0;
     double m_target_scroll_px = 0.0;
     i32 m_content_height = 0;
+    i32 m_album_covers_in_one_row = 0;
 
+    std::optional<size_t> m_focused_widget_index;
     std::vector<WidgetAlbumCover*> m_album_widgets;
     zincgui::ScrollBar* m_scrollbar{};
 

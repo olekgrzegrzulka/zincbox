@@ -151,6 +151,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool clip = false;
       bool clip_children = false;
       bool is_focusable = false;
+      bool can_be_focus_manager = false;
       bool ignore_parents_layout = false;
       bool is_drawn_on_top = false;
       float weight = default_settings::widget_weight; // FIXME: weight does nothing at the moment
@@ -209,7 +210,6 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_SETTER_DIRTY(parent_anchor)
       WIDGET_DEF_SETTER_DIRTY(window_width)
       WIDGET_DEF_SETTER_DIRTY(window_height)
-      WIDGET_DEF_SETTER_DIRTY(is_focusable)
       WIDGET_DEF_SETTER_DIRTY(hit_test_behavior)
       WIDGET_DEF_GETTER(hit_test_behavior)
       void set_update_children_first(bool);
@@ -243,9 +243,6 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_GETTER(is_updated)
       WIDGET_DEF_GETTER(x)
       WIDGET_DEF_GETTER(y)
-      bool is_focused() const;
-      bool is_focus_manager() const;
-      WIDGET_DEF_GETTER(is_focusable)
       i32 get_width() const {
         i32 lo = min_width > 0 ? min_width : std::numeric_limits<i32>::min();
         i32 hi = max_width > 0 ? max_width : std::numeric_limits<i32>::max();
@@ -308,6 +305,21 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       void ui_mark_tree_dirty();
 
       auto& get_children() { return children; }
+
+      WIDGET_DEF_SETTER_DIRTY(is_focusable)
+      WIDGET_DEF_GETTER(is_focusable)
+      bool is_focused() const;
+      virtual void focus_accept() {}
+
+      WIDGET_DEF_SETTER_DIRTY(can_be_focus_manager)
+      WIDGET_DEF_GETTER(can_be_focus_manager)
+      bool is_focus_manager() const;
+      [[nodiscard]] virtual Widget* focus_manager_next() { return nullptr; }
+      [[nodiscard]] virtual Widget* focus_manager_previous() { return nullptr; }
+      [[nodiscard]] virtual Widget* focus_manager_left() { return focus_manager_previous(); }
+      [[nodiscard]] virtual Widget* focus_manager_right() { return focus_manager_next(); }
+      [[nodiscard]] virtual Widget* focus_manager_up() { return focus_manager_previous(); }
+      [[nodiscard]] virtual Widget* focus_manager_down() { return focus_manager_next(); }
 
     public:
       template <class T, class... Args> T& add_child(Args&&... args) {

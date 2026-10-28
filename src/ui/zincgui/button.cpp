@@ -18,9 +18,8 @@ Button::Button(Root& ui_) : Sprite::Sprite(ui_), label(add_child<Label>()) { ini
 Button::Button(Root& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(add_child<Label>(label_)) { init(); }
 
 void Button::init() {
-  // set_is_focusable(true);
+  set_is_focusable(true);
   set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
-
 
   set_size(default_settings::button_size);
   if (default_settings::button_fixed_height) { set_fixed_height(height); }
@@ -205,6 +204,8 @@ void zincgui::Button::event(Input::InputEventMouseMove& ev) {
 }
 
 void zincgui::Button::event(Input::InputEventMouseScroll&) {}
+
+void zincgui::Button::focus_accept() { pressed(); }
 
 void Button::on_state_changed(ButtonState /* prev_state */) {
   if (state == ButtonState::HOVERED) {

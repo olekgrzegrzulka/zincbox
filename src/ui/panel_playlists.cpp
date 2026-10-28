@@ -192,6 +192,7 @@ PanelPlaylists::PanelPlaylists(Root& ui_) : ColorRect(ui_) {
   auto& config = theme::config().panel_playlists;
   set_color(config.color);
   set_clip_children(true);
+  set_can_be_focus_manager(true);
 
   m_scrollbar = &add_child<zincgui::ScrollBar>();
   m_scrollbar->set_anchor(Anchor::RIGHT);
@@ -240,6 +241,7 @@ void PanelPlaylists::clear() {
     w->set_marked_for_deletion(true);
   }
   m_album_widgets.clear();
+  m_focused_widget_index.reset();
 }
 
 void PanelPlaylists::recreate() {
@@ -298,11 +300,15 @@ void PanelPlaylists::recreate() {
   for (size_t playlist_id : playlist_ids_sorted_filtered) {
     auto* album_widget = &m_albums_container->add_child<WidgetAlbumCover>(playlist_id);
     m_album_widgets.emplace_back(album_widget);
-
-    album_widget->on_press([this, playlist_id, album_widget]() {
+    size_t i = m_album_widgets.size() - 1;
+    album_widget->on_press([this, playlist_id, album_widget, i]() -> void {
+      m_focused_widget_index = i;
+      if (is_focus_manager()) { ui.set_focused_widget(m_album_widgets[i]); }
       if (on_playlist_lmb) { on_playlist_lmb(playlist_id, album_widget); }
     });
-    album_widget->on_press_rmb([this, playlist_id, album_widget]() {
+    album_widget->on_press_rmb([this, playlist_id, album_widget, i]() -> void {
+      m_focused_widget_index = i;
+      if (is_focus_manager()) { ui.set_focused_widget(m_album_widgets[i]); }
       if (on_playlist_rmb) { on_playlist_rmb(playlist_id, album_widget); }
     });
   }
@@ -310,8 +316,11 @@ void PanelPlaylists::recreate() {
   if (props.collection_id.has_value() && props.collection_id == 0 && props.button_add_playlist_visible) {
     auto* album_widget = &m_albums_container->add_child<WidgetAlbumCover>(std::nullopt, true);
     m_album_widgets.emplace_back(album_widget);
+    size_t i = m_album_widgets.size() - 1;
 
-    album_widget->on_press([this, album_widget]() {
+    album_widget->on_press([this, album_widget, i]() -> void {
+      m_focused_widget_index = i;
+      if (is_focus_manager()) { ui.set_focused_widget(m_album_widgets[i]); }
       if (on_add_playlist_button_pressed) { on_add_playlist_button_pressed(album_widget); }
     });
   }
@@ -361,12 +370,12 @@ void PanelPlaylists::reflow() {
     return;
   }
 
-  i32 album_covers_in_one_row = (albums_area_width - min_spacing_x) / (item_w + min_spacing_x);
-  if (album_covers_in_one_row <= 0) { album_covers_in_one_row = 1; }
+  m_album_covers_in_one_row = (albums_area_width - min_spacing_x) / (item_w + min_spacing_x);
+  if (m_album_covers_in_one_row <= 0) { m_album_covers_in_one_row = 1; }
 
-  i32 total_items_w = album_covers_in_one_row * item_w;
+  i32 total_items_w = m_album_covers_in_one_row * item_w;
   i32 total_gap_space = std::max<i32>(0, albums_area_width - total_items_w);
-  i32 total_gaps_count = album_covers_in_one_row + 1;
+  i32 total_gaps_count = m_album_covers_in_one_row + 1;
 
   std::optional<std::string_view> prev_artist;
   std::optional<char32_t> prev_name_first_letter;
@@ -390,7 +399,7 @@ void PanelPlaylists::reflow() {
       }
     }
 
-    if (column >= album_covers_in_one_row || (force_new_row && column > 0)) {
+    if (column >= m_album_covers_in_one_row || (force_new_row && column > 0)) {
       column = 0;
       cover_y += item_h + spacing_y;
     }
@@ -413,6 +422,42 @@ void PanelPlaylists::reflow() {
   m_scroll_px = std::clamp(m_scroll_px, 0.0, std::max(0.0, (double)(m_content_height - height)));
   m_albums_container->set_height(m_content_height);
 }
+
+Widget* PanelPlaylists::advance_focus(std::ptrdiff_t delta) {
+  if (m_album_widgets.empty()) {
+    m_focused_widget_index.reset();
+    return nullptr;
+  }
+
+  std::ptrdiff_t count = static_cast<std::ptrdiff_t>(m_album_widgets.size());
+
+  if (!m_focused_widget_index) {
+    std::ptrdiff_t start = (delta >= 0) ? 0 : (count - 1);
+    m_focused_widget_index = static_cast<size_t>(start);
+    return m_album_widgets[*m_focused_widget_index];
+  }
+
+  std::ptrdiff_t curr = static_cast<std::ptrdiff_t>(*m_focused_widget_index);
+  std::ptrdiff_t next = (curr + delta) % count;
+  if (next < 0) { next += count; }
+
+  m_focused_widget_index = static_cast<size_t>(next);
+  auto* widget = m_album_widgets[*m_focused_widget_index];
+  if (widget->playlist_id) { scroll_to_playlist(*widget->playlist_id); }
+  return widget;
+}
+
+Widget* PanelPlaylists::focus_manager_next() { return advance_focus(1); }
+
+Widget* PanelPlaylists::focus_manager_previous() { return advance_focus(-1); }
+
+Widget* PanelPlaylists::focus_manager_left() { return focus_manager_previous(); }
+
+Widget* PanelPlaylists::focus_manager_right() { return focus_manager_next(); }
+
+Widget* PanelPlaylists::focus_manager_up() { return advance_focus(-(std::ptrdiff_t)m_album_covers_in_one_row); }
+
+Widget* PanelPlaylists::focus_manager_down() { return advance_focus((std::ptrdiff_t)m_album_covers_in_one_row); }
 
 void PanelPlaylists::input() { ColorRect::input(); }
 

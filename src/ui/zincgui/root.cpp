@@ -349,6 +349,15 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   for (auto& ev : Input::get_event_queue()) {
 
     if (m_focused_widget && m_focused_widget->updated_) {
+      if (auto* ev_key = std::get_if<Input::InputEventKey>(&ev)) {
+        if (ev_key->action == Input::KeyAction::PRESS || ev_key->action == Input::KeyAction::REPEAT) {
+          if (ev_key->key == Input::Key::KEY_ENTER || ev_key->key == Input::Key::KEY_ENTER2 ||
+              ev_key->key == Input::Key::KEY_KP_ENTER) {
+            m_focused_widget->focus_accept();
+          }
+        }
+      }
+
       std::visit(
         [this](auto& ev_) {
           if (!ev_.handled) { m_focused_widget->event(ev_); }
@@ -356,8 +365,32 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
         ev);
     }
 
+    if (m_focus_manager && m_focus_manager->updated_) {
+      if (auto* ev_key = std::get_if<Input::InputEventKey>(&ev)) {
+        if (ev_key->action == Input::KeyAction::PRESS || ev_key->action == Input::KeyAction::REPEAT) {
+          if (ev_key->key == Input::Key::KEY_LEFT) {
+            m_focused_widget = m_focus_manager->focus_manager_left();
+            ev_key->handled = true;
+          } else if (ev_key->key == Input::Key::KEY_RIGHT) {
+            m_focused_widget = m_focus_manager->focus_manager_right();
+            ev_key->handled = true;
+          } else if (ev_key->key == Input::Key::KEY_UP) {
+            m_focused_widget = m_focus_manager->focus_manager_up();
+            ev_key->handled = true;
+          } else if (ev_key->key == Input::Key::KEY_DOWN) {
+            m_focused_widget = m_focus_manager->focus_manager_down();
+            ev_key->handled = true;
+          } else if (ev_key->key == Input::Key::KEY_TAB) {
+            m_focused_widget = m_focus_manager->focus_manager_next();
+            ev_key->handled = true;
+          }
+        }
+      }
+    }
+
     bool replace_focused_widget = false;
     Widget* new_focused_widget = nullptr;
+    Widget* new_focus_manager = nullptr;
 
     for (auto it = m_widget_traversal_order.rbegin(); it != m_widget_traversal_order.rend(); it += 1) {
       Widget* w = *it;
@@ -379,12 +412,21 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
         if (ev_->action == MA::PRESS &&
             (ev_->button == MB::MOUSE_BUTTON_LEFT || ev_->button == MB::MOUSE_BUTTON_RIGHT)) {
           replace_focused_widget = true;
-          if (w->get_is_focusable() && w->is_mouse_hovering()) { new_focused_widget = w; }
+          if (w->get_is_focusable() && w->is_mouse_hovering() && !m_focus_manager) {
+            new_focused_widget = w;
+          } else if (w->get_can_be_focus_manager() && w->is_mouse_hovering()) {
+            new_focus_manager = w;
+          }
         }
       }
     }
 
-    if (replace_focused_widget) { m_focused_widget = new_focused_widget; }
+    if (replace_focused_widget && new_focus_manager && m_focus_manager != new_focus_manager) {
+      m_focus_manager = new_focus_manager;
+      m_focused_widget = m_focus_manager->focus_manager_next();
+    } else if (replace_focused_widget && new_focused_widget) {
+      m_focused_widget = new_focused_widget;
+    }
   }
 
   bool tree_changed = false;
