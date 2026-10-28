@@ -12,6 +12,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(OUTPUT_NAME "${PROJECT_NAME}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -52,10 +53,13 @@ add_compile_definitions(
 )
 
 add_subdirectory(lib)
+
 add_subdirectory(src/core)
+target_compile_features(zincbox_core PUBLIC cxx_std_23)
 
 if(ZINCBOX_GUI)
   add_subdirectory(src/ui)
+  target_compile_features(zincbox_ui PUBLIC cxx_std_23)
 endif()
 
 set(MAIN_SOURCES
@@ -65,6 +69,7 @@ set(MAIN_SOURCES
 )
 
 add_executable(${OUTPUT_NAME} ${MAIN_SOURCES})
+target_compile_features(${OUTPUT_NAME} PRIVATE cxx_std_23)
 
 # Set entry point to main() on Windows
 if(WIN32)

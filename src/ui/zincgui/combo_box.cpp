@@ -1,5 +1,6 @@
 #include "combo_box.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <functional>
 #include <numbers>

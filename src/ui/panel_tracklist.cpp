@@ -65,7 +65,8 @@ void PanelTracklist::set_item_index(Item& item, size_t index) {
 void PanelTracklist::set_item_selected(Item& item, bool selected) {
   std::visit(
     [selected](auto& i) -> void {
-      if constexpr (i.is_selectable) {
+      using T = std::decay_t<decltype(i)>;
+      if constexpr (T::is_selectable) {
         if (i.widget) { i.widget->is_selected(selected); }
       }
     },

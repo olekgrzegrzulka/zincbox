@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux (Clang)
+            os: ubuntu-latest
+            python_cmd: python3
+            build_flags: "release clang ninja no-ccache"
+
+          - name: Windows (MSVC)
+            os: windows-latest
+            python_cmd: python
+            build_flags: "release msvc ninja no-ccache"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build clang-19 g++-14 libstdc++-14-dev \
+            pkg-config \
+            libdbus-1-dev libsystemd-dev \
+            libgl1-mesa-dev libegl1-mesa-dev \
+            libxkbcommon-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev \
+            libwayland-dev wayland-protocols libdecor-0-dev
+          sudo ln -sf /usr/bin/clang-19 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-19 /usr/bin/clang++
+
+      - name: Setup MSVC Developer Command Prompt
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build project
+        run: ${{ matrix.python_cmd }} build.py ${{ matrix.build_flags }}
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-binaries
+          path: |
+            zincbox
+            zincbox.exe
+          if-no-files-found: error

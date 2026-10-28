@@ -4,6 +4,8 @@
 #include <chrono>
 #include <cmath>
 #include <numbers>
+#include <stop_token>
+#include <thread>
 #include "common/logger.hpp"
 
 namespace player {
