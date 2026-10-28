@@ -258,6 +258,17 @@ inline vec2f anchor_to_uv(Anchor anchor) {
         if (lo > hi) { std::swap(lo, hi); }
         return std::clamp(height, lo, hi);
       }
+      vec2i get_size() const { return vec2i(width, height); }
+      vec2i get_min_size() const { return vec2i(min_width, min_height); }
+      vec2i get_max_size() const { return vec2i(max_width, max_height); }
+      void set_fixed_size(vec2i s) {
+        set_fixed_width(s.x);
+        set_fixed_height(s.y);
+      }
+      void set_fixed_size(i32 w, i32 h) {
+        set_fixed_width(w);
+        set_fixed_height(h);
+      }
       WIDGET_DEF_GETTER(min_width)
       WIDGET_DEF_GETTER(max_width)
       WIDGET_DEF_GETTER(min_height)
