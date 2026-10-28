@@ -50,7 +50,7 @@ void Tab::set_texture_active() {
   label.set_text_color(theme::config().text_color);
   if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
-  } else if (mouse_hovering) {
+  } else if (hovered_) {
     set_sprite_hovered();
   } else {
     set_sprite_idle();
@@ -65,7 +65,7 @@ void Tab::set_texture_inactive() {
   label.set_text_color(theme::config().text_color_muted);
   if (state == ButtonState::DISABLED) {
     set_sprite_disabled();
-  } else if (mouse_hovering) {
+  } else if (hovered_) {
     set_sprite_hovered();
   } else {
     set_sprite_idle();

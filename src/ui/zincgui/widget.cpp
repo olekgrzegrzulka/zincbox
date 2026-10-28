@@ -32,7 +32,7 @@ void zincgui::Widget::update() {
   if (layout.enabled) { layout_engine::apply_layout(*this); }
 }
 
-bool zincgui::Widget::is_mouse_hovering() const { return is_mouse_hovering(Input::get_mouse_pos()); }
+bool zincgui::Widget::is_mouse_hovering() const { return hovered_; }
 
 bool zincgui::Widget::is_mouse_hovering(vec2i at) const {
   const Widget* tested = this;
@@ -185,3 +185,8 @@ bool zincgui::Widget::is_focused() const { return ui.focused_widget() == this; }
 bool zincgui::Widget::is_focus_manager() const { return ui.focus_manager() == this; }
 
 // void Widget::ui_mark_tree_dirty() { ui.mark_tree_dirty(); }
+
+rect2i Widget::get_rect() const {
+  return {.begin = {get_position(Anchor::TOP_LEFT).x, ui.get_window_height() - get_position(Anchor::BOTTOM_RIGHT).y},
+          .size = {get_width(), get_height()}};
+}

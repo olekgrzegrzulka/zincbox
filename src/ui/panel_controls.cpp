@@ -89,28 +89,32 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   m_tooltip_timestamp = &m_seekbar->add_child<ToolTip>("", ToolTipPosition::ABOVE, 4);
 
   auto& label_track_container = panel_middle.add_child<Widget>();
-  label_track_container.set_layout("ltr s:4 fill");
+  label_track_container.set_layout("fill expand");
 
-  m_love_button = &label_track_container.add_child<ZincboxButton>("panel_controls_love");
+  m_button_track = &label_track_container.add_child<Button>("");
+  m_button_track->get_label().set_is_drawn(false);
+  m_button_track->set_layout("ltr s:4 fill expand fit");
+  m_button_track->set_is_self_drawn(false);
+  m_button_track->on_press([this]() -> void {
+    if (on_playing_track_lmb) { on_playing_track_lmb(m_button_track); }
+  });
+  m_button_track->on_press_rmb([this]() -> void {
+    if (on_playing_track_rmb) { on_playing_track_rmb(m_button_track); }
+  });
+
+  m_love_button = &m_button_track->add_child<ZincboxButton>("panel_controls_love");
   m_love_button->set_anchor(Anchor::RIGHT);
   m_love_button->set_parent_anchor(Anchor::LEFT);
   m_love_button->set_size(12, 12);
-  m_love_button->set_min_width(12);
-  m_love_button->set_max_width(12);
+  m_love_button->set_fixed_width(12);
+  m_love_button->set_fixed_height(12);
   m_love_button->set_nine_slice_margin(0.0f);
-
   m_love_button->on_press([this]() -> void {
     if (on_love_button_pressed) { on_love_button_pressed(); }
   });
 
-  m_label_track = &label_track_container.add_child<Label>();
+  m_label_track = &m_button_track->add_child<Label>();
   m_label_track->set_label_anchor(Anchor::LEFT);
-
-  m_label_track_underline = &m_label_track->add_child<ColorRect>(theme::config().text_caret_color);
-  m_label_track_underline->set_width(1);
-  m_label_track_underline->set_height(1);
-  m_label_track_underline->set_parent_anchor(Anchor::CENTER);
-  m_label_track_underline->set_anchor(Anchor::CENTER);
 
   auto& pad2 = add_child<Widget>();
   pad2.set_min_width(5 * SCALE);
@@ -160,19 +164,17 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
 
   auto on_track_changed = [this]() -> void {
     auto playing = player::get_playing_track();
-    if (!playing.has_value()) {
+    if (!playing) {
       set_disabled(true);
+      update_track_label();
     } else {
       set_disabled(false);
-      auto& track = db::track_by_id(playing->track_id)->get();
-      m_label_track->set_text(track.pretty_name());
+      update_track_label();
       bool is_loved = db::playlist_loved_tracks().has_track_id(playing->track_id);
       update_love_state(is_loved);
     }
     m_label_track->set_min_width(m_label_track->get_text_extents().x);
     m_label_track->set_max_width(m_label_track->get_text_extents().x);
-    m_label_track_underline->set_width(m_label_track->get_text_extents().x);
-    m_label_track_underline->set_y(std::floor(m_label_track->get_text_extents().y / 2.0f));
   };
 
   m_slot_on_track_changed = player::signal_on_track_changed.connect(on_track_changed);
@@ -225,22 +227,6 @@ PanelControls::~PanelControls() { player::signal_on_track_changed.disconnect(m_s
 
 void PanelControls::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering()) { ev.handled = true; }
-
-  if (m_label_track_underline->get_is_drawn()) {
-    if (ev.button == Input::MouseButton::MOUSE_BUTTON_LEFT) {
-      if (ev.action == Input::MouseAction::PRESS) { m_label_track_underline_lmb = true; }
-      if (ev.action == Input::MouseAction::RELEASE && m_label_track_underline_lmb) {
-        m_label_track_underline_lmb = false;
-        if (on_playing_track_lmb) { on_playing_track_lmb(m_label_track); }
-      }
-    } else if (ev.button == Input::MouseButton::MOUSE_BUTTON_RIGHT) {
-      if (ev.action == Input::MouseAction::PRESS) { m_label_track_underline_rmb = true; }
-      if (ev.action == Input::MouseAction::RELEASE && m_label_track_underline_rmb) {
-        m_label_track_underline_rmb = false;
-        if (on_playing_track_rmb) { on_playing_track_rmb(m_label_track); }
-      }
-    }
-  }
 }
 
 void PanelControls::event(Input::InputEventKey& ev) {
@@ -347,6 +333,23 @@ void PanelControls::update_timestamp_label() {
   }
 }
 
+void PanelControls::update_track_label() {
+  if (m_disabled) {
+    m_label_track->set_text("");
+    return;
+  }
+
+  auto playing = player::get_playing_track();
+  auto& track = db::track_by_id(playing->track_id)->get();
+
+  if (m_track_hovered) {
+    m_label_track->set_text("<u>" + track.pretty_name() + "</u>");
+
+  } else {
+    m_label_track->set_text(track.pretty_name());
+  }
+}
+
 void PanelControls::update() {
 
   if (width != m_width_prev) {
@@ -401,11 +404,17 @@ void PanelControls::update() {
     m_tooltip_volume->set_is_drawn(false);
   }
 
-  m_label_track_underline->set_is_drawn(m_label_track->is_mouse_hovering());
-  if (!m_label_track_underline->get_is_drawn()) {
-    m_label_track_underline_lmb = false;
-    m_label_track_underline_rmb = false;
+  bool track_hovered = m_button_track->is_mouse_hovering();
+  if (m_track_hovered != track_hovered) {
+    m_track_hovered = track_hovered;
+    update_track_label();
   }
+
+  // m_label_track_underline->set_is_drawn(m_label_track->is_mouse_hovering());
+  // if (!m_label_track_underline->get_is_drawn()) {
+  //   m_label_track_underline_lmb = false;
+  //   m_label_track_underline_rmb = false;
+  // }
 
   if (m_is_playing != player::is_playing()) {
     m_is_playing = player::is_playing();
@@ -512,11 +521,12 @@ bool PanelControls::can_drag_window() const {
 }
 
 void PanelControls::set_disabled(bool disabled) {
+  m_disabled = disabled;
   m_button_play_pause->set_disabled(disabled);
   m_button_stop->set_disabled(disabled);
   m_button_next->set_disabled(disabled);
   m_button_prev->set_disabled(disabled);
   m_seekbar->set_disabled(disabled);
-  if (disabled) { m_label_track->set_text(""); }
+  update_track_label();
   m_love_button->set_is_drawn(!disabled);
 }

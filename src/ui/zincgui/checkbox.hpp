@@ -22,6 +22,7 @@ namespace zincgui {
         set_is_focusable(true);
         set_size(default_settings::checkbox_size);
         if (default_settings::checkbox_fixed_height) { set_fixed_height(height); }
+        set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
 
         uv_checkbox_idle = ui.get_texture_atlas().get(default_settings::checkbox_texture_idle)->get();
         uv_checkbox_hovered = ui.get_texture_atlas().get(default_settings::checkbox_texture_hovered)->get();
@@ -33,7 +34,7 @@ namespace zincgui {
 
         button = &add_child<Button>();
         button->set_ignore_parents_layout(true);
-        button->set_is_drawn(false);
+        button->set_is_self_drawn(false);
         button->set_switch_mode(true);
         button->on_press([this]() -> void { set_checked(true); });
         button->on_depress([this]() -> void { set_checked(false); });

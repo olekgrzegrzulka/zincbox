@@ -55,6 +55,12 @@ namespace zincgui {
     CENTER = CENTER_CENTER,
   };
 
+  enum class HitTestBehavior : u8 {
+    IGNORE,
+    BLOCK,
+    PASS_THROUGH,
+  };
+
   struct Layout {
       bool enabled = false;
       bool fit_to_contents = false;
@@ -149,6 +155,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool is_drawn_on_top = false;
       float weight = default_settings::widget_weight; // FIXME: weight does nothing at the moment
       bool draw_behind_parent = false;
+      HitTestBehavior hit_test_behavior = HitTestBehavior::PASS_THROUGH;
 
       bool hovered_ = false;
       bool visible_ = false;
@@ -157,6 +164,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool deleted_ = false;
       i32 always_on_top_layer_ = 0;
       std::optional<rect2i> scissor_;
+      // FIXME add property for hit test rect and allow expanding it (currently we use scissor_)
       vec2i global_position_{};
 
       Widget* parent = nullptr;
@@ -202,6 +210,8 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_SETTER_DIRTY(window_width)
       WIDGET_DEF_SETTER_DIRTY(window_height)
       WIDGET_DEF_SETTER_DIRTY(is_focusable)
+      WIDGET_DEF_SETTER_DIRTY(hit_test_behavior)
+      WIDGET_DEF_GETTER(hit_test_behavior)
       void set_update_children_first(bool);
       void set_is_self_drawn(bool);
       void set_clip(bool);
@@ -265,6 +275,8 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       WIDGET_DEF_GETTER(draw_behind_parent)
       WIDGET_DEF_GETTER(parent)
       WIDGET_DEF_GETTER(hover_test_parent)
+
+      rect2i get_rect() const; // FIXME: inverted y-axis
 
       Layout& get_layout() {
         // FIXME: mark layout as dirty if changed

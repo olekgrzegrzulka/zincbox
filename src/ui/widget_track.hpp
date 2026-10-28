@@ -50,7 +50,6 @@ class WidgetTrack final : public zincgui::Button {
     db::track_info track_info() const;
 
   private:
-    bool m_is_hovered = false;
     bool m_highlighted = false;
     bool m_playback_error = false;
     bool m_pressed = false;

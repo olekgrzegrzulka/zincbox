@@ -15,6 +15,7 @@ namespace zincgui {
 } // namespace zincgui
 
 zincgui::TextInput::TextInput(Root& ui_) : Sprite(ui_), label(add_child<Label>()), caret(add_child<ColorRect>()) {
+  set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
   set_size(default_settings::text_input_size);
   if (default_settings::text_input_fixed_height) { set_fixed_height(height); }
   set_nine_slice_margin(default_settings::text_input_nine_slice_margin);

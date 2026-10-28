@@ -35,9 +35,9 @@ PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
   m_container_drag_region = &add_child<Widget>();
   m_container_drag_region->set_parent_anchor(zincgui::Anchor::TOP_LEFT);
   m_container_drag_region->set_anchor(zincgui::Anchor::TOP_LEFT);
-  m_container_drag_region->set_is_self_drawn(false);
   m_container_drag_region->set_min_width(100 * SCALE);
   m_container_drag_region->set_max_width(9999 * SCALE);
+  m_container_drag_region->set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
 
   m_container_buttons = &add_child<Widget>();
   m_container_buttons->set_layout("rtl expand fit");

@@ -24,7 +24,6 @@ namespace zincgui {
       bool switch_mode = false;
       bool is_switched = false;
 
-      bool mouse_hovering = false;
       bool mouse_pressed = false;
       bool rmb_held = false;
 

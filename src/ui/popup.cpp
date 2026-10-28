@@ -12,6 +12,7 @@ using namespace zincgui;
 
 Popup::Popup(Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
   : Sprite(ui_, "panel_popup"), controller(controller_), on_close(std::move(on_close_)) {
+    set_hit_test_behavior(zincgui::HitTestBehavior::BLOCK);
   set_nine_slice_margin(8.0f);
   set_parent_anchor(Anchor::CENTER);
   set_anchor(Anchor::CENTER);

@@ -19,6 +19,8 @@ Button::Button(Root& ui_, std::string_view label_) : Sprite::Sprite(ui_), label(
 
 void Button::init() {
   // set_is_focusable(true);
+  set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
+
 
   set_size(default_settings::button_size);
   if (default_settings::button_fixed_height) { set_fixed_height(height); }
@@ -128,24 +130,24 @@ void zincgui::Button::event(Input::InputEventMouseButton& ev) {
   bool rmb_pressed = ev.button == MOUSE_BUTTON_RIGHT && ev.action == PRESS;
   bool rmb_released = ev.button == MOUSE_BUTTON_RIGHT && ev.action == RELEASE;
 
-  if (mouse_hovering && rmb_pressed) {
+  if (hovered_ && rmb_pressed) {
     rmb_held = true;
     set_state(PRESSED);
     ev.handled = true;
   }
 
-  if (mouse_hovering && rmb_held && rmb_released) {
+  if (hovered_ && rmb_held && rmb_released) {
     if (state != ButtonState::DISABLED && lambda_press_rmb) { lambda_press_rmb(); }
     rmb_held = false;
   }
 
-  if (mouse_hovering && lmb_pressed) {
+  if (hovered_ && lmb_pressed) {
     mouse_pressed = true;
     set_state(PRESSED);
     ev.handled = true;
   }
 
-  if (mouse_hovering && mouse_pressed && lmb_released) {
+  if (hovered_ && mouse_pressed && lmb_released) {
     mouse_pressed = false;
     if (switch_mode) {
       set_is_switched(!is_switched);
@@ -157,7 +159,7 @@ void zincgui::Button::event(Input::InputEventMouseButton& ev) {
     }
   }
 
-  if (!mouse_hovering && lmb_released && state == PRESSED) {
+  if (!hovered_ && lmb_released && state == PRESSED) {
     mouse_pressed = false;
     if (switch_mode) {
       if (is_switched) {
@@ -179,13 +181,12 @@ void zincgui::Button::event(Input::InputEventMouseMove& ev) {
 
   if (state == DISABLED) { return; }
 
-  mouse_hovering = is_mouse_hovering(ev.to);
-  if (mouse_hovering) {
+  if (hovered_) {
     if (!switch_mode && state == IDLE) { set_state(HOVERED); }
     if (switch_mode && (state == IDLE || state == PRESSED)) { set_state(HOVERED); }
   }
 
-  if (mouse_hovering && mouse_pressed) {
+  if (hovered_ && mouse_pressed) {
     if (switch_mode) {
       set_state(is_switched ? IDLE : PRESSED);
     } else {
@@ -193,7 +194,7 @@ void zincgui::Button::event(Input::InputEventMouseMove& ev) {
     }
   }
 
-  if (!mouse_hovering) {
+  if (!hovered_) {
     mouse_pressed = false;
     if (switch_mode) {
       set_state(is_switched ? PRESSED : IDLE);
