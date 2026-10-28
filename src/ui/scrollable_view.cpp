@@ -13,6 +13,7 @@ ScrollableView::ScrollableView(Root& ui_) : Widget(ui_) {
   m_container = &add_child<Widget>();
   m_scrollbar = &add_child<ScrollBar>();
 
+  set_hit_test_behavior(zincgui::HitTestBehavior::BLOCK);
   set_layout("ltr expand fill");
 
   m_scrollbar->set_anchor(Anchor::RIGHT);

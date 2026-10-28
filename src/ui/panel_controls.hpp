@@ -61,9 +61,9 @@ class PanelControls final : public zincgui::ColorRect {
     zincgui::Slider* m_seekbar{};
     zincgui::Slider* m_volume_bar{};
     zincgui::Label* m_label_progress{};
+    zincgui::Button* m_button_track{};
     zincgui::Label* m_label_track{};
     ZincboxButton* m_love_button{};
-    zincgui::ColorRect* m_label_track_underline{};
 
     bool m_tooltip_visibility = true;
     bool m_label_track_underline_lmb = false;
@@ -77,13 +77,16 @@ class PanelControls final : public zincgui::ColorRect {
     i32 m_width_prev = -1;
     i32 m_repeat_mode_prev = -1;
     i32 m_shuffle_mode_prev = -1;
+    bool m_track_hovered = false;
 
     Signal<>::slot_key m_slot_on_track_changed;
     bool m_is_playing = false;
+    bool m_disabled = false;
 
   private:
     void update_repeat_mode();
     void update_shuffle_mode();
     void on_width_changed();
     void update_timestamp_label();
+    void update_track_label();
 };

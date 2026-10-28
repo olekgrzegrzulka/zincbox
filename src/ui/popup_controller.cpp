@@ -18,7 +18,9 @@
 
 using namespace zincgui;
 
-Dimmer::Dimmer(zincgui::Root& ui_) : ColorRect(ui_, 0x00000000) {}
+Dimmer::Dimmer(zincgui::Root& ui_) : ColorRect(ui_, 0x00000000) {
+  set_hit_test_behavior(zincgui::HitTestBehavior::BLOCK);
+}
 
 void Dimmer::set_is_active(bool active) {
   set_is_updated(active);
@@ -182,7 +184,7 @@ void PopupController::update() {
   bool dimmer_visible = m_popups.size() > 0;
   float dimmer_opacity = dimmer_visible ? 0.6f : 0.0f;
   m_dimmer->set_is_active(dimmer_block_events);
-  m_dimmer->set_is_drawn(dimmer_visible || m_dimmer->get_opacity() > 0.01f);
+  m_dimmer->set_is_self_drawn(dimmer_visible || m_dimmer->get_opacity() > 0.01f);
   m_dimmer->set_opacity(std::lerp(m_dimmer->get_opacity(), dimmer_opacity, 0.25f));
 
   Widget::update();

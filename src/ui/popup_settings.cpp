@@ -447,7 +447,7 @@ void PopupSettings::select_sidebar_button(size_t active_idx) {
 void PopupSettings::scroll_to_section(size_t section_idx) {
   if (section_idx >= SECTION_COUNT) { return; }
   auto* header = m_sections[section_idx].header_label;
-  if (header != nullptr && header->get_is_drawn()) { m_scroll_view->set_scroll_offset(std::max(0, header->get_y())); }
+  if (header != nullptr && header->get_is_drawn()) { m_scroll_view->set_scroll_offset(header->get_y()); }
 }
 
 void PopupSettings::filter_by_search() {

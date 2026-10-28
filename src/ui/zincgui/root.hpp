@@ -72,7 +72,7 @@ namespace zincgui {
 
     private:
       bool process_mutations();
-      void construct_traversal_order(Widget*, i32 always_on_top_layer = 0);
+      void construct_traversal_order(Widget*, i32 always_on_top_layer, std::vector<std::vector<Widget*>>& layers);
       void construct_traversal_order();
 
     private:
@@ -91,7 +91,7 @@ namespace zincgui {
       glm::mat4 m_matrix{};
       std::vector<std::unique_ptr<Widget>> m_widgets;
       std::vector<std::unique_ptr<Widget>> m_widgets_to_add;
-      std::vector<std::vector<Widget*>> m_widget_traversal_order;
+      std::vector<Widget*> m_widget_traversal_order;
       std::vector<Widget*> m_hovered_widgets;
       FT_Library m_freetype_lib{};
       Shader m_shader;

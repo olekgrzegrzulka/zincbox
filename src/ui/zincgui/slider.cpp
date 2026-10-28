@@ -16,6 +16,7 @@ zincgui::Slider::Slider(Root& ui_, SliderOrientation orientation_)
   orientation = orientation_;
 
   set_is_focusable(true);
+  set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
 
   set_size(default_settings::slider_size);
   if (default_settings::slider_fixed_height) { set_fixed_height(height); }
@@ -112,24 +113,10 @@ void zincgui::Slider::input() {
     lmb_pressed = Input::mouse_pressed(MOUSE_BUTTON_LEFT);
     bool lmb_just_pressed = Input::mouse_just_pressed(MOUSE_BUTTON_LEFT);
     bool lmb_just_released = Input::mouse_just_released(MOUSE_BUTTON_LEFT);
-    i32 mouse_x = Input::get_mouse_x();
-    i32 mouse_y = Input::get_mouse_y();
     bool mouse_on_track = false;
-    if (is_horiz) {
-      mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x && mouse_x <= thumb.get_position(BOTTOM_RIGHT).x &&
-                        mouse_y >= thumb.get_position(TOP_LEFT).y - drag_area_inflation &&
-                        mouse_y <= thumb.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
-      mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x && mouse_x <= track.get_position(BOTTOM_RIGHT).x &&
-                        mouse_y >= track.get_position(TOP_LEFT).y - drag_area_inflation &&
-                        mouse_y <= track.get_position(BOTTOM_RIGHT).y + drag_area_inflation);
-    } else {
-      mouse_on_thumb = (mouse_x >= thumb.get_position(TOP_LEFT).x - drag_area_inflation &&
-                        mouse_x <= thumb.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
-                        mouse_y >= thumb.get_position(TOP_LEFT).y && mouse_y <= thumb.get_position(BOTTOM_RIGHT).y);
-      mouse_on_track = (mouse_x >= track.get_position(TOP_LEFT).x - drag_area_inflation &&
-                        mouse_x <= track.get_position(BOTTOM_RIGHT).x + drag_area_inflation &&
-                        mouse_y >= track.get_position(TOP_LEFT).y && mouse_y <= track.get_position(BOTTOM_RIGHT).y);
-    }
+    // FIXME: drag_area_inflation not used
+    mouse_on_thumb = thumb.is_mouse_hovering();
+    mouse_on_track = track.is_mouse_hovering();
 
     if (lmb_just_pressed && !mouse_on_thumb && mouse_on_track) {
       float new_value = 0.0f;

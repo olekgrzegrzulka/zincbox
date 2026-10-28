@@ -1,5 +1,6 @@
 #include "widget_track.hpp"
 #include <string>
+#include "common/logger.hpp"
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/musicdb.hpp"
@@ -43,8 +44,9 @@ void WidgetTrack::setup() {
   const i32 TRACK_HEIGHT = theme::config().panel_tracklist.track_height * SCALE;
   auto track = db::track_by_id(m_track_id);
   set_nine_slice_margin(8.0f);
+  set_fixed_height(0); // clear any fixed height set by the `Button`
   set_height(TRACK_HEIGHT);
-
+  set_is_self_drawn(false);
   set_layout("ltr mx:5 my:0 s:5 fill expand");
 
   label.set_is_drawn(false);
@@ -58,7 +60,7 @@ void WidgetTrack::setup() {
     m_hover = &add_child<zincgui::ColorRect>(theme::config().panel_tracklist.track_hovered);
     m_hover->set_opacity(theme::config().panel_tracklist.track_hovered_opacity);
     m_hover->set_ignore_parents_layout(true);
-    m_hover->set_is_drawn(false);
+    m_hover->set_is_self_drawn(false);
   }
 
   if (!m_label_track_number) {
@@ -189,22 +191,17 @@ void WidgetTrack::update() {
     m_changed = false;
   }
 
-  if (!is_mouse_hovering()) { m_is_hovered = false; }
-
   m_hover->set_width(width);
   m_hover->set_height(height);
-  m_hover->set_is_drawn(m_is_hovered);
+  m_hover->set_is_self_drawn(is_mouse_hovering());
 
   m_bg->set_width(width);
   m_bg->set_height(height);
 
-  Sprite::update();
+  Button::update();
 }
 
-void WidgetTrack::event(zincgui::Input::InputEventMouseMove& ev) {
-  m_is_hovered = is_mouse_hovering();
-  Button::event(ev);
-}
+void WidgetTrack::event(zincgui::Input::InputEventMouseMove& ev) { Button::event(ev); }
 
 WidgetTrack& WidgetTrack::track_id(size_t value) {
   if (m_track_id != value) {
