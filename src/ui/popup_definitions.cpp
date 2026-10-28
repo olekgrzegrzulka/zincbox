@@ -351,7 +351,7 @@ PopupAbout::PopupAbout(zincgui::Root& ui_, PopupController& controller_, std::fu
   title.set_height(32 * zincbox::ui_scale());
   title.set_resize_to_text_extents(false);
   auto& content =
-    add_child<zincgui::Label>(tr::format("popup.about.content", "0.1", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
+    add_child<zincgui::Label>(tr::format("popup.about.content", "0.3", __DATE__, "github.com/olekgrzegrzulka/zincbox"));
   set_width(content.get_text_extents().x + 16);
   content.set_text_color(theme::config().text_color_muted);
   content.set_text_alignment(zincgui::TextAlign::JUSTIFY);
