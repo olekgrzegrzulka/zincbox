@@ -10,37 +10,44 @@ namespace zincgui {
   class Root;
 
   class ScrollBar : public Slider {
-    protected:
-      i32 page_size = default_settings::scrollbar_page_size;
-      i32 content_size = default_settings::scrollbar_content_size;
-
     public:
       ScrollBar(Root& ui_, SliderOrientation orientation_ = SliderOrientation::HORIZONTAL);
 
       void update() override;
-      void recalculate_values();
 
+      void recalculate_values();
       void scroll(float force);
 
-      void set_content_size(i32 v) {
-        content_size = v;
-        recalculate_values();
-      }
-      void set_page_size(i32 v) {
-        page_size = v;
-        recalculate_values();
-      }
-      i32 get_content_size() const { return content_size; }
-      i32 get_page_size() const { return page_size; }
-
-      void set_scroll_offset(i32 v) {
-        float lo = std::min(min_value, max_value);
-        float hi = std::max(min_value, max_value);
-        set_value(std::clamp((float)v, lo, hi));
-        recalculate_values();
+      [[nodiscard]] i32 content_size() const noexcept { return m_content_size; }
+      ScrollBar& content_size(i32 v) {
+        if (m_content_size != v) {
+          m_content_size = v;
+          recalculate_values();
+        }
+        return *this;
       }
 
-      i32 get_scroll_offset() const { return value; }
+      [[nodiscard]] i32 page_size() const noexcept { return m_page_size; }
+      ScrollBar& page_size(i32 v) {
+        if (m_page_size != v) {
+          m_page_size = v;
+          recalculate_values();
+        }
+        return *this;
+      }
+
+      [[nodiscard]] i32 scroll_offset() const noexcept { return static_cast<i32>(value()); }
+      ScrollBar& scroll_offset(i32 v) {
+        float lo = std::min(min_value(), max_value());
+        float hi = std::max(min_value(), max_value());
+        value(std::clamp(static_cast<float>(v), lo, hi));
+        recalculate_values();
+        return *this;
+      }
+
+    private:
+      i32 m_page_size = default_settings::scrollbar_page_size;
+      i32 m_content_size = default_settings::scrollbar_content_size;
   };
 
 } // namespace zincgui

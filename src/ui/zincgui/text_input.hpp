@@ -14,25 +14,45 @@ namespace zincgui {
   class TextInput : public Sprite {
     public:
       TextInput(Root& ui_);
+
       void input() override;
       void update() override;
       void on_focused() override;
       void on_unfocused() override;
+      void event(Input::InputEventMouseButton& ev) override;
+      void event(Input::InputEventKey& ev) override;
+
       void clear();
-      void event(Input::InputEventMouseButton&) override;
-      void event(Input::InputEventKey&) override;
-      void set_on_text_changed(std::function<void()> lambda) { lambda_on_text_changed = std::move(lambda); }
-      Label& label;
-      ColorRect& caret;
+
+      [[nodiscard]] Label& label() noexcept { return m_label; }
+      [[nodiscard]] const Label& label() const noexcept { return m_label; }
+      [[nodiscard]] ColorRect& caret() noexcept { return m_caret; }
+      [[nodiscard]] const ColorRect& caret() const noexcept { return m_caret; }
+      [[nodiscard]] float caret_blink_time() const noexcept { return m_caret_blink_time; }
+      TextInput& caret_blink_time(float v) noexcept {
+        m_caret_blink_time = v;
+        return *this;
+      }
+
+      TextInput& on_text_changed(std::function<void()> lambda) {
+        m_on_text_changed = std::move(lambda);
+        return *this;
+      }
 
     protected:
-      std::function<void()> lambda_on_text_changed;
-      float caret_blink_time = default_settings::text_input_caret_blink_time;
-      float backspace_echo_length_initial = default_settings::text_input_backspace_echo_initial;
-      float backspace_echo_length = default_settings::text_input_backspace_echo;
-      float caret_blink_clock = default_settings::text_input_caret_blink_time;
-      float backspace_clock = 0.0f;
-      bool backspace_first_echo = true;
+      [[nodiscard]] float caret_blink_clock() const noexcept { return m_caret_blink_clock; }
+      void caret_blink_clock(float v) noexcept { m_caret_blink_clock = v; }
+
+    private:
+      Label& m_label;
+      ColorRect& m_caret;
+      std::function<void()> m_on_text_changed;
+      float m_caret_blink_time = default_settings::text_input_caret_blink_time;
+      float m_backspace_echo_length_initial = default_settings::text_input_backspace_echo_initial;
+      float m_backspace_echo_length = default_settings::text_input_backspace_echo;
+      float m_caret_blink_clock = default_settings::text_input_caret_blink_time;
+      float m_backspace_clock = 0.0f;
+      bool m_backspace_first_echo = true;
   };
 
 } // namespace zincgui

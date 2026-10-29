@@ -15,17 +15,25 @@ namespace zincgui {
 class ScrollableView : public zincgui::Widget {
   public:
     ScrollableView(zincgui::Root& ui_);
+
     void input() override;
     void update() override;
     void event(zincgui::Input::InputEventMouseScroll& ev) override;
 
-    zincgui::Widget* content() { return m_content; }
-    zincgui::Sprite* background() { return m_background; }
-    zincgui::ScrollBar* scrollbar() { return m_scrollbar; }
+    ScrollableView& scroll_offset(i32 scroll, bool instant = false);
 
-    void set_scroll_offset(i32 scroll, bool instant = false);
+    [[nodiscard]] zincgui::Widget* content() noexcept { return m_content; }
+    [[nodiscard]] const zincgui::Widget* content() const noexcept { return m_content; }
+    [[nodiscard]] zincgui::Widget* container() noexcept { return m_container; }
+    [[nodiscard]] const zincgui::Widget* container() const noexcept { return m_container; }
+    [[nodiscard]] zincgui::Sprite* background() noexcept { return m_background; }
+    [[nodiscard]] const zincgui::Sprite* background() const noexcept { return m_background; }
+    [[nodiscard]] zincgui::ScrollBar* scrollbar() noexcept { return m_scrollbar; }
+    [[nodiscard]] const zincgui::ScrollBar* scrollbar() const noexcept { return m_scrollbar; }
+    [[nodiscard]] i32 scroll_px() const noexcept { return m_scroll_px; }
+    [[nodiscard]] i32 target_scroll_px() const noexcept { return m_target_scroll_px; }
 
-  protected:
+  private:
     i32 m_scroll_px = 0;
     i32 m_target_scroll_px = 0;
     zincgui::Sprite* m_background{};

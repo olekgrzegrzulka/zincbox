@@ -33,8 +33,8 @@ namespace zincgui {
       template <class T, class... Args> T& add_widget(Args&&... args) {
         m_widgets_to_add.emplace_back(std::make_unique<T>(*this, std::forward<Args>(args)...));
         T& widget = static_cast<T&>(*m_widgets_to_add.back().get());
-        widget.set_window_width(m_window_width);
-        widget.set_window_height(m_window_height);
+        widget.window_width(m_window_width);
+        widget.window_height(m_window_height);
         m_root_mutated = true;
         return widget;
       }
@@ -58,13 +58,24 @@ namespace zincgui {
 
       void set_focused_widget(Widget*);
       void set_focus_manager(Widget*);
+      void focused_widget(Widget* w) { set_focused_widget(w); }
+      void focus_manager(Widget* w) { set_focus_manager(w); }
+
+      i32 window_width() const { return m_window_width; }
+      i32 window_height() const { return m_window_height; }
+      vec2i window_size() const { return vec2i{m_window_width, m_window_height}; }
+      const glm::mat4& matrix() const { return m_matrix; }
+      const Shader& shader() const { return m_shader; }
 
       i32 get_window_width() const { return m_window_width; }
       i32 get_window_height() const { return m_window_height; }
       vec2i get_window_size() const { return vec2i{m_window_width, m_window_height}; }
       const glm::mat4& get_matrix() const { return m_matrix; }
       const Shader& get_shader() const { return m_shader; }
+      TextureAtlas& texture_atlas() { return m_texture_atlas; }
+      const TextureAtlas& texture_atlas() const { return m_texture_atlas; }
       TextureAtlas& get_texture_atlas() { return m_texture_atlas; }
+      std::span<Widget*> hovered_widgets() { return m_hovered_widgets; }
       std::span<Widget*> get_hovered_widgets() { return m_hovered_widgets; }
       Widget* focused_widget() const { return m_focused_widget; }
       Widget* focus_manager() const { return m_focus_manager; }

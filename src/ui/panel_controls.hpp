@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <utility>
 #include "common/signal.hpp"
 #include "common/types.hpp"
 #include "ui/zincgui/color_rect.hpp"
@@ -30,23 +31,44 @@ class PanelControls final : public zincgui::ColorRect {
 
     PanelControls(zincgui::Root& ui_);
     ~PanelControls() override;
-    using ColorRect::event;
-    void event(zincgui::Input::InputEventMouseButton&) override;
-    void event(zincgui::Input::InputEventKey&) override;
-    void update() override;
-    void update_love_state(bool);
-    void set_button_expand_player_visibility(bool);
-    void set_tooltip_visibility(bool);
-    bool can_drag_window() const;
-    void set_disabled(bool);
 
-  public:
-    std::function<void(Widget*)> on_playing_track_lmb;
-    std::function<void(Widget*)> on_playing_track_rmb;
-    std::function<void()> on_love_button_pressed;
-    void on_button_expand_player_pressed(std::function<void()>);
+    using ColorRect::event;
+    void event(zincgui::Input::InputEventMouseButton& ev) override;
+    void event(zincgui::Input::InputEventKey& ev) override;
+    void update() override;
+
+    void update_love_state(bool is_loved);
+    bool can_drag_window() const;
+
+    PanelControls& button_expand_player_visibility(bool state);
+    PanelControls& tooltip_visibility(bool state);
+    PanelControls& disabled(bool dis);
+
+    PanelControls& on_playing_track_lmb(std::function<void(Widget*)> fn) {
+      m_on_playing_track_lmb = std::move(fn);
+      return *this;
+    }
+    PanelControls& on_playing_track_rmb(std::function<void(Widget*)> fn) {
+      m_on_playing_track_rmb = std::move(fn);
+      return *this;
+    }
+    PanelControls& on_love_button_pressed(std::function<void()> fn) {
+      m_on_love_button_pressed = std::move(fn);
+      return *this;
+    }
+    PanelControls& on_button_expand_player_pressed(std::function<void()> fn);
 
   private:
+    void update_repeat_mode();
+    void update_shuffle_mode();
+    void on_width_changed();
+    void update_timestamp_label();
+    void update_track_label();
+
+    std::function<void(Widget*)> m_on_playing_track_lmb;
+    std::function<void(Widget*)> m_on_playing_track_rmb;
+    std::function<void()> m_on_love_button_pressed;
+
     zincgui::Button* m_button_play_pause{};
     zincgui::Button* m_button_stop{};
     zincgui::Button* m_button_next{};
@@ -82,11 +104,4 @@ class PanelControls final : public zincgui::ColorRect {
     Signal<>::slot_key m_slot_on_track_changed;
     bool m_is_playing = false;
     bool m_disabled = false;
-
-  private:
-    void update_repeat_mode();
-    void update_shuffle_mode();
-    void on_width_changed();
-    void update_timestamp_label();
-    void update_track_label();
 };

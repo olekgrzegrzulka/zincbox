@@ -19,15 +19,38 @@ namespace zincgui {
 
       void update() override;
 
-      void set_text(const std::string& s);
-      void set_clamp(bool value);
       void set_size_and_position();
 
-    protected:
-      Label* label{};
-      ToolTipPosition pos{};
-      i32 distance{};
-      bool clamp = default_settings::tooltip_clamp;
+      ToolTip& text(const std::string& s);
+      ToolTip& clamp(bool value);
+      [[nodiscard]] bool clamp() const noexcept { return m_clamp; }
+
+      using Sprite::pos;
+      using Sprite::position;
+
+      [[nodiscard]] ToolTipPosition tooltip_pos() const noexcept { return m_pos; }
+      [[nodiscard]] ToolTipPosition pos() const noexcept { return m_pos; }
+      ToolTip& pos(ToolTipPosition p) {
+        m_pos = p;
+        set_size_and_position();
+        return *this;
+      }
+
+      [[nodiscard]] i32 distance() const noexcept { return m_distance; }
+      ToolTip& distance(i32 d) {
+        m_distance = d;
+        set_size_and_position();
+        return *this;
+      }
+
+      [[nodiscard]] Label* label() noexcept { return m_label; }
+      [[nodiscard]] const Label* label() const noexcept { return m_label; }
+
+    private:
+      Label* m_label{};
+      ToolTipPosition m_pos{};
+      i32 m_distance{};
+      bool m_clamp = default_settings::tooltip_clamp;
   };
 
 } // namespace zincgui

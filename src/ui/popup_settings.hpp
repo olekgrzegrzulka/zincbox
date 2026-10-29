@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 #include "common/types.hpp"
 #include "core/player/equalizer.hpp"
@@ -32,41 +33,17 @@ class PopupSettings final : public Popup {
 
     void update() override;
 
-  public:
-    std::function<void(Settings)> on_save;
-    std::function<void()> on_cancel;
+    PopupSettings& on_save(std::function<void(Settings)> fn) {
+      m_on_save = std::move(fn);
+      return *this;
+    }
+
+    PopupSettings& on_cancel(std::function<void()> fn) {
+      m_on_cancel = std::move(fn);
+      return *this;
+    }
 
   private:
-    struct SettingEntry {
-        zincgui::Widget* row_widget{};
-        std::string search_blob;
-    };
-
-    struct SectionGroup {
-        std::string raw_title_key;
-        std::string localized_title;
-        std::string search_blob;
-        zincgui::Label* header_label{};
-        zincgui::Widget* spacer_widget{};
-        std::vector<SettingEntry> entries;
-    };
-
-    static constexpr size_t SECTION_COUNT = 4;
-
-    Settings m_initial_settings{};
-    Settings m_working_settings{};
-
-    zincgui::TextInput* m_search_bar{};
-    ScrollableView* m_scroll_view{};
-    zincgui::Button* m_btn_save{};
-    std::array<ZincboxButton*, SECTION_COUNT> m_page_buttons{};
-    std::array<SectionGroup, SECTION_COUNT> m_sections{};
-    std::array<zincgui::Slider*, player::EQ_BAND_COUNT> m_eq_sliders{};
-    std::array<zincgui::Label*, player::EQ_BAND_COUNT> m_eq_value_labels{};
-    std::array<zincgui::Label*, player::EQ_BAND_COUNT> m_eq_freq_labels{};
-    std::string m_last_search_query;
-    bool m_tight = false;
-
     static i32 control_row_height();
     static std::string make_search_blob(std::string_view raw_key, std::string_view localized_text);
     static std::string format_eq_freq(float freq);
@@ -97,4 +74,37 @@ class PopupSettings final : public Popup {
     void scroll_to_section(size_t section_idx);
     void filter_by_search();
     void refresh_save_button_state();
+
+    struct SettingEntry {
+        zincgui::Widget* row_widget{};
+        std::string search_blob;
+    };
+
+    struct SectionGroup {
+        std::string raw_title_key;
+        std::string localized_title;
+        std::string search_blob;
+        zincgui::Label* header_label{};
+        zincgui::Widget* spacer_widget{};
+        std::vector<SettingEntry> entries;
+    };
+
+    static constexpr size_t SECTION_COUNT = 4;
+
+    std::function<void(Settings)> m_on_save;
+    std::function<void()> m_on_cancel;
+
+    Settings m_initial_settings{};
+    Settings m_working_settings{};
+
+    zincgui::TextInput* m_search_bar{};
+    ScrollableView* m_scroll_view{};
+    zincgui::Button* m_btn_save{};
+    std::array<ZincboxButton*, SECTION_COUNT> m_page_buttons{};
+    std::array<SectionGroup, SECTION_COUNT> m_sections{};
+    std::array<zincgui::Slider*, player::EQ_BAND_COUNT> m_eq_sliders{};
+    std::array<zincgui::Label*, player::EQ_BAND_COUNT> m_eq_value_labels{};
+    std::array<zincgui::Label*, player::EQ_BAND_COUNT> m_eq_freq_labels{};
+    std::string m_last_search_query;
+    bool m_tight = false;
 };

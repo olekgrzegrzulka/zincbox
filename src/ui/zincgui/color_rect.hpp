@@ -13,14 +13,6 @@ namespace zincgui {
   class Root;
 
   class ColorRect : public Widget {
-
-    protected:
-      vec3f color = default_settings::color_rect_color;
-      float opacity = default_settings::color_rect_opacity;
-      u32 vbo = 0;
-      u32 vao = 0;
-      std::array<Vertex, 6> vertices{};
-
     public:
       ColorRect(const ColorRect&) = delete;
       ColorRect(ColorRect&&) = delete;
@@ -31,35 +23,42 @@ namespace zincgui {
       ColorRect(Root& ui_, rgba color);
       ~ColorRect() override;
 
-      std::span<const Vertex> get_vertices() override;
-
       void update() override;
+      std::span<const Vertex> vertices() override;
 
-      WIDGET_DEF_GETTER(color);
-
-      void set_color(rgba color_) {
-        auto old_color = color;
-        auto old_opacity = opacity;
-        color.x = color_.r / 255.0f;
-        color.y = color_.g / 255.0f;
-        color.z = color_.b / 255.0f;
-        opacity = color_.a / 255.0f;
-        if (old_color != color) { mark_dirty(); }
-        if (old_opacity != opacity) { mark_dirty(); }
+      [[nodiscard]] vec3f color() const noexcept { return m_color; }
+      template <typename Self> Self& color(this Self& self, rgba color_) {
+        auto old_color = self.m_color;
+        auto old_opacity = self.m_opacity;
+        self.m_color.x = color_.r / 255.0f;
+        self.m_color.y = color_.g / 255.0f;
+        self.m_color.z = color_.b / 255.0f;
+        self.m_opacity = color_.a / 255.0f;
+        if (old_color != self.m_color || old_opacity != self.m_opacity) { self.mark_dirty(); }
+        return self;
+      }
+      template <typename Self> Self& color(this Self& self, vec3f color_) {
+        if (self.m_color != color_) {
+          self.m_color = color_;
+          self.mark_dirty();
+        }
+        return self;
       }
 
-      void set_color(vec3f color_) {
-        auto old_color = color;
-        color = color_;
-        if (old_color != color) { mark_dirty(); }
+      [[nodiscard]] float opacity() const noexcept { return m_opacity; }
+      template <typename Self> Self& opacity(this Self& self, float opacity_) {
+        if (std::abs(self.m_opacity - opacity_) < 0.01f) { return self; }
+        self.m_opacity = opacity_;
+        self.mark_dirty();
+        return self;
       }
 
-      WIDGET_DEF_GETTER(opacity)
-      void set_opacity(float opacity_) {
-        if (std::abs(opacity - opacity_) < 0.01f) { return; }
-        opacity = opacity_;
-        mark_dirty();
-      }
+    private:
+      vec3f m_color = default_settings::color_rect_color;
+      float m_opacity = default_settings::color_rect_opacity;
+      u32 m_vbo = 0;
+      u32 m_vao = 0;
+      std::array<Vertex, 6> m_vertices{};
   };
 
 } // namespace zincgui

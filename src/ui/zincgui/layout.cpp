@@ -88,7 +88,7 @@ namespace zincgui::layout_engine {
   }
 
   void apply_layout(Widget& container) {
-    const Layout& layout = container.get_layout();
+    const Layout& layout = container.layout();
     if (!layout.enabled) { return; }
 
     using enum LayoutDirection;
@@ -105,40 +105,40 @@ namespace zincgui::layout_engine {
 
     i32 margin_major = x_major ? layout.margin.x : layout.margin.y;
     i32 margin_minor = x_major ? layout.margin.y : layout.margin.x;
-    i32 container_size_major = x_major ? container.get_width() : container.get_height();
-    i32 container_size_minor = (x_major ? container.get_height() : container.get_width()) - (2 * margin_minor);
+    i32 container_size_major = x_major ? container.width() : container.height();
+    i32 container_size_minor = (x_major ? container.height() : container.width()) - (2 * margin_minor);
 
     auto set_pos_major = [x_major](Widget& w, i32 to) -> void {
       if (x_major) {
-        w.set_x(to, true);
+        w.x(to, true);
       } else {
-        w.set_y(to, true);
+        w.y(to, true);
       }
     };
     auto set_pos_minor = [x_major](Widget& w, i32 to) -> void {
       if (!x_major) {
-        w.set_x(to, true);
+        w.x(to, true);
       } else {
-        w.set_y(to, true);
+        w.y(to, true);
       }
     };
-    auto get_size_major = [x_major](Widget& w) -> i32 { return x_major ? w.get_width() : w.get_height(); };
-    auto get_size_min_minor = [x_major](Widget& w) -> i32 { return !x_major ? w.get_min_width() : w.get_min_height(); };
-    auto get_size_max_minor = [x_major](Widget& w) -> i32 { return !x_major ? w.get_max_width() : w.get_max_height(); };
-    auto get_size_min_major = [x_major](Widget& w) -> i32 { return x_major ? w.get_min_width() : w.get_min_height(); };
-    auto get_size_max_major = [x_major](Widget& w) -> i32 { return x_major ? w.get_max_width() : w.get_max_height(); };
+    auto get_size_major = [x_major](Widget& w) -> i32 { return x_major ? w.width() : w.height(); };
+    auto get_size_min_minor = [x_major](Widget& w) -> i32 { return !x_major ? w.min_width() : w.min_height(); };
+    auto get_size_max_minor = [x_major](Widget& w) -> i32 { return !x_major ? w.max_width() : w.max_height(); };
+    auto get_size_min_major = [x_major](Widget& w) -> i32 { return x_major ? w.min_width() : w.min_height(); };
+    auto get_size_max_major = [x_major](Widget& w) -> i32 { return x_major ? w.max_width() : w.max_height(); };
     auto set_size_major = [x_major](Widget& w, i32 to) -> void {
       if (x_major) {
-        w.set_width(to, true);
+        w.width(to, true);
       } else {
-        w.set_height(to, true);
+        w.height(to, true);
       }
     };
     auto set_size_minor = [x_major](Widget& w, i32 to) -> void {
       if (!x_major) {
-        w.set_width(to, true);
+        w.width(to, true);
       } else {
-        w.set_height(to, true);
+        w.height(to, true);
       }
     };
 
@@ -151,7 +151,7 @@ namespace zincgui::layout_engine {
         bool frozen;
     };
 
-    auto& children = container.get_children();
+    auto& children = container.children();
     static std::vector<FlexItem> items;
     items.clear();
     items.reserve(children.size());
@@ -160,13 +160,13 @@ namespace zincgui::layout_engine {
     float total_weight = 0.0f;
 
     for (auto& c : children) {
-      if (c->get_ignore_parents_layout() || !c->get_is_drawn()) { continue; }
+      if (c->ignore_parents_layout() || !c->is_drawn()) { continue; }
       i32 raw_min = get_size_min_major(*c);
       i32 raw_max = get_size_max_major(*c);
       i32 min_s = raw_min > 0 ? raw_min : 0;
       i32 max_s = raw_max > 0 ? raw_max : std::numeric_limits<i32>::max();
       if (min_s > max_s) { std::swap(min_s, max_s); }
-      float c_weight = layout.fill ? c->get_weight() : 0.0f;
+      float c_weight = layout.fill ? c->weight() : 0.0f;
       bool is_frozen = (c_weight <= 0.0f);
       i32 size = is_frozen ? std::clamp(get_size_major(*c), min_s, max_s) : 0;
 
@@ -217,8 +217,7 @@ namespace zincgui::layout_engine {
 
     for (auto& item : items) {
       Widget& w = *item.w;
-      w.set_anchor(child_anchor, true);
-      w.set_parent_anchor(child_anchor, true);
+      w.anchor(child_anchor, true).parent_anchor(child_anchor, true);
       set_size_major(w, item.size);
       set_pos_major(w, child_direction * offset);
       offset += item.size + layout.spacing;
@@ -239,13 +238,13 @@ namespace zincgui::layout_engine {
 
     if (layout.fit_to_contents) {
       if (x_major) {
-        i32 min_w = container.get_min_width() > 0 ? container.get_min_width() : 0;
-        i32 max_w = container.get_max_width() > 0 ? container.get_max_width() : std::numeric_limits<i32>::max();
-        container.set_width(std::clamp(offset, min_w, max_w), true);
+        i32 min_w = container.min_width() > 0 ? container.min_width() : 0;
+        i32 max_w = container.max_width() > 0 ? container.max_width() : std::numeric_limits<i32>::max();
+        container.width(std::clamp(offset, min_w, max_w), true);
       } else {
-        i32 min_h = container.get_min_height() > 0 ? container.get_min_height() : 0;
-        i32 max_h = container.get_max_height() > 0 ? container.get_max_height() : std::numeric_limits<i32>::max();
-        container.set_height(std::clamp(offset, min_h, max_h), true);
+        i32 min_h = container.min_height() > 0 ? container.min_height() : 0;
+        i32 max_h = container.max_height() > 0 ? container.max_height() : std::numeric_limits<i32>::max();
+        container.height(std::clamp(offset, min_h, max_h), true);
       }
     }
   }

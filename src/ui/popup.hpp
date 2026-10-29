@@ -2,6 +2,7 @@
 #include <functional>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 #include "common/types.hpp"
 #include "ui/zincgui/sprite.hpp"
@@ -25,32 +26,55 @@ class Popup : public zincgui::Sprite {
   public:
     Popup(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_);
 
-  public:
+    void update() override;
+    void event(zincgui::Input::InputEventMouseButton& e) override;
+    void event(zincgui::Input::InputEventKey& e) override;
+
     void close() {
-      if (on_close) { on_close(this); }
+      if (m_on_close) { m_on_close(this); }
     }
 
-    void update() override;
-    void event(zincgui::Input::InputEventMouseButton&) override;
-    void event(zincgui::Input::InputEventKey&) override;
+    [[nodiscard]] i32 max_content_width() const;
+    [[nodiscard]] i32 max_content_height() const;
 
-    i32 get_max_content_width() const;
-    i32 get_max_content_height() const;
+    [[nodiscard]] PopupController& controller() noexcept { return m_controller; }
+    [[nodiscard]] const PopupController& controller() const noexcept { return m_controller; }
 
-  protected:
-    PopupController& controller;
-    std::function<void(Popup*)> on_close{};
-    bool is_dragged = false;
-    vec2i drag_start_pos{};
-    vec2i drag_start_mouse_pos{};
+    [[nodiscard]] bool is_dragged() const noexcept { return m_is_dragged; }
+    Popup& is_dragged(bool v) noexcept {
+      m_is_dragged = v;
+      return *this;
+    }
+
+    Popup& on_close(std::function<void(Popup*)> fn) {
+      m_on_close = std::move(fn);
+      return *this;
+    }
+
+  private:
+    PopupController& m_controller;
+    std::function<void(Popup*)> m_on_close{};
+    bool m_is_dragged = false;
+    vec2i m_drag_start_pos{};
+    vec2i m_drag_start_mouse_pos{};
 };
 
 class Popover : public zincgui::Sprite {
   public:
     Popover(zincgui::Root& ui_, bool arrow_on_top);
+
     void update() override;
 
-  public:
-    Sprite* arrow{};
-    i32 arrow_offset = 0;
+    [[nodiscard]] Sprite* arrow() noexcept { return m_arrow; }
+    [[nodiscard]] const Sprite* arrow() const noexcept { return m_arrow; }
+
+    [[nodiscard]] i32 arrow_offset() const noexcept { return m_arrow_offset; }
+    Popover& arrow_offset(i32 v) noexcept {
+      m_arrow_offset = v;
+      return *this;
+    }
+
+  private:
+    Sprite* m_arrow{};
+    i32 m_arrow_offset = 0;
 };

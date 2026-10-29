@@ -4,6 +4,7 @@
 #include <optional>
 #include <span>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -30,7 +31,6 @@ class PanelTracklistSelection final {
   public:
     bool has(size_t s) const { return m_selection_set.contains(s); }
     bool insert(size_t s) {
-
       if (m_selection_set.emplace(s).second) {
         m_selection_vector.emplace_back(s);
         return true;
@@ -58,6 +58,7 @@ class PanelTracklistSelection final {
       return m_selection_vector.back();
     }
 
+    const std::vector<size_t>& selection_vector() const noexcept { return m_selection_vector; }
     const std::vector<size_t>& get() const { return m_selection_vector; }
 
     size_t size() const { return m_selection_vector.size(); }
@@ -125,6 +126,7 @@ class PanelTracklist final : public zincgui::ColorRect {
     using Item = std::variant<ItemTrack, ItemQueueTrack, ItemQueuePlaylist, ItemQueueCollection, ItemPlaylistHeader>;
 
     enum class InsertCursorPos : u8 { BELOW, ABOVE };
+
     PanelTracklist(const PanelTracklist&) = delete;
     PanelTracklist(PanelTracklist&&) = delete;
     PanelTracklist& operator=(const PanelTracklist&) = delete;
@@ -132,71 +134,106 @@ class PanelTracklist final : public zincgui::ColorRect {
     PanelTracklist(zincgui::Root& ui_);
     ~PanelTracklist() override;
 
-    void event(zincgui::Input::InputEventMouseScroll&) override;
-    void event(zincgui::Input::InputEventMouseButton&) override;
-    void event(zincgui::Input::InputEventKey&) override;
     void input() override;
     void update() override;
+    void event(zincgui::Input::InputEventMouseScroll& e) override;
+    void event(zincgui::Input::InputEventMouseButton& e) override;
+    void event(zincgui::Input::InputEventKey& e) override;
 
     void show();
     void hide();
     void recreate(std::optional<size_t> collection_id_);
     void recreate(std::span<const db::track_info> tracks);
-    void insert_track(size_t, db::track_info);
-    void insert_track(db::track_info);
     void recreate(std::span<const Item> new_items);
+    void insert_track(size_t index, db::track_info ti);
+    void insert_track(db::track_info ti);
     void insert_item(const Item& item);
     void insert_item(size_t index, const Item& item);
     void set_item(size_t index, const Item& item);
-    void insert_to_selection_index(size_t index);
-    void set_track(size_t, db::track_info);
+    void set_track(size_t index, db::track_info ti);
     void remove_item(size_t index);
-
     void clear();
-
+    void clear_selection();
+    void insert_to_selection_index(size_t index);
+    void insert_to_selection_track(db::track_info track_info);
     void scroll_to_playlist(size_t playlist_id, bool immediate = false);
     void scroll_to_track(size_t playlist_id, size_t track_id, bool immediate = false);
-    void set_scroll_px(float px, bool immediate = false);
-    float get_scroll_px() const;
+    [[nodiscard]] std::optional<size_t> find_item_track(db::track_info ti) const;
 
-    const Item& get_item(size_t i) const {
+    [[nodiscard]] float scroll_px() const;
+    PanelTracklist& scroll_px(float px, bool immediate = false);
+
+    [[nodiscard]] const Item& item(size_t i) const {
       ensure(i < m_items.size());
       return m_items[i];
     }
-    std::span<const Item> get_items() const { return m_items; }
-    const PanelTracklistSelection& selection() const { return m_selection; }
-    void clear_selection() {
-      m_selection.clear();
-      m_selection_modified = true;
+
+    [[nodiscard]] std::span<const Item> items() const noexcept { return m_items; }
+
+    [[nodiscard]] const PanelTracklistSelection& selection() const noexcept { return m_selection; }
+
+    PanelTracklist& insert_cursor_index(std::optional<size_t> value) noexcept {
+      m_insert_cursor_index = value;
+      return *this;
     }
 
-    std::optional<size_t> find_item_track(db::track_info ti) const;
-
-    void insert_to_selection_track(db::track_info track_info) {
-      auto idx = find_item_track(track_info);
-      if (idx) {
-        if (m_selection.insert(*idx)) { m_selection_modified = true; }
-      }
+    PanelTracklist& insert_cursor_pos(InsertCursorPos value) noexcept {
+      m_insert_cursor_pos = value;
+      return *this;
     }
 
-    void set_insert_cursor_index(std::optional<size_t> value) { m_insert_cursor_index = value; }
-    void set_insert_cursor_pos(InsertCursorPos value) { m_insert_cursor_pos = value; }
-    void set_track_highlight_mode(WidgetTrack::TrackHighlightMode value) { m_track_highlight_mode = value; }
-    void set_is_dragged(bool value) { m_is_dragged = value; }
+    PanelTracklist& track_highlight_mode(WidgetTrack::TrackHighlightMode value) noexcept {
+      m_track_highlight_mode = value;
+      return *this;
+    }
+
+    PanelTracklist& is_dragged(bool value) noexcept {
+      m_is_dragged = value;
+      return *this;
+    }
+
+    PanelTracklist& on_item_lmb(std::function<void(size_t item_index)> cb) {
+      m_on_item_lmb = std::move(cb);
+      return *this;
+    }
+    PanelTracklist& on_item_rmb(std::function<void(size_t item_index)> cb) {
+      m_on_item_rmb = std::move(cb);
+      return *this;
+    }
+    PanelTracklist& on_selection_rmb(std::function<void(size_t item_index)> cb) {
+      m_on_selection_rmb = std::move(cb);
+      return *this;
+    }
+    PanelTracklist& on_playlist_more_options_invoked(std::function<void(size_t col_id, size_t pl_id, Widget*)> cb) {
+      m_on_playlist_more_options_invoked = std::move(cb);
+      return *this;
+    }
+    PanelTracklist& on_playlist_sort_button_pressed(std::function<void(size_t col_id, size_t pl_id, Widget*)> cb) {
+      m_on_playlist_sort_button_pressed = std::move(cb);
+      return *this;
+    }
 
   private:
+    static i32 get_item_height(const Item& item);
+    static bool is_item_selectable(const Item& item);
+    static zincgui::Widget* get_item_widget(Item& item);
+    static void delete_item_widget(Item& item);
+    static size_t get_item_index(const Item& item);
+    static void set_item_index(Item& item, size_t index);
+    static void set_item_selected(Item& item, bool selected);
+
+    void create_item_widget_if_null(Item& item);
+    void rebuild_lookup();
+
     WidgetTrack::TrackHighlightMode m_track_highlight_mode = WidgetTrack::TrackHighlightMode::TRACK_INFO;
     PanelTracklistSelection m_selection;
 
-  public:
-    std::function<void(size_t item_index)> on_item_lmb{};
-    std::function<void(size_t item_index)> on_item_rmb{};
-    std::function<void(size_t item_index)> on_selection_rmb{};
+    std::function<void(size_t item_index)> m_on_item_lmb{};
+    std::function<void(size_t item_index)> m_on_item_rmb{};
+    std::function<void(size_t item_index)> m_on_selection_rmb{};
+    std::function<void(size_t collection_id, size_t playlist_id, Widget*)> m_on_playlist_more_options_invoked{};
+    std::function<void(size_t collection_id, size_t playlist_id, Widget*)> m_on_playlist_sort_button_pressed{};
 
-    std::function<void(size_t collection_id, size_t playlist_id, Widget*)> on_playlist_more_options_invoked{};
-    std::function<void(size_t collection_id, size_t playlist_id, Widget*)> on_playlist_sort_button_pressed{};
-
-  private:
     std::optional<size_t> m_collection_id;
     double m_scroll_px{};
     double m_target_scroll_px{};
@@ -216,20 +253,9 @@ class PanelTracklist final : public zincgui::ColorRect {
     zincgui::ToolTip* m_button_sort_tooltip{};
     zincgui::ToolTip* m_button_more_tooltip{};
 
-    static i32 get_item_height(const Item& item);
-    static bool is_item_selectable(const Item& item);
-    static zincgui::Widget* get_item_widget(Item& item);
-    static void delete_item_widget(Item& item);
-    static size_t get_item_index(const Item& item);
-    static void set_item_index(Item& item, size_t index);
-    static void set_item_selected(Item& item, bool selected);
-
-    void create_item_widget_if_null(Item&);
-    void rebuild_lookup();
-
     std::vector<Item> m_items;
     std::vector<size_t> m_header_indices; // used for tooltip handling but FIXME remove this and handle tooltips
-                                                  // in each header individually when we have a TooltipManager
+                                          // in each header individually when we have a TooltipManager
     std::unordered_map<db::track_info, size_t, TrackInfoHash> m_track_lookup;
     Widget* m_items_container{};
 };

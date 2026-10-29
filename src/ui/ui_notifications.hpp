@@ -16,23 +16,45 @@ class Notification final : public zincgui::Button {
 
     void update() override;
 
-    float y_lerped{};
-    i32 timer{};
-    bool dismissed = false;
-    zincgui::Label* label{};
+    [[nodiscard]] float y_lerped() const noexcept { return m_y_lerped; }
+    Notification& y_lerped(float v) noexcept {
+      m_y_lerped = v;
+      return *this;
+    }
+
+    [[nodiscard]] i32 timer() const noexcept { return m_timer; }
+    Notification& timer(i32 v) noexcept {
+      m_timer = v;
+      return *this;
+    }
+
+    [[nodiscard]] bool dismissed() const noexcept { return m_dismissed; }
+    Notification& dismissed(bool v) noexcept {
+      m_dismissed = v;
+      return *this;
+    }
+
+    [[nodiscard]] zincgui::Label* label() noexcept { return m_label; }
+    [[nodiscard]] const zincgui::Label* label() const noexcept { return m_label; }
+
+  private:
+    float m_y_lerped{};
+    i32 m_timer{};
+    bool m_dismissed = false;
+    zincgui::Label* m_label{};
 };
 
 class InterfaceNotifications : public zincgui::Widget {
   public:
     InterfaceNotifications(zincgui::Root& ui_);
 
-    void push(std::string_view);
-    void push_error(std::string_view);
-    Notification* push_persistent(std::string_view);
-    void dismiss(Notification*);
-    void dismiss_after(Notification*, i32);
-
     void update() override;
+
+    void push(std::string_view message);
+    void push_error(std::string_view message);
+    Notification* push_persistent(std::string_view message);
+    void dismiss(Notification* w);
+    void dismiss_after(Notification* w, i32 frames);
 
   private:
     std::vector<Notification*> m_notifications;

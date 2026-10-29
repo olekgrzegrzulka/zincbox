@@ -13,7 +13,8 @@ class ZincboxButton final : public zincgui::Button {
   public:
     ZincboxButton(zincgui::Root& ui_, const std::string& name_);
     ZincboxButton(zincgui::Root& ui_, const std::string& name_, const ButtonConfig& config);
-    void set_texture_all(const std::string& texture_name);
+
+    ZincboxButton& texture_all(const std::string& texture_name);
 
   private:
     void init();

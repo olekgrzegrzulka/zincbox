@@ -15,54 +15,92 @@ namespace zincgui {
   class Shader;
 
   class Sprite : public Widget {
-    protected:
-      float nine_slice_margin =
-        default_settings::sprite_nine_slice_margin; // FIXME: when this value is 0.0f, bad things happen
-      float nine_slice_scale = default_settings::sprite_nine_slice_scale;
-      vec2f uv_start = {0.0f, 0.0f};
-      vec2f uv_end = {1.0f, 1.0f};
-      i32 texture_width = default_settings::sprite_default_texture_width;
-      i32 texture_height = default_settings::sprite_default_texture_height;
-      u32 atlas_index = default_settings::sprite_default_atlas_index;
-      std::array<Vertex, 6> vertices{};
-
-    protected:
     public:
       Sprite(Root& ui_);
-      Sprite(Root& ui_, const std::string& id_) : Widget(ui_) { set_texture(id_, true); }
+      Sprite(Root& ui_, const std::string& id_);
       Sprite(Root& ui_, i32 width_, i32 height_);
-
-      std::span<const Vertex> get_vertices() override;
-
       ~Sprite() override;
 
       void update() override;
+      std::span<const Vertex> vertices() override;
 
-      virtual zincgui::TextureAtlas& get_texture_atlas();
+      virtual zincgui::TextureAtlas& texture_atlas();
 
-      void set_texture(const std::string& id, bool resize_to_texture_size = true);
-
-      WIDGET_DEF_SETTER_DIRTY(nine_slice_margin)
-      WIDGET_DEF_SETTER_DIRTY(nine_slice_scale)
-      void set_uv_start(vec2f value) {
-        if (!std::is_eq(uv_start.x <=> value.x) || !std::is_eq(uv_start.y <=> value.y)) {
-          uv_start = value;
-          mark_dirty();
+      [[nodiscard]] float nine_slice_margin() const noexcept { return m_nine_slice_margin; }
+      template <typename Self> Self& nine_slice_margin(this Self& self, float value) {
+        if (self.m_nine_slice_margin != value) {
+          self.m_nine_slice_margin = value;
+          self.mark_dirty();
         }
+        return self;
       }
-      void set_uv_end(vec2f value) {
-        if (!std::is_eq(uv_end.x <=> value.x) || !std::is_eq(uv_end.y <=> value.y)) {
-          uv_end = value;
-          mark_dirty();
-        }
-      }
-      WIDGET_DEF_SETTER_DIRTY(atlas_index)
 
-      WIDGET_DEF_GETTER(nine_slice_margin)
-      WIDGET_DEF_GETTER(nine_slice_scale)
-      WIDGET_DEF_GETTER(uv_start)
-      WIDGET_DEF_GETTER(uv_end)
-      WIDGET_DEF_GETTER(atlas_index)
+      [[nodiscard]] float nine_slice_scale() const noexcept { return m_nine_slice_scale; }
+      template <typename Self> Self& nine_slice_scale(this Self& self, float value) {
+        if (self.m_nine_slice_scale != value) {
+          self.m_nine_slice_scale = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] vec2f uv_start() const noexcept { return m_uv_start; }
+      template <typename Self> Self& uv_start(this Self& self, vec2f value) {
+        if (!std::is_eq(self.m_uv_start.x <=> value.x) || !std::is_eq(self.m_uv_start.y <=> value.y)) {
+          self.m_uv_start = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] vec2f uv_end() const noexcept { return m_uv_end; }
+      template <typename Self> Self& uv_end(this Self& self, vec2f value) {
+        if (!std::is_eq(self.m_uv_end.x <=> value.x) || !std::is_eq(self.m_uv_end.y <=> value.y)) {
+          self.m_uv_end = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] u32 atlas_index() const noexcept { return m_atlas_index; }
+      template <typename Self> Self& atlas_index(this Self& self, u32 value) {
+        if (self.m_atlas_index != value) {
+          self.m_atlas_index = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] i32 texture_width() const noexcept { return m_texture_width; }
+      template <typename Self> Self& texture_width(this Self& self, i32 value) {
+        self.m_texture_width = value;
+        return self;
+      }
+
+      [[nodiscard]] i32 texture_height() const noexcept { return m_texture_height; }
+      template <typename Self> Self& texture_height(this Self& self, i32 value) {
+        self.m_texture_height = value;
+        return self;
+      }
+
+      template <typename Self>
+      Self& texture(this Self& self, const std::string& id, bool resize_to_texture_size = true) {
+        self.set_texture_impl(id, resize_to_texture_size);
+        return self;
+      }
+
+    private:
+      void set_texture_impl(const std::string& id, bool resize_to_texture_size);
+
+    private:
+      float m_nine_slice_margin = default_settings::sprite_nine_slice_margin;
+      float m_nine_slice_scale = default_settings::sprite_nine_slice_scale;
+      vec2f m_uv_start = {0.0f, 0.0f};
+      vec2f m_uv_end = {1.0f, 1.0f};
+      i32 m_texture_width = default_settings::sprite_default_texture_width;
+      i32 m_texture_height = default_settings::sprite_default_texture_height;
+      u32 m_atlas_index = default_settings::sprite_default_atlas_index;
+      std::array<Vertex, 6> m_vertices{};
   };
 
 } // namespace zincgui

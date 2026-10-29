@@ -98,86 +98,87 @@ const zincgui::FontFace& zincgui::Root::get_font(size_t id) const {
 void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_layer,
                                               std::vector<std::vector<Widget*>>& layers) {
 
-  widget->dirty = false;
+  widget->m_dirty = false;
 
-  if (widget->parent && widget->parent->deleted_) { widget->deleted_ = true; }
+  if (widget->m_parent && widget->m_parent->m_deleted) { widget->m_deleted = true; }
 
-  if (widget->get_marked_for_deletion() && !widget->deleted_) {
-    widget->deleted_ = true;
+  if (widget->marked_for_deletion() && !widget->m_deleted) {
+    widget->m_deleted = true;
     m_deleted_widgets.insert(widget);
   }
 
-  if (widget->deleted_) {
+  if (widget->m_deleted) {
     if (m_focused_widget == widget) { set_focused_widget(nullptr); }
     if (m_focus_manager == widget) { m_focus_manager = nullptr; }
-    if (widget->parent && widget->parent->is_layout_dirty()) { widget->mark_layout_dirty(); }
-    widget->window_width = m_window_width;
-    widget->window_height = m_window_height;
+    if (widget->m_parent && widget->m_parent->is_layout_dirty()) { widget->mark_layout_dirty(); }
+    widget->m_window_width = m_window_width;
+    widget->m_window_height = m_window_height;
   }
 
-  if (!widget->deleted_) {
-    if (!widget->children_to_add.empty() && !widget->deleted_) { m_mutated_widgets.insert(widget); }
+  if (!widget->m_deleted) {
+    if (!widget->m_children_to_add.empty() && !widget->m_deleted) { m_mutated_widgets.insert(widget); }
 
-    if (widget->is_drawn_on_top) { always_on_top_layer += 1; }
-    Widget* parent = widget->parent;
+    if (widget->m_is_drawn_on_top) { always_on_top_layer += 1; }
+    Widget* parent = widget->m_parent;
 
-    bool parent_drawn = parent ? parent->visible_ : true;
-    widget->visible_ = parent_drawn && widget->get_is_drawn();
+    bool parent_drawn = parent ? parent->m_visible : true;
+    widget->m_visible = parent_drawn && widget->is_drawn();
 
-    bool parent_updated = parent ? parent->updated_ : true;
-    widget->updated_ = parent_updated && widget->get_is_updated();
+    bool parent_updated = parent ? parent->m_updated : true;
+    widget->m_updated = parent_updated && widget->is_updated();
 
-    bool parent_dirty = parent ? parent->dirty : false;
-    widget->dirty = parent_dirty || widget->dirty;
+    bool parent_dirty = parent ? parent->m_dirty : false;
+    widget->m_dirty = parent_dirty || widget->m_dirty;
 
     vec2i origin{};
-    if (widget->parent) {
-      origin = widget->parent->get_position(widget->parent_anchor);
+    if (widget->m_parent) {
+      origin = widget->m_parent->position(widget->m_parent_anchor);
     } else {
-      origin = vec2i(anchor_to_uv(widget->parent_anchor) * vec2f{get_window_size()});
+      origin = vec2i(anchor_to_uv(widget->m_parent_anchor) * vec2f{get_window_size()});
     }
 
-    widget->global_position_ =
-      origin + vec2i(widget->x, widget->y) - vec2i(vec2f{widget->width, widget->height} * anchor_to_uv(widget->anchor));
+    widget->m_global_position = origin + vec2i(widget->m_x, widget->m_y) -
+                                vec2i(vec2f{widget->m_width, widget->m_height} * anchor_to_uv(widget->m_anchor));
 
-    widget->rect_ = {
-      .begin = {widget->global_position_.x, m_window_height - (widget->global_position_.y + widget->height)},
-      .size = {widget->width, widget->height}};
+    widget->m_rect = {
+      .begin = {widget->m_global_position.x, m_window_height - (widget->m_global_position.y + widget->m_height)},
+      .size = {widget->m_width, widget->m_height}};
 
-    std::optional<rect2i> parent_scissor = parent ? parent->scissor_ : std::nullopt;
-    if (widget->is_drawn_on_top) { parent_scissor = std::nullopt; }
-    if (widget->get_clip_children()) {
-      widget->scissor_ = widget->get_rect();
-      if (parent && parent->scissor_.has_value()) {
-        widget->scissor_ = widget->scissor_->intersected(*parent->scissor_);
+    std::optional<rect2i> parent_scissor = parent ? parent->m_scissor : std::nullopt;
+    if (widget->m_is_drawn_on_top) { parent_scissor = std::nullopt; }
+    if (widget->clip_children()) {
+      widget->m_scissor = widget->rect();
+      if (parent && parent->m_scissor.has_value()) {
+        widget->m_scissor = widget->m_scissor->intersected(*parent->m_scissor);
       }
     } else {
-      widget->scissor_ = parent_scissor;
+      widget->m_scissor = parent_scissor;
     }
 
-    if (widget->scissor_) {
-      widget->hit_test_rect_ = widget->scissor_->intersected(widget->rect_);
+    if (widget->m_scissor) {
+      widget->m_hit_test_rect = widget->m_scissor->intersected(widget->m_rect);
       // FIXME : rect_ has inverted y axis...
-      widget->hit_test_rect_.begin.y = m_window_height - widget->hit_test_rect_.begin.y - widget->hit_test_rect_.size.y;
+      widget->m_hit_test_rect.begin.y =
+        m_window_height - widget->m_hit_test_rect.begin.y - widget->m_hit_test_rect.size.y;
     } else {
-      widget->hit_test_rect_ = rect2i{.begin = vec2i(-1, -1), .size = vec2i(0, 0)};
+      widget->m_hit_test_rect = rect2i{.begin = vec2i(-1, -1), .size = vec2i(0, 0)};
     }
 
-    vec2i widget_top_left = widget->get_position(Anchor::TOP_LEFT);
-    vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
+    vec2i widget_top_left = widget->position(Anchor::TOP_LEFT);
+    vec2i widget_bottom_right = widget->position(Anchor::BOTTOM_RIGHT);
     bool hovered = (m_mouse_pos.x >= widget_top_left.x && m_mouse_pos.x < widget_bottom_right.x) &&
                    (m_mouse_pos.y >= widget_top_left.y && m_mouse_pos.y < widget_bottom_right.y);
-    bool parent_hovered = !widget->parent || widget->parent->hovered_;
-    if (widget->updated_ && widget->get_is_self_drawn() && hovered && parent_hovered) {
+    bool parent_hovered = !widget->m_parent || widget->m_parent->m_hovered;
+    if (widget->m_updated && widget->is_self_drawn() && hovered && parent_hovered) {
       // m_hovered_widgets.emplace_back(widget);
-      // widget->hovered_ = true;
+      // widget->m_hovered = true;
     } else {
-      // widget->hovered_ = false;
+      // widget->m_hovered = false;
     }
   }
 
-  for (auto&& child : widget->get_children()) {
-    if (child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) {
+  for (auto&& child : widget->children()) {
+    if (child->draw_behind_parent() && !child->is_drawn_on_top()) {
       construct_traversal_order(child.get(), always_on_top_layer, layers);
     }
   }
@@ -185,15 +186,15 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   if ((i32)layers.size() <= always_on_top_layer) { layers.resize(always_on_top_layer + 1); }
   layers[always_on_top_layer].emplace_back(widget);
 
-  if (!widget->deleted_ && widget->visible_ && widget->is_self_drawn) {
-    rect2i scissor_rect = widget->scissor_.value_or(rect2i{{-1, -1}, {0, 0}});
-    if (widget->scissor_ && widget->get_clip()) {
-      rect2i widget_rect = widget->get_rect();
-      scissor_rect = widget->scissor_->intersected(widget_rect);
+  if (!widget->m_deleted && widget->m_visible && widget->m_is_self_drawn) {
+    rect2i scissor_rect = widget->m_scissor.value_or(rect2i{{-1, -1}, {0, 0}});
+    if (widget->m_scissor && widget->clip()) {
+      rect2i widget_rect = widget->rect();
+      scissor_rect = widget->m_scissor->intersected(widget_rect);
     }
 
     if ((i32)m_vertex_layers.size() <= always_on_top_layer) { m_vertex_layers.resize(always_on_top_layer + 1); }
-    for (auto&& v : widget->get_vertices()) {
+    for (auto&& v : widget->vertices()) {
       m_vertex_layers[always_on_top_layer].emplace_back(v);
       m_vertex_layers[always_on_top_layer].back().scissor_begin = scissor_rect.begin;
       m_vertex_layers[always_on_top_layer].back().scissor_end = scissor_rect.begin + scissor_rect.size;
@@ -201,14 +202,14 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
     }
   }
 
-  for (auto&& child : widget->get_children()) {
-    if (!child->get_draw_behind_parent() && !child->get_is_drawn_on_top()) {
+  for (auto&& child : widget->children()) {
+    if (!child->draw_behind_parent() && !child->is_drawn_on_top()) {
       construct_traversal_order(child.get(), always_on_top_layer, layers);
     }
   }
 
-  for (auto&& child : widget->get_children()) {
-    if (child->get_is_drawn_on_top()) { construct_traversal_order(child.get(), always_on_top_layer, layers); }
+  for (auto&& child : widget->children()) {
+    if (child->is_drawn_on_top()) { construct_traversal_order(child.get(), always_on_top_layer, layers); }
   }
 }
 
@@ -224,13 +225,13 @@ void zincgui::Root::construct_traversal_order() {
   std::vector<std::vector<Widget*>> layers = {std::vector<Widget*>{}};
 
   for (auto&& w : m_widgets) {
-    if (w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get(), 0, layers); }
+    if (w->draw_behind_parent() && !w->is_drawn_on_top()) { construct_traversal_order(w.get(), 0, layers); }
   }
   for (auto&& w : m_widgets) {
-    if (!w->get_draw_behind_parent() && !w->get_is_drawn_on_top()) { construct_traversal_order(w.get(), 0, layers); }
+    if (!w->draw_behind_parent() && !w->is_drawn_on_top()) { construct_traversal_order(w.get(), 0, layers); }
   }
   for (auto&& w : m_widgets) {
-    if (w->get_is_drawn_on_top()) { construct_traversal_order(w.get(), 0, layers); }
+    if (w->is_drawn_on_top()) { construct_traversal_order(w.get(), 0, layers); }
   }
 
   for (auto& layer : layers) {
@@ -259,9 +260,9 @@ bool zincgui::Root::process_mutations() {
   if (!m_deleted_widgets.empty()) {
     changed = true;
     for (Widget* w : m_deleted_widgets) {
-      if (w->parent != nullptr) {
-        std::erase_if(w->parent->children, [w](const auto& child) { return child.get() == w; });
-        if (w->parent->layout.enabled) { w->parent->mark_layout_dirty(); }
+      if (w->m_parent != nullptr) {
+        std::erase_if(w->m_parent->m_children, [w](const auto& child) { return child.get() == w; });
+        if (w->m_parent->m_layout.enabled) { w->m_parent->mark_layout_dirty(); }
       } else {
         std::erase_if(m_widgets, [w](const auto& child) { return child.get() == w; });
       }
@@ -279,14 +280,14 @@ bool zincgui::Root::process_mutations() {
   if (!m_mutated_widgets.empty()) {
     changed = true;
     for (Widget* w : m_mutated_widgets) {
-      w->last_update_frame_ = 0;
-      w->children.insert(w->children.end(), std::move_iterator(w->children_to_add.begin()),
-                         std::move_iterator(w->children_to_add.end()));
-      if (w->layout.enabled) {
+      w->m_last_update_frame = 0;
+      w->m_children.insert(w->m_children.end(), std::move_iterator(w->m_children_to_add.begin()),
+                           std::move_iterator(w->m_children_to_add.end()));
+      if (w->m_layout.enabled) {
         w->mark_layout_dirty();
-        w->dirty = true;
+        w->m_dirty = true;
       }
-      w->children_to_add.clear();
+      w->m_children_to_add.clear();
     }
   }
 
@@ -294,13 +295,13 @@ bool zincgui::Root::process_mutations() {
 }
 
 void zincgui::Root::layout_tree(Widget* w) {
-  if (!w->updated_ || w->deleted_) { return; }
-  if (w->layout.enabled && w->is_layout_dirty()) {
+  if (!w->m_updated || w->m_deleted) { return; }
+  if (w->m_layout.enabled && w->is_layout_dirty()) {
     layout_engine::apply_layout(*w);
     m_tree_dirty = true;
   }
   w->m_layout_dirty = false;
-  for (auto& child : w->get_children()) {
+  for (auto& child : w->children()) {
     layout_tree(child.get());
   }
 };
@@ -339,46 +340,45 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   for (auto it = m_widget_traversal_order.rbegin(); it != m_widget_traversal_order.rend(); it += 1) {
     Widget* w = *it;
 
-    if (!w->updated_ || !w->visible_ || w->deleted_) {
-      w->hovered_ = false;
+    if (!w->m_updated || !w->m_visible || w->m_deleted) {
+      w->m_hovered = false;
       continue;
     }
 
     bool inside = false;
-    if (w->scissor_) {
-      auto s = w->hit_test_rect_;
+    if (w->m_scissor) {
+      auto s = w->m_hit_test_rect;
       inside = m_mouse_pos.x >= s.begin.x && m_mouse_pos.x < s.begin.x + s.size.x && m_mouse_pos.y >= s.begin.y &&
                m_mouse_pos.y < s.begin.y + s.size.y;
     } else {
-      inside = m_mouse_pos.x >= w->get_position(Anchor::TOP_LEFT).x &&
-               m_mouse_pos.x < w->get_position(Anchor::BOTTOM_RIGHT).x &&
-               m_mouse_pos.y >= w->get_position(Anchor::TOP_LEFT).y &&
-               m_mouse_pos.y < w->get_position(Anchor::BOTTOM_RIGHT).y;
+      inside = m_mouse_pos.x >= w->position(Anchor::TOP_LEFT).x &&
+               m_mouse_pos.x < w->position(Anchor::BOTTOM_RIGHT).x &&
+               m_mouse_pos.y >= w->position(Anchor::TOP_LEFT).y && m_mouse_pos.y < w->position(Anchor::BOTTOM_RIGHT).y;
     }
 
     if (!hover_claimed && inside) {
-      switch (w->hit_test_behavior) {
+      switch (w->m_hit_test_behavior) {
       case HitTestBehavior::IGNORE: {
-        w->hovered_ = false;
+        w->m_hovered = false;
       }
       case HitTestBehavior::BLOCK: {
-        w->hovered_ = true;
+        w->m_hovered = true;
         hover_claimed = true;
         break;
       }
       case HitTestBehavior::PASS_THROUGH: {
-        w->hovered_ = true;
+        w->m_hovered = true;
         break;
       }
       }
     } else {
-      w->hovered_ = false;
+      w->m_hovered = false;
     }
   }
 
   for (auto& ev : Input::get_event_queue()) {
 
-    if (m_focused_widget && m_focused_widget->updated_) {
+    if (m_focused_widget && m_focused_widget->m_updated) {
       std::visit(
         [this](auto& ev_) {
           if (!ev_.handled) { m_focused_widget->event(ev_); }
@@ -395,7 +395,7 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
       using MA = Input::MouseAction;
       using MB = Input::MouseButton;
 
-      if (w->updated_ && w != m_focused_widget) {
+      if (w->m_updated && w != m_focused_widget) {
         std::visit(
           [it, w](auto& ev_) {
             if (!ev_.handled) { w->event(ev_); }
@@ -407,7 +407,7 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
         if (ev_->action == MA::PRESS &&
             (ev_->button == MB::MOUSE_BUTTON_LEFT || ev_->button == MB::MOUSE_BUTTON_RIGHT)) {
           replace_focused_widget = true;
-          if (w->get_is_focusable() && w->is_mouse_hovering()) { new_focused_widget = w; }
+          if (w->is_focusable() && w->is_mouse_hovering()) { new_focused_widget = w; }
         }
       }
     }
@@ -426,9 +426,9 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
     }
 
     for (auto* widget : m_widget_traversal_order) {
-      if (widget->updated_) {
-        if (widget->last_update_frame_ != m_current_frame) {
-          widget->last_update_frame_ = m_current_frame;
+      if (widget->m_updated) {
+        if (widget->m_last_update_frame != m_current_frame) {
+          widget->m_last_update_frame = m_current_frame;
 
           widget->input();
           widget->update();
@@ -458,7 +458,7 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
 }
 
 void zincgui::Root::set_focused_widget(Widget* w) {
-  if (w && (w->get_marked_for_deletion() || w->deleted_)) { return; }
+  if (w && (w->marked_for_deletion() || w->m_deleted)) { return; }
   if (w == m_focused_widget) { return; }
   if (m_focused_widget) { m_focused_widget->on_unfocused(); }
   m_focused_widget = w;
@@ -466,7 +466,7 @@ void zincgui::Root::set_focused_widget(Widget* w) {
 }
 
 void zincgui::Root::set_focus_manager(Widget* w) {
-  if (w && (w->get_marked_for_deletion() || w->deleted_)) { return; }
+  if (w && (w->marked_for_deletion() || w->m_deleted)) { return; }
   m_focus_manager = w;
 }
 

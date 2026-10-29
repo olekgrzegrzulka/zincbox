@@ -18,102 +18,107 @@ namespace zincgui {
 
       Checkbox(Root& ui_, std::string_view label_text) : Widget(ui_) { init(label_text); }
 
-      void init(std::string_view label_text) {
-        set_is_focusable(true);
-        set_size(default_settings::checkbox_size);
-        if (default_settings::checkbox_fixed_height) { set_fixed_height(height); }
-        set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
-
-        uv_checkbox_idle = ui.get_texture_atlas().get(default_settings::checkbox_texture_idle)->get();
-        uv_checkbox_hovered = ui.get_texture_atlas().get(default_settings::checkbox_texture_hovered)->get();
-        uv_checkbox_pressed = ui.get_texture_atlas().get(default_settings::checkbox_texture_pressed)->get();
-        uv_checkbox_disabled = ui.get_texture_atlas().get(default_settings::checkbox_texture_disabled)->get();
-        uv_checkbox_check = ui.get_texture_atlas().get(default_settings::checkbox_texture_check)->get();
-
-        set_clip_children(true);
-
-        button = &add_child<Button>();
-        button->set_ignore_parents_layout(true);
-        button->set_is_self_drawn(false);
-        button->set_switch_mode(true);
-        button->on_press([this]() -> void { set_checked(true); });
-        button->on_depress([this]() -> void { set_checked(false); });
-
-        inner = &add_child<Widget>();
-        inner->set_ignore_parents_layout(true);
-        inner->set_layout(default_settings::checkbox_layout);
-        inner->set_anchor(Anchor::CENTER);
-        inner->set_parent_anchor(Anchor::CENTER);
-
-        sprite_checkbox = &inner->add_child<Sprite>(default_settings::checkbox_texture_idle);
-        sprite_checkbox->set_fixed_width(sprite_checkbox->get_width());
-        sprite_checkbox->set_fixed_height(sprite_checkbox->get_height());
-        sprite_check = &sprite_checkbox->add_child<Sprite>(default_settings::checkbox_texture_check);
-        sprite_check->set_parent_anchor(Anchor::CENTER);
-        sprite_check->set_anchor(Anchor::CENTER);
-
-        label = &inner->add_child<Label>(label_text);
-        label->set_label_anchor(Anchor::LEFT);
-      }
-
-      bool is_checked() const { return button->get_is_switched(); }
-
-      void set_checked(bool value) {
-        if (checked == value) { return; }
-        checked = value;
-        button->set_is_switched(checked);
-        sprite_check->set_is_drawn(checked);
-        if (m_on_value_changed) { m_on_value_changed(); }
-      }
-
-      void set_checkbox_anchor(Anchor anchor) {
-        inner->set_anchor(anchor);
-        inner->set_parent_anchor(anchor);
-      }
-
       void update() override {
-        button->set_size(width, height);
-        // inner->set_size(width, height);
+        m_button->size(width(), height());
+        // m_inner->size(width(), height());
 
-        sprite_check->set_is_drawn(checked);
+        m_sprite_check->is_drawn(m_checked);
 
-        switch (button->get_state()) {
+        switch (m_button->state()) {
         case ButtonState::IDLE:
-          sprite_checkbox->set_uv_start(uv_checkbox_idle.start);
-          sprite_checkbox->set_uv_end(uv_checkbox_idle.end);
+          m_sprite_checkbox->uv_start(m_uv_checkbox_idle.start).uv_end(m_uv_checkbox_idle.end);
           break;
         case ButtonState::HOVERED:
-          sprite_checkbox->set_uv_start(uv_checkbox_hovered.start);
-          sprite_checkbox->set_uv_end(uv_checkbox_hovered.end);
+          m_sprite_checkbox->uv_start(m_uv_checkbox_hovered.start).uv_end(m_uv_checkbox_hovered.end);
           break;
         case ButtonState::PRESSED:
-          sprite_checkbox->set_uv_start(uv_checkbox_pressed.start);
-          sprite_checkbox->set_uv_end(uv_checkbox_pressed.end);
+          m_sprite_checkbox->uv_start(m_uv_checkbox_pressed.start).uv_end(m_uv_checkbox_pressed.end);
           break;
         case ButtonState::DISABLED:
-          sprite_checkbox->set_uv_start(uv_checkbox_disabled.start);
-          sprite_checkbox->set_uv_end(uv_checkbox_disabled.end);
+          m_sprite_checkbox->uv_start(m_uv_checkbox_disabled.start).uv_end(m_uv_checkbox_disabled.end);
           break;
         }
 
         Widget::update();
       }
 
-      void on_value_changed(std::function<void()> lambda) { m_on_value_changed = std::move(lambda); }
+      void init(std::string_view label_text) {
+        is_focusable(true).size(default_settings::checkbox_size);
+        if (default_settings::checkbox_fixed_height) { fixed_height(height()); }
+        hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
 
-    protected:
-      bool checked = false;
+        m_uv_checkbox_idle = ui().texture_atlas().get(default_settings::checkbox_texture_idle)->get();
+        m_uv_checkbox_hovered = ui().texture_atlas().get(default_settings::checkbox_texture_hovered)->get();
+        m_uv_checkbox_pressed = ui().texture_atlas().get(default_settings::checkbox_texture_pressed)->get();
+        m_uv_checkbox_disabled = ui().texture_atlas().get(default_settings::checkbox_texture_disabled)->get();
+        m_uv_checkbox_check = ui().texture_atlas().get(default_settings::checkbox_texture_check)->get();
+
+        clip_children(true);
+
+        m_button = &add_child<Button>();
+        m_button->ignore_parents_layout(true).is_self_drawn(false).switch_mode(true);
+        m_button->on_press([this]() -> void { checked(true); });
+        m_button->on_depress([this]() -> void { checked(false); });
+
+        m_inner = &add_child<Widget>();
+        m_inner->ignore_parents_layout(true)
+          .layout(default_settings::checkbox_layout)
+          .anchor(Anchor::CENTER)
+          .parent_anchor(Anchor::CENTER);
+
+        m_sprite_checkbox = &m_inner->add_child<Sprite>(default_settings::checkbox_texture_idle);
+        m_sprite_checkbox->fixed_width(m_sprite_checkbox->width()).fixed_height(m_sprite_checkbox->height());
+        m_sprite_check = &m_sprite_checkbox->add_child<Sprite>(default_settings::checkbox_texture_check);
+        m_sprite_check->parent_anchor(Anchor::CENTER).anchor(Anchor::CENTER);
+
+        m_label = &m_inner->add_child<Label>(label_text);
+        m_label->label_anchor(Anchor::LEFT);
+      }
+
+      [[nodiscard]] bool checked() const noexcept { return m_button ? m_button->is_switched() : m_checked; }
+      Checkbox& checked(bool value) {
+        if (m_checked == value) { return *this; }
+        m_checked = value;
+        m_button->is_switched(m_checked);
+        m_sprite_check->is_drawn(m_checked);
+        if (m_on_value_changed) { m_on_value_changed(); }
+        return *this;
+      }
+
+      Checkbox& checkbox_anchor(Anchor anchor) {
+        m_inner->anchor(anchor).parent_anchor(anchor);
+        return *this;
+      }
+
+      Checkbox& on_value_changed(std::function<void()> lambda) {
+        m_on_value_changed = std::move(lambda);
+        return *this;
+      }
+
+      [[nodiscard]] Button* button() noexcept { return m_button; }
+      [[nodiscard]] const Button* button() const noexcept { return m_button; }
+      [[nodiscard]] Sprite* sprite_checkbox() noexcept { return m_sprite_checkbox; }
+      [[nodiscard]] const Sprite* sprite_checkbox() const noexcept { return m_sprite_checkbox; }
+      [[nodiscard]] Sprite* sprite_check() noexcept { return m_sprite_check; }
+      [[nodiscard]] const Sprite* sprite_check() const noexcept { return m_sprite_check; }
+      [[nodiscard]] Label* label() noexcept { return m_label; }
+      [[nodiscard]] const Label* label() const noexcept { return m_label; }
+      [[nodiscard]] Widget* inner() noexcept { return m_inner; }
+      [[nodiscard]] const Widget* inner() const noexcept { return m_inner; }
+
+    private:
+      bool m_checked = false;
       std::function<void()> m_on_value_changed;
-      Button* button{};
-      Sprite* sprite_checkbox{};
-      Sprite* sprite_check{};
-      Label* label{};
-      Widget* inner{};
-      TextureAtlasData uv_checkbox_idle{};
-      TextureAtlasData uv_checkbox_hovered{};
-      TextureAtlasData uv_checkbox_pressed{};
-      TextureAtlasData uv_checkbox_disabled{};
-      TextureAtlasData uv_checkbox_check{};
+      Button* m_button{};
+      Sprite* m_sprite_checkbox{};
+      Sprite* m_sprite_check{};
+      Label* m_label{};
+      Widget* m_inner{};
+      TextureAtlasData m_uv_checkbox_idle{};
+      TextureAtlasData m_uv_checkbox_hovered{};
+      TextureAtlasData m_uv_checkbox_pressed{};
+      TextureAtlasData m_uv_checkbox_disabled{};
+      TextureAtlasData m_uv_checkbox_check{};
   };
 
 } // namespace zincgui

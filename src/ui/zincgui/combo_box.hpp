@@ -3,6 +3,8 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 #include "ui/zincgui/button.hpp"
 #include "ui/zincgui/default_settings.hpp"
 
@@ -34,45 +36,62 @@ namespace zincgui {
       void event(Input::InputEventMouseButton& ev) override;
       void event(Input::InputEventKey& ev) override;
 
-      void on_item_selected(std::function<void()> lambda_select_);
-      void add_item(std::string_view id, std::string_view label_);
+      ComboBox& add_item(std::string_view id, std::string_view label_);
 
-      std::string get_selected_item_id() const;
-      std::string get_selected_item_label() const;
-      i32 get_selected_index() const;
-      void select_item_by_label(std::string_view label_);
-      void select_item_by_id(std::string_view id);
-      void select_item_by_index(i32 index);
+      [[nodiscard]] std::string selected_item_id() const;
+      [[nodiscard]] std::string selected_item_label() const;
+      [[nodiscard]] i32 selected_index() const;
+      ComboBox& select_item_by_label(std::string_view label_);
+      ComboBox& select_item_by_id(std::string_view id);
+      ComboBox& select_item_by_index(i32 index);
+
+      [[nodiscard]] i32 item_height() const noexcept { return m_item_height; }
+      ComboBox& item_height(i32 v) {
+        if (m_item_height != v) {
+          m_item_height = v;
+          mark_dirty();
+        }
+        return *this;
+      }
+
+      ComboBox& on_item_selected(std::function<void()> lambda_select_) {
+        m_on_item_selected = std::move(lambda_select_);
+        return *this;
+      }
+
+      [[nodiscard]] Sprite& icon() noexcept { return m_icon; }
+      [[nodiscard]] const Sprite& icon() const noexcept { return m_icon; }
+      [[nodiscard]] Sprite& dropdown_bg() noexcept { return m_dropdown_bg; }
+      [[nodiscard]] const Sprite& dropdown_bg() const noexcept { return m_dropdown_bg; }
+      [[nodiscard]] Sprite& sprite_focus() noexcept { return m_sprite_focus; }
+      [[nodiscard]] const Sprite& sprite_focus() const noexcept { return m_sprite_focus; }
 
     protected:
       void on_button_pressed();
       void on_button_depressed();
       void on_item_pressed(i32 i);
 
-    protected:
-      Sprite& icon;
-      Sprite& dropdown_bg;
-      Sprite& sprite_focus;
-      i32 selected_index = -1;
+    private:
+      Sprite& m_icon;
+      Sprite& m_dropdown_bg;
+      Sprite& m_sprite_focus;
+      i32 m_selected_index = -1;
 
-      std::function<void()> lambda_select = nullptr;
+      std::function<void()> m_on_item_selected = nullptr;
 
-      i32 item_height = default_settings::combobox_item_height;
-      i32 dropdown_padding = default_settings::combobox_dropdown_padding;
-      static constexpr i32 dropdown_max_length = 10;
+      i32 m_item_height = default_settings::combobox_item_height;
+      i32 m_dropdown_padding = default_settings::combobox_dropdown_padding;
+      static constexpr i32 m_dropdown_max_length = 10;
 
       enum class DropDownState : u8 { HIDDEN, APPEARING, DISAPPEARING, VISIBLE };
-      DropDownState dropdown_state = ComboBox::DropDownState::HIDDEN;
-      float dropdown_animation_progress = 0.0;
-      float target_scroll_progress = 0.0;
-      float scroll_progress = 0.0; // 1.0 per one item scrolled
+      DropDownState m_dropdown_state = DropDownState::HIDDEN;
+      float m_dropdown_animation_progress = 0.0f;
+      float m_target_scroll_progress = 0.0f;
+      float m_scroll_progress = 0.0f; // 1.0 per one item scrolled
 
-      std::array<ComboBoxItem*, dropdown_max_length + 1>
-        item_widgets{}; // +1 to accomodate for partially visible extra item
-      std::vector<std::pair<std::string, std::string>> items;
-
-    public:
-      WIDGET_DEF_SETTER_DIRTY(item_height);
+      std::array<ComboBoxItem*, m_dropdown_max_length + 1>
+        m_item_widgets{}; // +1 to accomodate for partially visible extra item
+      std::vector<std::pair<std::string, std::string>> m_items;
   };
 
 } // namespace zincgui

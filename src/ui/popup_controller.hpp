@@ -34,18 +34,40 @@ class Dimmer : public zincgui::ColorRect {
     void event(zincgui::Input::InputEventMouseMove& ev) override;
     void event(zincgui::Input::InputEventKey& ev) override;
 
-    void set_is_active(bool active);
+    Dimmer& is_active(bool active);
 
-  public:
-    std::optional<vec2i> prev_window_size;
-    std::function<void()> on_pressed;
-    std::function<void()> on_enter_pressed;
-    std::function<void()> on_escape_pressed;
+    Dimmer& on_pressed(std::function<void()> fn) {
+      m_on_pressed = std::move(fn);
+      return *this;
+    }
+
+    Dimmer& on_enter_pressed(std::function<void()> fn) {
+      m_on_enter_pressed = std::move(fn);
+      return *this;
+    }
+
+    Dimmer& on_escape_pressed(std::function<void()> fn) {
+      m_on_escape_pressed = std::move(fn);
+      return *this;
+    }
+
+    [[nodiscard]] const std::optional<vec2i>& prev_window_size() const noexcept { return m_prev_window_size; }
+    Dimmer& prev_window_size(const std::optional<vec2i>& sz) noexcept {
+      m_prev_window_size = sz;
+      return *this;
+    }
+
+  private:
+    std::optional<vec2i> m_prev_window_size;
+    std::function<void()> m_on_pressed;
+    std::function<void()> m_on_enter_pressed;
+    std::function<void()> m_on_escape_pressed;
 };
 
 class PopupController final : public zincgui::Widget {
   public:
     PopupController(zincgui::Root& ui_);
+
     void input() override;
     void update() override;
     void event(zincgui::Input::InputEventKey& e) override;
@@ -63,14 +85,18 @@ class PopupController final : public zincgui::Widget {
       auto& popup = add_child<T>(*this, [this](Popup* p) { on_popup_closed(p); }, std::forward<Args>(args)...);
       m_popups.emplace_back(&popup);
       return &popup;
-    };
+    }
 
     bool is_popup_open() const;
     void close_all_popups();
     void close_all_popovers();
 
+    [[nodiscard]] Dimmer* dimmer() noexcept { return m_dimmer; }
+    [[nodiscard]] const Dimmer* dimmer() const noexcept { return m_dimmer; }
+
   private:
     void on_popup_closed(Popup* popup);
+
     Dimmer* m_dimmer{};
     std::vector<Widget*> m_popups;
     std::unordered_map<std::string, Widget*> m_popovers;

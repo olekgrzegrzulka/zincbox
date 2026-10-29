@@ -14,8 +14,6 @@ namespace zincgui {
 class WidgetTrack;
 
 class PanelQueue final : public zincgui::Widget {
-    using Widget::event;
-
   public:
     PanelQueue(const PanelQueue&) = delete;
     PanelQueue(PanelQueue&&) = delete;
@@ -23,44 +21,36 @@ class PanelQueue final : public zincgui::Widget {
     PanelQueue& operator=(PanelQueue&&) = delete;
     PanelQueue(zincgui::Root& ui_);
     ~PanelQueue() override;
+
+    using Widget::event;
     void update() override;
 
-    void show() {
-      set_is_drawn(true);
-      set_is_updated(true);
-      recreate();
-      m_panel_tracklist->show();
-    }
-
-    void hide() {
-      set_is_drawn(false);
-      set_is_updated(false);
-      m_panel_tracklist->hide();
-    }
-
+    PanelQueue& show();
+    PanelQueue& hide();
     void recreate();
     void clear();
-    const PanelTracklistSelection& selection() const { return m_panel_tracklist->selection(); }
-    void clear_selection() { m_panel_tracklist->clear_selection(); }
-
-    void set_insert_cursor_index(std::optional<size_t> value) { m_panel_tracklist->set_insert_cursor_index(value); }
-    void set_insert_cursor_pos(PanelTracklist::InsertCursorPos value) {
-      m_panel_tracklist->set_insert_cursor_pos(value);
-    }
-
+    void clear_selection();
     void on_queue_appended_to_back();
     void on_queue_changed();
-    void on_queue_changed_at(size_t);
+    void on_queue_changed_at(size_t at);
+    void insert_to_selection(size_t i);
 
-    std::span<const PanelTracklist::Item> get_items() const { return m_panel_tracklist->get_items(); }
+    [[nodiscard]] const PanelTracklistSelection& selection() const;
+    [[nodiscard]] std::span<const PanelTracklist::Item> items() const;
+    [[nodiscard]] const PanelTracklist::Item& item(size_t i) const;
 
-  public:
-    void on_item_lmb(const std::function<void(size_t item_index)>&);
-    void on_item_rmb(const std::function<void(size_t item_index)>&);
-    void on_selection_rmb(const std::function<void(size_t item_index)>&);
-    void set_is_dragged(bool);
-    void insert_to_selection(size_t);
-    const PanelTracklist::Item& get_item(size_t i) const { return m_panel_tracklist->get_item(i); }
+    PanelQueue& insert_cursor_index(std::optional<size_t> value);
+
+    PanelQueue& insert_cursor_pos(PanelTracklist::InsertCursorPos value);
+
+    PanelQueue& is_dragged(bool value);
+
+    PanelQueue& on_item_lmb(const std::function<void(size_t item_index)>& fn);
+    PanelQueue& on_item_rmb(const std::function<void(size_t item_index)>& fn);
+    PanelQueue& on_selection_rmb(const std::function<void(size_t item_index)>& fn);
+
+    [[nodiscard]] PanelTracklist* panel_tracklist() noexcept { return m_panel_tracklist; }
+    [[nodiscard]] const PanelTracklist* panel_tracklist() const noexcept { return m_panel_tracklist; }
 
   private:
     PanelTracklist* m_panel_tracklist{};

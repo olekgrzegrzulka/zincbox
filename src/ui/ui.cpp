@@ -166,19 +166,24 @@ namespace {
         bool key_f = Input::key_pressed(Input::Key::KEY_F);
 
         if (ev.action != Input::KeyAction::PRESS) { return; }
-        if (!search_popup_invoked) { return; }
+        if (!m_on_search_popup_invoked) { return; }
         bool show_search_popup = key_ctrl && ev.key == Input::Key::KEY_F;
         show_search_popup |=
           key_f && (ev.key == Input::Key::KEY_LEFT_CONTROL || ev.key == Input::Key::KEY_RIGHT_CONTROL);
 
         if (show_search_popup) {
           ev.handled = true;
-          search_popup_invoked();
+          m_on_search_popup_invoked();
         }
       }
 
-    public:
-      std::function<void(void)> search_popup_invoked;
+      ShortcutInterceptor& on_search_popup_invoked(std::function<void(void)> cb) {
+        m_on_search_popup_invoked = std::move(cb);
+        return *this;
+      }
+
+    private:
+      std::function<void(void)> m_on_search_popup_invoked;
   };
 } // namespace
 
@@ -208,7 +213,7 @@ void zincbox::ui::init() {
   zincgui::default_settings::default_font_size = std::clamp(zincbox::font_size(), 8, 32);
 
   shortcut_interceptor = &root->add_widget<ShortcutInterceptor>();
-  shortcut_interceptor->search_popup_invoked = show_search_popup;
+  shortcut_interceptor->on_search_popup_invoked(show_search_popup);
 
   bg = &root->add_widget<ColorRect>(theme::config().panel_top.color);
   panel_controls = &root->add_widget<PanelControls>();
@@ -217,9 +222,7 @@ void zincbox::ui::init() {
   panel_queue = &root->add_widget<PanelQueue>();
   splitter = &root->add_widget<Splitter>();
   tooltip_drag = &root->add_widget<ToolTip>("", ToolTipPosition::MANUAL);
-  tooltip_drag->set_is_drawn(false);
-  tooltip_drag->set_anchor(Anchor::TOP);
-  tooltip_drag->set_clamp(false);
+  tooltip_drag->is_drawn(false).anchor(Anchor::TOP).clamp(false);
   panel_playlists = &root->add_widget<PanelPlaylists>();
   popup_controller = &root->add_widget<PopupController>();
   notifications = &root->add_widget<InterfaceNotifications>();
@@ -227,165 +230,148 @@ void zincbox::ui::init() {
   panel_queue->hide();
   panel_tracklist->hide();
   panel_playlists->hide();
-  splitter->set_is_updated(false);
-  splitter->set_is_drawn(false);
+  splitter->is_updated(false).is_drawn(false);
 
   if (db::track_count() == 0) { popup_controller->show_popup<PopupWelcome>(); }
 
-  panel_controls->on_playing_track_lmb = [](Widget*) -> void {
-    if (mini_player.value_or(false)) { return; }
-    auto ti_opt = player::get_playing_track();
-    if (ti_opt) {
-      auto ti = *ti_opt;
-      bool immediate = active_collection_id != ti.collection_id;
-      show_collection(ti.collection_id);
-      panel_playlists->scroll_to_playlist(ti.playlist_id, immediate);
-      panel_tracklist->scroll_to_track(ti.playlist_id, ti.track_id, immediate);
-    }
-  };
-
-  panel_controls->on_playing_track_rmb = [](Widget* w) -> void {
-    if (mini_player.value_or(false)) { return; }
-    auto playing = player::get_playing_track();
-    if (playing) { show_popover_tracklist_track_actions(playing.value(), w, false); }
-  };
-
-  panel_controls->on_love_button_pressed = []() -> void {
-    if (auto ti = player::get_playing_track()) {
-      if (db::playlist_by_id(0)->get().has_track_id(ti->track_id)) {
-        unlove_track(ti->track_id);
-      } else {
-        love_track(ti->track_id);
+  panel_controls
+    ->on_playing_track_lmb([](Widget*) -> void {
+      if (mini_player.value_or(false)) { return; }
+      auto ti_opt = player::get_playing_track();
+      if (ti_opt) {
+        auto ti = *ti_opt;
+        bool immediate = active_collection_id != ti.collection_id;
+        show_collection(ti.collection_id);
+        panel_playlists->scroll_to_playlist(ti.playlist_id, immediate);
+        panel_tracklist->scroll_to_track(ti.playlist_id, ti.track_id, immediate);
       }
-    }
-  };
+    })
+    .on_playing_track_rmb([](Widget* w) -> void {
+      if (mini_player.value_or(false)) { return; }
+      auto playing = player::get_playing_track();
+      if (playing) { show_popover_tracklist_track_actions(playing.value(), w, false); }
+    })
+    .on_love_button_pressed([]() -> void {
+      if (auto ti = player::get_playing_track()) {
+        if (db::playlist_by_id(0)->get().has_track_id(ti->track_id)) {
+          unlove_track(ti->track_id);
+        } else {
+          love_track(ti->track_id);
+        }
+      }
+    })
+    .on_button_expand_player_pressed([]() -> void { set_mini_player(false); });
 
-  panel_controls->on_button_expand_player_pressed([]() -> void { set_mini_player(false); });
+  panel_top->on_collection_opened([&](size_t collection_id) -> void { show_collection(collection_id); })
+    .on_queue_view_opened([&]() { show_queue(); })
+    .on_queue_rmb(show_popover_queue_actions)
+    .on_show_collection_actions_popover(show_popover_collection_actions)
+    .on_minimize_button_pressed([]() -> void { zincbox::window()->minimize(); })
+    .on_maximize_button_pressed([]() -> void {
+      if (zincbox::window()->is_maximized()) {
+        zincbox::window()->restore();
+      } else {
+        zincbox::window()->maximize();
+      }
+    })
+    .on_close_button_pressed([]() -> void { zincbox::stop(); })
+    .on_add_collection_button_pressed([&](Widget*) -> void {
+      if (file_dialog_type != FileDialogOpen::NONE) { return; }
+      file_dialog_type = FileDialogOpen::CREATE_COLLECTION;
+      file_dialog_data = std::monostate{};
+      file_dialog_future_path = file_dialog::pick_folder_multiple();
+    })
+    .on_hamburger_button_pressed([&](Widget* w) -> void {
+      decltype(popover_descriptor::buttons) buttons;
+      buttons.emplace_back(tr::get("hamburger.search"), show_search_popup, "search");
+      buttons.emplace_back(tr::get("hamburger.mini_player"), []() -> void { set_mini_player(true); }, "mini_player");
+      buttons.emplace_back(tr::get("hamburger.settings"), show_settings_popup, "settings");
+      buttons.emplace_back(tr::get("hamburger.about"), show_about_popup, "about");
+      buttons.emplace_back(tr::get("hamburger.quit"), quit, "quit");
 
-  panel_top->on_collection_opened = [&](size_t collection_id) -> void { show_collection(collection_id); };
-  panel_top->on_queue_view_opened = [&]() { show_queue(); };
-  panel_top->on_queue_rmb = show_popover_queue_actions;
-  panel_top->on_show_collection_actions_popover = show_popover_collection_actions;
-  panel_top->on_minimize_button_pressed = []() -> void { zincbox::window()->minimize(); };
-  panel_top->on_maximize_button_pressed = []() -> void {
-    if (zincbox::window()->is_maximized()) {
-      zincbox::window()->restore();
-    } else {
-      zincbox::window()->maximize();
-    }
-  };
-  panel_top->on_close_button_pressed = []() -> void { zincbox::stop(); };
+      vec2i at = w->position(Anchor::CENTER);
+      popover_descriptor d{
+        .id = "hamburger_menu",
+        .title = "",
+        .at = at,
+        .distance = 10,
+        .buttons = buttons,
+        .show_arrow = true,
+      };
+      popup_controller->create_popover(d);
+    });
 
-  panel_top->on_add_collection_button_pressed = [&](Widget*) -> void {
-    if (file_dialog_type != FileDialogOpen::NONE) { return; }
-    file_dialog_type = FileDialogOpen::CREATE_COLLECTION;
-    file_dialog_data = std::monostate{};
-    file_dialog_future_path = file_dialog::pick_folder_multiple();
-  };
+  panel_tracklist
+    ->on_item_lmb([&](size_t item_index) -> void {
+      auto& item = panel_tracklist->item(item_index);
+      if (auto* item_track = std::get_if<PanelTracklist::ItemTrack>(&item)) {
+        bool playback_error = !player::play(item_track->track_info, true);
+        item_track->widget->playback_error(playback_error);
+      }
+    })
+    .on_item_rmb([](size_t item_index) -> void {
+      if (auto* item_track = std::get_if<PanelTracklist::ItemTrack>(&panel_tracklist->item(item_index))) {
+        show_popover_tracklist_track_actions(item_track->track_info, item_track->widget, true);
+      }
+    })
+    .on_selection_rmb([](size_t item_index) -> void { show_popover_tracklist_tracks_actions(item_index); })
+    .on_playlist_sort_button_pressed(
+      [](size_t, size_t playlist_id, Widget* w) { show_popover_playlist_sort_options(playlist_id, w); })
+    .on_playlist_more_options_invoked(
+      [](size_t, size_t playlist_id, Widget* w) { show_popover_playlist_actions(playlist_id, w, false); });
 
-  panel_top->on_hamburger_button_pressed = [&](Widget* w) -> void {
-    decltype(popover_descriptor::buttons) buttons;
-    buttons.emplace_back(tr::get("hamburger.search"), show_search_popup, "search");
-    buttons.emplace_back(tr::get("hamburger.mini_player"), []() -> void { set_mini_player(true); }, "mini_player");
-    buttons.emplace_back(tr::get("hamburger.settings"), show_settings_popup, "settings");
-    buttons.emplace_back(tr::get("hamburger.about"), show_about_popup, "about");
-    buttons.emplace_back(tr::get("hamburger.quit"), quit, "quit");
+  panel_queue
+    ->on_item_lmb([&](size_t item_index) -> void {
+      auto& item = panel_queue->item(item_index);
+      if (auto* item_track = std::get_if<PanelTracklist::ItemQueueTrack>(&item)) {
+        player::set_playing_index(item_track->queue_index);
+      } else if (auto* item_playlist = std::get_if<PanelTracklist::ItemQueuePlaylist>(&item)) {
+        player::set_playing_index(item_playlist->queue_index);
+      } else if (auto* item_collection = std::get_if<PanelTracklist::ItemQueueCollection>(&item)) {
+        player::set_playing_index(item_collection->queue_index);
+      }
+    })
+    .on_item_rmb(show_popover_queue_item_actions)
+    .on_selection_rmb([](size_t item_index) -> void { show_popover_queue_items_actions(item_index); });
 
-    vec2i at = w->get_position(Anchor::CENTER);
-    popover_descriptor d{
-      .id = "hamburger_menu",
-      .title = "",
-      .at = at,
-      .distance = 10,
-      .buttons = buttons,
-      .show_arrow = true,
-    };
-    popup_controller->create_popover(d);
-  };
-
-  panel_tracklist->on_item_lmb = [&](size_t item_index) -> void {
-    auto& item = panel_tracklist->get_item(item_index);
-    if (auto* item_track = std::get_if<PanelTracklist::ItemTrack>(&item)) {
-      bool playback_error = !player::play(item_track->track_info, true);
-      item_track->widget->set_playback_error(playback_error);
-    }
-  };
-
-  panel_queue->on_item_lmb([&](size_t item_index) -> void {
-    auto& item = panel_queue->get_item(item_index);
-    if (auto* item_track = std::get_if<PanelTracklist::ItemQueueTrack>(&item)) {
-      player::set_playing_index(item_track->queue_index);
-    } else if (auto* item_playlist = std::get_if<PanelTracklist::ItemQueuePlaylist>(&item)) {
-      player::set_playing_index(item_playlist->queue_index);
-    } else if (auto* item_collection = std::get_if<PanelTracklist::ItemQueueCollection>(&item)) {
-      player::set_playing_index(item_collection->queue_index);
-    }
-  });
-
-  panel_queue->on_item_rmb(show_popover_queue_item_actions);
-  panel_queue->on_selection_rmb([](size_t item_index) -> void { show_popover_queue_items_actions(item_index); });
-  panel_tracklist->on_item_rmb = [](size_t item_index) -> void {
-    if (auto* item_track = std::get_if<PanelTracklist::ItemTrack>(&panel_tracklist->get_item(item_index))) {
-      show_popover_tracklist_track_actions(item_track->track_info, item_track->widget, true);
-    }
-  };
-
-  panel_tracklist->on_selection_rmb = [](size_t item_index) -> void {
-    show_popover_tracklist_tracks_actions(item_index);
-  };
-
-  panel_tracklist->on_playlist_sort_button_pressed = [](size_t, size_t playlist_id, Widget* w) {
-    show_popover_playlist_sort_options(playlist_id, w);
-  };
-
-  panel_tracklist->on_playlist_more_options_invoked = [](size_t, size_t playlist_id, Widget* w) {
-    show_popover_playlist_actions(playlist_id, w, false);
-  };
-
-  panel_playlists->on_playlist_lmb = [&](size_t playlist_id, Widget*) -> void {
-    panel_tracklist->scroll_to_playlist(playlist_id);
-  };
-
-  panel_playlists->on_playlist_rmb = [&](size_t playlist_id, Widget* w) -> void {
-    show_popover_playlist_actions(playlist_id, w);
-  };
-
-  panel_playlists->on_button_sort_by_pressed = [](Widget* w) {
-    decltype(popover_descriptor::buttons) buttons;
-    if (active_collection_id == 0) {
-      buttons.emplace_back(
-        tr::get("sort.playlist.name.asc"),
-        []() -> void { panel_playlists->props.sort_by = PanelPlaylists::SortBy::NAME_AZ; }, "name_asc");
-      buttons.emplace_back(
-        tr::get("sort.playlist.name.desc"),
-        []() -> void { panel_playlists->props.sort_by = PanelPlaylists::SortBy::NAME_ZA; }, "name_desc");
-    } else if (active_collection_id.has_value()) {
-      buttons.emplace_back(
-        tr::get("sort.artist.name.asc"),
-        []() -> void { panel_playlists->props.sort_by = PanelPlaylists::SortBy::AUTHOR_AZ; }, "artist_asc");
-      buttons.emplace_back(
-        tr::get("sort.artist.name.desc"),
-        []() -> void { panel_playlists->props.sort_by = PanelPlaylists::SortBy::AUTHOR_ZA; }, "artist_desc");
-      buttons.emplace_back(
-        tr::get("sort.album.name.asc"),
-        []() -> void { panel_playlists->props.sort_by = PanelPlaylists::SortBy::NAME_AZ; }, "name_asc");
-      buttons.emplace_back(
-        tr::get("sort.album.name.desc"),
-        []() -> void { panel_playlists->props.sort_by = PanelPlaylists::SortBy::NAME_ZA; }, "name_desc");
-    }
-    vec2i at = w->get_position(Anchor::CENTER);
-    popover_descriptor d{
-      .id = "sort_by",
-      .title = "",
-      .at = at,
-      .distance = 10,
-      .buttons = buttons,
-      .show_arrow = true,
-    };
-    popup_controller->create_popover(d);
-  };
-
-  panel_playlists->on_add_playlist_button_pressed = [&](Widget* w) -> void { show_popover_create_playlist(w); };
+  panel_playlists
+    ->on_playlist_lmb([&](size_t playlist_id, Widget*) -> void { panel_tracklist->scroll_to_playlist(playlist_id); })
+    .on_playlist_rmb([&](size_t playlist_id, Widget* w) -> void { show_popover_playlist_actions(playlist_id, w); })
+    .on_button_sort_by_pressed([](Widget* w) {
+      decltype(popover_descriptor::buttons) buttons;
+      if (active_collection_id == 0) {
+        buttons.emplace_back(
+          tr::get("sort.playlist.name.asc"),
+          []() -> void { panel_playlists->props().sort_by = PanelPlaylists::SortBy::NAME_AZ; }, "name_asc");
+        buttons.emplace_back(
+          tr::get("sort.playlist.name.desc"),
+          []() -> void { panel_playlists->props().sort_by = PanelPlaylists::SortBy::NAME_ZA; }, "name_desc");
+      } else if (active_collection_id.has_value()) {
+        buttons.emplace_back(
+          tr::get("sort.artist.name.asc"),
+          []() -> void { panel_playlists->props().sort_by = PanelPlaylists::SortBy::AUTHOR_AZ; }, "artist_asc");
+        buttons.emplace_back(
+          tr::get("sort.artist.name.desc"),
+          []() -> void { panel_playlists->props().sort_by = PanelPlaylists::SortBy::AUTHOR_ZA; }, "artist_desc");
+        buttons.emplace_back(
+          tr::get("sort.album.name.asc"),
+          []() -> void { panel_playlists->props().sort_by = PanelPlaylists::SortBy::NAME_AZ; }, "name_asc");
+        buttons.emplace_back(
+          tr::get("sort.album.name.desc"),
+          []() -> void { panel_playlists->props().sort_by = PanelPlaylists::SortBy::NAME_ZA; }, "name_desc");
+      }
+      vec2i at = w->position(Anchor::CENTER);
+      popover_descriptor d{
+        .id = "sort_by",
+        .title = "",
+        .at = at,
+        .distance = 10,
+        .buttons = buttons,
+        .show_arrow = true,
+      };
+      popup_controller->create_popover(d);
+    })
+    .on_add_playlist_button_pressed([&](Widget* w) -> void { show_popover_create_playlist(w); });
 
   recreate_panel_top(false);
 }
@@ -395,7 +381,7 @@ void zincbox::ui::deinit() { root = nullptr; }
 bool zincbox::ui::update(vec2i window_size) {
   bool covers_added = zincbox::ui::cover_art::update();
   if (covers_added) {
-    if (panel_playlists->get_is_updated()) {
+    if (panel_playlists->is_updated()) {
       panel_playlists->recreate();
       panel_playlists->show();
     }
@@ -406,7 +392,7 @@ bool zincbox::ui::update(vec2i window_size) {
     if (!notification_scan_progress) { notification_scan_progress = notifications->push_persistent(""); }
     auto msg =
       tr::format("notification.scan_progress", scan_progress->files_scanned, scan_progress->directories_scanned);
-    notification_scan_progress->label->set_text(msg);
+    notification_scan_progress->label()->text(msg);
   } else {
     if (notification_scan_progress) {
       notifications->dismiss_after(notification_scan_progress, 10);
@@ -420,7 +406,7 @@ bool zincbox::ui::update(vec2i window_size) {
 
     if (active_collection_id.has_value() && active_collection_id.value() == scan_summary->collection_id) {
       panel_tracklist->recreate(active_collection_id);
-      panel_playlists->props.collection_id = scan_summary->collection_id;
+      panel_playlists->props().collection_id = scan_summary->collection_id;
       panel_playlists->recreate();
     }
   }
@@ -494,42 +480,33 @@ bool zincbox::ui::update(vec2i window_size) {
 
   i32 content_x = border;
   i32 content_width = window_size.x - (border * 2);
-  i32 content_y = border + panel_top->get_height();
-  i32 content_height = window_size.y - (border * 2) - panel_top->get_height() - panel_controls->get_height();
+  i32 content_y = border + panel_top->height();
+  i32 content_height = window_size.y - (border * 2) - panel_top->height() - panel_controls->height();
 
-  panel_top->set_pos(content_x, border);
-  panel_top->set_width(content_width);
+  panel_top->pos(content_x, border).width(content_width);
 
-  if (!popup_controller->is_popup_open() && (splitter->is_mouse_hovering() || splitter->get_is_dragged()) &&
-      splitter->get_is_drawn()) {
+  if (!popup_controller->is_popup_open() && (splitter->is_mouse_hovering() || splitter->is_dragged()) &&
+      splitter->is_drawn()) {
     Input::set_cursor(Input::Cursor::RESIZE_HORIZONTAL);
   } else {
     Input::reset_cursor();
   }
 
-  bg->set_size(window_size);
+  bg->size(window_size);
 
-  panel_queue->set_pos(content_x, content_y);
-  panel_queue->set_width(content_width);
-  panel_queue->set_height(content_height);
+  panel_queue->pos(content_x, content_y).size(content_width, content_height);
 
-  i32 width_tracks = (content_width * splitter->get_ratio()) - (i32)(splitter->get_width() / 2);
+  i32 width_tracks = (content_width * splitter->ratio()) - (i32)(splitter->width() / 2);
   width_tracks = std::clamp(width_tracks, 200, std::max(content_width - 200, 200));
-  i32 width_albums = content_width - width_tracks - splitter->get_width();
+  i32 width_albums = content_width - width_tracks - splitter->width();
 
-  panel_tracklist->set_pos(content_x, content_y);
-  panel_tracklist->set_width(width_tracks);
-  panel_tracklist->set_height(content_height);
+  panel_tracklist->pos(content_x, content_y).size(width_tracks, content_height);
 
-  splitter->set_pos(content_x + width_tracks, content_y);
-  splitter->set_height(content_height);
+  splitter->pos(content_x + width_tracks, content_y).height(content_height);
 
-  panel_playlists->set_pos(content_x + width_tracks + splitter->get_width(), content_y);
-  panel_playlists->set_width(width_albums);
-  panel_playlists->set_height(content_height);
+  panel_playlists->pos(content_x + width_tracks + splitter->width(), content_y).size(width_albums, content_height);
 
-  panel_controls->set_y(-border);
-  panel_controls->set_width(content_width);
+  panel_controls->y(-border).width(content_width);
   return root->tick(window_size.x, window_size.y);
 }
 
@@ -541,22 +518,22 @@ void zincbox::ui::draw() {
 bool zincbox::ui::get_mini_player() { return mini_player.value_or(false); }
 
 std::string zincbox::ui::get_selected_tab() {
-  const Tab* selected_tab = panel_top->get_tab_bar()->get_selected_tab();
+  const Tab* selected_tab = panel_top->tab_bar()->selected_tab();
   if (!selected_tab) { return ""; }
-  return selected_tab->get_label().get_text();
+  return selected_tab->label().text();
 }
 
 std::vector<std::string> zincbox::ui::get_tabs_order() {
   std::vector<std::string> ret;
-  for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
-    ret.emplace_back(tab->get_label().get_text());
+  for (Tab* tab : panel_top->tab_bar()->tabs()) {
+    ret.emplace_back(tab->label().text());
   }
   return ret;
 }
 
-i32 zincbox::ui::get_tracks_scroll_offset() { return panel_tracklist->get_scroll_px(); }
+i32 zincbox::ui::get_tracks_scroll_offset() { return panel_tracklist->scroll_px(); }
 
-i32 zincbox::ui::get_playlists_scroll_offset() { return panel_playlists->get_scroll_px(); }
+i32 zincbox::ui::get_playlists_scroll_offset() { return panel_playlists->scroll_px(); }
 
 void zincbox::ui::set_mini_player(bool state) {
   if (mini_player == state) { return; }
@@ -565,10 +542,8 @@ void zincbox::ui::set_mini_player(bool state) {
     panel_tracklist->hide();
     panel_playlists->hide();
     panel_queue->hide();
-    splitter->set_is_drawn(false);
-    splitter->set_is_updated(false);
-    panel_top->set_is_updated(false);
-    panel_top->set_is_drawn(false);
+    splitter->is_drawn(false).is_updated(false);
+    panel_top->is_updated(false).is_drawn(false);
   } else {
     auto active_collection_id_ = active_collection_id;
     active_collection_id = std::nullopt;
@@ -577,28 +552,27 @@ void zincbox::ui::set_mini_player(bool state) {
     } else {
       show_queue();
     }
-    panel_top->set_is_updated(true);
-    panel_top->set_is_drawn(true);
+    panel_top->is_updated(true).is_drawn(true);
   }
 
-  panel_controls->set_button_expand_player_visibility(mini_player.value_or(false));
-  panel_controls->set_tooltip_visibility(!mini_player.value_or(false));
+  panel_controls->button_expand_player_visibility(mini_player.value_or(false))
+    .tooltip_visibility(!mini_player.value_or(false));
 }
 
 void zincbox::ui::set_selected_tab(const std::string& tab_label) {
-  auto* tab = panel_top->get_tab_bar()->get_tab_by_label(tab_label);
+  auto* tab = panel_top->tab_bar()->tab_by_label(tab_label);
   if (!tab) { return; }
-  panel_top->get_tab_bar()->select_tab(tab->id);
+  panel_top->tab_bar()->select_tab(tab->id());
 }
 
 void zincbox::ui::set_tabs_order(std::vector<std::string> tabs_order_) {
   tabs_order = std::move(tabs_order_);
-  panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
+  panel_top->tab_bar()->sort_tabs_by_label(tabs_order);
 }
 
-void zincbox::ui::set_tracks_scroll_offset(i32 scroll_px) { panel_tracklist->set_scroll_px(scroll_px); }
+void zincbox::ui::set_tracks_scroll_offset(i32 scroll_px) { panel_tracklist->scroll_px(scroll_px); }
 
-void zincbox::ui::set_playlists_scroll_offset(i32 scroll_px) { panel_playlists->set_scroll_px(scroll_px); }
+void zincbox::ui::set_playlists_scroll_offset(i32 scroll_px) { panel_playlists->scroll_px(scroll_px); }
 
 zincbox::ui::DecorationHover zincbox::ui::get_decoration_hover(i32 mouse_x, i32 mouse_y) {
   vec2i mouse_pos{mouse_x, mouse_y};
@@ -635,12 +609,12 @@ namespace {
   void recreate_panel_top(bool order) {
     if (order) {
       tabs_order.clear();
-      for (Tab* tab : panel_top->get_tab_bar()->get_tabs()) {
-        tabs_order.push_back(tab->get_label().get_text());
+      for (Tab* tab : panel_top->tab_bar()->tabs()) {
+        tabs_order.push_back(tab->label().text());
       }
     }
     panel_top->recreate(active_collection_id);
-    panel_top->get_tab_bar()->sort_tabs_by_label(tabs_order);
+    panel_top->tab_bar()->sort_tabs_by_label(tabs_order);
   }
 
   void create_collection(std::span<const std::filesystem::path> directories) {
@@ -678,15 +652,15 @@ namespace {
 
     auto* popup = popup_controller->show_popup<PopupImportFolders>(dropped_directories);
 
-    popup->on_add_collections_pressed = [](std::span<const std::filesystem::path> dirs) -> void {
-      if (dirs.size() > 1) {
-        create_multiple_collections(dirs);
-      } else {
-        create_collection(dirs);
-      }
-    };
-
-    popup->on_merge_pressed = [](std::span<const std::filesystem::path> dirs) -> void { create_collection(dirs); };
+    popup
+      ->on_add_collections_pressed([](std::span<const std::filesystem::path> dirs) -> void {
+        if (dirs.size() > 1) {
+          create_multiple_collections(dirs);
+        } else {
+          create_collection(dirs);
+        }
+      })
+      .on_merge_pressed([](std::span<const std::filesystem::path> dirs) -> void { create_collection(dirs); });
   }
 
   void delete_collection(db::collection_id_t collection_id) {
@@ -695,11 +669,11 @@ namespace {
     if (change_view) {
       active_collection_id = std::nullopt;
       recreate_panel_top();
-      panel_playlists->props.collection_id = active_collection_id;
+      panel_playlists->props().collection_id = active_collection_id;
       panel_tracklist->recreate(active_collection_id);
     } else {
       recreate_panel_top();
-      panel_playlists->props.collection_id = active_collection_id;
+      panel_playlists->props().collection_id = active_collection_id;
       panel_tracklist->recreate(active_collection_id);
     }
   }
@@ -719,8 +693,8 @@ namespace {
     }
 
     if (active_collection_id.has_value()) {
-      tracks_scroll_positions[active_collection_id.value()] = panel_tracklist->get_scroll_px();
-      playlists_scroll_positions[active_collection_id.value()] = panel_playlists->get_scroll_px();
+      tracks_scroll_positions[active_collection_id.value()] = panel_tracklist->scroll_px();
+      playlists_scroll_positions[active_collection_id.value()] = panel_playlists->scroll_px();
     }
   }
 
@@ -735,18 +709,17 @@ namespace {
     panel_top->select(collection_id);
 
     panel_tracklist->recreate(active_collection_id);
-    panel_tracklist->set_scroll_px(tracks_scroll_positions[collection_id], true);
+    panel_tracklist->scroll_px(tracks_scroll_positions[collection_id], true);
     panel_tracklist->show();
 
-    panel_playlists->props.collection_id = active_collection_id;
+    panel_playlists->props().collection_id = active_collection_id;
     panel_playlists->recreate();
-    panel_playlists->set_scroll_px(playlists_scroll_positions[collection_id], true);
+    panel_playlists->scroll_px(playlists_scroll_positions[collection_id], true);
     panel_playlists->show();
 
     panel_queue->hide();
 
-    splitter->set_is_drawn(true);
-    splitter->set_is_updated(true);
+    splitter->is_drawn(true).is_updated(true);
   }
 
   void show_queue() {
@@ -758,16 +731,15 @@ namespace {
     panel_playlists->hide();
     panel_queue->show();
 
-    splitter->set_is_drawn(false);
-    splitter->set_is_updated(false);
+    splitter->is_drawn(false).is_updated(false);
 
-    panel_top->select(panel_top->get_queue_tab()->id);
+    panel_top->select(panel_top->queue_tab()->id());
   }
 
   void show_add_to_playlist_popup(db::track_id_t track_id) {
     auto* popup = popup_controller->show_popup<PopupAddToPlaylist>(track_id);
 
-    popup->on_playlist_selected = [track_id](size_t playlist_id) -> void {
+    popup->on_playlist_selected([track_id](size_t playlist_id) -> void {
       if (playlist_id == 0) {
         love_track(track_id);
       } else if (db::add_track_id_to_playlist(playlist_id, track_id)) {
@@ -776,28 +748,28 @@ namespace {
         notifications->push(tr::format("notification.added_track_to_playlist", track_pretty_name, playlist_name));
         panel_tracklist->recreate(active_collection_id);
       }
-    };
+    });
   }
 
   void show_add_to_playlist_popup(std::span<const db::track_id_t> track_ids_) {
     auto* popup = popup_controller->show_popup<PopupAddToPlaylist>(std::nullopt);
 
-    popup->on_playlist_selected = [track_ids =
-                                     std::vector(track_ids_.begin(), track_ids_.end())](size_t playlist_id) -> void {
-      if (playlist_id == 0) {
-        love_tracks(track_ids);
-        return;
-      }
-      i32 tracks_added_count = 0;
-      auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
-      for (db::track_id_t track_id : track_ids) {
-        if (db::add_track_id_to_playlist(playlist_id, track_id)) { tracks_added_count += 1; }
-      }
-      if (tracks_added_count != 0) {
-        notifications->push(tr::format("notification.added_tracks_to_playlist", tracks_added_count, playlist_name));
-        panel_tracklist->recreate(active_collection_id);
-      }
-    };
+    popup->on_playlist_selected(
+      [track_ids = std::vector(track_ids_.begin(), track_ids_.end())](size_t playlist_id) -> void {
+        if (playlist_id == 0) {
+          love_tracks(track_ids);
+          return;
+        }
+        i32 tracks_added_count = 0;
+        auto playlist_name = db::playlist_by_id(playlist_id)->get().name;
+        for (db::track_id_t track_id : track_ids) {
+          if (db::add_track_id_to_playlist(playlist_id, track_id)) { tracks_added_count += 1; }
+        }
+        if (tracks_added_count != 0) {
+          notifications->push(tr::format("notification.added_tracks_to_playlist", tracks_added_count, playlist_name));
+          panel_tracklist->recreate(active_collection_id);
+        }
+      });
   }
 
   void show_popup_delete_collection(db::collection_id_t collection_id) {
@@ -805,51 +777,51 @@ namespace {
     std::string content = tr::format("dialog.confirm.delete_collection.content", collection_name);
 
     auto* popup = popup_controller->show_popup<PopupConfirm>(content);
-    popup->set_width(300);
-    popup->title->set_text(tr::get("dialog.confirm.delete_collection.title"));
-    popup->btn_ok->get_label().set_text(tr::get("dialog.action.delete"));
+    popup->width(300);
+    popup->title()->text(tr::get("dialog.confirm.delete_collection.title"));
+    popup->btn_ok()->label().text(tr::get("dialog.action.delete"));
 
-    popup->on_ok_pressed = [collection_id]() {
+    popup->on_ok_pressed([collection_id]() {
       delete_collection(collection_id);
       notifications->push(
         tr::format("notification.deleted_collection", std::string(db::collection_by_id(collection_id)->get().name())));
-    };
+    });
   }
 
   void show_popup_rename_collection(db::collection_id_t collection_id) {
     auto* popup = popup_controller->show_popup<PopupInput>();
-    popup->set_size(300, 200);
-    popup->title->set_text(tr::get("popup.playlist.rename.title"));
-    popup->btn_ok->get_label().set_text(tr::get("dialog.action.rename"));
-    popup->text_input->label.set_text(std::string(db::collection_by_id(collection_id)->get().name()));
-    root->set_focused_widget(popup->text_input);
+    popup->size(300, 200);
+    popup->title()->text(tr::get("popup.playlist.rename.title"));
+    popup->btn_ok()->label().text(tr::get("dialog.action.rename"));
+    popup->text_input()->label().text(std::string(db::collection_by_id(collection_id)->get().name()));
+    root->set_focused_widget(popup->text_input());
 
-    popup->on_ok_pressed = [popup, collection_id]() {
-      std::string new_name = popup->text_input->label.get_text();
+    popup->on_ok_pressed([popup, collection_id]() {
+      std::string new_name = popup->text_input()->label().text();
       if (new_name.empty()) { return; }
       db::rename_collection(collection_id, new_name);
       recreate_panel_top();
-    };
+    });
   }
 
   void show_popup_set_sources(db::collection_id_t collection_id) {
     auto* popup = popup_controller->show_popup<PopupSetSources>(collection_id);
 
-    popup->on_remove_path_pressed = [collection_id](const std::filesystem::path& path) -> void {
-      if (db::remove_path_from_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
-      if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
-        panel_tracklist->recreate(active_collection_id);
-        panel_playlists->props.collection_id = collection_id;
-      }
-      popup_controller->close_all_popups();
-    };
-
-    popup->on_add_dir_pressed = [collection_id]() -> void {
-      if (file_dialog_type != FileDialogOpen::NONE) { return; }
-      file_dialog_type = FileDialogOpen::ADD_PATH_TO_COLLECTION;
-      file_dialog_data = collection_id;
-      file_dialog_future_path = zincbox::ui::file_dialog::pick_folder();
-    };
+    popup
+      ->on_remove_path_pressed([collection_id](const std::filesystem::path& path) -> void {
+        if (db::remove_path_from_collection(collection_id, path)) { zincbox::scanner::scan_collection(collection_id); }
+        if (active_collection_id.has_value() && active_collection_id.value() == collection_id) {
+          panel_tracklist->recreate(active_collection_id);
+          panel_playlists->props().collection_id = collection_id;
+        }
+        popup_controller->close_all_popups();
+      })
+      .on_add_dir_pressed([collection_id]() -> void {
+        if (file_dialog_type != FileDialogOpen::NONE) { return; }
+        file_dialog_type = FileDialogOpen::ADD_PATH_TO_COLLECTION;
+        file_dialog_data = collection_id;
+        file_dialog_future_path = zincbox::ui::file_dialog::pick_folder();
+      });
   }
 
   void show_popup_delete_playlist(db::playlist_id_t playlist_id) {
@@ -857,31 +829,31 @@ namespace {
     std::string content = tr::format("dialog.confirm.delete_playlist.content", playlist_name);
 
     auto* popup = popup_controller->show_popup<PopupConfirm>(content);
-    popup->set_width(300);
-    popup->title->set_text(tr::get("dialog.confirm.delete_playlist.title"));
-    popup->btn_ok->get_label().set_text(tr::get("dialog.action.delete"));
+    popup->width(300);
+    popup->title()->text(tr::get("dialog.confirm.delete_playlist.title"));
+    popup->btn_ok()->label().text(tr::get("dialog.action.delete"));
 
-    popup->on_ok_pressed = [playlist_id]() {
+    popup->on_ok_pressed([playlist_id]() {
       delete_playlist(playlist_id);
       notifications->push(tr::format("notification.deleted_playlist", db::playlist_by_id(playlist_id)->get().name));
-    };
+    });
   }
 
   void show_popup_rename_playlist(db::playlist_id_t playlist_id) {
     auto* popup = popup_controller->show_popup<PopupInput>();
-    popup->set_size(300, 200 * 4);
-    popup->title->set_text(tr::get("popup.playlist.rename.title"));
-    popup->btn_ok->get_label().set_text(tr::get("dialog.action.rename"));
-    popup->text_input->label.set_text(db::playlist_by_id(playlist_id)->get().name);
-    root->set_focused_widget(popup->text_input);
+    popup->size(300, 200 * 4);
+    popup->title()->text(tr::get("popup.playlist.rename.title"));
+    popup->btn_ok()->label().text(tr::get("dialog.action.rename"));
+    popup->text_input()->label().text(db::playlist_by_id(playlist_id)->get().name);
+    root->set_focused_widget(popup->text_input());
 
-    popup->on_ok_pressed = [popup, playlist_id]() {
-      std::string new_name = popup->text_input->label.get_text();
+    popup->on_ok_pressed([popup, playlist_id]() {
+      std::string new_name = popup->text_input()->label().text();
       if (new_name.empty()) { return; }
       db::rename_playlist(playlist_id, new_name);
       notifications->push(tr::format("notification.renamed_playlist", new_name));
       panel_playlists->recreate();
-    };
+    });
   }
 
   void show_popover_tracklist_track_actions(db::track_info ti, Widget* widget, bool remove_from_playlist_option,
@@ -998,7 +970,7 @@ namespace {
         "remove_from_playlist");
     }
 
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     at.x = Input::get_mouse_x();
     popover_descriptor d{
       .id = "playlist_track_actions",
@@ -1011,15 +983,14 @@ namespace {
   };
 
   void show_popover_tracklist_tracks_actions(size_t item_index, const std::function<void()>& callback_close) {
-    Widget* widget =
-      std::visit([](auto& item) -> Widget* { return item.widget; }, panel_tracklist->get_item(item_index));
+    Widget* widget = std::visit([](auto& item) -> Widget* { return item.widget; }, panel_tracklist->item(item_index));
     if (!widget) { return; }
 
     std::vector<db::track_info> tracks;
     tracks.reserve(panel_tracklist->selection().size());
     for (auto i : panel_tracklist->selection().get()) {
-      ensure(panel_tracklist->get_items().size() > i);
-      if (auto* item_track = std::get_if<PanelTracklist::ItemTrack>(&panel_tracklist->get_items()[i])) {
+      ensure(panel_tracklist->items().size() > i);
+      if (auto* item_track = std::get_if<PanelTracklist::ItemTrack>(&panel_tracklist->items()[i])) {
         tracks.emplace_back(item_track->track_info);
       }
     }
@@ -1122,7 +1093,7 @@ namespace {
         },
         "remove_from_playlist");
     }
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     at.x = Input::get_mouse_x();
     popover_descriptor d{
       .id = "playlist_tracks_actions",
@@ -1136,7 +1107,7 @@ namespace {
 
   void show_popover_collection_actions(db::collection_id_t collection_id, Widget* widget) {
     if (collection_id == 0) { return; }
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     decltype(popover_descriptor::buttons) buttons;
     buttons.emplace_back(
       tr::get("dialog.action.rename"), [collection_id]() { show_popup_rename_collection(collection_id); },
@@ -1165,8 +1136,8 @@ namespace {
   };
 
   void show_popover_queue_item_actions(size_t item_index) {
-    ensure(panel_queue->get_items().size() > item_index);
-    auto& item = panel_queue->get_items()[item_index];
+    ensure(panel_queue->items().size() > item_index);
+    auto& item = panel_queue->items()[item_index];
 
     size_t queue_index = 0;
     Widget* widget = nullptr;
@@ -1274,7 +1245,7 @@ namespace {
         tr::get("popover.collection.show"), [collection_id]() { show_collection(collection_id); }, "show_in_playlist");
     }
 
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     at.x = Input::get_mouse_x();
     popover_descriptor d{
       .id = "queue_item_actions",
@@ -1287,7 +1258,7 @@ namespace {
   }
 
   void show_popover_queue_items_actions(size_t item_index, const std::function<void()>& callback_close) {
-    auto items_span = panel_queue->get_items();
+    auto items_span = panel_queue->items();
     ensure(items_span.size() > item_index);
 
     auto& clicked_item = items_span[item_index];
@@ -1414,7 +1385,7 @@ namespace {
         "add_to_playlist");
     }
 
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     at.x = Input::get_mouse_x();
     popover_descriptor d{
       .id = "queue_items_actions",
@@ -1437,8 +1408,8 @@ namespace {
       buttons.emplace_back((tr::get("popover.playlist.play")),
                            [callback_close, playlist_id]() -> void {
                              if (callback_close) { callback_close(); }
-                             if (panel_playlists->get_collection_id().has_value()) {
-                               player::play_playlist(*(panel_playlists->get_collection_id()), playlist_id, true);
+                             if (panel_playlists->collection_id().has_value()) {
+                               player::play_playlist(*(panel_playlists->collection_id()), playlist_id, true);
                              }
                            },
                            "play_track");
@@ -1446,8 +1417,8 @@ namespace {
       buttons.emplace_back((tr::get("popover.playlist.play_next")),
                            [callback_close, playlist_id]() -> void {
                              if (callback_close) { callback_close(); }
-                             if (panel_playlists->get_collection_id().has_value()) {
-                               if (player::play_playlist(*(panel_playlists->get_collection_id()), playlist_id, false)) {
+                             if (panel_playlists->collection_id().has_value()) {
+                               if (player::play_playlist(*(panel_playlists->collection_id()), playlist_id, false)) {
                                  notifications->push(tr::format("notification.appended_to_queue",
                                                                 db::playlist_by_id(playlist_id)->get().name));
                                }
@@ -1530,7 +1501,7 @@ namespace {
                            "delete_playlist");
     }
 
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     popover_descriptor d{
       .id = "playlist_actions",
       .title = "",
@@ -1580,7 +1551,7 @@ namespace {
       },
       "title_desc");
 
-    vec2i at = widget->get_position(Anchor::CENTER);
+    vec2i at = widget->position(Anchor::CENTER);
     popover_descriptor d{
       .id = "playlist_sort",
       .title = "",
@@ -1602,7 +1573,7 @@ namespace {
     popover_descriptor d{
       .id = "new_playlist",
       .title = "",
-      .at = w->get_position(Anchor::CENTER),
+      .at = w->position(Anchor::CENTER),
       .distance = 16,
       .buttons = buttons,
     };
@@ -1624,33 +1595,34 @@ namespace {
       tr::get("popover.queue.save_as_playlist"),
       []() -> void {
         auto* popup = popup_controller->show_popup<PopupInput>();
-        popup->set_size(300, 200);
-        popup->title->set_text(tr::get("popup.playlist.create_from_queue.title"));
-        popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
-        root->set_focused_widget(popup->text_input);
+        popup->size(300, 200);
+        popup->title()->text(tr::get("popup.playlist.create_from_queue.title"));
+        popup->btn_ok()->label().text(tr::get("dialog.action.add"));
+        root->set_focused_widget(popup->text_input());
 
-        popup->on_ok_pressed = [popup]() {
-          auto playlist_id = db::add_playlist_to_collection(
-            0, db::Playlist{popup->text_input->label.get_text(), {""}, db::PlaylistType::USER});
-          for (const auto& play : player::get_flattened_queue().tracks) {
-            db::add_track_id_to_playlist(playlist_id, play.track_id);
-          }
-          if (active_collection_id == 0) {
-            panel_playlists->props.collection_id = 0;
-            panel_playlists->recreate();
-            panel_tracklist->recreate(active_collection_id);
-          }
-          notifications->push(tr::format("notification.saved_queue_as_playlist", popup->text_input->label.get_text()));
-        };
-
-        popup->on_cancel_pressed = []() {};
+        popup
+          ->on_ok_pressed([popup]() {
+            auto playlist_id = db::add_playlist_to_collection(
+              0, db::Playlist{popup->text_input()->label().text(), {""}, db::PlaylistType::USER});
+            for (const auto& play : player::get_flattened_queue().tracks) {
+              db::add_track_id_to_playlist(playlist_id, play.track_id);
+            }
+            if (active_collection_id == 0) {
+              panel_playlists->props().collection_id = 0;
+              panel_playlists->recreate();
+              panel_tracklist->recreate(active_collection_id);
+            }
+            notifications->push(
+              tr::format("notification.saved_queue_as_playlist", popup->text_input()->label().text()));
+          })
+          .on_cancel_pressed([]() {});
       },
       "save_queue_as_playlist");
 
     popover_descriptor d{
       .id = "queue_actions",
       .title = "",
-      .at = w->get_position(Anchor::CENTER),
+      .at = w->position(Anchor::CENTER),
       .distance = 10,
       .buttons = buttons,
     };
@@ -1659,25 +1631,25 @@ namespace {
 
   void show_popup_new_playlist(const std::function<void(std::optional<db::playlist_id_t>)>& callback_close) {
     auto* popup = popup_controller->show_popup<PopupInput>();
-    popup->set_size(300, 200);
-    popup->title->set_text(tr::get("popup.playlist.add.title"));
-    popup->btn_ok->get_label().set_text(tr::get("dialog.action.add"));
-    root->set_focused_widget(popup->text_input);
+    popup->size(300, 200);
+    popup->title()->text(tr::get("popup.playlist.add.title"));
+    popup->btn_ok()->label().text(tr::get("dialog.action.add"));
+    root->set_focused_widget(popup->text_input());
 
-    popup->on_ok_pressed = [popup, callback_close]() {
-      auto playlist_id = db::add_playlist_to_collection(
-        0, db::Playlist{popup->text_input->label.get_text(), {""}, db::PlaylistType::USER});
-      if (active_collection_id == 0) {
-        panel_playlists->props.collection_id = 0;
-        panel_playlists->recreate();
-        panel_tracklist->recreate(active_collection_id);
-      }
-      if (callback_close) { callback_close(playlist_id); }
-    };
-
-    popup->on_cancel_pressed = [callback_close]() {
-      if (callback_close) { callback_close(std::nullopt); }
-    };
+    popup
+      ->on_ok_pressed([popup, callback_close]() {
+        auto playlist_id = db::add_playlist_to_collection(
+          0, db::Playlist{popup->text_input()->label().text(), {""}, db::PlaylistType::USER});
+        if (active_collection_id == 0) {
+          panel_playlists->props().collection_id = 0;
+          panel_playlists->recreate();
+          panel_tracklist->recreate(active_collection_id);
+        }
+        if (callback_close) { callback_close(playlist_id); }
+      })
+      .on_cancel_pressed([callback_close]() {
+        if (callback_close) { callback_close(std::nullopt); }
+      });
   }
 
   void show_popup_new_smart_playlist() { popup_controller->show_popup<PopupCreateSmartPlaylist>(); }
@@ -1789,51 +1761,48 @@ namespace {
     auto* popup = popup_controller->show_popup<PopupSearch>();
     auto callback_close = [popup]() -> void {
       popup->close();
-      if (popup->on_closed) { popup->on_closed(); }
+      if (popup->on_closed()) { popup->on_closed()(); }
     };
-    popup->set_collection_id(active_collection_id.value_or(0));
+    popup->collection_id(active_collection_id.value_or(0));
     search_popup_visible = true;
-    popup->on_playlist_lmb = [popup](size_t playlist_id, Widget*) -> void {
-      auto collection_id = db::collection_of_playlist(playlist_id);
-      if (collection_id.has_value()) {
-        show_collection(collection_id.value());
-        panel_tracklist->scroll_to_playlist(playlist_id);
+    popup
+      ->on_playlist_lmb([popup](size_t playlist_id, Widget*) -> void {
+        auto collection_id = db::collection_of_playlist(playlist_id);
+        if (collection_id.has_value()) {
+          show_collection(collection_id.value());
+          panel_tracklist->scroll_to_playlist(playlist_id);
+          popup->close();
+          if (popup->on_closed()) { popup->on_closed()(); }
+        }
+      })
+      .on_track_lmb([popup](db::track_info ti, Widget*) {
+        show_collection(ti.collection_id);
+        panel_tracklist->scroll_to_track(ti.playlist_id, ti.track_id);
         popup->close();
-        popup->on_closed();
-      }
-    };
-
-    popup->on_track_lmb = [popup](db::track_info ti, Widget*) {
-      show_collection(ti.collection_id);
-      panel_tracklist->scroll_to_track(ti.playlist_id, ti.track_id);
-      popup->close();
-      popup->on_closed();
-    };
-
-    popup->on_playlist_rmb = [callback_close](size_t playlist_id, Widget* w) -> void {
-      show_popover_playlist_actions(playlist_id, w, true, callback_close);
-    };
-
-    popup->on_track_rmb = [callback_close](db::track_info ti, Widget* w) -> void {
-      show_popover_tracklist_track_actions(ti, w, false, callback_close);
-    };
-
-    popup->on_closed = []() { search_popup_visible = false; };
+        if (popup->on_closed()) { popup->on_closed()(); }
+      })
+      .on_playlist_rmb([callback_close](size_t playlist_id, Widget* w) -> void {
+        show_popover_playlist_actions(playlist_id, w, true, callback_close);
+      })
+      .on_track_rmb([callback_close](db::track_info ti, Widget* w) -> void {
+        show_popover_tracklist_track_actions(ti, w, false, callback_close);
+      })
+      .on_closed([]() { search_popup_visible = false; });
   }
 
   void show_settings_popup() {
     auto* popup = popup_controller->show_popup<PopupSettings>();
-    popup->on_save = [](Settings new_settings) -> void {
+    popup->on_save([](Settings new_settings) -> void {
       if (zincbox::settings().must_reload(new_settings)) {
         auto* popup_close = popup_controller->show_popup<PopupConfirm>(tr::get("popup.reload_required.content"));
-        popup_close->title->set_text(tr::get("popup.reload_required.title"));
-        popup_close->set_width(popup_close->content->get_width() + 32);
-        popup_close->btn_ok->get_label().set_text(tr::get("dialog.action.reload"));
-        popup_close->btn_cancel->get_label().set_text(tr::get("dialog.action.cancel"));
-        popup_close->on_ok_pressed = []() { zincbox::stop(); };
+        popup_close->title()->text(tr::get("popup.reload_required.title"));
+        popup_close->width(popup_close->content()->width() + 32);
+        popup_close->btn_ok()->label().text(tr::get("dialog.action.reload"));
+        popup_close->btn_cancel()->label().text(tr::get("dialog.action.cancel"));
+        popup_close->on_ok_pressed([]() { zincbox::stop(); });
       }
       zincbox::settings() = new_settings;
-    };
+    });
   }
 
   void show_about_popup() { popup_controller->show_popup<PopupAbout>(); }
@@ -1910,7 +1879,7 @@ namespace {
     Tab* hovered_tab = nullptr;
 
     if (lmb) {
-      for (Widget* hovered_widget : root->get_hovered_widgets()) {
+      for (Widget* hovered_widget : root->hovered_widgets()) {
         if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
         if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
         if (hovered_queue_item = dynamic_cast<WidgetQueuePlaylistCollection*>(hovered_widget); hovered_queue_item) {
@@ -1920,8 +1889,8 @@ namespace {
           break;
         }
         if (hovered_tab = dynamic_cast<Tab*>(hovered_widget); hovered_tab) {
-          if (selection.drag_tab_id != hovered_tab->id) {
-            selection.drag_tab_id = hovered_tab->id;
+          if (selection.drag_tab_id != hovered_tab->id()) {
+            selection.drag_tab_id = hovered_tab->id();
             selection.drag_tab_timer = 0;
           }
           break;
@@ -1931,18 +1900,18 @@ namespace {
 
     handle_drag_and_drop_clear();
 
-    if (panel_tracklist->get_is_drawn() && !panel_tracklist->selection().empty()) {
+    if (panel_tracklist->is_drawn() && !panel_tracklist->selection().empty()) {
       bool hovering = hovered_track && hovered_track->is_selected();
       if (!hovering) { return; }
     }
 
-    if (panel_queue->get_is_drawn() && !panel_queue->selection().empty()) {
+    if (panel_queue->is_drawn() && !panel_queue->selection().empty()) {
       bool hovering = hovered_track && hovered_track->is_selected();
       hovering |= hovered_queue_item && hovered_queue_item->is_selected();
       if (!hovering) { return; }
     }
 
-    if (panel_tracklist->get_is_drawn()) {
+    if (panel_tracklist->is_drawn()) {
       if (panel_tracklist->selection().empty() && hovered_track && !Input::ctrl_pressed()) {
         panel_tracklist->insert_to_selection_index(hovered_track->item_index());
         ensure(hovered_track->track_info().track_id != db::INVALID_ID);
@@ -1952,7 +1921,7 @@ namespace {
         selection.start = Input::get_mouse_pos();
         bool first = true;
         for (size_t i : panel_tracklist->selection().get()) {
-          auto item = panel_tracklist->get_items()[i];
+          auto item = panel_tracklist->items()[i];
           if (auto* t = std::get_if<PanelTracklist::ItemTrack>(&item)) {
             if (first) {
               selection.common_playlist_id = t->track_info.playlist_id;
@@ -1968,7 +1937,7 @@ namespace {
         }
         selection.source = SelectionSource::COLLECTION;
       }
-    } else if (panel_queue->get_is_drawn()) {
+    } else if (panel_queue->is_drawn()) {
       if (panel_queue->selection().empty() && !Input::ctrl_pressed()) {
         if (hovered_track) {
           panel_queue->insert_to_selection(hovered_track->item_index());
@@ -1982,7 +1951,7 @@ namespace {
         selection.start = Input::get_mouse_pos();
         bool first = true;
         for (size_t i : panel_queue->selection().get()) {
-          auto item = panel_queue->get_items()[i];
+          auto item = panel_queue->items()[i];
           if (auto* qt = std::get_if<PanelTracklist::ItemQueueTrack>(&item)) {
             if (qt->queue_index < player::get_playing_queue().size()) {
               auto q_elem = player::get_playing_queue()[qt->queue_index];
@@ -2017,16 +1986,16 @@ namespace {
     auto playlist = db::playlist_by_id(playlist_id);
     if (!playlist.has_value()) { return false; }
     if (playlist->get().type != db::PlaylistType::USER) {
-      tooltip_drag->set_text(tr::get("tooltip.drag.not_allowed"));
+      tooltip_drag->text(tr::get("tooltip.drag.not_allowed"));
       return true;
     }
     size_t track_count = get_selection_track_ids(selection.items).size();
     if (track_count == 0) { return false; }
 
     if (track_count > 1) {
-      tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist->get().name));
+      tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist->get().name));
     } else {
-      tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist", playlist->get().name));
+      tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist", playlist->get().name));
     }
     return true;
   }
@@ -2043,7 +2012,7 @@ namespace {
 
   bool handle_drag_playlists_empty_space() {
     if (get_selection_track_ids(selection.items).empty()) { return false; }
-    tooltip_drag->set_text(tr::get("tooltip.drag.create_playlist"));
+    tooltip_drag->text(tr::get("tooltip.drag.create_playlist"));
     return true;
   }
 
@@ -2061,11 +2030,11 @@ namespace {
                              bool hovered_playlists_panel) {
     if (hovered_playlist_cover) {
       if (hovered_playlist_cover->is_add_button()) { return handle_drag_playlists_empty_space(); }
-      if (hovered_playlist_cover->playlist_id.has_value()) {
-        return handle_drag_playlist_cover(hovered_playlist_cover->playlist_id.value());
+      if (hovered_playlist_cover->playlist_id().has_value()) {
+        return handle_drag_playlist_cover(hovered_playlist_cover->playlist_id().value());
       }
     }
-    if (hovered_playlist_header) { return handle_drag_playlist_cover(hovered_playlist_header->playlist_id); }
+    if (hovered_playlist_header) { return handle_drag_playlist_cover(hovered_playlist_header->playlist_id()); }
     if (hovered_playlists_panel) { return handle_drag_playlists_empty_space(); }
     return false;
   }
@@ -2074,11 +2043,11 @@ namespace {
                              bool hovered_playlists_panel) {
     if (hovered_playlist_cover) {
       if (hovered_playlist_cover->is_add_button()) { return handle_drop_playlists_empty_space(); }
-      if (hovered_playlist_cover->playlist_id.has_value()) {
-        return handle_drop_playlist_cover(hovered_playlist_cover->playlist_id.value());
+      if (hovered_playlist_cover->playlist_id().has_value()) {
+        return handle_drop_playlist_cover(hovered_playlist_cover->playlist_id().value());
       }
     }
-    if (hovered_playlist_header) { return handle_drop_playlist_cover(hovered_playlist_header->playlist_id); }
+    if (hovered_playlist_header) { return handle_drop_playlist_cover(hovered_playlist_header->playlist_id()); }
     if (hovered_playlists_panel) { return handle_drop_playlists_empty_space(); }
     return false;
   }
@@ -2088,17 +2057,16 @@ namespace {
     auto target_playlist_id = hovered_track->playlist_id();
     auto playlist = db::playlist_by_id(target_playlist_id);
     if (!playlist.has_value()) { return false; }
-    bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+    bool above = hovered_track->position(Anchor::CENTER).y > Input::get_mouse_y();
     auto insert_cursor_pos = above ? PanelTracklist::InsertCursorPos::ABOVE : PanelTracklist::InsertCursorPos::BELOW;
 
-    panel_tracklist->set_insert_cursor_index(hovered_track->item_index());
-    panel_tracklist->set_insert_cursor_pos(insert_cursor_pos);
+    panel_tracklist->insert_cursor_index(hovered_track->item_index()).insert_cursor_pos(insert_cursor_pos);
 
     bool move =
       (selection.source == SelectionSource::COLLECTION) && (selection.common_playlist_id == target_playlist_id);
 
     if (playlist->get().type != db::PlaylistType::USER) {
-      tooltip_drag->set_text(tr::get("tooltip.drag.not_allowed"));
+      tooltip_drag->text(tr::get("tooltip.drag.not_allowed"));
     } else if (move) {
       size_t move_count = 0;
       for (const auto& item : selection.items) {
@@ -2107,9 +2075,9 @@ namespace {
       if (move_count == 0) { return false; }
 
       if (move_count > 1) {
-        tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", move_count));
+        tooltip_drag->text(tr::format("tooltip.drag.reorder_plural", move_count));
       } else {
-        tooltip_drag->set_text(tr::get("tooltip.drag.reorder"));
+        tooltip_drag->text(tr::get("tooltip.drag.reorder"));
       }
     } else {
       auto playlist_name = playlist->get().name;
@@ -2117,9 +2085,9 @@ namespace {
       if (track_count == 0) { return false; }
 
       if (track_count > 1) {
-        tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist_name));
+        tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist_name));
       } else {
-        tooltip_drag->set_text(tr::format("tooltip.drag.add_to_playlist", playlist_name));
+        tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist", playlist_name));
       }
     }
     return true;
@@ -2132,7 +2100,7 @@ namespace {
     if (!playlist.has_value() || playlist->get().type != db::PlaylistType::USER) { return false; }
     ensure(db::collection_of_playlist(target_playlist_id) == 0);
     size_t i = hovered_track->track_info().index;
-    bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+    bool above = hovered_track->position(Anchor::CENTER).y > Input::get_mouse_y();
     bool move =
       (selection.source == SelectionSource::COLLECTION) && (selection.common_playlist_id == target_playlist_id);
     if (!above) { i += 1; }
@@ -2174,19 +2142,17 @@ namespace {
 
   bool handle_drag_queue(WidgetTrack* hovered_track, WidgetQueuePlaylistCollection* hovered_queue_item) {
     if (hovered_track) {
-      bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
-      panel_queue->set_insert_cursor_index(hovered_track->item_index());
-      panel_queue->set_insert_cursor_pos(above ? PanelTracklist::InsertCursorPos::ABOVE
-                                               : PanelTracklist::InsertCursorPos::BELOW);
+      bool above = hovered_track->position(Anchor::CENTER).y > Input::get_mouse_y();
+      panel_queue->insert_cursor_index(hovered_track->item_index())
+        .insert_cursor_pos(above ? PanelTracklist::InsertCursorPos::ABOVE : PanelTracklist::InsertCursorPos::BELOW);
     } else if (hovered_queue_item) {
-      bool above = hovered_queue_item->get_position(Anchor::CENTER).y > Input::get_mouse_y();
-      panel_queue->set_insert_cursor_index(hovered_queue_item->queue_index());
-      panel_queue->set_insert_cursor_pos(above ? PanelTracklist::InsertCursorPos::ABOVE
-                                               : PanelTracklist::InsertCursorPos::BELOW);
+      bool above = hovered_queue_item->position(Anchor::CENTER).y > Input::get_mouse_y();
+      panel_queue->insert_cursor_index(hovered_queue_item->queue_index())
+        .insert_cursor_pos(above ? PanelTracklist::InsertCursorPos::ABOVE : PanelTracklist::InsertCursorPos::BELOW);
     } else {
       if (!player::get_playing_queue().empty()) {
-        panel_queue->set_insert_cursor_index(player::get_playing_queue().size() - 1);
-        panel_queue->set_insert_cursor_pos(PanelTracklist::InsertCursorPos::BELOW);
+        panel_queue->insert_cursor_index(player::get_playing_queue().size() - 1)
+          .insert_cursor_pos(PanelTracklist::InsertCursorPos::BELOW);
       }
     }
 
@@ -2216,15 +2182,15 @@ namespace {
 
     if (move) {
       if (valid_count > 1) {
-        tooltip_drag->set_text(tr::format("tooltip.drag.reorder_plural", valid_count));
+        tooltip_drag->text(tr::format("tooltip.drag.reorder_plural", valid_count));
       } else {
-        tooltip_drag->set_text(tr::get("tooltip.drag.reorder"));
+        tooltip_drag->text(tr::get("tooltip.drag.reorder"));
       }
     } else {
       if (valid_count > 1) {
-        tooltip_drag->set_text(tr::format("tooltip.drag.add_to_queue_plural", valid_count));
+        tooltip_drag->text(tr::format("tooltip.drag.add_to_queue_plural", valid_count));
       } else {
-        tooltip_drag->set_text(tr::get("tooltip.drag.add_to_queue"));
+        tooltip_drag->text(tr::get("tooltip.drag.add_to_queue"));
       }
     }
     return true;
@@ -2234,11 +2200,11 @@ namespace {
     size_t target_index = 0;
     if (hovered_track) {
       target_index = hovered_track->item_index();
-      bool above = hovered_track->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+      bool above = hovered_track->position(Anchor::CENTER).y > Input::get_mouse_y();
       if (!above) { target_index += 1; }
     } else if (hovered_queue_item) {
       target_index = hovered_queue_item->queue_index();
-      bool above = hovered_queue_item->get_position(Anchor::CENTER).y > Input::get_mouse_y();
+      bool above = hovered_queue_item->position(Anchor::CENTER).y > Input::get_mouse_y();
       if (!above) { target_index += 1; }
     } else {
       target_index = player::get_playing_queue().size();
@@ -2289,7 +2255,7 @@ namespace {
     if (selection.drag_tab_timer < SELECTION_DRAG_TAB_TIMER) {
       selection.drag_tab_timer += 1;
     } else {
-      panel_top->select(hovered_tab->id);
+      panel_top->select(hovered_tab->id());
     }
     return true;
   }
@@ -2299,23 +2265,22 @@ namespace {
   void handle_drag(WidgetAlbumCover* hovered_playlist_cover, WidgetPlaylistHeader* hovered_playlist_header,
                    WidgetTrack* hovered_track, WidgetQueuePlaylistCollection* hovered_queue_item,
                    bool hovered_queue_panel, Tab* hovered_tab, bool hovered_playlists_panel) {
-    tooltip_drag->set_is_drawn(true);
-    tooltip_drag->set_pos(Input::get_mouse_pos() + vec2i{0, 10});
-    panel_tracklist->set_is_dragged(true);
-    panel_queue->set_is_dragged(true);
+    tooltip_drag->is_drawn(true).pos(Input::get_mouse_pos() + vec2i{0, 10});
+    panel_tracklist->is_dragged(true);
+    panel_queue->is_dragged(true);
 
     if (handle_drag_playlists(hovered_playlist_cover, hovered_playlist_header, hovered_playlists_panel)) { return; }
-    if (panel_tracklist->get_is_drawn() && hovered_track) {
+    if (panel_tracklist->is_drawn() && hovered_track) {
       if (handle_drag_tracklist(hovered_track)) { return; }
-    } else if (panel_queue->get_is_drawn() && (hovered_track || hovered_queue_item || hovered_queue_panel)) {
+    } else if (panel_queue->is_drawn() && (hovered_track || hovered_queue_item || hovered_queue_panel)) {
       if (handle_drag_queue(hovered_track, hovered_queue_item)) { return; }
     }
     if (hovered_tab && handle_drag_tab(hovered_tab)) { return; }
 
     if (selection.items.size() > 1) {
-      tooltip_drag->set_text(tr::format("tooltip.drag.tracks", selection.items.size()));
+      tooltip_drag->text(tr::format("tooltip.drag.tracks", selection.items.size()));
     } else {
-      tooltip_drag->set_text(tr::get("tooltip.drag.track"));
+      tooltip_drag->text(tr::get("tooltip.drag.track"));
     }
   }
 
@@ -2326,9 +2291,9 @@ namespace {
 
     if (handle_drop_playlists(hovered_playlist_cover, hovered_playlist_header, hovered_playlists_panel)) {
       handled = true;
-    } else if (panel_tracklist->get_is_drawn() && hovered_track) {
+    } else if (panel_tracklist->is_drawn() && hovered_track) {
       handled = handle_drop_tracklist(hovered_track);
-    } else if (panel_queue->get_is_drawn() && (hovered_track || hovered_queue_item || hovered_queue_panel)) {
+    } else if (panel_queue->is_drawn() && (hovered_track || hovered_queue_item || hovered_queue_panel)) {
       handled = handle_drop_queue(hovered_track, hovered_queue_item);
     } else if (hovered_tab) {
       handled = handle_drop_tab(hovered_tab);
@@ -2336,8 +2301,8 @@ namespace {
 
     if (handled) {
       selection.items_sorted.clear();
-      panel_tracklist->set_is_dragged(false);
-      panel_queue->set_is_dragged(false);
+      panel_tracklist->is_dragged(false);
+      panel_queue->is_dragged(false);
     }
   }
 
@@ -2358,7 +2323,7 @@ namespace {
     bool hovered_playlists_panel = panel_playlists->is_mouse_hovering();
 
     if (lmb) {
-      for (Widget* hovered_widget : root->get_hovered_widgets()) {
+      for (Widget* hovered_widget : root->hovered_widgets()) {
         if (hovered_playlist_cover = dynamic_cast<WidgetAlbumCover*>(hovered_widget); hovered_playlist_cover) { break; }
         if (hovered_track = dynamic_cast<WidgetTrack*>(hovered_widget); hovered_track) { break; }
         if (hovered_queue_item = dynamic_cast<WidgetQueuePlaylistCollection*>(hovered_widget); hovered_queue_item) {
@@ -2380,8 +2345,8 @@ namespace {
 
     bool valid_selection = !selection.items.empty() && selection.started;
 
-    panel_tracklist->set_insert_cursor_index(std::nullopt);
-    panel_queue->set_insert_cursor_index(std::nullopt);
+    panel_tracklist->insert_cursor_index(std::nullopt);
+    panel_queue->insert_cursor_index(std::nullopt);
 
     if (valid_selection) {
       if (lmb_pressed) {
@@ -2392,14 +2357,14 @@ namespace {
                     hovered_queue_panel, hovered_tab, hovered_playlists_panel);
       }
     } else {
-      tooltip_drag->set_is_drawn(false);
+      tooltip_drag->is_drawn(false);
     }
 
     if (lmb_just_released || rmb_just_pressed || Input::key_just_pressed(Input::Key::KEY_ESCAPE) ||
         popup_controller->is_popup_open()) {
       handle_drag_and_drop_clear();
-      panel_tracklist->set_is_dragged(false);
-      panel_queue->set_is_dragged(false);
+      panel_tracklist->is_dragged(false);
+      panel_queue->is_dragged(false);
     }
   }
 } // namespace

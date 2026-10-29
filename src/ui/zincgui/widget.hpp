@@ -18,22 +18,6 @@ namespace zincgui {
 
   class Root;
 
-#define WIDGET_DEF_SETTER_DIRTY(field)                                                                                 \
-  void set_##field(decltype(field) field##_) {                                                                         \
-    if ((field) == field##_) { return; }                                                                               \
-    (field) = field##_;                                                                                                \
-    mark_dirty();                                                                                                      \
-  }
-
-#define WIDGET_DEF_SETTER(field)                                                                                       \
-  void set_##field(decltype(field) field##_) {                                                                         \
-    if ((field) == field##_) { return; }                                                                               \
-    (field) = field##_;                                                                                                \
-  }
-
-#define WIDGET_DEF_GETTER(field)                                                                                       \
-  decltype(field) get_##field() const { return field; }
-
   enum class LayoutDirection : u8 { LEFT_TO_RIGHT, RIGHT_TO_LEFT, TOP_TO_BOTTOM, BOTTOM_TO_TOP };
 
   enum class LayoutAlign : u8 { BEGIN, CENTER, END };
@@ -114,222 +98,16 @@ namespace zincgui {
   class Widget {
       friend Root;
 
-    protected:
-      Root& ui;
-      std::vector<std::unique_ptr<Widget>> children_to_add;
-      std::string name;
-      i32 x = 0;
-      i32 y = 0;
-      bool hover_test_parent = true;
-      i32 width = default_settings::widget_size.x;
-      i32 height = default_settings::widget_size.y;
-
-      i32 min_width = 0;
-      i32 max_width = 0;
-      i32 min_height = 0;
-      i32 max_height = 0;
-
-      Anchor anchor = Anchor::TOP_LEFT;
-      Anchor parent_anchor = Anchor::TOP_LEFT;
-
-      bool dirty = true;
-      bool marked_for_deletion = false;
-      bool is_updated = true;
-      bool is_drawn = true;
-      bool is_self_drawn = true;
-      bool clip = false;
-      bool clip_children = false;
-      bool is_focusable = false;
-      bool ignore_parents_layout = false;
-      bool is_drawn_on_top = false;
-      float weight = default_settings::widget_weight; // FIXME: weight does nothing at the moment
-      bool draw_behind_parent = false;
-      HitTestBehavior hit_test_behavior = HitTestBehavior::PASS_THROUGH;
-
-      bool hovered_ = false;
-      bool visible_ = false;
-      bool updated_ = false;
-      u64 last_update_frame_ = 0;
-      bool deleted_ = false;
-      i32 always_on_top_layer_ = 0;
-      std::optional<rect2i> scissor_;
-      rect2i rect_;
-      rect2i hit_test_rect_;
-      // FIXME add property for hit test rect and allow expanding it (currently we use rect_)
-      vec2i global_position_{};
-
-      Widget* parent = nullptr;
-      std::vector<std::unique_ptr<Widget>> children;
-      bool update_children_first = false;
-
-      Layout layout;
-
-      bool is_layout_dirty() const { return m_layout_dirty; }
-
-    private:
-      bool m_layout_dirty = false;
-      i32 window_width = 0;
-      i32 window_height = 0;
-#ifdef WIDGET_DRAW_DEBUG_RECT
-      bool is_debug_rect = false;
-      Widget* debug_rect{};
-#endif
-
     public:
       Widget(Root& ui_);
       Widget(Root& ui_, i32 width_, i32 height_);
-      virtual ~Widget() {};
+      virtual ~Widget();
 
       virtual void input();
       virtual void update();
       virtual void on_focused() {}
       virtual void on_unfocused() {}
-
-      // Returns widget's scene position relative to some anchor
-      // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
-      [[nodiscard]] ZINCBOX_INLINE vec2i get_position(Anchor relative_to = Anchor::TOP_LEFT) const noexcept {
-
-        static constexpr std::pair<u8, u8> ANCHOR_SCALES[9] = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1},
-                                                               {2, 1}, {0, 2}, {1, 2}, {2, 2}};
-
-        const auto [sx, sy] = ANCHOR_SCALES[static_cast<u8>(relative_to)];
-        return {global_position_.x + ((width * sx) >> 1), global_position_.y + ((height * sy) >> 1)};
-      }
-
-      WIDGET_DEF_GETTER(name);
-      void set_name(std::string name_);
-      void set_marked_for_deletion(bool value);
-      void set_is_updated(bool value);
-      void set_x(i32, bool ignore_constraints = false);
-      void set_y(i32, bool ignore_constraints = false);
-      void set_width(i32, bool ignore_constraints = false);
-      void set_height(i32, bool ignore_constraints = false);
-      void set_anchor(Anchor, bool ignore_constraints = false);
-      void set_parent_anchor(Anchor, bool ignore_constraints = false);
-      void set_min_width(i32);
-      void set_max_width(i32);
-      void set_min_height(i32);
-      void set_max_height(i32);
-      WIDGET_DEF_SETTER_DIRTY(window_width)
-      WIDGET_DEF_SETTER_DIRTY(window_height)
-      WIDGET_DEF_SETTER_DIRTY(is_focusable)
-      WIDGET_DEF_SETTER_DIRTY(hit_test_behavior)
-      WIDGET_DEF_GETTER(hit_test_behavior)
-      void set_update_children_first(bool);
-      void set_is_self_drawn(bool);
-      void set_clip(bool);
-      void set_clip_children(bool);
-
-      void set_fixed_width(i32 value) {
-        set_min_width(value);
-        set_max_width(value);
-      }
-
-      void set_fixed_height(i32 value) {
-        set_min_height(value);
-        set_max_height(value);
-      }
-
-      void set_is_drawn(bool);
-
-      void set_ignore_parents_layout(bool to) {
-        if (ignore_parents_layout == to) { return; }
-        ignore_parents_layout = to;
-        if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
-        mark_dirty();
-      }
-
-      void set_is_drawn_on_top(bool);
-      void set_weight(float);
-      void set_draw_behind_parent(bool);
-
-      WIDGET_DEF_GETTER(marked_for_deletion)
-      WIDGET_DEF_GETTER(is_updated)
-      WIDGET_DEF_GETTER(x)
-      WIDGET_DEF_GETTER(y)
-      bool is_focused() const;
-      bool is_focus_manager() const;
-      WIDGET_DEF_GETTER(is_focusable)
-      i32 get_width() const {
-        i32 lo = min_width > 0 ? min_width : std::numeric_limits<i32>::min();
-        i32 hi = max_width > 0 ? max_width : std::numeric_limits<i32>::max();
-        if (lo > hi) { std::swap(lo, hi); }
-        return std::clamp(width, lo, hi);
-      }
-      i32 get_height() const {
-        i32 lo = min_height > 0 ? min_height : std::numeric_limits<i32>::min();
-        i32 hi = max_height > 0 ? max_height : std::numeric_limits<i32>::max();
-        if (lo > hi) { std::swap(lo, hi); }
-        return std::clamp(height, lo, hi);
-      }
-      vec2i get_size() const { return vec2i(width, height); }
-      vec2i get_min_size() const { return vec2i(min_width, min_height); }
-      vec2i get_max_size() const { return vec2i(max_width, max_height); }
-      void set_fixed_size(vec2i s) {
-        set_fixed_width(s.x);
-        set_fixed_height(s.y);
-      }
-      void set_fixed_size(i32 w, i32 h) {
-        set_fixed_width(w);
-        set_fixed_height(h);
-      }
-      WIDGET_DEF_GETTER(min_width)
-      WIDGET_DEF_GETTER(max_width)
-      WIDGET_DEF_GETTER(min_height)
-      WIDGET_DEF_GETTER(max_height)
-      WIDGET_DEF_GETTER(anchor)
-      WIDGET_DEF_GETTER(parent_anchor)
-      WIDGET_DEF_GETTER(update_children_first)
-      WIDGET_DEF_GETTER(is_drawn)
-      WIDGET_DEF_GETTER(is_self_drawn)
-      WIDGET_DEF_GETTER(clip)
-      WIDGET_DEF_GETTER(clip_children)
-      WIDGET_DEF_GETTER(ignore_parents_layout)
-      WIDGET_DEF_GETTER(is_drawn_on_top)
-      WIDGET_DEF_GETTER(weight)
-      WIDGET_DEF_GETTER(draw_behind_parent)
-      WIDGET_DEF_GETTER(parent)
-      WIDGET_DEF_GETTER(hover_test_parent)
-
-      rect2i get_rect() const; // FIXME: inverted y-axis
-
-      Layout& get_layout() {
-        // FIXME: mark layout as dirty if changed
-        return layout;
-      }
-
-      bool has_layout() const { return layout.enabled; }
-
-      void set_layout(std::string_view def);
-
-      void set_pos(i32 x, i32 y);
-      void set_pos(vec2i);
-
-      void set_size(i32 w, i32 h);
-      void set_size(vec2i);
-
-      void mark_layout_dirty();
-      void mark_dirty();
-
-      auto& get_children() { return children; }
-
-    public:
-      template <class T, class... Args> T& add_child(Args&&... args) {
-        static_assert(std::is_base_of_v<Widget, T>);
-        children_to_add.emplace_back(std::make_unique<T>(ui, std::forward<Args>(args)...));
-        T& widget = static_cast<T&>(*children_to_add.back().get());
-        widget.parent = this;
-        mark_dirty();
-        return widget;
-      }
-
-      bool is_mouse_hovering() const;
-      bool is_mouse_hovering(vec2i) const;
-
-      virtual std::span<const Vertex> get_vertices() {
-        static const std::vector<Vertex> EMPTY = {};
-        return EMPTY;
-      }
+      [[nodiscard]] virtual std::span<const Vertex> vertices();
 
       virtual void event(Input::InputEventMouseButton&) {}
       virtual void event(Input::InputEventMouseMove&) {}
@@ -338,6 +116,471 @@ namespace zincgui {
       virtual void event(Input::InputEventMouseEntered&) {}
       virtual void event(Input::InputEventMouseLeft&) {}
       virtual void event(Input::InputEventCloseWindow&) {}
+
+      template <class T, class... Args> T& add_child(Args&&... args) {
+        static_assert(std::is_base_of_v<Widget, T>);
+        m_children_to_add.emplace_back(std::make_unique<T>(m_ui, std::forward<Args>(args)...));
+        T& widget = static_cast<T&>(*m_children_to_add.back().get());
+        widget.m_parent = this;
+        mark_dirty();
+        return widget;
+      }
+
+      [[nodiscard]] bool is_mouse_hovering() const;
+      [[nodiscard]] bool is_mouse_hovering(vec2i at) const;
+      [[nodiscard]] bool is_focused() const;
+      [[nodiscard]] bool is_focus_manager() const;
+      [[nodiscard]] bool has_layout() const { return m_layout.enabled; }
+
+      void mark_layout_dirty();
+      void mark_dirty();
+
+      [[nodiscard]] Root& ui() noexcept { return m_ui; }
+      [[nodiscard]] const Root& ui() const noexcept { return m_ui; }
+
+      [[nodiscard]] const std::string& name() const noexcept { return m_name; }
+      template <typename Self> Self& name(this Self& self, std::string name_) {
+        if (self.m_name != name_) { self.m_name = std::move(name_); }
+        return self;
+      }
+
+      [[nodiscard]] i32 x() const noexcept { return m_x; }
+      template <typename Self> Self& x(this Self& self, i32 x_, bool ignore_constraints = false) {
+        if (self.m_x == x_) { return self; }
+        if (!ignore_constraints && !self.m_ignore_parents_layout && self.m_parent && self.m_parent->m_layout.enabled) {
+          return self;
+        }
+        self.m_x = x_;
+        self.mark_dirty();
+        return self;
+      }
+
+      [[nodiscard]] i32 y() const noexcept { return m_y; }
+      template <typename Self> Self& y(this Self& self, i32 y_, bool ignore_constraints = false) {
+        if (self.m_y == y_) { return self; }
+        if (!ignore_constraints && !self.m_ignore_parents_layout && self.m_parent && self.m_parent->m_layout.enabled) {
+          return self;
+        }
+        self.m_y = y_;
+        self.mark_dirty();
+        return self;
+      }
+
+      [[nodiscard]] i32 width() const noexcept {
+        i32 lo = self_min_width();
+        i32 hi = self_max_width();
+        if (lo > hi) { std::swap(lo, hi); }
+        return std::clamp(m_width, lo, hi);
+      }
+      template <typename Self> Self& width(this Self& self, i32 width_, bool ignore_constraints = false) {
+        if (self.m_width == width_) { return self; }
+        if (!ignore_constraints) {
+          if (self.m_layout.enabled && self.m_layout.fit_to_contents &&
+              (self.m_layout.direction == LayoutDirection::LEFT_TO_RIGHT ||
+               self.m_layout.direction == LayoutDirection::RIGHT_TO_LEFT)) {
+            return self;
+          }
+          if (!self.m_ignore_parents_layout && self.m_parent && self.m_parent->m_layout.enabled) {
+            if (self.m_parent->m_layout.expand_children &&
+                (self.m_parent->m_layout.direction == LayoutDirection::TOP_TO_BOTTOM ||
+                 self.m_parent->m_layout.direction == LayoutDirection::BOTTOM_TO_TOP)) {
+              return self;
+            }
+            if (self.m_parent->m_layout.fill && self.m_weight > 0.0f &&
+                (self.m_parent->m_layout.direction == LayoutDirection::LEFT_TO_RIGHT ||
+                 self.m_parent->m_layout.direction == LayoutDirection::RIGHT_TO_LEFT)) {
+              return self;
+            }
+          }
+        }
+        self.m_width = width_;
+        self.mark_dirty();
+        if (self.m_layout.enabled && (self.m_layout.expand_children || self.m_layout.fill)) {
+          self.mark_layout_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] i32 height() const noexcept {
+        i32 lo = self_min_height();
+        i32 hi = self_max_height();
+        if (lo > hi) { std::swap(lo, hi); }
+        return std::clamp(m_height, lo, hi);
+      }
+      template <typename Self> Self& height(this Self& self, i32 height_, bool ignore_constraints = false) {
+        if (self.m_height == height_) { return self; }
+        if (!ignore_constraints) {
+          if (self.m_layout.enabled && self.m_layout.fit_to_contents &&
+              (self.m_layout.direction == LayoutDirection::TOP_TO_BOTTOM ||
+               self.m_layout.direction == LayoutDirection::BOTTOM_TO_TOP)) {
+            return self;
+          }
+          if (!self.m_ignore_parents_layout && self.m_parent && self.m_parent->m_layout.enabled) {
+            if (self.m_parent->m_layout.expand_children &&
+                (self.m_parent->m_layout.direction == LayoutDirection::LEFT_TO_RIGHT ||
+                 self.m_parent->m_layout.direction == LayoutDirection::RIGHT_TO_LEFT)) {
+              return self;
+            }
+            if (self.m_parent->m_layout.fill && self.m_weight > 0.0f &&
+                (self.m_parent->m_layout.direction == LayoutDirection::TOP_TO_BOTTOM ||
+                 self.m_parent->m_layout.direction == LayoutDirection::BOTTOM_TO_TOP)) {
+              return self;
+            }
+          }
+        }
+        self.m_height = height_;
+        self.mark_dirty();
+        if (self.m_layout.enabled && (self.m_layout.expand_children || self.m_layout.fill)) {
+          self.mark_layout_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] i32 min_width() const noexcept { return m_min_width; }
+      template <typename Self> Self& min_width(this Self& self, i32 v) {
+        if (self.m_min_width == v) { return self; }
+        self.m_min_width = v;
+        self.mark_dirty();
+        if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        return self;
+      }
+
+      [[nodiscard]] i32 max_width() const noexcept { return m_max_width; }
+      template <typename Self> Self& max_width(this Self& self, i32 v) {
+        if (self.m_max_width == v) { return self; }
+        self.m_max_width = v;
+        self.mark_dirty();
+        if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        return self;
+      }
+
+      [[nodiscard]] i32 min_height() const noexcept { return m_min_height; }
+      template <typename Self> Self& min_height(this Self& self, i32 v) {
+        if (self.m_min_height == v) { return self; }
+        self.m_min_height = v;
+        self.mark_dirty();
+        if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        return self;
+      }
+
+      [[nodiscard]] i32 max_height() const noexcept { return m_max_height; }
+      template <typename Self> Self& max_height(this Self& self, i32 v) {
+        if (self.m_max_height == v) { return self; }
+        self.m_max_height = v;
+        self.mark_dirty();
+        if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        return self;
+      }
+
+      template <typename Self> Self& fixed_width(this Self& self, i32 value) {
+        self.min_width(value).max_width(value);
+        return self;
+      }
+
+      template <typename Self> Self& fixed_height(this Self& self, i32 value) {
+        self.min_height(value).max_height(value);
+        return self;
+      }
+
+      [[nodiscard]] vec2i size() const noexcept { return vec2i(m_width, m_height); }
+      template <typename Self> Self& size(this Self& self, i32 w, i32 h) {
+        self.width(w).height(h);
+        return self;
+      }
+      template <typename Self> Self& size(this Self& self, vec2i s) {
+        self.width(s.x).height(s.y);
+        return self;
+      }
+
+      template <typename Self> Self& fixed_size(this Self& self, i32 w, i32 h) {
+        self.fixed_width(w).fixed_height(h);
+        return self;
+      }
+      template <typename Self> Self& fixed_size(this Self& self, vec2i s) {
+        self.fixed_width(s.x).fixed_height(s.y);
+        return self;
+      }
+
+      [[nodiscard]] vec2i min_size() const noexcept { return vec2i(m_min_width, m_min_height); }
+      [[nodiscard]] vec2i max_size() const noexcept { return vec2i(m_max_width, m_max_height); }
+
+      [[nodiscard]] vec2i pos() const noexcept { return vec2i(m_x, m_y); }
+      template <typename Self> Self& pos(this Self& self, i32 x_, i32 y_) {
+        self.x(x_).y(y_);
+        return self;
+      }
+      template <typename Self> Self& pos(this Self& self, vec2i p) {
+        self.x(p.x).y(p.y);
+        return self;
+      }
+
+      [[nodiscard]] Anchor anchor() const noexcept { return m_anchor; }
+      template <typename Self> Self& anchor(this Self& self, Anchor a, bool ignore_constraints = false) {
+        if (self.m_anchor == a) { return self; }
+        if (!ignore_constraints && !self.m_ignore_parents_layout && self.m_parent && self.m_parent->m_layout.enabled) {
+          return self;
+        }
+        self.m_anchor = a;
+        self.mark_dirty();
+        return self;
+      }
+
+      [[nodiscard]] Anchor parent_anchor() const noexcept { return m_parent_anchor; }
+      template <typename Self> Self& parent_anchor(this Self& self, Anchor a, bool ignore_constraints = false) {
+        if (self.m_parent_anchor == a) { return self; }
+        if (!ignore_constraints && !self.m_ignore_parents_layout && self.m_parent && self.m_parent->m_layout.enabled) {
+          return self;
+        }
+        self.m_parent_anchor = a;
+        self.mark_dirty();
+        return self;
+      }
+
+      [[nodiscard]] ZINCBOX_INLINE vec2i position(Anchor relative_to = Anchor::TOP_LEFT) const noexcept {
+        static constexpr std::pair<u8, u8> ANCHOR_SCALES[9] = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1},
+                                                               {2, 1}, {0, 2}, {1, 2}, {2, 2}};
+        const auto [sx, sy] = ANCHOR_SCALES[static_cast<u8>(relative_to)];
+        return {m_global_position.x + ((m_width * sx) >> 1), m_global_position.y + ((m_height * sy) >> 1)};
+      }
+
+      [[nodiscard]] rect2i rect() const noexcept { return m_rect; }
+
+      [[nodiscard]] bool dirty() const noexcept { return m_dirty; }
+      template <typename Self> Self& dirty(this Self& self, bool d) {
+        if (self.m_dirty != d) { self.m_dirty = d; }
+        return self;
+      }
+
+      [[nodiscard]] bool marked_for_deletion() const noexcept { return m_marked_for_deletion; }
+      [[nodiscard]] bool is_marked_for_deletion() const noexcept { return m_marked_for_deletion; }
+      template <typename Self> Self& marked_for_deletion(this Self& self, bool value) {
+        if (self.m_marked_for_deletion != value) {
+          self.m_marked_for_deletion = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+      template <typename Self> Self& is_marked_for_deletion(this Self& self, bool value) {
+        return self.marked_for_deletion(value);
+      }
+
+      [[nodiscard]] bool is_updated() const noexcept { return m_is_updated; }
+      template <typename Self> Self& is_updated(this Self& self, bool value) {
+        if (self.m_is_updated != value) {
+          self.m_is_updated = value;
+          self.mark_dirty();
+          if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+          if (self.m_layout.enabled) { self.mark_layout_dirty(); }
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool is_drawn() const noexcept { return m_is_drawn; }
+      template <typename Self> Self& is_drawn(this Self& self, bool to) {
+        if (self.m_is_drawn == to) { return self; }
+        self.m_is_drawn = to;
+        self.mark_dirty();
+        if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        return self;
+      }
+
+      [[nodiscard]] bool is_self_drawn() const noexcept { return m_is_self_drawn; }
+      template <typename Self> Self& is_self_drawn(this Self& self, bool value) {
+        if (self.m_is_self_drawn != value) {
+          self.m_is_self_drawn = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool clip() const noexcept { return m_clip; }
+      template <typename Self> Self& clip(this Self& self, bool value) {
+        if (self.m_clip != value) {
+          self.m_clip = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool clip_children() const noexcept { return m_clip_children; }
+      template <typename Self> Self& clip_children(this Self& self, bool value) {
+        if (self.m_clip_children != value) {
+          self.m_clip_children = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool is_focusable() const noexcept { return m_is_focusable; }
+      template <typename Self> Self& is_focusable(this Self& self, bool value) {
+        if (self.m_is_focusable != value) {
+          self.m_is_focusable = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool ignore_parents_layout() const noexcept { return m_ignore_parents_layout; }
+      template <typename Self> Self& ignore_parents_layout(this Self& self, bool to) {
+        if (self.m_ignore_parents_layout == to) { return self; }
+        self.m_ignore_parents_layout = to;
+        if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        self.mark_dirty();
+        return self;
+      }
+
+      [[nodiscard]] bool is_drawn_on_top() const noexcept { return m_is_drawn_on_top; }
+      template <typename Self> Self& is_drawn_on_top(this Self& self, bool value) {
+        if (self.m_is_drawn_on_top != value) {
+          self.m_is_drawn_on_top = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] float weight() const noexcept { return m_weight; }
+      template <typename Self> Self& weight(this Self& self, float value) {
+        if (self.m_weight != value) {
+          self.m_weight = value;
+          self.mark_dirty();
+          if (self.m_parent && self.m_parent->m_layout.enabled) { self.m_parent->mark_layout_dirty(); }
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool draw_behind_parent() const noexcept { return m_draw_behind_parent; }
+      template <typename Self> Self& draw_behind_parent(this Self& self, bool value) {
+        if (self.m_draw_behind_parent != value) {
+          self.m_draw_behind_parent = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] HitTestBehavior hit_test_behavior() const noexcept { return m_hit_test_behavior; }
+      template <typename Self> Self& hit_test_behavior(this Self& self, HitTestBehavior value) {
+        if (self.m_hit_test_behavior != value) {
+          self.m_hit_test_behavior = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] bool hover_test_parent() const noexcept { return m_hover_test_parent; }
+      template <typename Self> Self& hover_test_parent(this Self& self, bool to) {
+        if (self.m_hover_test_parent != to) { self.m_hover_test_parent = to; }
+        return self;
+      }
+
+      [[nodiscard]] bool update_children_first() const noexcept { return m_update_children_first; }
+      template <typename Self> Self& update_children_first(this Self& self, bool value) {
+        if (self.m_update_children_first != value) {
+          self.m_update_children_first = value;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] i32 window_width() const noexcept { return m_window_width; }
+      template <typename Self> Self& window_width(this Self& self, i32 w) {
+        if (self.m_window_width != w) {
+          self.m_window_width = w;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] i32 window_height() const noexcept { return m_window_height; }
+      template <typename Self> Self& window_height(this Self& self, i32 h) {
+        if (self.m_window_height != h) {
+          self.m_window_height = h;
+          self.mark_dirty();
+        }
+        return self;
+      }
+
+      [[nodiscard]] Widget* parent() noexcept { return m_parent; }
+      [[nodiscard]] const Widget* parent() const noexcept { return m_parent; }
+      template <typename Self> Self& parent(this Self& self, Widget* p) noexcept {
+        self.m_parent = p;
+        return self;
+      }
+
+      [[nodiscard]] std::vector<std::unique_ptr<Widget>>& children() noexcept { return m_children; }
+      [[nodiscard]] const std::vector<std::unique_ptr<Widget>>& children() const noexcept { return m_children; }
+
+      [[nodiscard]] Layout& layout() noexcept { return m_layout; }
+      [[nodiscard]] const Layout& layout() const noexcept { return m_layout; }
+      template <typename Self> Self& layout(this Self& self, std::string_view def) {
+        self.set_layout_impl(def);
+        return self;
+      }
+      [[nodiscard]] bool is_layout_dirty() const noexcept { return m_layout_dirty; }
+
+    private:
+      [[nodiscard]] i32 self_min_width() const noexcept {
+        return m_min_width > 0 ? m_min_width : std::numeric_limits<i32>::min();
+      }
+      [[nodiscard]] i32 self_max_width() const noexcept {
+        return m_max_width > 0 ? m_max_width : std::numeric_limits<i32>::max();
+      }
+      [[nodiscard]] i32 self_min_height() const noexcept {
+        return m_min_height > 0 ? m_min_height : std::numeric_limits<i32>::min();
+      }
+      [[nodiscard]] i32 self_max_height() const noexcept {
+        return m_max_height > 0 ? m_max_height : std::numeric_limits<i32>::max();
+      }
+      void set_layout_impl(std::string_view def);
+
+    private:
+      Root& m_ui;
+      std::vector<std::unique_ptr<Widget>> m_children_to_add;
+      std::string m_name;
+      i32 m_x = 0;
+      i32 m_y = 0;
+      bool m_hover_test_parent = true;
+      i32 m_width = default_settings::widget_size.x;
+      i32 m_height = default_settings::widget_size.y;
+      i32 m_min_width = 0;
+      i32 m_max_width = 0;
+      i32 m_min_height = 0;
+      i32 m_max_height = 0;
+      Anchor m_anchor = Anchor::TOP_LEFT;
+      Anchor m_parent_anchor = Anchor::TOP_LEFT;
+      bool m_dirty = true;
+      bool m_marked_for_deletion = false;
+      bool m_is_updated = true;
+      bool m_is_drawn = true;
+      bool m_is_self_drawn = true;
+      bool m_clip = false;
+      bool m_clip_children = false;
+      bool m_is_focusable = false;
+      bool m_ignore_parents_layout = false;
+      bool m_is_drawn_on_top = false;
+      float m_weight = default_settings::widget_weight;
+      bool m_draw_behind_parent = false;
+      HitTestBehavior m_hit_test_behavior = HitTestBehavior::PASS_THROUGH;
+      bool m_hovered = false;
+      bool m_visible = false;
+      bool m_updated = false;
+      u64 m_last_update_frame = 0;
+      bool m_deleted = false;
+      i32 m_always_on_top_layer = 0;
+      std::optional<rect2i> m_scissor;
+      rect2i m_rect;
+      rect2i m_hit_test_rect;
+      vec2i m_global_position{};
+      Widget* m_parent = nullptr;
+      std::vector<std::unique_ptr<Widget>> m_children;
+      bool m_update_children_first = false;
+      Layout m_layout;
+      bool m_layout_dirty = false;
+      i32 m_window_width = 0;
+      i32 m_window_height = 0;
+#ifdef WIDGET_DRAW_DEBUG_RECT
+      bool m_is_debug_rect = false;
+      Widget* m_debug_rect{};
+#endif
   };
 
 } // namespace zincgui

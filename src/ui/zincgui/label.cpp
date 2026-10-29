@@ -1,270 +1,273 @@
 #include "ui/zincgui/label.hpp"
 #include <algorithm>
 #include <cmath>
-#include <span>
+#include <string>
 #include <string_view>
-#include <glad/glad.h>
-#include <stddef.h>
+#include <vector>
+#include <harfbuzz/hb.h>
 #include "common/types.hpp"
-#include "ui/theme.hpp" // FIXME zincgui should not depend on ui/theme.hpp
+#include "core/settings.hpp"
+#include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
+#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/vertex.hpp"
-#include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
 namespace {
+  using namespace zincgui;
 
   struct TextStyle {
+      vec3f color{1.0f};
       bool bold = false;
       bool italic = false;
       bool underline = false;
       bool strikethrough = false;
-      vec3f color{1.0f, 1.0f, 1.0f};
-
-      bool operator==(const TextStyle&) const = default;
   };
 
   struct StyleRun {
-      u32 byte_offset = 0;
-      u32 byte_length = 0;
+      size_t byte_offset = 0;
+      size_t byte_length = 0;
       TextStyle style{};
   };
 
   struct ShapedGlyph {
       u32 glyph_index = 0;
-      const zincgui::FontGlyph* cached_glyph = nullptr;
       float x_advance = 0.0f;
       float y_advance = 0.0f;
       float x_offset = 0.0f;
       float y_offset = 0.0f;
       bool is_space = false;
       TextStyle style{};
+      const FontGlyph* cached_glyph = nullptr;
   };
 
   struct ShapedLine {
       std::vector<ShapedGlyph> glyphs;
       float width = 0.0f;
       i32 space_count = 0;
-      bool is_last_in_paragraph = true;
+      bool is_last_in_paragraph = false;
   };
 
-  bool parse_hex_color(std::string_view hex, vec3f& out_color) {
-    if (hex.starts_with('#')) { hex.remove_prefix(1); }
-    if (hex.size() != 6) { return false; }
-    u32 val = 0;
-    for (char c : hex) {
-      val <<= 4;
-      if (c >= '0' && c <= '9') {
-        val |= static_cast<u32>(c - '0');
-      } else if (c >= 'a' && c <= 'f') {
-        val |= static_cast<u32>(c - 'a' + 10);
-      } else if (c >= 'A' && c <= 'F') {
-        val |= static_cast<u32>(c - 'A' + 10);
-      } else {
-        return false;
+  std::optional<vec3f> parse_hex_color(std::string_view hex) {
+    if (hex.size() == 7 && hex[0] == '#') {
+      auto hex_val = [](char c) -> i32 {
+        if (c >= '0' && c <= '9') { return c - '0'; }
+        if (c >= 'a' && c <= 'f') { return c - 'a' + 10; }
+        if (c >= 'A' && c <= 'F') { return c - 'A' + 10; }
+        return -1;
+      };
+      i32 r1 = hex_val(hex[1]), r2 = hex_val(hex[2]);
+      i32 g1 = hex_val(hex[3]), g2 = hex_val(hex[4]);
+      i32 b1 = hex_val(hex[5]), b2 = hex_val(hex[6]);
+      if (r1 >= 0 && r2 >= 0 && g1 >= 0 && g2 >= 0 && b1 >= 0 && b2 >= 0) {
+        return vec3f{static_cast<float>((r1 << 4) | r2) / 255.0f, static_cast<float>((g1 << 4) | g2) / 255.0f,
+                     static_cast<float>((b1 << 4) | b2) / 255.0f};
       }
     }
-    out_color.r = static_cast<float>((val >> 16) & 0xFF) / 255.0f;
-    out_color.g = static_cast<float>((val >> 8) & 0xFF) / 255.0f;
-    out_color.b = static_cast<float>(val & 0xFF) / 255.0f;
-    return true;
+    return std::nullopt;
   }
 
-  std::string_view parse_paragraph_runs(std::string_view raw_paragraph, bool parse_tags, const vec3f& base_color,
-                                        i32& bold_depth, i32& italic_depth, i32& underline_depth, i32& strike_depth,
-                                        std::vector<vec3f>& color_stack, std::string& clean_text,
-                                        std::vector<StyleRun>& runs) {
+  std::string_view parse_paragraph_runs(std::string_view raw, bool parse_tags, const vec3f& base_color,
+                                       i32& bold_depth, i32& italic_depth, i32& underline_depth, i32& strike_depth,
+                                       std::vector<vec3f>& color_stack, std::string& clean_scratch,
+                                       std::vector<StyleRun>& runs) {
+    clean_scratch.clear();
     runs.clear();
 
-    auto current_style = [&]() -> TextStyle {
-      return TextStyle{
+    if (!parse_tags) {
+      TextStyle current_style{
+        .color = color_stack.empty() ? base_color : color_stack.back(),
         .bold = bold_depth > 0,
         .italic = italic_depth > 0,
         .underline = underline_depth > 0,
         .strikethrough = strike_depth > 0,
+      };
+      runs.push_back(StyleRun{0, raw.size(), current_style});
+      return raw;
+    }
+
+    clean_scratch.reserve(raw.size());
+    size_t i = 0;
+    size_t run_start_clean = 0;
+
+    auto current_style = [&]() -> TextStyle {
+      return TextStyle{
         .color = color_stack.empty() ? base_color : color_stack.back(),
+        .bold = bold_depth > 0,
+        .italic = italic_depth > 0,
+        .underline = underline_depth > 0,
+        .strikethrough = strike_depth > 0,
       };
     };
 
-    if (!parse_tags || raw_paragraph.find('<') == std::string_view::npos) {
-      if (!raw_paragraph.empty()) {
+    auto flush_run = [&]() {
+      if (clean_scratch.size() > run_start_clean) {
         runs.push_back(StyleRun{
-          .byte_offset = 0,
-          .byte_length = static_cast<u32>(raw_paragraph.size()),
+          .byte_offset = run_start_clean,
+          .byte_length = clean_scratch.size() - run_start_clean,
           .style = current_style(),
         });
+        run_start_clean = clean_scratch.size();
       }
-      return raw_paragraph;
-    }
-
-    clean_text.clear();
-    clean_text.reserve(raw_paragraph.size());
-
-    TextStyle active_style = current_style();
-    u32 run_start = 0;
-
-    auto flush_run = [&]() {
-      u32 cur_len = static_cast<u32>(clean_text.size());
-      if (cur_len > run_start) {
-        runs.push_back(StyleRun{
-          .byte_offset = run_start,
-          .byte_length = cur_len - run_start,
-          .style = active_style,
-        });
-        run_start = cur_len;
-      }
-      active_style = current_style();
     };
 
-    size_t i = 0;
-    while (i < raw_paragraph.size()) {
-      if (raw_paragraph[i] == '<') {
-        size_t close_pos = raw_paragraph.find('>', i + 1);
-        if (close_pos != std::string_view::npos && close_pos - i <= 16) {
-          std::string_view tag = raw_paragraph.substr(i + 1, close_pos - i - 1);
-          bool matched = true;
-
-          if (tag == "b" || tag == "B") {
-            flush_run();
-            bold_depth += 1;
-            active_style = current_style();
-          } else if (tag == "/b" || tag == "/B") {
-            flush_run();
-            bold_depth = std::max(0, bold_depth - 1);
-            active_style = current_style();
-          } else if (tag == "i" || tag == "I") {
-            flush_run();
-            italic_depth += 1;
-            active_style = current_style();
-          } else if (tag == "/i" || tag == "/I") {
-            flush_run();
-            italic_depth = std::max(0, italic_depth - 1);
-            active_style = current_style();
-          } else if (tag == "u" || tag == "U") {
-            flush_run();
-            underline_depth += 1;
-            active_style = current_style();
-          } else if (tag == "/u" || tag == "/U") {
-            flush_run();
-            underline_depth = std::max(0, underline_depth - 1);
-            active_style = current_style();
-          } else if (tag == "s" || tag == "S") {
-            flush_run();
-            strike_depth += 1;
-            active_style = current_style();
-          } else if (tag == "/s" || tag == "/S") {
-            flush_run();
-            strike_depth = std::max(0, strike_depth - 1);
-            active_style = current_style();
-          } else if (tag == "/c" || tag == "/C" || tag == "/color" || tag == "/COLOR") {
-            flush_run();
-            if (!color_stack.empty()) { color_stack.pop_back(); }
-            active_style = current_style();
-          } else if (tag.starts_with("c=") || tag.starts_with("C=")) {
-            vec3f parsed_col{};
-            if (parse_hex_color(tag.substr(2), parsed_col)) {
-              flush_run();
-              color_stack.push_back(parsed_col);
-              active_style = current_style();
-            } else {
-              matched = false;
-            }
-          } else if (tag.starts_with("color=") || tag.starts_with("COLOR=")) {
-            vec3f parsed_col{};
-            if (parse_hex_color(tag.substr(6), parsed_col)) {
-              flush_run();
-              color_stack.push_back(parsed_col);
-              active_style = current_style();
-            } else {
-              matched = false;
-            }
-          } else {
-            matched = false;
+    while (i < raw.size()) {
+      if (raw[i] == '<') {
+        size_t close = raw.find('>', i);
+        if (close != std::string_view::npos) {
+          std::string_view tag = raw.substr(i + 1, close - i - 1);
+          bool is_open = true;
+          if (!tag.empty() && tag[0] == '/') {
+            is_open = false;
+            tag = tag.substr(1);
           }
 
-          if (matched) {
-            i = close_pos + 1;
+          bool recognized = false;
+          if (tag == "b") {
+            flush_run();
+            bold_depth += is_open ? 1 : -1;
+            if (bold_depth < 0) { bold_depth = 0; }
+            recognized = true;
+          } else if (tag == "i") {
+            flush_run();
+            italic_depth += is_open ? 1 : -1;
+            if (italic_depth < 0) { italic_depth = 0; }
+            recognized = true;
+          } else if (tag == "u") {
+            flush_run();
+            underline_depth += is_open ? 1 : -1;
+            if (underline_depth < 0) { underline_depth = 0; }
+            recognized = true;
+          } else if (tag == "s") {
+            flush_run();
+            strike_depth += is_open ? 1 : -1;
+            if (strike_depth < 0) { strike_depth = 0; }
+            recognized = true;
+          } else if (is_open && tag.starts_with("color=") && tag.size() > 6) {
+            auto hex = tag.substr(6);
+            if (hex.size() >= 2 && hex.front() == '"' && hex.back() == '"') { hex = hex.substr(1, hex.size() - 2); }
+            auto c = parse_hex_color(hex);
+            if (c) {
+              flush_run();
+              color_stack.push_back(*c);
+              recognized = true;
+            }
+          } else if (!is_open && tag == "color") {
+            if (color_stack.size() > 1) {
+              flush_run();
+              color_stack.pop_back();
+            }
+            recognized = true;
+          }
+
+          if (recognized) {
+            i = close + 1;
             continue;
           }
         }
       }
 
-      clean_text.push_back(raw_paragraph[i]);
+      clean_scratch.push_back(raw[i]);
       i += 1;
     }
 
     flush_run();
-    return clean_text;
+    if (runs.empty()) { runs.push_back(StyleRun{0, 0, current_style()}); }
+    return clean_scratch;
   }
 
 } // namespace
 
 zincgui::Label::Label(Root& ui_) : Widget::Widget(ui_) {
-  set_text_color(theme::config().text_color);
-  clip = true;
+  text_color(theme::config().text_color);
+  clip(true);
 }
 
 zincgui::Label::Label(Root& ui_, std::string_view text_) : Widget::Widget(ui_) {
-  set_text_color(theme::config().text_color);
-  set_text(text_);
+  text_color(theme::config().text_color);
+  text(text_);
   update_text();
-  clip = true;
+  clip(true);
 }
 
-zincgui::Label::~Label() {}
-
-void zincgui::Label::set_font(size_t index) {
-  if (font_index == index) { return; }
-  font_index = index;
-  shape_dirty = true;
-  last_atlas_version = -1;
-  mark_dirty();
-}
-
-void zincgui::Label::set_font(std::string_view name) {
-  auto id_opt = ui.find_font_id(name);
-  if (id_opt) { set_font(*id_opt); }
-}
-
-i32 zincgui::Label::get_font_size() const {
-  if (font_size > 0) { return font_size; }
-  if (zincbox::font_size() > 0) { return zincbox::font_size(); }
-  return ui.get_default_font_size();
-}
-
-void zincgui::Label::set_resize_to_text_extents(bool to) {
-  if (to != resize_to_text_extents) {
-    resize_to_text_extents = to;
-    shape_dirty = true;
-    mark_dirty();
-  }
-  if (resize_to_text_extents && (!parent || !parent->has_layout())) {
-    if (shape_dirty) { update_text(); }
-    set_width(static_cast<i32>(text_extents.x));
-    set_height(static_cast<i32>(text_extents.y));
-    set_min_width(static_cast<i32>(text_extents.x));
-    set_min_height(static_cast<i32>(text_extents.y));
-  }
-}
+zincgui::Label::~Label() = default;
 
 void zincgui::Label::update() { Widget::update(); }
 
-void zincgui::Label::update_text() {
-  shape_dirty = false;
-  vertices_dirty = true;
-  local_quads.clear();
-  text_extents = {};
+std::span<const zincgui::Vertex> zincgui::Label::vertices() {
+  if (ui().get_font_count() == 0) {
+    m_vertices.clear();
+    return m_vertices;
+  }
 
-  if (ui.get_font_count() == 0 || text.empty()) {
-    last_layout_size = vec2i{width, height};
+  size_t active_font_idx = m_font_index < ui().get_font_count() ? m_font_index : 0;
+  const FontFace& font = ui().get_font(active_font_idx);
+
+  vec2i cur_size{width(), height()};
+  if (m_shape_dirty || cur_size != m_last_layout_size || font.get_atlas_version() != m_last_atlas_version) {
+    update_text();
+  }
+
+  vec2i cur_screen_pos = position(Anchor::TOP_LEFT);
+  vec2i cur_win_size = ui().get_window_size();
+  if (m_vertices_dirty || cur_screen_pos != m_last_screen_pos || cur_win_size != m_last_window_size) {
+    rebuild_screen_vertices();
+  }
+
+  return m_vertices;
+}
+
+void zincgui::Label::font(size_t index) {
+  if (m_font_index == index) { return; }
+  m_font_index = index;
+  m_shape_dirty = true;
+  m_last_atlas_version = static_cast<u64>(-1);
+  mark_dirty();
+}
+
+void zincgui::Label::font(std::string_view name) {
+  auto id_opt = ui().find_font_id(name);
+  if (id_opt) { font(*id_opt); }
+}
+
+i32 zincgui::Label::font_size() const {
+  if (m_font_size > 0) { return m_font_size; }
+  if (zincbox::font_size() > 0) { return zincbox::font_size(); }
+  return ui().get_default_font_size();
+}
+
+zincgui::Label& zincgui::Label::resize_to_text_extents(bool to) {
+  if (to != m_resize_to_text_extents) {
+    m_resize_to_text_extents = to;
+    m_shape_dirty = true;
+    mark_dirty();
+  }
+  if (m_resize_to_text_extents && (!parent() || !parent()->has_layout())) {
+    if (m_shape_dirty) { update_text(); }
+    width(static_cast<i32>(m_text_extents.x))
+      .height(static_cast<i32>(m_text_extents.y))
+      .min_width(static_cast<i32>(m_text_extents.x))
+      .min_height(static_cast<i32>(m_text_extents.y));
+  }
+  return *this;
+}
+
+void zincgui::Label::update_text() {
+  m_shape_dirty = false;
+  m_vertices_dirty = true;
+  m_local_quads.clear();
+  m_text_extents = {};
+
+  if (ui().get_font_count() == 0 || m_text.empty()) {
+    m_last_layout_size = vec2i{width(), height()};
     return;
   }
 
-  size_t active_font_idx = font_index < ui.get_font_count() ? font_index : 0;
-  const FontFace& font = ui.get_font(active_font_idx);
-  i32 px_size = get_font_size();
+  size_t active_font_idx = m_font_index < ui().get_font_count() ? m_font_index : 0;
+  const FontFace& font = ui().get_font(active_font_idx);
+  i32 px_size = font_size();
   const FontSizeMetrics& metrics = font.get_metrics(px_size);
   hb_buffer_t* hb_buf = font.acquire_hb_buffer();
 
@@ -274,20 +277,20 @@ void zincgui::Label::update_text() {
   i32 underline_depth = 0;
   i32 strike_depth = 0;
   std::vector<vec3f> color_stack;
-  color_stack.push_back(text_color);
+  color_stack.push_back(m_text_color);
 
   std::string clean_paragraph_scratch;
   std::vector<StyleRun> paragraph_runs;
 
   size_t line_start = 0;
-  while (line_start <= text.size()) {
-    size_t next_nl = text.find('\n', line_start);
+  while (line_start <= m_text.size()) {
+    size_t next_nl = m_text.find('\n', line_start);
     std::string_view raw_para = (next_nl == std::string::npos)
-                                  ? std::string_view(text).substr(line_start)
-                                  : std::string_view(text).substr(line_start, next_nl - line_start);
+                                  ? std::string_view(m_text).substr(line_start)
+                                  : std::string_view(m_text).substr(line_start, next_nl - line_start);
 
     std::string_view para_view =
-      parse_paragraph_runs(raw_para, parse_tags, text_color, bold_depth, italic_depth, underline_depth, strike_depth,
+      parse_paragraph_runs(raw_para, m_parse_tags, m_text_color, bold_depth, italic_depth, underline_depth, strike_depth,
                            color_stack, clean_paragraph_scratch, paragraph_runs);
 
     std::vector<ShapedGlyph> para_glyphs;
@@ -320,8 +323,8 @@ void zincgui::Label::update_text() {
       }
     }
 
-    if (word_wrap && width > 0 && !para_glyphs.empty()) {
-      float max_w = static_cast<float>(width);
+    if (m_word_wrap && width() > 0 && !para_glyphs.empty()) {
+      float max_w = static_cast<float>(width());
       size_t idx = 0;
       while (idx < para_glyphs.size()) {
         ShapedLine current_line{};
@@ -380,18 +383,18 @@ void zincgui::Label::update_text() {
     line_start = next_nl + 1;
   }
 
-  if (ellipsis && !word_wrap && width > 0) {
+  if (m_ellipsis && !m_word_wrap && width() > 0) {
     u32 dot_glyph = font.get_codepoint_glyph_index('.');
     const FontGlyph* dot_fg = font.get_glyph(dot_glyph, px_size, false, false);
     float dot_adv = dot_fg ? static_cast<float>(dot_fg->size.x + 1) : 4.0f;
     float ellipsis_w = dot_adv * 3.0f;
-    float max_w = static_cast<float>(width);
+    float max_w = static_cast<float>(width());
 
     for (auto& line : lines) {
       if (line.width > max_w && max_w > ellipsis_w) {
         float accum = 0.0f;
         size_t keep = 0;
-        TextStyle last_style{.color = text_color};
+        TextStyle last_style{.color = m_text_color};
         while (keep < line.glyphs.size() && accum + line.glyphs[keep].x_advance + ellipsis_w <= max_w) {
           accum += line.glyphs[keep].x_advance;
           last_style = line.glyphs[keep].style;
@@ -412,22 +415,22 @@ void zincgui::Label::update_text() {
   }
 
   for (const auto& line : lines) {
-    text_extents.x = std::max(text_extents.x, std::ceil(line.width));
+    m_text_extents.x = std::max(m_text_extents.x, std::ceil(line.width));
   }
   i32 lines_count = std::max<i32>(1, static_cast<i32>(lines.size()));
-  text_extents.y = std::ceil((metrics.line_height * static_cast<float>(lines_count)) +
-                             (line_spacing * static_cast<float>(lines_count - 1)));
+  m_text_extents.y = std::ceil((metrics.line_height * static_cast<float>(lines_count)) +
+                             (m_line_spacing * static_cast<float>(lines_count - 1)));
 
-  if (resize_to_text_extents && (!parent || !parent->has_layout())) {
-    set_width(static_cast<i32>(text_extents.x));
-    set_height(static_cast<i32>(text_extents.y));
-    set_min_width(static_cast<i32>(text_extents.x));
-    set_min_height(static_cast<i32>(text_extents.y));
+  if (m_resize_to_text_extents && (!parent() || !parent()->has_layout())) {
+    width(static_cast<i32>(m_text_extents.x))
+      .height(static_cast<i32>(m_text_extents.y))
+      .min_width(static_cast<i32>(m_text_extents.x))
+      .min_height(static_cast<i32>(m_text_extents.y));
   }
 
-  vec2f anchor_uv = anchor_to_uv(label_anchor);
-  TextAlign effective_align = text_alignment;
-  if (!custom_alignment_set) {
+  vec2f anchor_uv = anchor_to_uv(m_label_anchor);
+  TextAlign effective_align = m_text_alignment;
+  if (!m_custom_alignment_set) {
     if (anchor_uv.x < 0.25f) {
       effective_align = TextAlign::LEFT;
     } else if (anchor_uv.x > 0.75f) {
@@ -437,8 +440,8 @@ void zincgui::Label::update_text() {
     }
   }
 
-  float block_offset_y = std::round(anchor_uv.y * (static_cast<float>(height) - text_extents.y));
-  float target_box_width = static_cast<float>(width) > 0.0f ? static_cast<float>(width) : text_extents.x;
+  float block_offset_y = std::round(anchor_uv.y * (static_cast<float>(height()) - m_text_extents.y));
+  float target_box_width = static_cast<float>(width()) > 0.0f ? static_cast<float>(width()) : m_text_extents.x;
 
   u64 ver_before = font.get_atlas_version();
   size_t total_glyph_estimate = 0;
@@ -449,11 +452,11 @@ void zincgui::Label::update_text() {
     }
   }
 
-  last_atlas_version = font.get_atlas_version();
-  bool atlas_regrew = (last_atlas_version != ver_before);
-  last_layout_size = vec2i{width, height};
+  m_last_atlas_version = font.get_atlas_version();
+  bool atlas_regrew = (m_last_atlas_version != ver_before);
+  m_last_layout_size = vec2i{width(), height()};
   vec2f white_uv = font.get_white_uv();
-  local_quads.reserve(total_glyph_estimate);
+  m_local_quads.reserve(total_glyph_estimate);
 
   float pen_y = block_offset_y + metrics.ascender;
 
@@ -494,7 +497,7 @@ void zincgui::Label::update_text() {
         float gx = std::round(pen_x + sg.x_offset + static_cast<float>(fg->bearing.x));
         float gy = std::round(pen_y - sg.y_offset - static_cast<float>(fg->bearing.y));
 
-        local_quads.push_back(LocalQuad{
+        m_local_quads.push_back(LocalQuad{
           .pos_min = {gx, gy},
           .pos_max = {gx + static_cast<float>(fg->size.x), gy + static_cast<float>(fg->size.y)},
           .uv_min = fg->uv_start,
@@ -506,7 +509,7 @@ void zincgui::Label::update_text() {
       if (sg.style.underline && adv_x > 0.0f) {
         float uy = std::round(pen_y - metrics.underline_position);
         float uh = std::max(1.0f, std::round(metrics.underline_thickness));
-        local_quads.push_back(LocalQuad{
+        m_local_quads.push_back(LocalQuad{
           .pos_min = {std::floor(pen_x), uy},
           .pos_max = {std::ceil(pen_x + adv_x), uy + uh},
           .uv_min = white_uv,
@@ -518,7 +521,7 @@ void zincgui::Label::update_text() {
       if (sg.style.strikethrough && adv_x > 0.0f) {
         float sy = std::round(pen_y - metrics.strikeout_position);
         float sh = std::max(1.0f, std::round(metrics.strikeout_thickness));
-        local_quads.push_back(LocalQuad{
+        m_local_quads.push_back(LocalQuad{
           .pos_min = {std::floor(pen_x), sy},
           .pos_max = {std::ceil(pen_x + adv_x), sy + sh},
           .uv_min = white_uv,
@@ -531,77 +534,56 @@ void zincgui::Label::update_text() {
       pen_y -= sg.y_advance;
     }
 
-    pen_y += metrics.line_height + line_spacing;
+    pen_y += metrics.line_height + m_line_spacing;
   }
-}
-
-std::span<const zincgui::Vertex> zincgui::Label::get_vertices() {
-  if (ui.get_font_count() == 0) {
-    vertices.clear();
-    return vertices;
-  }
-
-  size_t active_font_idx = font_index < ui.get_font_count() ? font_index : 0;
-  const FontFace& font = ui.get_font(active_font_idx);
-
-  vec2i cur_size{width, height};
-  if (shape_dirty || cur_size != last_layout_size || font.get_atlas_version() != last_atlas_version) { update_text(); }
-
-  vec2i cur_screen_pos = get_position(Anchor::TOP_LEFT);
-  vec2i cur_win_size = ui.get_window_size();
-  if (vertices_dirty || cur_screen_pos != last_screen_pos || cur_win_size != last_window_size) {
-    rebuild_screen_vertices();
-  }
-
-  return vertices;
 }
 
 void zincgui::Label::rebuild_screen_vertices() {
-  vertices_dirty = false;
-  last_screen_pos = get_position(Anchor::TOP_LEFT);
-  last_window_size = ui.get_window_size();
+  m_vertices_dirty = false;
+  m_last_screen_pos = position(Anchor::TOP_LEFT);
+  m_last_window_size = ui().get_window_size();
 
-  vertices.clear();
-  if (local_quads.empty() || last_window_size.x <= 0 || last_window_size.y <= 0) { return; }
+  m_vertices.clear();
+  if (m_local_quads.empty() || m_last_window_size.x <= 0 || m_last_window_size.y <= 0) { return; }
 
-  vertices.reserve(local_quads.size() * 6);
-  vec2f inv_win{2.0f / static_cast<float>(last_window_size.x), 2.0f / static_cast<float>(last_window_size.y)};
-  vec2f origin{static_cast<float>(last_screen_pos.x), static_cast<float>(last_screen_pos.y)};
+  m_vertices.reserve(m_local_quads.size() * 6);
+  vec2f inv_win{2.0f / static_cast<float>(m_last_window_size.x), 2.0f / static_cast<float>(m_last_window_size.y)};
+  vec2f origin{static_cast<float>(m_last_screen_pos.x), static_cast<float>(m_last_screen_pos.y)};
 
-  for (const auto& q : local_quads) {
+  for (const auto& q : m_local_quads) {
     vec2f start = (origin + q.pos_min) * inv_win - vec2f{1.0f, 1.0f};
     vec2f end = (origin + q.pos_max) * inv_win - vec2f{1.0f, 1.0f};
 
-    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+    m_vertices.emplace_back(Vertex{.type = VertexType::LABEL,
                                  .pos = {start.x, end.y},
                                  .uv = {q.uv_min.x, q.uv_max.y},
-                                 .atlas_i = (u32)font_index,
+                                 .atlas_i = (u32)m_font_index,
                                  .color = q.color});
-    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+    m_vertices.emplace_back(Vertex{.type = VertexType::LABEL,
                                  .pos = {end.x, end.y},
                                  .uv = {q.uv_max.x, q.uv_max.y},
-                                 .atlas_i = (u32)font_index,
+                                 .atlas_i = (u32)m_font_index,
                                  .color = q.color});
-    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+    m_vertices.emplace_back(Vertex{.type = VertexType::LABEL,
                                  .pos = {start.x, start.y},
                                  .uv = {q.uv_min.x, q.uv_min.y},
-                                 .atlas_i = (u32)font_index,
+                                 .atlas_i = (u32)m_font_index,
                                  .color = q.color});
 
-    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+    m_vertices.emplace_back(Vertex{.type = VertexType::LABEL,
                                  .pos = {end.x, end.y},
                                  .uv = {q.uv_max.x, q.uv_max.y},
-                                 .atlas_i = (u32)font_index,
+                                 .atlas_i = (u32)m_font_index,
                                  .color = q.color});
-    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+    m_vertices.emplace_back(Vertex{.type = VertexType::LABEL,
                                  .pos = {end.x, start.y},
                                  .uv = {q.uv_max.x, q.uv_min.y},
-                                 .atlas_i = (u32)font_index,
+                                 .atlas_i = (u32)m_font_index,
                                  .color = q.color});
-    vertices.emplace_back(Vertex{.type = VertexType::LABEL,
+    m_vertices.emplace_back(Vertex{.type = VertexType::LABEL,
                                  .pos = {start.x, start.y},
                                  .uv = {q.uv_min.x, q.uv_min.y},
-                                 .atlas_i = (u32)font_index,
+                                 .atlas_i = (u32)m_font_index,
                                  .color = q.color});
   }
 }

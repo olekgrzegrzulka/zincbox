@@ -17,131 +17,128 @@
 using namespace zincgui;
 
 ComboBoxItem::ComboBoxItem(Root& ui_) : Button(ui_) {
-  set_parent_anchor(Anchor::TOP_CENTER);
-  set_anchor(Anchor::TOP_CENTER);
-  set_texture_idle(default_settings::combobox_item_texture_idle);
-  set_texture_hovered(default_settings::combobox_item_texture_hovered);
-  set_texture_pressed(default_settings::combobox_item_texture_pressed);
-  set_texture_disabled(default_settings::combobox_item_texture_disabled);
-  set_nine_slice_margin(default_settings::combobox_item_nine_slice_margin);
-  hover_test_parent = false;
-  label.set_parent_anchor(Anchor::CENTER_LEFT);
-  label.set_anchor(Anchor::CENTER_LEFT);
-  label.set_label_anchor(Anchor::CENTER_LEFT);
-  label.set_x(default_settings::combobox_item_label_offset_x);
+  parent_anchor(Anchor::TOP_CENTER)
+    .anchor(Anchor::TOP_CENTER)
+    .texture_idle(default_settings::combobox_item_texture_idle)
+    .texture_hovered(default_settings::combobox_item_texture_hovered)
+    .texture_pressed(default_settings::combobox_item_texture_pressed)
+    .texture_disabled(default_settings::combobox_item_texture_disabled)
+    .nine_slice_margin(default_settings::combobox_item_nine_slice_margin)
+    .hover_test_parent(false);
+  label().parent_anchor(Anchor::CENTER_LEFT)
+    .anchor(Anchor::CENTER_LEFT)
+    .label_anchor(Anchor::CENTER_LEFT)
+    .x(default_settings::combobox_item_label_offset_x);
 }
 
-ComboBox::ComboBox(Root& ui_)
-  : Button(ui_), icon(add_child<Sprite>(default_settings::combobox_texture_expand)),
-    dropdown_bg(add_child<Sprite>(default_settings::combobox_texture_panel)),
-    sprite_focus(add_child<Sprite>(default_settings::combobox_texture_focus)) {
-  set_size(default_settings::combobox_size);
-  if (default_settings::combobox_fixed_height) { set_fixed_height(height); }
-  set_nine_slice_margin(default_settings::combobox_nine_slice_margin);
-  sprite_focus.set_nine_slice_margin(default_settings::combobox_nine_slice_margin);
-  set_is_focusable(true);
-
-  set_texture_idle(default_settings::combobox_texture_idle);
-  set_texture_hovered(default_settings::combobox_texture_hovered);
-  set_texture_pressed(default_settings::combobox_texture_pressed);
-  set_texture_disabled(default_settings::combobox_texture_disabled);
-
-  set_switch_mode(true);
+ComboBox::ComboBox(Root& ui_) :
+    Button(ui_),
+    m_icon(add_child<Sprite>(default_settings::combobox_texture_expand)),
+    m_dropdown_bg(add_child<Sprite>(default_settings::combobox_texture_panel)),
+    m_sprite_focus(add_child<Sprite>(default_settings::combobox_texture_focus)) {
+  size(default_settings::combobox_size);
+  if (default_settings::combobox_fixed_height) { fixed_height(height()); }
+  nine_slice_margin(default_settings::combobox_nine_slice_margin);
+  m_sprite_focus.nine_slice_margin(default_settings::combobox_nine_slice_margin);
+  is_focusable(true)
+    .texture_idle(default_settings::combobox_texture_idle)
+    .texture_hovered(default_settings::combobox_texture_hovered)
+    .texture_pressed(default_settings::combobox_texture_pressed)
+    .texture_disabled(default_settings::combobox_texture_disabled)
+    .switch_mode(true);
   on_press([&] { on_button_pressed(); });
   on_depress([&] { on_button_depressed(); });
 
-  icon.set_anchor(Anchor::RIGHT);
-  icon.set_parent_anchor(Anchor::RIGHT);
-  icon.set_nine_slice_margin(0.0f);
-  icon.set_x(default_settings::combobox_icon_offset_x);
-  label.set_anchor(Anchor::LEFT);
-  label.set_parent_anchor(Anchor::LEFT);
-  label.set_label_anchor(Anchor::LEFT);
+  m_icon.anchor(Anchor::RIGHT)
+    .parent_anchor(Anchor::RIGHT)
+    .nine_slice_margin(0.0f)
+    .x(default_settings::combobox_icon_offset_x);
+  label().anchor(Anchor::LEFT)
+    .parent_anchor(Anchor::LEFT)
+    .label_anchor(Anchor::LEFT);
 
-  dropdown_bg.set_parent_anchor(Anchor::BOTTOM_CENTER);
-  dropdown_bg.set_anchor(Anchor::TOP_CENTER);
-  dropdown_bg.set_clip_children(true);
-  dropdown_bg.set_is_drawn_on_top(true);
-  dropdown_bg.set_nine_slice_margin(default_settings::combobox_nine_slice_margin);
+  m_dropdown_bg.parent_anchor(Anchor::BOTTOM_CENTER)
+    .anchor(Anchor::TOP_CENTER)
+    .clip_children(true)
+    .is_drawn_on_top(true)
+    .nine_slice_margin(default_settings::combobox_nine_slice_margin);
 
-  for (i32 i = 0; i < dropdown_max_length + 1; i += 1) {
-    auto& item = dropdown_bg.add_child<ComboBoxItem>();
-    item_widgets[i] = &item;
-    item.set_height(item_height);
+  for (i32 i = 0; i < m_dropdown_max_length + 1; i += 1) {
+    auto& item = m_dropdown_bg.add_child<ComboBoxItem>();
+    m_item_widgets[i] = &item;
+    item.height(m_item_height);
     item.on_press([&, i] { on_item_pressed(i); });
   }
 }
 
 void ComboBox::update() {
   Button::update();
-  label.set_x(height / 2);
+  label().x(height() / 2);
 
-  if (dropdown_state == DropDownState::VISIBLE && !is_focused()) { on_button_depressed(); }
+  if (m_dropdown_state == DropDownState::VISIBLE && !is_focused()) { on_button_depressed(); }
 
-  sprite_focus.set_size(width, height);
-  sprite_focus.set_is_drawn(is_focused());
+  m_sprite_focus.size(width(), height())
+    .is_drawn(is_focused());
 
-  target_scroll_progress =
-    std::clamp<float>(target_scroll_progress, 0.0f, std::max<i32>(0, items.size() - item_widgets.size() + 1));
+  m_target_scroll_progress =
+    std::clamp<float>(m_target_scroll_progress, 0.0f, std::max<i32>(0, m_items.size() - m_item_widgets.size() + 1));
 
-  if (std::abs(scroll_progress - target_scroll_progress) > default_settings::combobox_scroll_snap_threshold) {
-    scroll_progress = std::lerp(scroll_progress, target_scroll_progress, default_settings::combobox_scroll_lerp_weight);
+  if (std::abs(m_scroll_progress - m_target_scroll_progress) > default_settings::combobox_scroll_snap_threshold) {
+    m_scroll_progress = std::lerp(m_scroll_progress, m_target_scroll_progress, default_settings::combobox_scroll_lerp_weight);
   } else {
-    scroll_progress = target_scroll_progress;
+    m_scroll_progress = m_target_scroll_progress;
   }
 
-  for (i32 i = 0; i < dropdown_max_length + 1; i += 1) {
+  for (i32 i = 0; i < m_dropdown_max_length + 1; i += 1) {
     i32 widget_i = i;
-    i32 label_i = i + (i32)scroll_progress;
+    i32 label_i = i + (i32)m_scroll_progress;
 
-    auto* item = item_widgets[widget_i];
-    bool draw_item = label_i < (i32)items.size();
+    auto* item = m_item_widgets[widget_i];
+    bool draw_item = label_i < (i32)m_items.size();
     if (draw_item) {
-      item->set_width(width - (2 * dropdown_padding));
-      item->set_height(item_height);
-      float y_residue = (scroll_progress - std::trunc(scroll_progress)) * (item_height + dropdown_padding);
-      item->set_y(dropdown_padding + ((item_height + dropdown_padding) * widget_i) - y_residue);
+      item->width(width() - (2 * m_dropdown_padding))
+        .height(m_item_height);
+      float y_residue = (m_scroll_progress - std::trunc(m_scroll_progress)) * (m_item_height + m_dropdown_padding);
+      item->y(m_dropdown_padding + ((m_item_height + m_dropdown_padding) * widget_i) - y_residue);
 
-      item->get_label().set_text(items[label_i].second);
-      item->set_is_updated(true);
+      item->label().text(m_items[label_i].second);
+      item->is_updated(true);
 
     } else {
-      item->set_is_updated(false);
+      item->is_updated(false);
     }
   }
 
-  dropdown_animation_progress =
-    std::min(dropdown_animation_progress + default_settings::combobox_dropdown_anim_speed, 1.0f);
-  if (dropdown_animation_progress >= 1.0) {
-    if (dropdown_state == DropDownState::APPEARING) {
-      dropdown_state = DropDownState::VISIBLE;
-    } else if (dropdown_state == DropDownState::DISAPPEARING) {
-      dropdown_state = DropDownState::HIDDEN;
-      scroll_progress = 0.0f;
-      target_scroll_progress = 0.0f;
+  m_dropdown_animation_progress =
+    std::min(m_dropdown_animation_progress + default_settings::combobox_dropdown_anim_speed, 1.0f);
+  if (m_dropdown_animation_progress >= 1.0f) {
+    if (m_dropdown_state == DropDownState::APPEARING) {
+      m_dropdown_state = DropDownState::VISIBLE;
+    } else if (m_dropdown_state == DropDownState::DISAPPEARING) {
+      m_dropdown_state = DropDownState::HIDDEN;
+      m_scroll_progress = 0.0f;
+      m_target_scroll_progress = 0.0f;
     }
   }
 
   i32 dropdown_height =
-    (2 * dropdown_padding) + ((item_height + dropdown_padding) * std::min<i32>(items.size(), dropdown_max_length));
-  float dropdown_animation_eased = (std::sin(std::numbers::pi * (dropdown_animation_progress - 0.5f)) * 0.5) + 0.5;
-  if (dropdown_state == DropDownState::APPEARING) {
+    (2 * m_dropdown_padding) + ((m_item_height + m_dropdown_padding) * std::min<i32>(m_items.size(), m_dropdown_max_length));
+  float dropdown_animation_eased = (std::sin(std::numbers::pi * (m_dropdown_animation_progress - 0.5f)) * 0.5f) + 0.5f;
+  if (m_dropdown_state == DropDownState::APPEARING) {
     dropdown_height = std::lerp(0, dropdown_height, dropdown_animation_eased);
-  } else if (dropdown_state == DropDownState::DISAPPEARING) {
+  } else if (m_dropdown_state == DropDownState::DISAPPEARING) {
     dropdown_height = std::lerp(dropdown_height, 0, dropdown_animation_eased);
   }
 
-  dropdown_bg.set_is_drawn(dropdown_state != DropDownState::HIDDEN);
-  dropdown_bg.set_is_updated(dropdown_state != DropDownState::HIDDEN || dropdown_animation_progress < 1.0);
-
-  dropdown_bg.set_width(width);
-  dropdown_bg.set_height(dropdown_height);
-  // debug_warn(items_to_draw);
+  m_dropdown_bg.is_drawn(m_dropdown_state != DropDownState::HIDDEN)
+    .is_updated(m_dropdown_state != DropDownState::HIDDEN || m_dropdown_animation_progress < 1.0f)
+    .width(width())
+    .height(dropdown_height);
 }
 
 void ComboBox::event(Input::InputEventMouseScroll& ev) {
   if (!is_focused()) { return; }
-  target_scroll_progress += ev.offset.y * -1.0f;
+  m_target_scroll_progress += ev.offset.y * -1.0f;
   ev.handled = true;
 }
 
@@ -158,63 +155,67 @@ void ComboBox::event(Input::InputEventKey& ev) {
   }
 }
 
-void ComboBox::on_item_selected(std::function<void()> lambda_select_) { lambda_select = std::move(lambda_select_); }
-
-void ComboBox::add_item(std::string_view id, std::string_view label_) { items.emplace_back(id, label_); }
-
-std::string ComboBox::get_selected_item_id() const {
-  if (selected_index < 0 || selected_index >= (i32)items.size()) { return ""; }
-  return items[selected_index].first;
+ComboBox& ComboBox::add_item(std::string_view id, std::string_view label_) {
+  m_items.emplace_back(id, label_);
+  return *this;
 }
 
-std::string ComboBox::get_selected_item_label() const {
-  if (selected_index < 0 || selected_index >= (i32)items.size()) { return ""; }
-  return items[selected_index].second;
+std::string ComboBox::selected_item_id() const {
+  if (m_selected_index < 0 || m_selected_index >= (i32)m_items.size()) { return ""; }
+  return m_items[m_selected_index].first;
 }
 
-i32 ComboBox::get_selected_index() const { return selected_index; }
+std::string ComboBox::selected_item_label() const {
+  if (m_selected_index < 0 || m_selected_index >= (i32)m_items.size()) { return ""; }
+  return m_items[m_selected_index].second;
+}
 
-void ComboBox::select_item_by_label(std::string_view label_) {
-  for (i32 i = 0; i < (i32)items.size(); i += 1) {
-    if (items[i].second == label_) {
+i32 ComboBox::selected_index() const { return m_selected_index; }
+
+ComboBox& ComboBox::select_item_by_label(std::string_view label_) {
+  for (i32 i = 0; i < (i32)m_items.size(); i += 1) {
+    if (m_items[i].second == label_) {
       on_item_pressed(i);
       break;
     }
   }
+  return *this;
 }
 
-void ComboBox::select_item_by_id(std::string_view id) {
-  for (i32 i = 0; i < (i32)items.size(); i += 1) {
-    if (items[i].first == id) {
+ComboBox& ComboBox::select_item_by_id(std::string_view id) {
+  for (i32 i = 0; i < (i32)m_items.size(); i += 1) {
+    if (m_items[i].first == id) {
       on_item_pressed(i);
       break;
     }
   }
+  return *this;
 }
 
-void ComboBox::select_item_by_index(i32 index) {
-  if (index < 0 || index >= (i32)items.size()) { return; }
+ComboBox& ComboBox::select_item_by_index(i32 index) {
+  if (index < 0 || index >= (i32)m_items.size()) { return *this; }
   on_item_pressed(index);
+  return *this;
 }
 
 void ComboBox::on_button_pressed() {
-  dropdown_state = DropDownState::APPEARING;
-  dropdown_animation_progress = 0.0f;
-  icon.set_texture(default_settings::combobox_texture_contract);
+  m_dropdown_state = DropDownState::APPEARING;
+  m_dropdown_animation_progress = 0.0f;
+  m_icon.texture(default_settings::combobox_texture_contract);
 }
 
 void ComboBox::on_button_depressed() {
-  dropdown_state = DropDownState::DISAPPEARING;
-  dropdown_animation_progress = 0.0f;
-  icon.set_texture(default_settings::combobox_texture_expand);
+  m_dropdown_state = DropDownState::DISAPPEARING;
+  m_dropdown_animation_progress = 0.0f;
+  m_icon.texture(default_settings::combobox_texture_expand);
 }
 
 void ComboBox::on_item_pressed(i32 i) {
-  if (i < 0 || i >= (i32)items.size()) { return; }
-  i32 label_i = (i32)scroll_progress + i;
-  selected_index = i;
-  label.set_text(items[label_i].second);
-  set_is_switched(false);
+  if (i < 0 || i >= (i32)m_items.size()) { return; }
+  i32 label_i = (i32)m_scroll_progress + i;
+  m_selected_index = i;
+  label().text(m_items[label_i].second);
+  is_switched(false);
 
-  if (lambda_select) { lambda_select(); }
+  if (m_on_item_selected) { m_on_item_selected(); }
 }
