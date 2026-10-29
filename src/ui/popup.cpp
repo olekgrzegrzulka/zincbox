@@ -101,7 +101,7 @@ Popover::Popover(Root& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
 }
 
 void Popover::update() {
-  if (layout_dirty) { return; }
+  if (is_layout_dirty()) { return; }
 
   vec2i top_left = vec2i(x, y) - vec2i(vec2f{width, height} * anchor_to_uv(anchor));
 

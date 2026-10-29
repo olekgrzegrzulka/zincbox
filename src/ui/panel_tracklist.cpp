@@ -381,10 +381,10 @@ void PanelTracklist::update() {
 
   bool draw_insert_cursor = false;
 
-  for (auto&& widget : m_items_container->get_children()) {
-    WidgetPlaylistHeader* widget_header = dynamic_cast<WidgetPlaylistHeader*>(widget.get());
-    WidgetTrack* widget_track = dynamic_cast<WidgetTrack*>(widget.get());
-
+  for (size_t index : m_header_indices) {
+    auto* item = std::get_if<ItemPlaylistHeader>(&m_items[index]);
+    if (!item) { continue; }
+    auto* widget_header = item->widget;
     if (!widget_header) { continue; }
 
     if (widget_header->button_play->is_mouse_hovering()) {
@@ -473,6 +473,7 @@ void PanelTracklist::event(Input::InputEventKey& e) {
 void PanelTracklist::clear() {
   m_collection_id = std::nullopt;
   m_items.clear();
+  m_header_indices.clear();
   for (auto&& widget : m_items_container->get_children()) {
     widget->set_marked_for_deletion(true);
   }
@@ -507,6 +508,7 @@ void PanelTracklist::recreate(std::optional<size_t> collection_id_) {
     item_header.item_index = m_items.size();
     m_max_scroll_px += item_header.height();
     m_items.emplace_back(item_header);
+    m_header_indices.emplace_back(m_items.size() - 1);
     for (size_t track_index = 0; track_index < playlist.track_ids.size(); track_index += 1) {
       auto track_id = playlist.track_ids[track_index];
       db::track_info track_info = {

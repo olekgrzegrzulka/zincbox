@@ -10,10 +10,6 @@ zincgui::Widget::Widget(zincgui::Root& ui_, i32 width_, i32 height_) : ui{ui_}, 
   mark_dirty();
 }
 
-vec2i zincgui::Widget::get_position(Anchor relative_to) const {
-  return global_position_ + vec2i(vec2f{width, height} * anchor_to_uv(relative_to));
-}
-
 void zincgui::Widget::input() {}
 
 void zincgui::Widget::update() {
@@ -53,7 +49,7 @@ void zincgui::Widget::set_layout(std::string_view def) {
   Layout l = layout_engine::parse_layout_string(def, layout);
   if (layout != l) {
     layout = l;
-    layout_dirty = true;
+    mark_layout_dirty();
     mark_dirty();
   }
 }
@@ -113,7 +109,7 @@ void zincgui::Widget::set_width(i32 width_, bool ignore_constraints) {
   }
   width = width_;
   mark_dirty();
-  if (layout.enabled && (layout.expand_children || layout.fill)) { layout_dirty = true; }
+  if (layout.enabled && (layout.expand_children || layout.fill)) { mark_layout_dirty(); }
 }
 
 void zincgui::Widget::set_height(i32 height_, bool ignore_constraints) {
@@ -127,7 +123,7 @@ void zincgui::Widget::set_height(i32 height_, bool ignore_constraints) {
   }
   height = height_;
   mark_dirty();
-  if (layout.enabled && (layout.expand_children || layout.fill)) { layout_dirty = true; }
+  if (layout.enabled && (layout.expand_children || layout.fill)) { mark_layout_dirty(); }
 }
 
 void zincgui::Widget::set_anchor(Anchor anchor_, bool ignore_constraints) {
@@ -148,28 +144,34 @@ void zincgui::Widget::set_min_width(i32 v) {
   if (min_width == v) { return; }
   min_width = v;
   mark_dirty();
-  if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+  if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
 }
 
 void zincgui::Widget::set_max_width(i32 v) {
   if (max_width == v) { return; }
   max_width = v;
   mark_dirty();
-  if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+  if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
 }
 
 void zincgui::Widget::set_min_height(i32 v) {
   if (min_height == v) { return; }
   min_height = v;
   mark_dirty();
-  if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+  if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
 }
 
 void zincgui::Widget::set_max_height(i32 v) {
   if (max_height == v) { return; }
   max_height = v;
   mark_dirty();
-  if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+  if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
+}
+
+void zincgui::Widget::mark_layout_dirty() {
+  // if (m_layout_dirty) { return; }
+  m_layout_dirty = true;
+  ui.mark_layout_dirty();
 }
 
 void zincgui::Widget::mark_dirty() {
@@ -218,8 +220,8 @@ void Widget::set_is_updated(bool value) {
   if (is_updated != value) {
     is_updated = value;
     mark_dirty();
-    if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
-    if (layout.enabled) { layout_dirty = true; }
+    if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
+    if (layout.enabled) { mark_layout_dirty(); }
   }
 }
 
@@ -234,7 +236,7 @@ void Widget::set_weight(float value) {
   if (weight != value) {
     weight = value;
     mark_dirty();
-    if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+    if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
   }
 }
 
@@ -249,7 +251,7 @@ void Widget::set_is_drawn(bool to) {
   if (is_drawn == to) { return; }
   is_drawn = to;
   mark_dirty();
-  if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+  if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
 }
 
 bool zincgui::Widget::is_focused() const { return ui.focused_widget() == this; }

@@ -33,7 +33,6 @@ class Popup : public zincgui::Sprite {
     void update() override;
     void event(zincgui::Input::InputEventMouseButton&) override;
     void event(zincgui::Input::InputEventKey&) override;
-    
 
     i32 get_max_content_width() const;
     i32 get_max_content_height() const;

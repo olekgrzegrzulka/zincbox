@@ -33,9 +33,10 @@ class Tab : public zincgui::Button {
     void move(i32 to);
     void update() override;
     void event(zincgui::Input::InputEventMouseButton& ev) override;
+    void set_active(bool);
+    void on_state_changed(zincgui::ButtonState /* prev_state */) override;
 
   public:
-    bool active = false;
     bool is_draggable = true;
     i32 padding = 0;
     size_t index = 0;
@@ -45,6 +46,7 @@ class Tab : public zincgui::Button {
     std::function<void(Tab*)> on_right_click{};
 
   protected:
+    bool active = false;
     i32 x_old = 0;
     i32 x_new = 0;
     float t = 0.0f;

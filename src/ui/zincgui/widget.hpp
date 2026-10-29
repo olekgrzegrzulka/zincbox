@@ -99,7 +99,7 @@ namespace zincgui {
     return "";
   }
 
-  ZINCBOX_INLINE static vec2f anchor_to_uv(Anchor anchor) { return ANCHOR_UV_LUT[static_cast<u8>(anchor)]; }
+  ZINCBOX_INLINE static vec2f anchor_to_uv(Anchor anchor) noexcept { return ANCHOR_UV_LUT[static_cast<u8>(anchor)]; }
 
   namespace Input {
     struct InputEventMouseButton;
@@ -133,7 +133,6 @@ namespace zincgui {
       Anchor parent_anchor = Anchor::TOP_LEFT;
 
       bool dirty = true;
-      bool layout_dirty = true;
       bool marked_for_deletion = false;
       bool is_updated = true;
       bool is_drawn = true;
@@ -165,7 +164,10 @@ namespace zincgui {
 
       Layout layout;
 
+      bool is_layout_dirty() const { return m_layout_dirty; }
+
     private:
+      bool m_layout_dirty = false;
       i32 window_width = 0;
       i32 window_height = 0;
 #ifdef WIDGET_DRAW_DEBUG_RECT
@@ -185,7 +187,14 @@ namespace zincgui {
 
       // Returns widget's scene position relative to some anchor
       // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
-      vec2i get_position(Anchor relative_to = Anchor::TOP_LEFT) const;
+      [[nodiscard]] ZINCBOX_INLINE vec2i get_position(Anchor relative_to = Anchor::TOP_LEFT) const noexcept {
+
+        static constexpr std::pair<u8, u8> ANCHOR_SCALES[9] = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1},
+                                                               {2, 1}, {0, 2}, {1, 2}, {2, 2}};
+
+        const auto [sx, sy] = ANCHOR_SCALES[static_cast<u8>(relative_to)];
+        return {global_position_.x + ((width * sx) >> 1), global_position_.y + ((height * sy) >> 1)};
+      }
 
       WIDGET_DEF_GETTER(name);
       void set_name(std::string name_);
@@ -226,7 +235,7 @@ namespace zincgui {
       void set_ignore_parents_layout(bool to) {
         if (ignore_parents_layout == to) { return; }
         ignore_parents_layout = to;
-        if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
+        if (parent && parent->layout.enabled) { parent->mark_layout_dirty(); }
         mark_dirty();
       }
 
@@ -299,8 +308,8 @@ namespace zincgui {
       void set_size(i32 w, i32 h);
       void set_size(vec2i);
 
+      void mark_layout_dirty();
       void mark_dirty();
-      void ui_mark_tree_dirty();
 
       auto& get_children() { return children; }
 

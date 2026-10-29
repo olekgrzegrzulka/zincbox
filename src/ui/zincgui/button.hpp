@@ -159,7 +159,7 @@ namespace zincgui {
       }
 
     protected:
-      void on_state_changed(ButtonState /* prev_state */);
+      virtual void on_state_changed(ButtonState /* prev_state */);
   };
 
 } // namespace zincgui

@@ -34,7 +34,6 @@ class WidgetAlbumCover final : public zincgui::Button {
     WidgetAlbumCover(zincgui::Root& ui_, std::optional<size_t> playlist_id, bool is_add_button_ = false);
     ~WidgetAlbumCover() override;
     void update() override;
-    void event(zincgui::Input::InputEventMouseMove& ev) override;
     bool is_add_button() const { return m_is_add_button; }
 
   protected:
@@ -44,7 +43,6 @@ class WidgetAlbumCover final : public zincgui::Button {
     const std::optional<size_t> playlist_id = 0;
     zincgui::Sprite* hover{};
     zincgui::Sprite* sprite_playing{};
-    bool is_hovered = false;
     zincgui::Label* label_title{};
     zincgui::Label* label_author{};
     vec2i total_size{};

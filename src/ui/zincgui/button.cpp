@@ -21,7 +21,6 @@ void Button::init() {
   // set_is_focusable(true);
   set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
 
-
   set_size(default_settings::button_size);
   if (default_settings::button_fixed_height) { set_fixed_height(height); }
   set_texture_idle(default_settings::button_texture_idle);

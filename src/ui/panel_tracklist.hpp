@@ -228,6 +228,8 @@ class PanelTracklist final : public zincgui::ColorRect {
     void rebuild_lookup();
 
     std::vector<Item> m_items;
+    std::vector<size_t> m_header_indices; // used for tooltip handling but FIXME remove this and handle tooltips
+                                                  // in each header individually when we have a TooltipManager
     std::unordered_map<db::track_info, size_t, TrackInfoHash> m_track_lookup;
     Widget* m_items_container{};
 };

@@ -239,7 +239,7 @@ class PopupSearch final : public Popup {
       if (m_resize_hack_fixme-- > 0) {
         relayout();
         mark_dirty();
-        layout_dirty = true;
+        mark_layout_dirty();
       }
 
       if (std::abs(m_scroll_px - m_target_scroll_px) > 0.5) {

@@ -110,7 +110,7 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   if (widget->deleted_) {
     if (m_focused_widget == widget) { set_focused_widget(nullptr); }
     if (m_focus_manager == widget) { m_focus_manager = nullptr; }
-    if (widget->parent && widget->parent->layout_dirty) { widget->layout_dirty = true; }
+    if (widget->parent && widget->parent->is_layout_dirty()) { widget->mark_layout_dirty(); }
     widget->window_width = m_window_width;
     widget->window_height = m_window_height;
   }
@@ -163,11 +163,10 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       widget->hit_test_rect_ = rect2i{.begin = vec2i(-1, -1), .size = vec2i(0, 0)};
     }
 
-    vec2i mouse_pos = Input::get_mouse_pos();
     vec2i widget_top_left = widget->get_position(Anchor::TOP_LEFT);
     vec2i widget_bottom_right = widget->get_position(Anchor::BOTTOM_RIGHT);
-    bool hovered = (mouse_pos.x >= widget_top_left.x && mouse_pos.x < widget_bottom_right.x) &&
-                   (mouse_pos.y >= widget_top_left.y && mouse_pos.y < widget_bottom_right.y);
+    bool hovered = (m_mouse_pos.x >= widget_top_left.x && m_mouse_pos.x < widget_bottom_right.x) &&
+                   (m_mouse_pos.y >= widget_top_left.y && m_mouse_pos.y < widget_bottom_right.y);
     bool parent_hovered = !widget->parent || widget->parent->hovered_;
     if (widget->updated_ && widget->get_is_self_drawn() && hovered && parent_hovered) {
       // m_hovered_widgets.emplace_back(widget);
@@ -262,7 +261,7 @@ bool zincgui::Root::process_mutations() {
     for (Widget* w : m_deleted_widgets) {
       if (w->parent != nullptr) {
         std::erase_if(w->parent->children, [w](const auto& child) { return child.get() == w; });
-        if (w->parent->layout.enabled) { w->parent->layout_dirty = true; }
+        if (w->parent->layout.enabled) { w->parent->mark_layout_dirty(); }
       } else {
         std::erase_if(m_widgets, [w](const auto& child) { return child.get() == w; });
       }
@@ -284,7 +283,7 @@ bool zincgui::Root::process_mutations() {
       w->children.insert(w->children.end(), std::move_iterator(w->children_to_add.begin()),
                          std::move_iterator(w->children_to_add.end()));
       if (w->layout.enabled) {
-        w->layout_dirty = true;
+        w->mark_layout_dirty();
         w->dirty = true;
       }
       w->children_to_add.clear();
@@ -296,19 +295,20 @@ bool zincgui::Root::process_mutations() {
 
 void zincgui::Root::layout_tree(Widget* w) {
   if (!w->updated_ || w->deleted_) { return; }
-  if (w->layout.enabled && w->layout_dirty) {
+  if (w->layout.enabled && w->is_layout_dirty()) {
     layout_engine::apply_layout(*w);
     m_tree_dirty = true;
   }
-  w->layout_dirty = false;
+  w->m_layout_dirty = false;
   for (auto& child : w->get_children()) {
     layout_tree(child.get());
   }
 };
 
 bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
-  bool changed = false;
+  m_mouse_pos = Input::get_mouse_pos();
   m_current_frame += 1;
+  bool changed = false;
 
   bool window_resized = false;
   if (window_width_ != m_window_width || window_height_ != m_window_height) {
@@ -316,7 +316,7 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
     m_tree_dirty = true;
     for (auto&& widget : m_widgets) {
       widget->mark_dirty();
-      widget->layout_dirty = true;
+      widget->mark_layout_dirty();
     }
     changed = true;
   }
@@ -335,6 +335,7 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   }
 
   bool hover_claimed = false;
+
   for (auto it = m_widget_traversal_order.rbegin(); it != m_widget_traversal_order.rend(); it += 1) {
     Widget* w = *it;
 
@@ -343,17 +344,16 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
       continue;
     }
 
-    auto mouse_pos = Input::get_mouse_pos();
-
     bool inside = false;
     if (w->scissor_) {
       auto s = w->hit_test_rect_;
-      inside = mouse_pos.x >= s.begin.x && mouse_pos.x < s.begin.x + s.size.x && mouse_pos.y >= s.begin.y &&
-               mouse_pos.y < s.begin.y + s.size.y;
+      inside = m_mouse_pos.x >= s.begin.x && m_mouse_pos.x < s.begin.x + s.size.x && m_mouse_pos.y >= s.begin.y &&
+               m_mouse_pos.y < s.begin.y + s.size.y;
     } else {
-      inside =
-        mouse_pos.x >= w->get_position(Anchor::TOP_LEFT).x && mouse_pos.x < w->get_position(Anchor::BOTTOM_RIGHT).x &&
-        mouse_pos.y >= w->get_position(Anchor::TOP_LEFT).y && mouse_pos.y < w->get_position(Anchor::BOTTOM_RIGHT).y;
+      inside = m_mouse_pos.x >= w->get_position(Anchor::TOP_LEFT).x &&
+               m_mouse_pos.x < w->get_position(Anchor::BOTTOM_RIGHT).x &&
+               m_mouse_pos.y >= w->get_position(Anchor::TOP_LEFT).y &&
+               m_mouse_pos.y < w->get_position(Anchor::BOTTOM_RIGHT).y;
     }
 
     if (!hover_claimed && inside) {
@@ -418,11 +418,12 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
   bool tree_changed = false;
   do {
 
-    for (auto& w : m_widgets) {
-      layout_tree(w.get());
+    if (m_layout_dirty) {
+      for (auto& w : m_widgets) {
+        layout_tree(w.get());
+      }
+      m_layout_dirty = false;
     }
-
-    bool need_layout_update = false;
 
     for (auto* widget : m_widget_traversal_order) {
       if (widget->updated_) {
@@ -432,14 +433,14 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
           widget->input();
           widget->update();
         }
-        if (widget->layout.enabled && widget->layout_dirty) { need_layout_update = true; }
       }
     }
 
-    if (need_layout_update) {
+    if (m_layout_dirty) {
       for (auto& w : m_widgets) {
         layout_tree(w.get());
       }
+      m_layout_dirty = false;
     }
 
     if (m_tree_dirty) {

@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 #include "common/color.hpp"
-#include "common/logger.hpp"
 #include "ui/popup.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
@@ -69,7 +68,7 @@ void PopupController::on_popup_closed(Popup* popup) {
   if (it != m_popups.end()) { m_popups.erase(it); }
 }
 
-PopupController::PopupController(Root& ui_) : Widget(ui_), m_ui(ui_) {
+PopupController::PopupController(Root& ui_) : Widget(ui_) {
   m_dimmer = &add_child<Dimmer>();
   m_dimmer->on_pressed = [this]() { on_dimmer_pressed(); };
   m_dimmer->on_enter_pressed = [this]() { on_dimmer_enter_pressed(); };
@@ -85,9 +84,13 @@ void PopupController::on_dimmer_escape_pressed() { close_all_popovers(); }
 void PopupController::create_popover(const popover_descriptor& d) {
   float scale = zincbox::ui_scale();
   i32 space_needed = (8 + (4 + 24) * d.buttons.size() + 12) * scale;
-  bool arrow_on_top = m_ui.get_window_height() - d.at.y >= space_needed;
+  bool arrow_on_top = ui.get_window_height() - d.at.y >= space_needed;
 
   auto& popover = add_child<Popover>(arrow_on_top);
+  if (auto it = m_popovers.find(d.id); it != m_popovers.end()) {
+    it->second->set_marked_for_deletion(true);
+    m_popovers.erase(it);
+  }
   m_popovers.emplace(d.id, &popover);
 
   popover.set_nine_slice_margin(8.0f);
@@ -180,7 +183,7 @@ void PopupController::input() {
 }
 
 void PopupController::update() {
-  set_size(m_ui.get_window_size());
+  set_size(ui.get_window_size());
   bool dimmer_block_events = (m_popovers.size() + m_popups.size()) > 0;
   bool dimmer_visible = m_popups.size() > 0;
   float dimmer_opacity = dimmer_visible ? 0.6f : 0.0f;
@@ -189,4 +192,11 @@ void PopupController::update() {
   m_dimmer->set_opacity(std::lerp(m_dimmer->get_opacity(), dimmer_opacity, 0.25f));
 
   Widget::update();
+}
+
+void PopupController::event(zincgui::Input::InputEventKey& e) {
+  if (e.key == zincgui::Input::Key::KEY_ESCAPE && e.action == zincgui::Input::KeyAction::RELEASE) {
+    close_all_popovers();
+    e.handled = true;
+  }
 }

@@ -48,6 +48,7 @@ class PopupController final : public zincgui::Widget {
     PopupController(zincgui::Root& ui_);
     void input() override;
     void update() override;
+    void event(zincgui::Input::InputEventKey& e) override;
 
     void on_dimmer_pressed();
     void on_dimmer_enter_pressed();
@@ -70,7 +71,6 @@ class PopupController final : public zincgui::Widget {
 
   private:
     void on_popup_closed(Popup* popup);
-    const zincgui::Root& m_ui;
     Dimmer* m_dimmer{};
     std::vector<Widget*> m_popups;
     std::unordered_map<std::string, Widget*> m_popovers;

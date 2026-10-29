@@ -9,7 +9,6 @@
 #include <vector>
 #include <stdlib.h>
 #include "common/color.hpp"
-#include "common/logger.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zb_widgets.hpp"
@@ -30,6 +29,7 @@ Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
   label.set_anchor(Anchor::CENTER);
   label.set_parent_anchor(Anchor::CENTER);
   label.set_label_anchor(Anchor::CENTER);
+  set_active(false);
 
   set_clip_children(true);
   set_texture_inactive();
@@ -93,14 +93,14 @@ void Tab::move(i32 to) {
 }
 
 void Tab::update() {
-  set_width(std::clamp(label.get_text_extents().x + (2 * padding), 40, 200));
   t = std::clamp(t + 0.2f, 0.0f, 1.0f);
-  set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
-  Button::update();
+  if (t > 0.99f) {
+    set_x(x_new);
+  } else {
+    set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
+  }
 
-  const auto& text_color = theme::config().text_color;
-  const auto& text_color_muted = theme::config().text_color_muted;
-  get_label().set_text_color(active ? text_color : text_color_muted);
+  Button::update();
 }
 
 void Tab::event(Input::InputEventMouseButton& ev) {
@@ -111,6 +111,32 @@ void Tab::event(Input::InputEventMouseButton& ev) {
   if (is_mouse_hovering() && ev.button == MOUSE_BUTTON_LEFT && ev.action == PRESS) {
     ev.handled = true;
     if (on_drag_start) { on_drag_start(index); }
+  }
+}
+
+void Tab::set_active(bool a) {
+  active = a;
+  const auto& text_color = theme::config().text_color;
+  const auto& text_color_muted = theme::config().text_color_muted;
+  get_label().set_text_color(active ? text_color : text_color_muted);
+}
+
+void Tab::on_state_changed(ButtonState /* prev_state */) {
+  const auto& text_color = theme::config().text_color;
+  const auto& text_color_muted = theme::config().text_color_muted;
+
+  if (state == ButtonState::HOVERED) {
+    set_sprite_hovered();
+    get_label().set_text_color(active ? text_color : text_color_muted);
+  } else if (state == ButtonState::IDLE) {
+    set_sprite_idle();
+    get_label().set_text_color(active ? text_color : text_color_muted);
+  } else if (state == ButtonState::PRESSED) {
+    set_sprite_pressed();
+    get_label().set_text_color(active ? text_color : text_color_muted);
+  } else if (state == ButtonState::DISABLED) {
+    set_sprite_disabled();
+    get_label().set_text_color(default_settings::text_color_disabled);
   }
 }
 
@@ -162,10 +188,10 @@ void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
     update_tab_textures(tab->index);
 
     for (Tab* t_ : tabs) {
-      t_->active = false;
+      t_->set_active(false);
     }
 
-    tab->active = true;
+    tab->set_active(true);
 
     if (info.on_open) { info.on_open(); }
     if (on_tab_pressed) { on_tab_pressed(info.id); }
@@ -200,7 +226,7 @@ void TabBar::select_tab(i32 id) {
 
 void TabBar::unselect_all_tabs() {
   for (Tab* t : tabs) {
-    t->active = false;
+    t->set_active(false);
   }
   selected_tab_index = -1;
 }

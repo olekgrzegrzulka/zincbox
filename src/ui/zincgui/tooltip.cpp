@@ -60,14 +60,23 @@ void ToolTip::set_size_and_position() {
 }
 
 void ToolTip::update() {
-  if (clamp) {
-    i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
-    i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
-    i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
-    i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
+  if (is_layout_dirty()) { return; }
 
-    set_x(get_x() + off_screen_left - off_screen_right);
-    set_y(get_y() + off_screen_top - off_screen_bottom);
+  if (clamp) {
+    vec2i top_left = vec2i(x, y) - vec2i(vec2f{width, height} * anchor_to_uv(anchor));
+
+    i32 off_screen_left = std::max(0, 0 - top_left.x);
+    i32 off_screen_right = std::max(0, (top_left.x + width) - ui.get_window_width());
+    i32 off_screen_top = std::max(0, 0 - top_left.y);
+    i32 off_screen_bottom = std::max(0, (top_left.y + height) - ui.get_window_height());
+    i32 push_x = off_screen_left - off_screen_right;
+    i32 push_y = off_screen_top - off_screen_bottom;
+    i32 lo = std::min((-width / 2) + 16, (width / 2) - 16);
+    i32 hi = std::max((-width / 2) + 16, (width / 2) - 16);
+    // arrow_offset = std::clamp(arrow_offset - push_x, lo, hi);
+    // arrow->set_x(arrow_offset);
+    set_x(get_x() + push_x);
+    set_y(get_y() + push_y);
   }
 
   Sprite::update();

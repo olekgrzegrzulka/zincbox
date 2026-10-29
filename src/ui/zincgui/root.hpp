@@ -70,6 +70,7 @@ namespace zincgui {
       Widget* focus_manager() const { return m_focus_manager; }
 
       void mark_tree_dirty() { m_tree_dirty = true; }
+      void mark_layout_dirty() { m_layout_dirty = true; }
 
     private:
       bool process_mutations();
@@ -89,6 +90,7 @@ namespace zincgui {
       Widget* m_focus_manager{};
       bool m_root_mutated = true;
       bool m_tree_dirty = false;
+      bool m_layout_dirty = false;
       glm::mat4 m_matrix{};
       std::vector<std::unique_ptr<Widget>> m_widgets;
       std::vector<std::unique_ptr<Widget>> m_widgets_to_add;
@@ -102,5 +104,6 @@ namespace zincgui {
       TextureAtlas m_texture_atlas;
       i32 m_window_width = 0;
       i32 m_window_height = 0;
+      vec2i m_mouse_pos{};
   };
 } // namespace zincgui
