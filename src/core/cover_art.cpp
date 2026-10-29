@@ -155,27 +155,6 @@ namespace {
     ctx.set_result({track_id, out_name});
   }
 
-  std::filesystem::path get_cover_path(const std::filesystem::path& folder_name, db::track_id_t track_id) {
-    if (filenames.size() <= track_id) { return {}; }
-    if (filenames[track_id].empty()) { return {}; }
-    if (filenames_failed.size() > track_id && filenames_failed[track_id]) { return {}; }
-    auto& filename = filenames[track_id][0];
-    if (filename.empty()) { return {}; }
-    auto path = io::get_cover_cache_path() / folder_name / filename;
-    if (!std::filesystem::is_regular_file(path)) {
-      if (!folder_name.empty() && !filename.empty()) { std::filesystem::remove(path); }
-      filenames[track_id].erase(filenames[track_id].begin());
-      return {};
-    }
-    return path;
-  }
-
-  std::filesystem::path get_cover_path_full_res(db::track_id_t track_id) { return get_cover_path("full", track_id); }
-
-  std::filesystem::path get_cover_path_256(db::track_id_t track_id) { return get_cover_path("256", track_id); }
-
-  std::filesystem::path get_cover_path_64(db::track_id_t track_id) { return get_cover_path("64", track_id); }
-
   void ensure_worker_started(db::track_id_t track_id) {
     if (filenames.size() > track_id && !filenames[track_id].empty()) { return; }
     if (filenames_failed.size() > track_id && filenames_failed[track_id]) { return; }
@@ -186,34 +165,42 @@ namespace {
     }
   }
 
-} // namespace
-std::optional<std::filesystem::path> zincbox::cover_art::get_full_res(db::track_id_t track_id) {
-  auto path = get_cover_path_full_res(track_id);
-  if (path.empty()) {
-    ensure_worker_started(track_id);
-    return std::nullopt;
+  enum class DirResName : u8 { RES_FULL, RES_256, RES_64 };
+
+  std::optional<std::filesystem::path> get_cover_path(DirResName res, db::track_id_t track_id) {
+    if (filenames_failed.size() > track_id && filenames_failed[track_id]) { return std::nullopt; }
+    if (filenames.size() <= track_id || filenames[track_id].empty()) {
+      ensure_worker_started(track_id);
+      return std::nullopt;
+    }
+    const auto& filename = filenames[track_id][0];
+    if (filename.empty()) {
+      ensure_worker_started(track_id);
+      return std::nullopt;
+    }
+
+    static const std::filesystem::path BASE = io::get_cover_cache_path();
+    static const std::filesystem::path DIRS[3] = {
+      BASE / "full",
+      BASE / "256",
+      BASE / "64",
+    };
+    return DIRS[(size_t)res] / filename;
   }
-  return path;
+
+} // namespace
+
+std::optional<std::filesystem::path> zincbox::cover_art::get_full_res(db::track_id_t track_id) {
+  return get_cover_path(DirResName::RES_FULL, track_id);
 }
 
 std::optional<std::filesystem::path> zincbox::cover_art::get_256(db::track_id_t track_id) {
-  auto path = get_cover_path_256(track_id);
-  if (path.empty()) {
-    ensure_worker_started(track_id);
-    return std::nullopt;
-  }
-  return path;
+  return get_cover_path(DirResName::RES_256, track_id);
 }
 
 std::optional<std::filesystem::path> zincbox::cover_art::get_64(db::track_id_t track_id) {
-  auto path = get_cover_path_64(track_id);
-  if (path.empty()) {
-    ensure_worker_started(track_id);
-    return std::nullopt;
-  }
-  return path;
+  return get_cover_path(DirResName::RES_64, track_id);
 }
-
 void zincbox::cover_art::deserialize(std::ifstream& is) {
   size_t tracks_size = 0;
   read_bin(is, tracks_size);

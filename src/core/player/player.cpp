@@ -174,10 +174,16 @@ namespace player {
       }
     }
 
-    auto current_elem = get_playing_track();
-    if (current_elem) {
-      auto cover = zincbox::cover_art::get_full_res(current_elem->track_id);
-      if (cover.has_value() && !cover->empty()) { mpris::notify_cover_change(path_to_utf8(cover.value())); }
+    // Periodically update the cover
+    // but FIXME: cover_art should return whether the cover is missing or it's loading
+    static i32 clk = 0;
+    if (clk++ > 20) {
+      clk = 0;
+      auto current_elem = get_playing_track();
+      if (current_elem) {
+        auto cover = zincbox::cover_art::get_full_res(current_elem->track_id);
+        if (cover.has_value() && !cover->empty()) { mpris::notify_cover_change(path_to_utf8(cover.value())); }
+      }
     }
   }
 

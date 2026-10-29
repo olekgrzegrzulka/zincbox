@@ -245,7 +245,7 @@ namespace player {
       std::deque<AudioCommand> local_cmds;
       {
         std::unique_lock lock(m_cmd_mutex);
-        m_cmd_cv.wait_for(lock, std::chrono::milliseconds(15),
+        m_cmd_cv.wait_for(lock, std::chrono::milliseconds(100),
                           [this, &st] { return !m_cmd_queue.empty() || st.stop_requested(); });
 
         if (st.stop_requested()) { break; }

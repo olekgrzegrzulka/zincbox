@@ -638,11 +638,11 @@ namespace player::queue {
   }
 
   std::optional<db::track_info> get_playing_track() {
-    auto playing = get_playing();
-    if (!playing.has_value()) { return std::nullopt; }
-    if (playing->is_track()) { return playing->track()->track_info; }
-    if (playing->is_playlist()) { return playing->playlist()->get_track(); }
-    if (playing->is_collection()) { return playing->collection()->get_track(); }
+    if (!playing_index.has_value() || playing_index.value() >= playing_queue.size()) { return std::nullopt; }
+    const auto& playing = playing_queue[playing_index.value()];
+    if (playing.is_track()) { return playing.track()->track_info; }
+    if (playing.is_playlist()) { return playing.playlist()->get_track(); }
+    if (playing.is_collection()) { return playing.collection()->get_track(); }
     return std::nullopt;
   }
 
