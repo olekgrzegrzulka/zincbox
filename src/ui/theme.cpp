@@ -359,6 +359,8 @@ void theme::load_theme(std::string_view theme_name, Root& ui, std::string_view l
   atlas_add_texture("text_input_focused", {"ui/text_input_focused.png"});
   atlas_add_texture("text_input_idle", {"ui/text_input_idle.png"});
   atlas_add_texture("tooltip", {"ui/tooltip.png"});
+  atlas_add_texture("tooltip_arrow", {"ui/tooltip_arrow.png"});
+  atlas_add_texture("tooltip_arrow_inverted", {"ui/tooltip_arrow_inverted.png"});
   add_custom_button("checkbox", "ui/checkbox.png");
   atlas_add_texture("checkbox_check", {"ui/checkbox_check.png"});
   atlas_add_texture_row(

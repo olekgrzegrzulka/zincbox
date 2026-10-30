@@ -6,9 +6,12 @@
 #include "core/player/player.hpp"
 #include "theme.hpp"
 #include "ui/theme_config.hpp"
+#include "ui/tr.hpp"
+#include "ui/ui.hpp"
 #include "ui/zb_widgets.hpp"
 #include "ui/zincgui/label.hpp"
 #include "ui/zincgui/root.hpp"
+#include "ui/zincgui/tooltip_controller.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
@@ -69,7 +72,24 @@ class WidgetPlaylistHeader final : public zincgui::Widget {
 
     ~WidgetPlaylistHeader() override {}
 
-    void update() override { zincgui::Widget::update(); }
+    void update() override {
+
+      if (m_button_play->is_mouse_hovering()) {
+        zincbox::ui::get_tooltip_controller()->show(*m_button_play, tr::get("tooltip.play"),
+                                                    zincgui::ToolTipPosition::BELOW, 6);
+      } else if (m_button_play_next->is_mouse_hovering()) {
+        zincbox::ui::get_tooltip_controller()->show(*m_button_play_next, tr::get("tooltip.play_next"),
+                                                    zincgui::ToolTipPosition::BELOW, 6);
+      } else if (m_button_sort->is_mouse_hovering()) {
+        zincbox::ui::get_tooltip_controller()->show(*m_button_sort, tr::get("tooltip.sort_by"),
+                                                    zincgui::ToolTipPosition::BELOW, 6);
+      } else if (m_button_more->is_mouse_hovering()) {
+        zincbox::ui::get_tooltip_controller()->show(*m_button_more, tr::get("tooltip.more_options"),
+                                                    zincgui::ToolTipPosition::BELOW, 6);
+      }
+
+      zincgui::Widget::update();
+    }
 
     [[nodiscard]] size_t playlist_id() const noexcept { return m_playlist_id; }
     WidgetPlaylistHeader& playlist_id(size_t id) noexcept {

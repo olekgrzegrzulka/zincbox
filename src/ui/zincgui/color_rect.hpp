@@ -1,7 +1,6 @@
 #pragma once
 #include <array>
 #include <span>
-#include <vector>
 #include "common/color.hpp"
 #include "common/types.hpp"
 #include "ui/zincgui/default_settings.hpp"

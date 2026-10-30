@@ -56,6 +56,7 @@
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/text_input.hpp"
 #include "ui/zincgui/tooltip.hpp"
+#include "ui/zincgui/tooltip_controller.hpp"
 #include "ui/zincgui/widget.hpp"
 #include "ui_notifications.hpp"
 #include "zincbox.hpp"
@@ -100,8 +101,8 @@ namespace {
   PanelPlaylists* panel_playlists{};
   PanelControls* panel_controls{};
   Splitter* splitter{};
-  ToolTip* tooltip_drag{};
   Notification* notification_scan_progress{};
+  TooltipController* tooltip_controller{};
 
   enum class FileDialogOpen : u8 {
     NONE,
@@ -221,8 +222,7 @@ void zincbox::ui::init() {
   panel_tracklist = &root->add_widget<PanelTracklist>();
   panel_queue = &root->add_widget<PanelQueue>();
   splitter = &root->add_widget<Splitter>();
-  tooltip_drag = &root->add_widget<ToolTip>("", ToolTipPosition::MANUAL);
-  tooltip_drag->is_drawn(false).anchor(Anchor::TOP).clamp(false);
+  tooltip_controller = &root->add_widget<TooltipController>();
   panel_playlists = &root->add_widget<PanelPlaylists>();
   popup_controller = &root->add_widget<PopupController>();
   notifications = &root->add_widget<InterfaceNotifications>();
@@ -573,6 +573,8 @@ void zincbox::ui::set_tabs_order(std::vector<std::string> tabs_order_) {
 void zincbox::ui::set_tracks_scroll_offset(i32 scroll_px) { panel_tracklist->scroll_px(scroll_px); }
 
 void zincbox::ui::set_playlists_scroll_offset(i32 scroll_px) { panel_playlists->scroll_px(scroll_px); }
+
+TooltipController* zincbox::ui::get_tooltip_controller() { return tooltip_controller; }
 
 zincbox::ui::DecorationHover zincbox::ui::get_decoration_hover(i32 mouse_x, i32 mouse_y) {
   vec2i mouse_pos{mouse_x, mouse_y};
@@ -1836,6 +1838,10 @@ namespace {
   bool handle_drag_tab(Tab* hovered_tab);
   bool handle_drop_tab(Tab* hovered_tab);
 
+  void show_drag_tip(std::string_view text) {
+    tooltip_controller->show(Input::get_mouse_pos(), text, ToolTipPosition::BELOW, 10, false, false);
+  };
+
   std::vector<db::track_id_t> get_selection_track_ids(const std::vector<PanelTracklist::Item>& items) {
     std::vector<db::track_id_t> track_ids;
     track_ids.reserve(items.size());
@@ -1986,16 +1992,16 @@ namespace {
     auto playlist = db::playlist_by_id(playlist_id);
     if (!playlist.has_value()) { return false; }
     if (playlist->get().type != db::PlaylistType::USER) {
-      tooltip_drag->text(tr::get("tooltip.drag.not_allowed"));
+      show_drag_tip(tr::get("tooltip.drag.not_allowed"));
       return true;
     }
     size_t track_count = get_selection_track_ids(selection.items).size();
     if (track_count == 0) { return false; }
 
     if (track_count > 1) {
-      tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist->get().name));
+      show_drag_tip(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist->get().name));
     } else {
-      tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist", playlist->get().name));
+      show_drag_tip(tr::format("tooltip.drag.add_to_playlist", playlist->get().name));
     }
     return true;
   }
@@ -2012,7 +2018,7 @@ namespace {
 
   bool handle_drag_playlists_empty_space() {
     if (get_selection_track_ids(selection.items).empty()) { return false; }
-    tooltip_drag->text(tr::get("tooltip.drag.create_playlist"));
+    show_drag_tip(tr::get("tooltip.drag.create_playlist"));
     return true;
   }
 
@@ -2053,6 +2059,7 @@ namespace {
   }
 
   bool handle_drag_tracklist(WidgetTrack* hovered_track) {
+
     if (!hovered_track) { return false; }
     auto target_playlist_id = hovered_track->playlist_id();
     auto playlist = db::playlist_by_id(target_playlist_id);
@@ -2066,7 +2073,7 @@ namespace {
       (selection.source == SelectionSource::COLLECTION) && (selection.common_playlist_id == target_playlist_id);
 
     if (playlist->get().type != db::PlaylistType::USER) {
-      tooltip_drag->text(tr::get("tooltip.drag.not_allowed"));
+      show_drag_tip(tr::get("tooltip.drag.not_allowed"));
     } else if (move) {
       size_t move_count = 0;
       for (const auto& item : selection.items) {
@@ -2075,9 +2082,9 @@ namespace {
       if (move_count == 0) { return false; }
 
       if (move_count > 1) {
-        tooltip_drag->text(tr::format("tooltip.drag.reorder_plural", move_count));
+        show_drag_tip(tr::format("tooltip.drag.reorder_plural", move_count));
       } else {
-        tooltip_drag->text(tr::get("tooltip.drag.reorder"));
+        show_drag_tip(tr::get("tooltip.drag.reorder"));
       }
     } else {
       auto playlist_name = playlist->get().name;
@@ -2085,9 +2092,9 @@ namespace {
       if (track_count == 0) { return false; }
 
       if (track_count > 1) {
-        tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist_name));
+        show_drag_tip(tr::format("tooltip.drag.add_to_playlist_plural", track_count, playlist_name));
       } else {
-        tooltip_drag->text(tr::format("tooltip.drag.add_to_playlist", playlist_name));
+        show_drag_tip(tr::format("tooltip.drag.add_to_playlist", playlist_name));
       }
     }
     return true;
@@ -2141,6 +2148,7 @@ namespace {
   }
 
   bool handle_drag_queue(WidgetTrack* hovered_track, WidgetQueuePlaylistCollection* hovered_queue_item) {
+
     if (hovered_track) {
       bool above = hovered_track->position(Anchor::CENTER).y > Input::get_mouse_y();
       panel_queue->insert_cursor_index(hovered_track->item_index())
@@ -2182,15 +2190,15 @@ namespace {
 
     if (move) {
       if (valid_count > 1) {
-        tooltip_drag->text(tr::format("tooltip.drag.reorder_plural", valid_count));
+        show_drag_tip(tr::format("tooltip.drag.reorder_plural", valid_count));
       } else {
-        tooltip_drag->text(tr::get("tooltip.drag.reorder"));
+        show_drag_tip(tr::get("tooltip.drag.reorder"));
       }
     } else {
       if (valid_count > 1) {
-        tooltip_drag->text(tr::format("tooltip.drag.add_to_queue_plural", valid_count));
+        show_drag_tip(tr::format("tooltip.drag.add_to_queue_plural", valid_count));
       } else {
-        tooltip_drag->text(tr::get("tooltip.drag.add_to_queue"));
+        show_drag_tip(tr::get("tooltip.drag.add_to_queue"));
       }
     }
     return true;
@@ -2265,7 +2273,6 @@ namespace {
   void handle_drag(WidgetAlbumCover* hovered_playlist_cover, WidgetPlaylistHeader* hovered_playlist_header,
                    WidgetTrack* hovered_track, WidgetQueuePlaylistCollection* hovered_queue_item,
                    bool hovered_queue_panel, Tab* hovered_tab, bool hovered_playlists_panel) {
-    tooltip_drag->is_drawn(true).pos(Input::get_mouse_pos() + vec2i{0, 10});
     panel_tracklist->is_dragged(true);
     panel_queue->is_dragged(true);
 
@@ -2278,9 +2285,9 @@ namespace {
     if (hovered_tab && handle_drag_tab(hovered_tab)) { return; }
 
     if (selection.items.size() > 1) {
-      tooltip_drag->text(tr::format("tooltip.drag.tracks", selection.items.size()));
+      show_drag_tip(tr::format("tooltip.drag.tracks", selection.items.size()));
     } else {
-      tooltip_drag->text(tr::get("tooltip.drag.track"));
+      show_drag_tip(tr::get("tooltip.drag.track"));
     }
   }
 
@@ -2356,8 +2363,6 @@ namespace {
         handle_drop(hovered_playlist_cover, hovered_playlist_header, hovered_track, hovered_queue_item,
                     hovered_queue_panel, hovered_tab, hovered_playlists_panel);
       }
-    } else {
-      tooltip_drag->is_drawn(false);
     }
 
     if (lmb_just_released || rmb_just_pressed || Input::key_just_pressed(Input::Key::KEY_ESCAPE) ||

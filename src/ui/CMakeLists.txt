@@ -63,6 +63,7 @@ set(UI_SOURCES
     zincgui/texture_atlas.cpp
     zincgui/texture.cpp
     zincgui/tooltip.cpp
+    zincgui/tooltip_controller.cpp
     zincgui/widget.cpp
 )
 

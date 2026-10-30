@@ -4,16 +4,15 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <harfbuzz/hb.h>
+#include <hb.h>
 #include "common/types.hpp"
-#include "core/settings.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
-#include "ui/zincgui/default_settings.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/vertex.hpp"
 #include "zincbox.hpp"
+#include <hb-ft.h>
 
 namespace {
   using namespace zincgui;

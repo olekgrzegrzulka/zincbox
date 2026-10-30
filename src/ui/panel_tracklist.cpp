@@ -42,24 +42,6 @@ PanelTracklist::PanelTracklist(Root& ui_) : ColorRect(ui_) {
     .orientation(SliderOrientation::VERTICAL)
     .on_value_changed([this](i32 /* old */, i32 scroll_offset) { m_target_scroll_px = scroll_offset; });
 
-  m_button_play_tooltip = &add_child<ToolTip>(tr::get("tooltip.play"), ToolTipPosition::BELOW, 8);
-  m_button_play_next_tooltip = &add_child<ToolTip>(tr::get("tooltip.play_next"), ToolTipPosition::BELOW, 8);
-  m_button_sort_tooltip = &add_child<ToolTip>(tr::get("tooltip.sort_by"), ToolTipPosition::BELOW, 8);
-  m_button_more_tooltip = &add_child<ToolTip>(tr::get("tooltip.more_options"), ToolTipPosition::BELOW, 8);
-
-  m_button_play_tooltip->is_drawn(false)
-    .parent_anchor(Anchor::TOP_LEFT)
-    .anchor(Anchor::TOP_LEFT);
-  m_button_play_next_tooltip->is_drawn(false)
-    .parent_anchor(Anchor::TOP_LEFT)
-    .anchor(Anchor::TOP_LEFT);
-  m_button_sort_tooltip->is_drawn(false)
-    .parent_anchor(Anchor::TOP_LEFT)
-    .anchor(Anchor::TOP_LEFT);
-  m_button_more_tooltip->is_drawn(false)
-    .parent_anchor(Anchor::TOP_LEFT)
-    .anchor(Anchor::TOP_LEFT);
-
   m_items_container = &add_child<Widget>();
 
   m_insert_cursor = &add_child<ColorRect>(theme::config().panel_tracklist.insert_cursor_color);
@@ -132,50 +114,7 @@ void PanelTracklist::update() {
   }
   m_scroll_px = std::clamp(m_scroll_px, 0.0, std::max(0.0, static_cast<double>(m_max_scroll_px - height())));
 
-  std::optional<size_t> tooltip_visible_index;
-
   bool draw_insert_cursor = false;
-
-  for (size_t index : m_header_indices) {
-    auto* item = std::get_if<ItemPlaylistHeader>(&m_items[index]);
-    if (!item) { continue; }
-    auto* widget_header = item->widget;
-    if (!widget_header) { continue; }
-
-    if (widget_header->button_play()->is_mouse_hovering()) {
-      tooltip_visible_index = 0;
-      m_button_play_tooltip->pos(widget_header->button_play()->position() - position());
-      m_button_play_tooltip->x(m_button_play_tooltip->x() - (m_button_play_tooltip->width() / 2))
-        .y(m_button_play_tooltip->y() + 26);
-      break;
-    }
-    if (widget_header->button_play_next()->is_mouse_hovering()) {
-      tooltip_visible_index = 1;
-      m_button_play_next_tooltip->pos(widget_header->button_play_next()->position() - position());
-      m_button_play_next_tooltip->x(m_button_play_next_tooltip->x() - (m_button_play_next_tooltip->width() / 2))
-        .y(m_button_play_next_tooltip->y() + 26);
-      break;
-    }
-    if (widget_header->button_sort()->is_mouse_hovering()) {
-      tooltip_visible_index = 2;
-      m_button_sort_tooltip->pos(widget_header->button_sort()->position() - position());
-      m_button_sort_tooltip->x(m_button_sort_tooltip->x() - (m_button_sort_tooltip->width() / 2))
-        .y(m_button_sort_tooltip->y() + 26);
-      break;
-    }
-    if (widget_header->button_more()->is_mouse_hovering()) {
-      tooltip_visible_index = 3;
-      m_button_more_tooltip->pos(widget_header->button_more()->position() - position());
-      m_button_more_tooltip->x(m_button_more_tooltip->x() - (m_button_more_tooltip->width() / 2))
-        .y(m_button_more_tooltip->y() + 26);
-      break;
-    }
-  }
-
-  m_button_play_tooltip->is_drawn(tooltip_visible_index == 0);
-  m_button_play_next_tooltip->is_drawn(tooltip_visible_index == 1);
-  m_button_sort_tooltip->is_drawn(tooltip_visible_index == 2);
-  m_button_more_tooltip->is_drawn(tooltip_visible_index == 3);
 
   double t = std::clamp(std::abs(m_scroll_px - m_target_scroll_px) * 0.004, 0.4, 0.8);
   m_scroll_px = std::lerp(m_scroll_px, m_target_scroll_px, t);
@@ -224,15 +163,9 @@ void PanelTracklist::event(Input::InputEventKey& e) {
   }
 }
 
-void PanelTracklist::show() {
-  is_drawn(true)
-    .is_updated(true);
-}
+void PanelTracklist::show() { is_drawn(true).is_updated(true); }
 
-void PanelTracklist::hide() {
-  is_drawn(false)
-    .is_updated(false);
-}
+void PanelTracklist::hide() { is_drawn(false).is_updated(false); }
 
 void PanelTracklist::recreate(std::optional<size_t> collection_id_) {
   clear();
@@ -249,7 +182,6 @@ void PanelTracklist::recreate(std::optional<size_t> collection_id_) {
     item_header.item_index = m_items.size();
     m_max_scroll_px += item_header.height();
     m_items.emplace_back(item_header);
-    m_header_indices.emplace_back(m_items.size() - 1);
     for (size_t track_index = 0; track_index < playlist.track_ids.size(); track_index += 1) {
       auto track_id = playlist.track_ids[track_index];
       db::track_info track_info = {
@@ -379,7 +311,6 @@ void PanelTracklist::remove_item(size_t index) {
 void PanelTracklist::clear() {
   m_collection_id = std::nullopt;
   m_items.clear();
-  m_header_indices.clear();
   for (auto&& widget : m_items_container->children()) {
     widget->marked_for_deletion(true);
   }
@@ -513,8 +444,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
       .item_index(t->item_index)
       .highlight_mode(m_track_highlight_mode);
 
-    w->ignore_parents_layout(true)
-      .is_drawn(false);
+    w->ignore_parents_layout(true).is_drawn(false);
     t->widget = w;
     generic_widget = w;
   } else if (auto* qt = std::get_if<ItemQueueTrack>(&item)) {
@@ -530,8 +460,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
           .highlight_mode(m_track_highlight_mode);
       }
     }
-    w->ignore_parents_layout(true)
-      .is_drawn(false);
+    w->ignore_parents_layout(true).is_drawn(false);
     qt->widget = w;
     generic_widget = w;
   } else if (auto* qp = std::get_if<ItemQueuePlaylist>(&item)) {
@@ -547,8 +476,7 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
           .item_type(WidgetQueuePlaylistCollection::ItemType::PLAYLIST);
       }
     }
-    w->ignore_parents_layout(true)
-      .is_drawn(false);
+    w->ignore_parents_layout(true).is_drawn(false);
     qp->widget = w;
     generic_widget = w;
   } else if (auto* qc = std::get_if<ItemQueueCollection>(&item)) {
@@ -563,14 +491,12 @@ void PanelTracklist::create_item_widget_if_null(Item& item) {
           .item_type(WidgetQueuePlaylistCollection::ItemType::COLLECTION);
       }
     }
-    w->ignore_parents_layout(true)
-      .is_drawn(false);
+    w->ignore_parents_layout(true).is_drawn(false);
     qc->widget = w;
     generic_widget = w;
   } else if (auto* h = std::get_if<ItemPlaylistHeader>(&item)) {
     auto* w = &m_items_container->add_child<WidgetPlaylistHeader>(h->collection_id, h->playlist_id);
-    w->ignore_parents_layout(true)
-      .is_drawn(false);
+    w->ignore_parents_layout(true).is_drawn(false);
     h->widget = w;
     w->button_sort()->on_press([this, collection_id = h->collection_id, playlist_id = h->playlist_id, w]() -> void {
       if (m_on_playlist_sort_button_pressed) {

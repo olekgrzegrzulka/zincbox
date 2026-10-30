@@ -76,10 +76,6 @@ class PanelControls final : public zincgui::ColorRect {
     zincgui::Button* m_button_shuffle{};
     zincgui::Button* m_button_repeat{};
     zincgui::Button* m_button_expand_player{};
-    zincgui::ToolTip* m_tooltip_button_shuffle{};
-    zincgui::ToolTip* m_tooltip_button_repeat{};
-    zincgui::ToolTip* m_tooltip_timestamp{};
-    zincgui::ToolTip* m_tooltip_volume{};
     zincgui::Slider* m_seekbar{};
     zincgui::Slider* m_volume_bar{};
     zincgui::Label* m_label_progress{};

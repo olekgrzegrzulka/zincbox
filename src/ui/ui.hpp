@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "common/types.hpp"
+#include "ui/zincgui/tooltip_controller.hpp"
 
 namespace zincbox::ui {
   void init();
@@ -33,5 +34,6 @@ namespace zincbox::ui {
     TITLEBAR,
   };
 
+  TooltipController* get_tooltip_controller();
   DecorationHover get_decoration_hover(i32 mouse_x, i32 mouse_y);
 } // namespace zincbox::ui
