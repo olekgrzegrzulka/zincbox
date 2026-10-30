@@ -9,6 +9,7 @@
 #include <vector>
 #include <stdlib.h>
 #include "common/color.hpp"
+#include "common/logger.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"
 #include "ui/zb_widgets.hpp"
@@ -23,9 +24,8 @@ using namespace zincgui;
 
 Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
   label.set_text(info.label);
-  // label.update_text();
-  set_width(std::clamp(get_label().get_width() + (2 * info.padding), 40, 200));
   padding = info.padding;
+  set_width(std::clamp(label.get_text_extents().x + (2 * padding), 40, 200));
   is_draggable = info.is_draggable;
   label.set_anchor(Anchor::CENTER);
   label.set_parent_anchor(Anchor::CENTER);
@@ -35,7 +35,7 @@ Tab::Tab(Root& ui_, const tab_info& info) : Button(ui_) {
   set_texture_inactive();
   set_nine_slice_margin((i32)(theme::config().panel_top.height / 2));
 
-  on_press([&]() { on_active(this); });
+  on_press([this]() { on_active(this); });
 
   on_press_rmb([this]() {
     if (on_right_click) { on_right_click(this); }
@@ -93,7 +93,7 @@ void Tab::move(i32 to) {
 }
 
 void Tab::update() {
-  set_width(std::clamp(label.get_width() + (2 * padding), 40, 200));
+  set_width(std::clamp(label.get_text_extents().x + (2 * padding), 40, 200));
   t = std::clamp(t + 0.2f, 0.0f, 1.0f);
   set_x(std::lerp(x_old, x_new, std::sin(1.5708 * t)));
   Button::update();
@@ -122,13 +122,11 @@ TabBar::TabBar(Root& ui_) : Widget(ui_) {
   tab_container->set_clip_children(true);
 
   auto& pad = add_child<Widget>();
-  pad.set_min_width(6);
-  pad.set_max_width(6);
+  pad.set_fixed_width(6);
 
   button_add = &add_child<ZincboxButton>("add_tab", theme::config().panel_top.button_add_tab);
   button_add->add_image("add_tab_icon");
-  button_add->set_parent_anchor(Anchor::BOTTOM_LEFT);
-  button_add->set_anchor(Anchor::BOTTOM_LEFT);
+  button_add->set_fixed_size(button_add->get_size());
   button_add->on_press([this]() {
     if (on_add_tab_button_pressed) { on_add_tab_button_pressed(); };
   });
@@ -155,8 +153,7 @@ void TabBar::add_tab(const tab_info& info, bool select) { add_tab(info, tabs.siz
 void TabBar::add_tab(const tab_info& info, size_t at, bool select) {
   at = std::min(at, tabs.size());
   Tab* t = &tab_container->add_child<Tab>(info);
-  t->set_fixed_height(0);
-  t->set_height(height);
+  t->set_fixed_height(height);
   t->on_drag_start = [this](i32 id) -> void { on_tab_drag_start(id); };
   t->on_active = [this, info](Tab* tab) -> void {
     i32 mouse_drag_delta = std::abs(drag_start_mouse_pos - Input::get_mouse_x());
@@ -237,7 +234,7 @@ void TabBar::close_all_tabs() {
 
 i32 TabBar::get_tab_container_width() { return tab_container->get_max_width(); }
 
-double TabBar::get_max_scroll_px() { return std::max(0, get_tab_container_width() - width); }
+double TabBar::get_max_scroll_px() { return std::max(0, tab_container->get_max_width() - tab_container->get_width()); }
 
 void TabBar::scroll(double value) {
   value = std::clamp<double>(target_scroll_px + value, 0, get_max_scroll_px());
@@ -245,8 +242,6 @@ void TabBar::scroll(double value) {
 }
 
 void TabBar::update() {
-  button_add->set_fixed_width(button_add->get_width());
-  button_add->set_fixed_height(button_add->get_width());
 
   target_scroll_px = std::clamp<double>(target_scroll_px, 0, get_max_scroll_px());
   auto scroll_px_ = scroll_px;
@@ -348,9 +343,10 @@ void TabBar::position_tabs(bool smooth) {
       tab->move(dragged_tab_x);
     }
 
-    tab_x += tab->get_width() - 1;
+    tab_x += tab->get_width();
   }
-  tab_container->set_max_width(tab_x + 28); // FIXME
+  tab_container->set_max_width(tab_x);
+  m_content_size = tab_x + 6 + button_add->get_width();
 }
 
 void TabBar::update_tab_textures(i32 id) {

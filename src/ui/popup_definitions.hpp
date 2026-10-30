@@ -79,9 +79,7 @@ class PopupSetSources final : public Popup {
 
     size_t collection_id;
     zincgui::Label* title{};
-    zincgui::Widget* content{};
-    zincgui::Widget* scrollable_content{};
-    zincgui::ScrollBar* scrollbar{};
+    ScrollableView* scrollable_content{};
     zincgui::Widget* buttons{};
     zincgui::Button* btn_close{};
     zincgui::Button* btn_add_dir{};
@@ -97,6 +95,8 @@ class PopupAddToPlaylist final : public Popup {
   public:
     PopupAddToPlaylist(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_,
                        std::optional<size_t> track_id_);
+
+    void update() override;
 
     std::optional<size_t> track_id;
     zincgui::Label* title{};

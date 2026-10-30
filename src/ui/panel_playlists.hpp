@@ -109,6 +109,8 @@ class PanelPlaylists final : public zincgui::ColorRect {
 
   private:
     Props m_props_old{};
+    i32 m_width_old{};
+    i32 m_height_old{};
 
   public:
     std::function<void(size_t, Widget*)> on_playlist_lmb;

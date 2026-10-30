@@ -1,8 +1,9 @@
 #include "ui/zincgui/sprite.hpp"
-#include <cstddef>
 #include <functional>
+#include <span>
 #include <glad/glad.h>
 #include "common/logger.hpp"
+#include "common/types.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 #include "ui/zincgui/vertex.hpp"
@@ -13,7 +14,7 @@ zincgui::Sprite::Sprite(Root& ui_, i32 width_, i32 height_) : Widget(ui_, width_
 
 zincgui::Sprite::~Sprite() {}
 
-std::vector<zincgui::Vertex> zincgui::Sprite::get_vertices() {
+std::span<const zincgui::Vertex> zincgui::Sprite::get_vertices() {
   i32 window_width_ = ui.get_window_width();
   i32 window_height_ = ui.get_window_height();
 
@@ -26,7 +27,7 @@ std::vector<zincgui::Vertex> zincgui::Sprite::get_vertices() {
   start = start * vec2f(2.0) - vec2f(1.0);
   end = end * vec2f(2.0) - vec2f(1.0);
 
-  return {
+  vertices = {
     Vertex{VertexType::SPRITE,
            {start.x, end.y},
            {uv_start.x, uv_end.y},
@@ -82,6 +83,8 @@ std::vector<zincgui::Vertex> zincgui::Sprite::get_vertices() {
            uv_end,
            atlas_index},
   };
+
+  return vertices;
 }
 
 void zincgui::Sprite::update() { Widget::update(); }

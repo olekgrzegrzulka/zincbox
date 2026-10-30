@@ -73,6 +73,7 @@ class TabBar : public zincgui::Widget {
     i32 get_tab_container_width();
     double get_scroll_px() { return scroll_px; }
     double get_max_scroll_px();
+    i32 get_content_size() const { return m_content_size; }
     void scroll(double);
 
   protected:
@@ -86,6 +87,7 @@ class TabBar : public zincgui::Widget {
     std::function<void()> on_add_tab_button_pressed{};
 
   protected:
+    i32 m_content_size = 0;
     zincgui::Widget* tab_container{};
     zincgui::Button* button_add{};
     zincgui::Button* button_left{};

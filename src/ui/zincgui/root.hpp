@@ -39,7 +39,8 @@ namespace zincgui {
         return widget;
       }
 
-      void tick(i32 window_width_, i32 window_height_);
+      void layout_tree(Widget*);
+      [[nodiscard]] bool tick(i32 window_width_, i32 window_height_);
       void draw();
 
       size_t add_font(std::string_view name, const std::string& path);

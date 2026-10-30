@@ -1,6 +1,5 @@
 #pragma once
-#include <functional>
-#include <optional>
+#include <span>
 #include <string>
 #include <vector>
 #include <glm/vec2.hpp>
@@ -25,6 +24,7 @@ namespace zincgui {
       i32 texture_width = default_settings::sprite_default_texture_width;
       i32 texture_height = default_settings::sprite_default_texture_height;
       u32 atlas_index = default_settings::sprite_default_atlas_index;
+      std::array<Vertex, 6> vertices{};
 
     protected:
     public:
@@ -32,7 +32,7 @@ namespace zincgui {
       Sprite(Root& ui_, const std::string& id_) : Widget(ui_) { set_texture(id_, true); }
       Sprite(Root& ui_, i32 width_, i32 height_);
 
-      std::vector<Vertex> get_vertices() override;
+      std::span<const Vertex> get_vertices() override;
 
       ~Sprite() override;
 

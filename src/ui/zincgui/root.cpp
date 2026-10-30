@@ -17,6 +17,7 @@
 #include "shader_src.hpp"
 #include "ui/zincgui/font_face.hpp"
 #include "ui/zincgui/input.hpp"
+#include "ui/zincgui/layout.hpp"
 #include "ui/zincgui/texture_atlas.hpp"
 #include "ui/zincgui/tooltip.hpp"
 #include "ui/zincgui/widget.hpp"
@@ -107,8 +108,11 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   }
 
   if (widget->deleted_) {
-    if (m_focused_widget == widget) { m_focused_widget = nullptr; }
+    if (m_focused_widget == widget) { set_focused_widget(nullptr); }
     if (m_focus_manager == widget) { m_focus_manager = nullptr; }
+    if (widget->parent && widget->parent->layout_dirty) { widget->layout_dirty = true; }
+    widget->window_width = m_window_width;
+    widget->window_height = m_window_height;
   }
 
   if (!widget->deleted_) {
@@ -136,6 +140,10 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
     widget->global_position_ =
       origin + vec2i(widget->x, widget->y) - vec2i(vec2f{widget->width, widget->height} * anchor_to_uv(widget->anchor));
 
+    widget->rect_ = {
+      .begin = {widget->global_position_.x, m_window_height - (widget->global_position_.y + widget->height)},
+      .size = {widget->width, widget->height}};
+
     std::optional<rect2i> parent_scissor = parent ? parent->scissor_ : std::nullopt;
     if (widget->is_drawn_on_top) { parent_scissor = std::nullopt; }
     if (widget->get_clip_children()) {
@@ -145,6 +153,14 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       }
     } else {
       widget->scissor_ = parent_scissor;
+    }
+
+    if (widget->scissor_) {
+      widget->hit_test_rect_ = widget->scissor_->intersected(widget->rect_);
+      // FIXME : rect_ has inverted y axis...
+      widget->hit_test_rect_.begin.y = m_window_height - widget->hit_test_rect_.begin.y - widget->hit_test_rect_.size.y;
+    } else {
+      widget->hit_test_rect_ = rect2i{.begin = vec2i(-1, -1), .size = vec2i(0, 0)};
     }
 
     vec2i mouse_pos = Input::get_mouse_pos();
@@ -176,17 +192,13 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
       rect2i widget_rect = widget->get_rect();
       scissor_rect = widget->scissor_->intersected(widget_rect);
     }
-    std::vector<Vertex> verts = widget->get_vertices();
-    for (auto&& v : verts) {
-      v.scissor_begin = scissor_rect.begin;
-      v.scissor_end = scissor_rect.begin + scissor_rect.size;
-    }
 
     if ((i32)m_vertex_layers.size() <= always_on_top_layer) { m_vertex_layers.resize(always_on_top_layer + 1); }
-    auto& dst = m_vertex_layers[always_on_top_layer];
-    if (!verts.empty()) {
-      dst.insert(dst.end(), verts.begin(), verts.end());
-      m_vertices_count += verts.size();
+    for (auto&& v : widget->get_vertices()) {
+      m_vertex_layers[always_on_top_layer].emplace_back(v);
+      m_vertex_layers[always_on_top_layer].back().scissor_begin = scissor_rect.begin;
+      m_vertex_layers[always_on_top_layer].back().scissor_end = scissor_rect.begin + scissor_rect.size;
+      m_vertices_count += 1;
     }
   }
 
@@ -250,6 +262,7 @@ bool zincgui::Root::process_mutations() {
     for (Widget* w : m_deleted_widgets) {
       if (w->parent != nullptr) {
         std::erase_if(w->parent->children, [w](const auto& child) { return child.get() == w; });
+        if (w->parent->layout.enabled) { w->parent->layout_dirty = true; }
       } else {
         std::erase_if(m_widgets, [w](const auto& child) { return child.get() == w; });
       }
@@ -270,6 +283,10 @@ bool zincgui::Root::process_mutations() {
       w->last_update_frame_ = 0;
       w->children.insert(w->children.end(), std::move_iterator(w->children_to_add.begin()),
                          std::move_iterator(w->children_to_add.end()));
+      if (w->layout.enabled) {
+        w->layout_dirty = true;
+        w->dirty = true;
+      }
       w->children_to_add.clear();
     }
   }
@@ -277,29 +294,43 @@ bool zincgui::Root::process_mutations() {
   return changed;
 }
 
-void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
+void zincgui::Root::layout_tree(Widget* w) {
+  if (!w->updated_ || w->deleted_) { return; }
+  if (w->layout.enabled && w->layout_dirty) {
+    layout_engine::apply_layout(*w);
+    m_tree_dirty = true;
+  }
+  w->layout_dirty = false;
+  for (auto& child : w->get_children()) {
+    layout_tree(child.get());
+  }
+};
+
+bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
+  bool changed = false;
   m_current_frame += 1;
 
+  bool window_resized = false;
   if (window_width_ != m_window_width || window_height_ != m_window_height) {
+    window_resized = true;
     m_tree_dirty = true;
     for (auto&& widget : m_widgets) {
       widget->mark_dirty();
+      widget->layout_dirty = true;
     }
+    changed = true;
   }
 
   m_window_width = window_width_;
   m_window_height = window_height_;
 
-  if (!m_widgets_to_add.empty()) {
-    m_tree_dirty = true;
-    m_widgets.insert(m_widgets.end(), std::move_iterator(m_widgets_to_add.begin()),
-                     std::move_iterator(m_widgets_to_add.end()));
-    m_widgets_to_add.clear();
+  if (m_tree_dirty) {
+    changed = true;
+    construct_traversal_order();
   }
 
-  if (m_tree_dirty) { construct_traversal_order(); }
-
   while (process_mutations()) {
+    changed = true;
     construct_traversal_order();
   }
 
@@ -316,8 +347,7 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
 
     bool inside = false;
     if (w->scissor_) {
-      auto s = w->scissor_->intersected(w->get_rect());
-      s.begin.y = window_height_ - s.begin.y - s.size.y; // FIXME : get_rect() returns inverted y axis...
+      auto s = w->hit_test_rect_;
       inside = mouse_pos.x >= s.begin.x && mouse_pos.x < s.begin.x + s.size.x && mouse_pos.y >= s.begin.y &&
                mouse_pos.y < s.begin.y + s.size.y;
     } else {
@@ -361,8 +391,6 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
 
     for (auto it = m_widget_traversal_order.rbegin(); it != m_widget_traversal_order.rend(); it += 1) {
       Widget* w = *it;
-      w->set_window_width(m_window_width);
-      w->set_window_height(m_window_height);
 
       using MA = Input::MouseAction;
       using MB = Input::MouseButton;
@@ -384,28 +412,56 @@ void zincgui::Root::tick(i32 window_width_, i32 window_height_) {
       }
     }
 
-    if (replace_focused_widget) { m_focused_widget = new_focused_widget; }
+    if (replace_focused_widget) { set_focused_widget(new_focused_widget); }
   }
 
   bool tree_changed = false;
   do {
+
+    for (auto& w : m_widgets) {
+      layout_tree(w.get());
+    }
+
+    bool need_layout_update = false;
+
     for (auto* widget : m_widget_traversal_order) {
-      if (widget->updated_ && widget->last_update_frame_ != m_current_frame) {
-        widget->last_update_frame_ = m_current_frame;
-        widget->input();
-        widget->update();
+      if (widget->updated_) {
+        if (widget->last_update_frame_ != m_current_frame) {
+          widget->last_update_frame_ = m_current_frame;
+
+          widget->input();
+          widget->update();
+        }
+        if (widget->layout.enabled && widget->layout_dirty) { need_layout_update = true; }
       }
     }
 
-    if (m_tree_dirty) { construct_traversal_order(); }
+    if (need_layout_update) {
+      for (auto& w : m_widgets) {
+        layout_tree(w.get());
+      }
+    }
+
+    if (m_tree_dirty) {
+      changed = true;
+      construct_traversal_order();
+    }
     tree_changed = process_mutations();
-    if (tree_changed) { construct_traversal_order(); }
+    if (tree_changed) {
+      changed = true;
+      construct_traversal_order();
+    }
   } while (tree_changed || !m_deleted_widgets.empty() || !m_mutated_widgets.empty() || !m_widgets_to_add.empty());
+
+  return changed;
 }
 
 void zincgui::Root::set_focused_widget(Widget* w) {
   if (w && (w->get_marked_for_deletion() || w->deleted_)) { return; }
+  if (w == m_focused_widget) { return; }
+  if (m_focused_widget) { m_focused_widget->on_unfocused(); }
   m_focused_widget = w;
+  if (m_focused_widget) { m_focused_widget->on_focused(); }
 }
 
 void zincgui::Root::set_focus_manager(Widget* w) {

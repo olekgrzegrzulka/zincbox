@@ -1,4 +1,5 @@
 #pragma once
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -60,7 +61,7 @@ namespace zincgui {
       Label(Root&);
       Label(Root&, std::string_view);
 
-      std::vector<Vertex> get_vertices() override;
+      std::span<const Vertex> get_vertices() override;
 
       ~Label() override;
 

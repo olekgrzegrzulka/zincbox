@@ -165,14 +165,26 @@ void zincgui::Slider::input() {
   }
 
   if (is_dragged) {
-    thumb.set_uv_start(uv_start_thumb_pressed);
-    thumb.set_uv_end(uv_end_thumb_pressed);
+    state = SliderState::PRESSED;
+    if (state != state_old) {
+      thumb.set_uv_start(uv_start_thumb_pressed);
+      thumb.set_uv_end(uv_end_thumb_pressed);
+      state_old = state;
+    }
   } else if (mouse_on_thumb && !lmb_pressed) {
-    thumb.set_uv_start(uv_start_thumb_hovered);
-    thumb.set_uv_end(uv_end_thumb_hovered);
+    state = SliderState::HOVERED;
+    if (state != state_old) {
+      thumb.set_uv_start(uv_start_thumb_hovered);
+      thumb.set_uv_end(uv_end_thumb_hovered);
+      state_old = state;
+    }
   } else {
-    thumb.set_uv_start(uv_start_thumb_idle);
-    thumb.set_uv_end(uv_end_thumb_idle);
+    state = SliderState::IDLE;
+    if (state != state_old) {
+      thumb.set_uv_start(uv_start_thumb_idle);
+      thumb.set_uv_end(uv_end_thumb_idle);
+      state_old = state;
+    }
   }
 
   float norm_target = norm_pos_anim;

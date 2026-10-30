@@ -126,15 +126,19 @@ namespace zincbox {
 
   void SDL3Window::swap_buffers() { SDL_GL_SwapWindow(m_window); }
 
-  void SDL3Window::poll_events() {
+  bool SDL3Window::poll_events() {
+    bool ret = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+      ret = true;
       if (event.type == SDL_EVENT_QUIT) { m_should_close = true; }
       if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(m_window)) {
         m_should_close = true;
       }
       zincgui::Input::process_event(event);
     }
+
+    return ret;
   }
 
   bool SDL3Window::vsync() const {

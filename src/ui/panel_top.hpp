@@ -40,6 +40,8 @@ class PanelTop final : public zincgui::ColorRect {
     const Tab* get_queue_tab() const;
 
   private:
+    i32 m_width_old = -1;
+    i32 m_height_old = -1;
     zincgui::Widget* m_container_tabbar{};
     zincgui::Widget* m_container_drag_region{};
     zincgui::Widget* m_container_buttons{};

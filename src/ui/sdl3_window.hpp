@@ -58,7 +58,7 @@ namespace zincbox {
 
       void make_current() const;
       void swap_buffers();
-      void poll_events();
+      bool poll_events();
 
       bool vsync() const;
       void vsync(bool);

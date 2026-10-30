@@ -29,6 +29,7 @@ zincgui::TextInput::TextInput(Root& ui_) : Sprite(ui_), label(add_child<Label>()
   caret.set_color(default_settings::text_caret_color);
   caret.set_size(default_settings::text_input_caret_size);
   set_is_focusable(true);
+  set_texture(default_settings::text_input_texture_idle, false);
 }
 
 void zincgui::TextInput::input() {
@@ -75,14 +76,11 @@ void zincgui::TextInput::input() {
   }
 }
 
-void zincgui::TextInput::update() {
-  if (is_focused()) {
-    set_texture(default_settings::text_input_texture_focused, false);
-  } else {
-    set_texture(default_settings::text_input_texture_idle, false);
-  }
-  Sprite::update();
-}
+void zincgui::TextInput::on_focused() { set_texture(default_settings::text_input_texture_focused, false); }
+
+void zincgui::TextInput::on_unfocused() { set_texture(default_settings::text_input_texture_idle, false); }
+
+void zincgui::TextInput::update() { Sprite::update(); }
 
 void zincgui::TextInput::clear() {
   if (label.get_text().empty()) { return; }

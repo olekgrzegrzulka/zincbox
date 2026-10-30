@@ -6,6 +6,14 @@
 #include <glm/vec3.hpp>
 #include <stdint.h>
 
+#if defined(__GNUC__) || defined(__clang__)
+#define ZINCBOX_INLINE [[gnu::always_inline]] inline
+#elif defined(_MSC_VER)
+#define ZINCBOX_INLINE __forceinline
+#else
+#define ZINCBOX_INLINE inline
+#endif
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -77,7 +85,7 @@ struct rect2i {
       return rect2i{.begin = begin, .size = size}.expanded(to.begin).expanded(to.begin + to.size - vec2i{1, 1});
     }
 
-    [[nodiscard]] rect2i intersected(const rect2i& b) const {
+    [[nodiscard]] ZINCBOX_INLINE rect2i intersected(const rect2i& b) const {
       vec2i min_a = begin;
       vec2i max_a = begin + size;
 

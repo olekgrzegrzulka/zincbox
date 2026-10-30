@@ -262,6 +262,8 @@ void PanelPlaylists::recreate() {
   } else if (!props.playlist_ids.empty()) {
     playlist_ids_sorted = props.playlist_ids;
   } else {
+    m_width_old = width;
+    m_height_old = height;
     reflow();
     return;
   }
@@ -316,6 +318,8 @@ void PanelPlaylists::recreate() {
     });
   }
 
+  m_width_old = width;
+  m_height_old = height;
   reflow();
 }
 
@@ -419,7 +423,9 @@ void PanelPlaylists::input() { ColorRect::input(); }
 void PanelPlaylists::update() {
   if (m_props_old != props) {
     recreate();
-  } else {
+  } else if (m_width_old != width || m_height_old != height) {
+    m_width_old = width;
+    m_height_old = height;
     reflow();
   }
 

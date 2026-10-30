@@ -392,7 +392,7 @@ void zincbox::ui::init() {
 
 void zincbox::ui::deinit() { root = nullptr; }
 
-void zincbox::ui::update(vec2i window_size) {
+bool zincbox::ui::update(vec2i window_size) {
   bool covers_added = zincbox::ui::cover_art::update();
   if (covers_added) {
     if (panel_playlists->get_is_updated()) {
@@ -530,7 +530,7 @@ void zincbox::ui::update(vec2i window_size) {
 
   panel_controls->set_y(-border);
   panel_controls->set_width(content_width);
-  root->tick(window_size.x, window_size.y);
+  return root->tick(window_size.x, window_size.y);
 }
 
 void zincbox::ui::draw() {

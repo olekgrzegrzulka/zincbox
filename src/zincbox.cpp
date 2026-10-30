@@ -97,10 +97,11 @@ void zincbox::run() {
   s_window->make_current();
   if (s_running) { return; }
   s_running = true;
+  bool redraw = false;
   while (s_running) {
     using namespace std::chrono;
     auto t1 = high_resolution_clock::now();
-    s_window->poll_events();
+    redraw |= s_window->poll_events();
     if (s_window->should_close()) { s_running = false; }
     glViewport(0, 0, s_window->width(), s_window->height());
     update_mini_player_state();
@@ -111,12 +112,16 @@ void zincbox::run() {
     player::update();
     tray::update();
 
-    zincbox::ui::update(s_window->size());
-    if (!window()->is_minimized()) { zincbox::ui::draw(); }
+    redraw |= zincbox::ui::update(s_window->size());
+
+    if (redraw && !window()->is_minimized()) {
+      zincbox::ui::draw();
+      check_opengl_errors();
+      window()->swap_buffers();
+      redraw = false;
+    }
 
     zincgui::Input::clear();
-    check_opengl_errors();
-    window()->swap_buffers();
 
     auto t2 = high_resolution_clock::now();
     long delta_us = duration_cast<microseconds>(t2 - t1).count();

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <string>
 #include "common/color.hpp"
+#include "common/logger.hpp"
 #include "common/types.hpp"
 #include "core/musicdb/collection.hpp"
 #include "core/musicdb/musicdb.hpp"
@@ -27,24 +28,15 @@ PanelTop::PanelTop(zincgui::Root& ui_) : ColorRect(ui_) {
   set_height(theme::config().panel_top.height * SCALE);
 
   m_container_tabbar = &add_child<Widget>();
-  m_container_tabbar->set_parent_anchor(zincgui::Anchor::TOP_LEFT);
-  m_container_tabbar->set_anchor(zincgui::Anchor::TOP_LEFT);
-  // m_container_tabbar->set_clip_children(true);
   m_container_tabbar->set_layout("expand fill");
 
   m_container_drag_region = &add_child<Widget>();
-  m_container_drag_region->set_parent_anchor(zincgui::Anchor::TOP_LEFT);
-  m_container_drag_region->set_anchor(zincgui::Anchor::TOP_LEFT);
-  m_container_drag_region->set_min_width(100 * SCALE);
-  m_container_drag_region->set_max_width(9999 * SCALE);
   m_container_drag_region->set_hit_test_behavior(zincgui::HitTestBehavior::PASS_THROUGH);
 
   m_container_buttons = &add_child<Widget>();
   m_container_buttons->set_layout("rtl expand fit");
   m_container_buttons->get_layout().margin = {SCALE, SCALE};
   m_container_buttons->get_layout().spacing = SCALE;
-  m_container_buttons->set_parent_anchor(zincgui::Anchor::TOP_RIGHT);
-  m_container_buttons->set_anchor(zincgui::Anchor::TOP_RIGHT);
 
   m_tab_bar = &m_container_tabbar->add_child<TabBar>();
   m_tab_bar->set_height(height);
@@ -95,17 +87,33 @@ const Tab* PanelTop::get_queue_tab() const {
 }
 
 void PanelTop::update() {
-  m_container_tabbar->set_width(std::min(m_tab_bar->get_tab_container_width(),
-                                         width - 100 - m_container_buttons->get_width())); // FIXME
-  m_container_drag_region->set_x(m_container_tabbar->get_width());
-  m_container_drag_region->set_width(width - m_container_tabbar->get_width() - m_container_buttons->get_width());
+  if (m_width_old == width && m_height_old == height) {
+    ColorRect::update();
+    return;
+  }
+
+  m_width_old = width;
+  m_height_old = height;
+
+  const float SCALE = zincbox::ui_scale();
+  const i32 DRAG_REGION_WIDTH = 100 * SCALE;
+
+  if (width >= m_tab_bar->get_content_size() + DRAG_REGION_WIDTH + m_container_buttons->get_width()) {
+    m_container_tabbar->set_width(m_tab_bar->get_content_size());
+    m_container_drag_region->set_width(width - m_tab_bar->get_content_size() - m_container_buttons->get_width());
+  } else {
+    m_container_tabbar->set_width(width - DRAG_REGION_WIDTH - m_container_buttons->get_width());
+    m_container_drag_region->set_width(DRAG_REGION_WIDTH);
+  }
 
   m_container_tabbar->set_height(height);
   m_container_drag_region->set_height(height);
   m_container_buttons->set_height(height);
 
-  m_tab_bar->set_x(std::clamp(m_tab_bar->get_x(),
-                              std::min(0, m_container_tabbar->get_width() - m_tab_bar->get_tab_container_width()), 0));
+  m_container_tabbar->set_x(0);
+  m_container_drag_region->set_x(m_container_tabbar->get_width());
+  m_container_buttons->set_x(m_container_tabbar->get_width() + m_container_drag_region->get_width());
+
   ColorRect::update();
 }
 

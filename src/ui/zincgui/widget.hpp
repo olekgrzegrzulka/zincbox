@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <stacktrace>
 #include <string>
 #include <type_traits>
@@ -55,6 +56,11 @@ namespace zincgui {
     CENTER = CENTER_CENTER,
   };
 
+  static constexpr vec2f ANCHOR_UV_LUT[9] = {
+    {0.0f, 0.0f}, {0.5f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.5f}, {0.5f, 0.5f},
+    {1.0f, 0.5f}, {0.0f, 1.0f}, {0.5f, 1.0f}, {1.0f, 1.0f},
+  };
+
   enum class HitTestBehavior : u8 {
     IGNORE,
     BLOCK,
@@ -93,24 +99,7 @@ namespace zincgui {
     return "";
   }
 
-  // clang-format off
-inline vec2f anchor_to_uv(Anchor anchor) {
-  using enum Anchor;
-  switch (anchor) {
-  case TOP_LEFT:      {return {0.0, 0.0};}
-  case TOP_CENTER:    {return {0.5, 0.0};}
-  case TOP_RIGHT:     {return {1.0, 0.0};}
-  case CENTER_LEFT:   {return {0.0, 0.5};}
-  case CENTER_CENTER: {return {0.5, 0.5};}
-  case CENTER_RIGHT:  {return {1.0, 0.5};}
-  case BOTTOM_LEFT:   {return {0.0, 1.0};}
-  case BOTTOM_CENTER: {return {0.5, 1.0};}
-  case BOTTOM_RIGHT:  {return {1.0, 1.0};}
-  }
-  ensure(false);
-  return {0.0, 0.0};
-}
-  // clang-format on
+  ZINCBOX_INLINE static vec2f anchor_to_uv(Anchor anchor) { return ANCHOR_UV_LUT[static_cast<u8>(anchor)]; }
 
   namespace Input {
     struct InputEventMouseButton;
@@ -144,6 +133,7 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       Anchor parent_anchor = Anchor::TOP_LEFT;
 
       bool dirty = true;
+      bool layout_dirty = true;
       bool marked_for_deletion = false;
       bool is_updated = true;
       bool is_drawn = true;
@@ -164,7 +154,9 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool deleted_ = false;
       i32 always_on_top_layer_ = 0;
       std::optional<rect2i> scissor_;
-      // FIXME add property for hit test rect and allow expanding it (currently we use scissor_)
+      rect2i rect_;
+      rect2i hit_test_rect_;
+      // FIXME add property for hit test rect and allow expanding it (currently we use rect_)
       vec2i global_position_{};
 
       Widget* parent = nullptr;
@@ -182,12 +174,14 @@ inline vec2f anchor_to_uv(Anchor anchor) {
 #endif
 
     public:
-      Widget(Root& ui_) : ui{ui_} { mark_dirty(); }
-      Widget(Root& ui_, i32 width_, i32 height_) : ui{ui_}, width{width_}, height{height_} { mark_dirty(); }
+      Widget(Root& ui_);
+      Widget(Root& ui_, i32 width_, i32 height_);
       virtual ~Widget() {};
 
       virtual void input();
       virtual void update();
+      virtual void on_focused() {}
+      virtual void on_unfocused() {}
 
       // Returns widget's scene position relative to some anchor
       // (i.e. using Anchor::CENTER_CENTER will yield the center position of the widget)
@@ -197,16 +191,16 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       void set_name(std::string name_);
       void set_marked_for_deletion(bool value);
       void set_is_updated(bool value);
-      WIDGET_DEF_SETTER_DIRTY(x)
-      WIDGET_DEF_SETTER_DIRTY(y)
-      void set_width(i32);
-      void set_height(i32);
-      WIDGET_DEF_SETTER_DIRTY(min_width)
-      WIDGET_DEF_SETTER_DIRTY(max_width)
-      WIDGET_DEF_SETTER_DIRTY(min_height)
-      WIDGET_DEF_SETTER_DIRTY(max_height)
-      WIDGET_DEF_SETTER_DIRTY(anchor)
-      WIDGET_DEF_SETTER_DIRTY(parent_anchor)
+      void set_x(i32, bool ignore_constraints = false);
+      void set_y(i32, bool ignore_constraints = false);
+      void set_width(i32, bool ignore_constraints = false);
+      void set_height(i32, bool ignore_constraints = false);
+      void set_anchor(Anchor, bool ignore_constraints = false);
+      void set_parent_anchor(Anchor, bool ignore_constraints = false);
+      void set_min_width(i32);
+      void set_max_width(i32);
+      void set_min_height(i32);
+      void set_max_height(i32);
       WIDGET_DEF_SETTER_DIRTY(window_width)
       WIDGET_DEF_SETTER_DIRTY(window_height)
       WIDGET_DEF_SETTER_DIRTY(is_focusable)
@@ -232,11 +226,12 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       void set_ignore_parents_layout(bool to) {
         if (ignore_parents_layout == to) { return; }
         ignore_parents_layout = to;
+        if (parent && parent->layout.enabled) { parent->layout_dirty = true; }
         mark_dirty();
       }
 
       void set_is_drawn_on_top(bool);
-      WIDGET_DEF_SETTER_DIRTY(weight)
+      void set_weight(float);
       void set_draw_behind_parent(bool);
 
       WIDGET_DEF_GETTER(marked_for_deletion)
@@ -322,7 +317,10 @@ inline vec2f anchor_to_uv(Anchor anchor) {
       bool is_mouse_hovering() const;
       bool is_mouse_hovering(vec2i) const;
 
-      virtual std::vector<Vertex> get_vertices() { return {}; }
+      virtual std::span<const Vertex> get_vertices() {
+        static const std::vector<Vertex> EMPTY = {};
+        return EMPTY;
+      }
 
       virtual void event(Input::InputEventMouseButton&) {}
       virtual void event(Input::InputEventMouseMove&) {}

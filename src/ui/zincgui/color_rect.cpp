@@ -1,7 +1,8 @@
 #include "color_rect.hpp"
-#include <cstddef>
-
+#include <array>
+#include <span>
 #include <glad/glad.h>
+#include "common/types.hpp"
 #include "ui/zincgui/root.hpp"
 #include "ui/zincgui/vertex.hpp"
 #include "ui/zincgui/widget.hpp"
@@ -14,7 +15,7 @@ zincgui::ColorRect::ColorRect(Root& ui_, rgba color_) : Widget(ui_) { set_color(
 
 zincgui::ColorRect::~ColorRect() {}
 
-std::vector<zincgui::Vertex> zincgui::ColorRect::get_vertices() {
+std::span<const zincgui::Vertex> zincgui::ColorRect::get_vertices() {
   i32 window_width_ = ui.get_window_width();
   i32 window_height_ = ui.get_window_height();
 
@@ -27,14 +28,14 @@ std::vector<zincgui::Vertex> zincgui::ColorRect::get_vertices() {
   start = start * vec2f(2.0) - vec2f(1.0);
   end = end * vec2f(2.0) - vec2f(1.0);
 
-  return {
-    Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{start.x, end.y}, .color = color, .opacity = opacity},
-    Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{end.x, end.y}, .color = color, .opacity = opacity},
-    Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{start.x, start.y}, .color = color, .opacity = opacity},
-    Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{start.x, start.y}, .color = color, .opacity = opacity},
-    Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{end.x, end.y}, .color = color, .opacity = opacity},
-    Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{end.x, start.y}, .color = color, .opacity = opacity},
-  };
+  auto& v = vertices;
+  v[0] = Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{start.x, end.y}, .color = color, .opacity = opacity};
+  v[1] = Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{end.x, end.y}, .color = color, .opacity = opacity};
+  v[2] = Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{start.x, start.y}, .color = color, .opacity = opacity};
+  v[3] = Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{start.x, start.y}, .color = color, .opacity = opacity};
+  v[4] = Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{end.x, end.y}, .color = color, .opacity = opacity};
+  v[5] = Vertex{.type = VertexType::COLOR_RECT, .pos = vec2f{end.x, start.y}, .color = color, .opacity = opacity};
+  return vertices;
 }
 
 void zincgui::ColorRect::update() { Widget::update(); }

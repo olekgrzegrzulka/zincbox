@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include "common/color.hpp"
+#include "common/logger.hpp"
 #include "ui/popup.hpp"
 #include "ui/theme.hpp"
 #include "ui/theme_config.hpp"

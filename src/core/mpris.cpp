@@ -1,6 +1,7 @@
 #include "core/mpris.hpp"
 #include <optional>
 #include <string>
+#include <string_view>
 #include "common/types.hpp"
 
 #ifdef ZINCBOX_HAS_MPRIS
@@ -163,10 +164,12 @@ void mpris::notify_track_change(std::string title_, std::string artist_, std::st
   }
 }
 
-void mpris::notify_cover_change(std::string cover_path_) {
-  std::string cover_path_temp = "file://" + std::move(cover_path_);
-  if (cover_path != cover_path_temp) {
-    cover_path = std::move(cover_path_temp);
+void mpris::notify_cover_change(std::string_view cover_path_) {
+  constexpr std::string_view PREFIX = "file://";
+  bool changed = !cover_path.starts_with(PREFIX) || std::string_view(cover_path).substr(PREFIX.size()) != cover_path_;
+  if (changed) {
+    cover_path = PREFIX;
+    cover_path += cover_path_;
     if (mpris_object) {
       mpris_object->emitPropertiesChangedSignal("org.mpris.MediaPlayer2.Player", {sdbus::PropertyName("Metadata")});
     }
@@ -210,7 +213,7 @@ void mpris::notify_playback_status_playing() {}
 void mpris::notify_playback_status_paused() {}
 void mpris::notify_playback_status_stopped() {}
 void mpris::notify_track_change(std::string, std::string, std::string, i64, std::string) {}
-void mpris::notify_cover_change(std::string) {}
+void mpris::notify_cover_change(std::string_view) {}
 void mpris::notify_volume(double) {}
 void mpris::notify_seeked(i64) {}
 void mpris::notify_loop_status(i32) {}

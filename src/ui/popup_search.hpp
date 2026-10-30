@@ -229,12 +229,23 @@ class PopupSearch final : public Popup {
         update_search_results();
       }
 
-      if (m_scroll_px != m_target_scroll_px) {
+      if (std::abs(m_scroll_px - m_target_scroll_px) > 0.5 || m_width_old != width || m_height_old != height) {
+        m_width_old = width;
+        m_height_old = height;
+
+        m_resize_hack_fixme = 2;
+      }
+
+      if (m_resize_hack_fixme-- > 0) {
+        relayout();
+        mark_dirty();
+        layout_dirty = true;
+      }
+
+      if (std::abs(m_scroll_px - m_target_scroll_px) > 0.5) {
         double t = std::clamp(std::abs(m_scroll_px - m_target_scroll_px) * 0.004, 0.4, 0.8);
         m_scroll_px = std::lerp(m_scroll_px, m_target_scroll_px, t);
       }
-
-      relayout();
     }
 
     void event(zincgui::Input::InputEventKey& e) override {
@@ -282,6 +293,9 @@ class PopupSearch final : public Popup {
     std::vector<db::track_info> m_found_tracks;
     double m_scroll_px{};
     double m_target_scroll_px{};
+    i32 m_width_old = -1;
+    i32 m_height_old = -1;
+    i32 m_resize_hack_fixme = 0;
 
     static constexpr size_t MAX_PLAYLISTS = 15;
     static constexpr size_t MAX_TRACKS = 40;

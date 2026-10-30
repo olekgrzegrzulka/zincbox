@@ -22,6 +22,10 @@ namespace zincgui {
       Sprite& track_active;
       Sprite& thumb;
 
+      enum class SliderState : u8 { IDLE, PRESSED, HOVERED };
+      SliderState state = SliderState::IDLE;
+      SliderState state_old = static_cast<SliderState>(-1);
+
       ThumbConstraint thumb_constraint = ThumbConstraint::INSIDE_TRACK;
       SliderOrientation orientation = SliderOrientation::HORIZONTAL;
       i32 track_thickness = default_settings::slider_track_thickness;

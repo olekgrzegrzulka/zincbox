@@ -16,6 +16,8 @@ namespace zincgui {
       TextInput(Root& ui_);
       void input() override;
       void update() override;
+      void on_focused() override;
+      void on_unfocused() override;
       void clear();
       void event(Input::InputEventMouseButton&) override;
       void event(Input::InputEventKey&) override;

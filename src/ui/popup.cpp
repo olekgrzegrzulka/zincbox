@@ -101,10 +101,14 @@ Popover::Popover(Root& ui_, bool arrow_on_top) : Sprite(ui_, "popover_panel") {
 }
 
 void Popover::update() {
-  i32 off_screen_left = std::max(0, 0 - get_position(Anchor::TOP_LEFT).x);
-  i32 off_screen_right = std::max(0, (get_position(Anchor::TOP_LEFT).x + width) - ui.get_window_width());
-  i32 off_screen_top = std::max(0, 0 - get_position(Anchor::TOP_LEFT).y);
-  i32 off_screen_bottom = std::max(0, (get_position(Anchor::TOP_LEFT).y + height) - ui.get_window_height());
+  if (layout_dirty) { return; }
+
+  vec2i top_left = vec2i(x, y) - vec2i(vec2f{width, height} * anchor_to_uv(anchor));
+
+  i32 off_screen_left = std::max(0, 0 - top_left.x);
+  i32 off_screen_right = std::max(0, (top_left.x + width) - ui.get_window_width());
+  i32 off_screen_top = std::max(0, 0 - top_left.y);
+  i32 off_screen_bottom = std::max(0, (top_left.y + height) - ui.get_window_height());
   i32 push_x = off_screen_left - off_screen_right;
   i32 push_y = off_screen_top - off_screen_bottom;
   i32 lo = std::min((-width / 2) + 16, (width / 2) - 16);

@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include <span>
 #include <vector>
 #include "common/color.hpp"
 #include "common/types.hpp"
@@ -11,25 +13,13 @@ namespace zincgui {
   class Root;
 
   class ColorRect : public Widget {
-      struct vertex final {
-          i32 type = 2;
-          vec2f pos{};
-          vec3f color{1.0f};
-          float opacity{1.0f};
-
-          vertex(vec2f pos_, vec3f color_, float opacity_ = 1.0f) {
-            pos = pos_;
-            color = color_;
-            opacity = opacity_;
-          }
-      };
 
     protected:
       vec3f color = default_settings::color_rect_color;
       float opacity = default_settings::color_rect_opacity;
       u32 vbo = 0;
       u32 vao = 0;
-      std::vector<ColorRect::vertex> vertices{};
+      std::array<Vertex, 6> vertices{};
 
     public:
       ColorRect(const ColorRect&) = delete;
@@ -41,7 +31,7 @@ namespace zincgui {
       ColorRect(Root& ui_, rgba color);
       ~ColorRect() override;
 
-      std::vector<Vertex> get_vertices() override;
+      std::span<const Vertex> get_vertices() override;
 
       void update() override;
 

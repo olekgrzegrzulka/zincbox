@@ -1,5 +1,6 @@
 #include "panel_queue.hpp"
 #include <vector>
+#include "common/logger.hpp"
 #include "core/player/player.hpp"
 #include "ui/panel_tracklist.hpp"
 #include "ui/zincgui/root.hpp"

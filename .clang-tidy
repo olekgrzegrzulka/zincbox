@@ -31,6 +31,7 @@
       "-cppcoreguidelines-avoid-do-while",
       "-cppcoreguidelines-pro-bounds-constant-array-index",
       "-readability-implicit-bool-conversion",
+      "-cppcoreguidelines-avoid-c-arrays",
     ],
   "WarningsAsErrors": "",
   "HeaderFilterRegex": ".*",

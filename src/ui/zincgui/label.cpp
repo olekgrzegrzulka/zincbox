@@ -1,6 +1,7 @@
 #include "ui/zincgui/label.hpp"
 #include <algorithm>
 #include <cmath>
+#include <span>
 #include <string_view>
 #include <glad/glad.h>
 #include <stddef.h>
@@ -534,8 +535,11 @@ void zincgui::Label::update_text() {
   }
 }
 
-std::vector<zincgui::Vertex> zincgui::Label::get_vertices() {
-  if (ui.get_font_count() == 0) { return {}; }
+std::span<const zincgui::Vertex> zincgui::Label::get_vertices() {
+  if (ui.get_font_count() == 0) {
+    vertices.clear();
+    return vertices;
+  }
 
   size_t active_font_idx = font_index < ui.get_font_count() ? font_index : 0;
   const FontFace& font = ui.get_font(active_font_idx);
