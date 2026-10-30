@@ -30,11 +30,36 @@
 #include "ui/zincgui/widget.hpp"
 #include "zincbox.hpp"
 
+namespace {
+  i32 scaled(i32 value) { return static_cast<i32>(value * zincbox::ui_scale()); }
+
+  i32 margin_xs() { return scaled(4); }
+  i32 margin_sm() { return scaled(6); }
+  i32 margin_md() { return scaled(8); }
+  i32 margin_lg() { return scaled(12); }
+
+  i32 spacing_xs() { return scaled(4); }
+  i32 spacing_sm() { return scaled(6); }
+  i32 spacing_md() { return scaled(8); }
+  i32 spacing_lg() { return scaled(12); }
+  i32 spacing_xl() { return scaled(16); }
+
+  i32 title_height() { return scaled(32); }
+  i32 header_height() { return scaled(24); }
+  i32 small_label_height() { return scaled(16); }
+  i32 sidebar_width() { return scaled(130); }
+  i32 eq_bands_height() { return scaled(150); }
+  i32 settings_popup_width() { return scaled(800); }
+  i32 settings_popup_height() { return scaled(600); }
+} // namespace
+
 PopupSettings::PopupSettings(zincgui::Root& ui_, PopupController& controller_, std::function<void(Popup*)> on_close_)
   : Popup(ui_, controller_, std::move(on_close_)), m_initial_settings(zincbox::settings()),
     m_working_settings(zincbox::settings()) {
 
-  layout("ttb expand fill m:8 s:8");
+  layout("ttb expand fill");
+  layout().set_margin(margin_md());
+  layout().spacing = spacing_md();
 
   build_header();
   build_body();
@@ -50,12 +75,11 @@ PopupSettings::PopupSettings(zincgui::Root& ui_, PopupController& controller_, s
 }
 
 void PopupSettings::update() {
-  width(std::min<i32>(max_content_width(), static_cast<i32>(800 * zincbox::ui_scale())))
-    .height(std::min<i32>(max_content_height(), static_cast<i32>(600 * zincbox::ui_scale())));
-  refresh_save_button_state();
-  Popup::update();
+  width(std::min<i32>(max_content_width(), settings_popup_width()))
+    .height(std::min<i32>(max_content_height(), settings_popup_height()));
+  // refresh_save_button_state();
 
-  bool tight_ = width() < 850;
+  bool tight_ = width() < scaled(700);
   if (tight_ != m_tight) {
     m_tight = tight_;
     for (auto* lbl : m_eq_freq_labels) {
@@ -65,6 +89,8 @@ void PopupSettings::update() {
       lbl->is_drawn(!m_tight);
     }
   }
+
+  Popup::update();
 }
 
 i32 PopupSettings::control_row_height() { return zincgui::default_settings::text_input_size.y; }
@@ -93,10 +119,7 @@ std::string PopupSettings::format_eq_db(float db) {
 
 void PopupSettings::build_header() {
   auto& title = add_child<zincgui::Label>(tr::get("settings.title"));
-  title.resize_to_text_extents(false)
-    .fixed_height(static_cast<i32>(28 * zincbox::ui_scale()))
-    .anchor(zincgui::Anchor::TOP)
-    .parent_anchor(zincgui::Anchor::TOP);
+  title.resize_to_text_extents(false).fixed_height(title_height());
 
   m_search_bar = &add_child<zincgui::TextInput>();
   m_search_bar->on_text_changed([this]() -> void { filter_by_search(); });
@@ -104,15 +127,18 @@ void PopupSettings::build_header() {
 
 void PopupSettings::build_body() {
   auto& content = add_child<zincgui::Widget>();
-  content.layout("ltr expand fill m:0 s:16").weight(1.0f);
+  content.layout("ltr expand fill").weight(1.0f);
+  content.layout().spacing = spacing_xl();
 
   auto& sidebar = content.add_child<zincgui::Sprite>("panel_dark");
-  sidebar.layout("ttb expand m:0 s:0").fixed_width(static_cast<i32>(130 * zincbox::ui_scale()));
+  sidebar.layout("ttb expand").fixed_width(sidebar_width());
 
   m_scroll_view = &content.add_child<ScrollableView>();
   m_scroll_view->weight(1.0f);
   m_scroll_view->background()->texture("panel_dark");
-  m_scroll_view->content()->layout("ttb fit expand mx:12 my:8 s:6");
+  m_scroll_view->content()->layout("ttb fit expand");
+  m_scroll_view->content()->layout().margin = vec2i{margin_lg(), margin_md()};
+  m_scroll_view->content()->layout().spacing = spacing_sm();
 
   constexpr std::array<std::string_view, SECTION_COUNT> CATEGORY_KEYS = {
     "settings.category.general", "settings.category.playback", "settings.category.interface",
@@ -139,10 +165,8 @@ void PopupSettings::build_body() {
 
 void PopupSettings::build_footer() {
   auto& buttons = add_child<zincgui::Widget>();
-  buttons.anchor(zincgui::Anchor::BOTTOM)
-    .parent_anchor(zincgui::Anchor::BOTTOM)
-    .layout("ltr expand fill m:0 s:8")
-    .fixed_height(zincgui::default_settings::button_size.y);
+  buttons.layout("ltr expand fill").fixed_height(zincgui::default_settings::button_size.y);
+  buttons.layout().spacing = spacing_md();
 
   auto& btn_cancel = buttons.add_child<zincgui::Button>(tr::get("dialog.action.cancel"));
   btn_cancel.weight(1.0f);
@@ -165,13 +189,13 @@ void PopupSettings::begin_section(size_t section_idx) {
   auto* parent = m_scroll_view->content();
   if (section_idx > 0) {
     auto& spacer = parent->add_child<zincgui::Widget>();
-    spacer.fixed_height(static_cast<i32>(12 * zincbox::ui_scale()));
+    spacer.fixed_height(spacing_lg());
     m_sections[section_idx].spacer_widget = &spacer;
   }
 
   auto& header = parent->add_child<zincgui::Label>(m_sections[section_idx].localized_title);
   header.resize_to_text_extents(false)
-    .fixed_height(static_cast<i32>(24 * zincbox::ui_scale()))
+    .fixed_height(header_height())
     .text_color(theme::config().text_color_muted)
     .label_anchor(zincgui::Anchor::LEFT)
     .font_size(zincbox::font_size_lg());
@@ -182,12 +206,14 @@ zincgui::ComboBox* PopupSettings::add_row_combobox(size_t section_idx, std::stri
                                                    std::function<void(const std::string&)> on_changed) {
   std::string localized = tr::get(std::string(tr_key));
   auto& row = m_scroll_view->content()->add_child<zincgui::Widget>();
-  row.layout("ltr fill expand m:0 s:8").fixed_height(control_row_height());
+  row.layout("ltr fill expand").fixed_height(control_row_height());
+  row.layout().spacing = spacing_md();
 
   auto& lbl = row.add_child<zincgui::Label>(localized);
   lbl.resize_to_text_extents(false).label_anchor(zincgui::Anchor::LEFT).min_width(1);
 
   auto& combo = row.add_child<zincgui::ComboBox>();
+  combo.fixed_height(0);
   combo.on_item_selected([combo_ = &combo, this, cb = std::move(on_changed)]() -> void {
     cb(combo_->selected_item_id());
     refresh_save_button_state();
@@ -205,14 +231,15 @@ zincgui::Spinner* PopupSettings::add_row_spinner(size_t section_idx, std::string
                                                  std::function<void(i32)> on_changed) {
   std::string localized = tr::get(std::string(tr_key));
   auto& row = m_scroll_view->content()->add_child<zincgui::Widget>();
-  row.layout("ltr fill expand m:0 s:8").fixed_height(control_row_height());
+  row.layout("ltr fill expand").fixed_height(control_row_height());
+  row.layout().spacing = spacing_md();
 
   auto& lbl = row.add_child<zincgui::Label>(localized);
   lbl.resize_to_text_extents(false).label_anchor(zincgui::Anchor::LEFT).min_width(1);
 
   auto& spinner = row.add_child<zincgui::Spinner>();
   if (!postfix.empty()) { spinner.postfix(std::string(postfix)); }
-  spinner.min_value(min_val).max_value(max_val).value(initial_val);
+  spinner.min_value(min_val).max_value(max_val).value(initial_val).fixed_height(0);
   spinner.on_value_changed([spinner_ = &spinner, this, cb = std::move(on_changed)]() -> void {
     cb(spinner_->value());
     refresh_save_button_state();
@@ -229,7 +256,7 @@ zincgui::Checkbox* PopupSettings::add_row_checkbox(size_t section_idx, std::stri
                                                    std::function<void(bool)> on_changed) {
   std::string localized = tr::get(std::string(tr_key));
   auto& checkbox = m_scroll_view->content()->add_child<zincgui::Checkbox>(localized);
-  checkbox.checked(initial_checked).checkbox_anchor(zincgui::Anchor::LEFT);
+  checkbox.checked(initial_checked).checkbox_anchor(zincgui::Anchor::LEFT).fixed_height(0);
   checkbox.on_value_changed([checkbox_ = &checkbox, this, cb = std::move(on_changed)]() -> void {
     cb(checkbox_->checked());
     refresh_save_button_state();
@@ -248,14 +275,14 @@ zincgui::Button* PopupSettings::add_row_action_button(size_t section_idx, std::s
   std::string localized_btn = tr::get(std::string(btn_tr_key));
 
   auto& row = m_scroll_view->content()->add_child<zincgui::Widget>();
-  row.layout("ltr fill expand m:0 s:8").fixed_height(control_row_height());
+  row.layout("ltr fill expand").fixed_height(control_row_height());
+  row.layout().spacing = spacing_md();
 
   auto& lbl = row.add_child<zincgui::Label>(localized_label);
   lbl.resize_to_text_extents(false).label_anchor(zincgui::Anchor::LEFT).min_width(1);
 
   auto& btn = row.add_child<zincgui::Button>(localized_btn);
-  btn.fixed_height(control_row_height());
-  btn.on_press(std::move(on_clicked));
+  btn.on_press(std::move(on_clicked)).fixed_height(0);
 
   std::string combined_raw = std::string(label_tr_key) + " " + std::string(btn_tr_key);
   std::string combined_loc = localized_label + " " + localized_btn;
@@ -311,10 +338,12 @@ void PopupSettings::build_equalizer_widget(size_t section_idx) {
   std::string eq_reset_loc = tr::get("settings.playback.equalizer_reset");
 
   auto& eq_wrapper = m_scroll_view->content()->add_child<zincgui::Widget>();
-  eq_wrapper.layout("ttb fit expand m:0 s:6");
+  eq_wrapper.layout("ttb fit expand");
+  eq_wrapper.layout().spacing = spacing_sm();
 
   auto& header_row = eq_wrapper.add_child<zincgui::Widget>();
-  header_row.layout("ltr fill expand m:0 s:8").fixed_height(control_row_height());
+  header_row.layout("ltr fill expand").fixed_height(control_row_height());
+  header_row.layout().spacing = spacing_md();
 
   auto& eq_label = header_row.add_child<zincgui::Label>(eq_title_loc);
   eq_label.resize_to_text_extents(false).label_anchor(zincgui::Anchor::LEFT).min_width(1);
@@ -331,18 +360,19 @@ void PopupSettings::build_equalizer_widget(size_t section_idx) {
   });
 
   auto& bands_row = eq_wrapper.add_child<zincgui::Widget>();
-  bands_row.layout("ltr fill expand m:4 s:4").fixed_height(static_cast<i32>(150 * zincbox::ui_scale()));
+  bands_row.layout("ltr fill expand").fixed_height(eq_bands_height());
+  bands_row.layout().set_margin(margin_xs());
+  bands_row.layout().spacing = spacing_xs();
 
   for (size_t i = 0; i < player::EQ_BAND_COUNT; i += 1) {
     auto& col = bands_row.add_child<zincgui::Widget>();
-    col.layout("ttb fill expand m:0 s:4");
+    col.layout("ttb fill expand");
+    col.layout().spacing = spacing_xs();
 
     float init_gain = std::clamp(m_working_settings.playback.equalizer[i], -12.0f, 12.0f);
 
     auto& val_label = col.add_child<zincgui::Label>(format_eq_db(init_gain));
-    val_label.resize_to_text_extents(false)
-      .fixed_height(static_cast<i32>(16 * zincbox::ui_scale()))
-      .label_anchor(zincgui::Anchor::CENTER);
+    val_label.resize_to_text_extents(false).fixed_height(small_label_height()).label_anchor(zincgui::Anchor::CENTER);
     m_eq_value_labels[i] = &val_label;
 
     auto& slider = col.add_child<ZincboxSlider>("equalizer");
@@ -364,7 +394,7 @@ void PopupSettings::build_equalizer_widget(size_t section_idx) {
 
     auto& freq_label = col.add_child<zincgui::Label>(format_eq_freq(player::EQ_FREQUENCIES[i]));
     freq_label.resize_to_text_extents(false)
-      .fixed_height(static_cast<i32>(16 * zincbox::ui_scale()))
+      .fixed_height(small_label_height())
       .label_anchor(zincgui::Anchor::CENTER)
       .text_color(theme::config().text_color_muted);
     m_eq_freq_labels[i] = &freq_label;

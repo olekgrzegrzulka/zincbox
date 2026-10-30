@@ -33,6 +33,7 @@ set(UI_SOURCES
     panel_tracklist.cpp
     popup_controller.cpp
     popup_definitions.cpp
+    popup_search.cpp
     popup_settings.cpp
     scrollable_view.cpp
     sdl3_window.cpp
