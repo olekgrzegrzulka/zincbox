@@ -164,9 +164,11 @@ TabBar::TabBar(Root& ui_) : Widget(ui_) {
   });
 
   const float SCALE = zincbox::ui_scale();
-
   m_button_right = &add_child<ZincboxButton>("tab_right");
   m_button_right->add_image("right", true)
+    .hit_test_behavior(HitTestBehavior::BLOCK)
+    .fixed_height(0)
+    .height(m_button_right->width())
     .ignore_parents_layout(true)
     .x(-2 * SCALE)
     .parent_anchor(Anchor::CENTER_LEFT)
@@ -174,6 +176,9 @@ TabBar::TabBar(Root& ui_) : Widget(ui_) {
 
   m_button_left = &add_child<ZincboxButton>("tab_left");
   m_button_left->add_image("left", true)
+    .hit_test_behavior(HitTestBehavior::BLOCK)
+    .fixed_height(0)
+    .height(m_button_left->width())
     .ignore_parents_layout(true)
     .size(m_button_left->image()->size())
     .x(2 * SCALE)

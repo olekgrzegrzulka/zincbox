@@ -104,9 +104,9 @@ PanelControls::PanelControls(Root& ui_) : ColorRect(ui_) {
   m_love_button = &m_button_track->add_child<ZincboxButton>("panel_controls_love");
   m_love_button->anchor(Anchor::RIGHT)
     .parent_anchor(Anchor::LEFT)
-    .size(12, 12)
+    .size(12, 11)
     .fixed_width(12)
-    .fixed_height(12)
+    .fixed_height(11)
     .nine_slice_margin(0.0f);
   m_love_button->on_press([this]() -> void {
     if (m_on_love_button_pressed) { m_on_love_button_pressed(); }

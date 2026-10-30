@@ -12,7 +12,7 @@ namespace zincgui {
 
 class Notification final : public zincgui::Button {
   public:
-    Notification(zincgui::Root& ui_, bool error = false);
+    Notification(zincgui::Root& ui_, std::string_view message, bool error = false);
 
     void update() override;
 
@@ -34,14 +34,10 @@ class Notification final : public zincgui::Button {
       return *this;
     }
 
-    [[nodiscard]] zincgui::Label* label() noexcept { return m_label; }
-    [[nodiscard]] const zincgui::Label* label() const noexcept { return m_label; }
-
   private:
     float m_y_lerped{};
     i32 m_timer{};
     bool m_dismissed = false;
-    zincgui::Label* m_label{};
 };
 
 class InterfaceNotifications : public zincgui::Widget {

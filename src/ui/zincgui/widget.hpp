@@ -105,6 +105,8 @@ namespace zincgui {
 
       virtual void input();
       virtual void update();
+      virtual void on_hovered() {}
+      virtual void on_unhovered() {}
       virtual void on_focused() {}
       virtual void on_unfocused() {}
       [[nodiscard]] virtual std::span<const Vertex> vertices();

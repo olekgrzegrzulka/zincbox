@@ -27,6 +27,8 @@ class WidgetTrack final : public zincgui::Button {
     ~WidgetTrack() override;
 
     void update() override;
+    void on_hovered() override;
+    void on_unhovered() override;
     void event(zincgui::Input::InputEventMouseMove& ev) override;
 
     void update_highlight_status_from_player();
@@ -86,9 +88,9 @@ class WidgetTrack final : public zincgui::Button {
     size_t m_track_id = db::INVALID_ID;
     size_t m_playlist_id = db::INVALID_ID;
     size_t m_collection_id = db::INVALID_ID;
-    bool m_changed = true;
     TrackHighlightMode m_highlight_mode = TrackHighlightMode::TRACK_INFO;
     Signal<>::slot_key m_slot_on_track_changed;
+    vec2i m_old_size{};
     zincgui::Label* m_label_track_number{};
     zincgui::Label* m_label_track_artist{};
     zincgui::Label* m_label_track_title{};

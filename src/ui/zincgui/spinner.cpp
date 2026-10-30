@@ -26,21 +26,21 @@ Spinner::Spinner(Root& ui_)
     .nine_slice_margin(default_settings::spinner_button_nine_slice_margin)
     .anchor(Anchor::LEFT)
     .pos(default_settings::spinner_button_offset_x, 0)
-    .add_image(default_settings::spinner_texture_decrease_icon)
-    .texture_idle(default_settings::spinner_texture_button_idle)
-    .texture_hovered(default_settings::spinner_texture_button_hovered)
-    .texture_pressed(default_settings::spinner_texture_button_pressed)
-    .texture_disabled(default_settings::spinner_texture_button_disabled);
+    .add_image(default_settings::spinner_texture_decrease.icon)
+    .texture_idle(default_settings::spinner_texture_decrease.button_idle)
+    .texture_hovered(default_settings::spinner_texture_decrease.button_hovered)
+    .texture_pressed(default_settings::spinner_texture_decrease.button_pressed)
+    .texture_disabled(default_settings::spinner_texture_decrease.button_disabled);
 
   m_button_increase.parent_anchor(Anchor::RIGHT)
     .nine_slice_margin(default_settings::spinner_button_nine_slice_margin)
     .anchor(Anchor::RIGHT)
     .pos(-default_settings::spinner_button_offset_x, 0)
-    .add_image(default_settings::spinner_texture_increase_icon)
-    .texture_idle(default_settings::spinner_texture_button_idle)
-    .texture_hovered(default_settings::spinner_texture_button_hovered)
-    .texture_pressed(default_settings::spinner_texture_button_pressed)
-    .texture_disabled(default_settings::spinner_texture_button_disabled);
+    .add_image(default_settings::spinner_texture_increase.icon)
+    .texture_idle(default_settings::spinner_texture_increase.button_idle)
+    .texture_hovered(default_settings::spinner_texture_increase.button_hovered)
+    .texture_pressed(default_settings::spinner_texture_increase.button_pressed)
+    .texture_disabled(default_settings::spinner_texture_increase.button_disabled);
 
   label().resize_to_text_extents(false).text(std::to_string(m_value));
   TextInput::on_text_changed([this]() { on_text_changed(); });

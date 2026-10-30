@@ -22,6 +22,7 @@ using namespace zincgui;
 
 WidgetTrack::WidgetTrack(zincgui::Root& ui_) : Button(ui_) {
   setup();
+  update_highlight_status_from_player();
 
   m_slot_on_track_changed =
     player::signal_on_track_changed.connect([this]() -> void { update_highlight_status_from_player(); });
@@ -30,18 +31,23 @@ WidgetTrack::WidgetTrack(zincgui::Root& ui_) : Button(ui_) {
 WidgetTrack::~WidgetTrack() { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
 
 void WidgetTrack::update() {
-  if (m_changed) {
-    setup();
-    update_highlight_status_from_player();
-    m_changed = false;
+  if (m_old_size != size()) {
+    m_old_size = size();
+    m_hover->size(size());
+    m_bg->size(size());
   }
 
-  m_hover->size(width(), height())
-    .is_self_drawn(is_mouse_hovering());
-
-  m_bg->size(width(), height());
-
   Button::update();
+}
+
+void WidgetTrack::on_hovered() {
+  m_hover->is_self_drawn(true);
+  Button::on_hovered();
+}
+
+void WidgetTrack::on_unhovered() {
+  m_hover->is_self_drawn(false);
+  Button::on_unhovered();
 }
 
 void WidgetTrack::event(zincgui::Input::InputEventMouseMove& ev) { Button::event(ev); }
@@ -198,7 +204,8 @@ db::track_info WidgetTrack::track_info() const {
 WidgetTrack& WidgetTrack::track_id(size_t value) {
   if (m_track_id != value) {
     m_track_id = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }
@@ -206,7 +213,8 @@ WidgetTrack& WidgetTrack::track_id(size_t value) {
 WidgetTrack& WidgetTrack::playlist_id(size_t value) {
   if (m_playlist_id != value) {
     m_playlist_id = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }
@@ -214,7 +222,8 @@ WidgetTrack& WidgetTrack::playlist_id(size_t value) {
 WidgetTrack& WidgetTrack::collection_id(size_t value) {
   if (m_collection_id != value) {
     m_collection_id = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }
@@ -222,7 +231,8 @@ WidgetTrack& WidgetTrack::collection_id(size_t value) {
 WidgetTrack& WidgetTrack::track_number(size_t value) {
   if (m_track_number != value) {
     m_track_number = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }
@@ -230,7 +240,8 @@ WidgetTrack& WidgetTrack::track_number(size_t value) {
 WidgetTrack& WidgetTrack::is_selected(bool value) {
   if (m_is_selected != value) {
     m_is_selected = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }
@@ -238,7 +249,8 @@ WidgetTrack& WidgetTrack::is_selected(bool value) {
 WidgetTrack& WidgetTrack::item_index(size_t value) {
   if (m_item_index != value) {
     m_item_index = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }
@@ -246,7 +258,8 @@ WidgetTrack& WidgetTrack::item_index(size_t value) {
 WidgetTrack& WidgetTrack::highlight_mode(TrackHighlightMode value) {
   if (m_highlight_mode != value) {
     m_highlight_mode = value;
-    m_changed = true;
+    setup();
+    update_highlight_status_from_player();
   }
   return *this;
 }

@@ -97,7 +97,7 @@ void PanelTracklist::update() {
     m_scrollbar->scroll_offset(m_target_scroll_px + (static_cast<double>(m_scroll_edge_factor) * 8.0));
   }
 
-  if (static_cast<i32>(m_scroll_px) != static_cast<i32>(m_old_scroll_px) || vec2i{width(), height()} != m_old_size ||
+  if (static_cast<i32>(m_scroll_px) != static_cast<i32>(m_old_scroll_px) || size() != m_old_size ||
       m_just_recreated || m_selection_modified) {
 
     m_insert_cursor->x(m_items_container->x())
@@ -126,7 +126,7 @@ void PanelTracklist::update() {
       current_item_top_y += item_h;
     }
     m_old_scroll_px = m_scroll_px;
-    m_old_size = vec2i{width(), height()};
+    m_old_size = size();
     m_just_recreated = false;
     m_selection_modified = false;
   }

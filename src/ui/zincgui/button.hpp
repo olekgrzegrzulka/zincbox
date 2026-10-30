@@ -21,6 +21,8 @@ namespace zincgui {
       ~Button() override = default;
 
       void update() override;
+      void on_hovered() override;
+      void on_unhovered() override;
       void event(Input::InputEventMouseButton&) override;
       void event(Input::InputEventMouseMove&) override;
       void event(Input::InputEventMouseScroll&) override;

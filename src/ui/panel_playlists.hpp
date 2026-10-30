@@ -38,6 +38,8 @@ class WidgetAlbumCover final : public zincgui::Button {
     ~WidgetAlbumCover() override;
 
     void update() override;
+    void on_hovered() override;
+    void on_unhovered() override;
 
     [[nodiscard]] bool is_add_button() const noexcept { return m_is_add_button; }
     [[nodiscard]] std::optional<size_t> playlist_id() const noexcept { return m_playlist_id; }

@@ -66,7 +66,8 @@ ComboBox::ComboBox(Root& ui_) :
   for (i32 i = 0; i < m_dropdown_max_length + 1; i += 1) {
     auto& item = m_dropdown_bg.add_child<ComboBoxItem>();
     m_item_widgets[i] = &item;
-    item.height(m_item_height);
+    item.fixed_height(m_item_height);
+    item.hit_test_behavior(HitTestBehavior::BLOCK);
     item.on_press([&, i] { on_item_pressed(i); });
   }
 }
@@ -74,8 +75,6 @@ ComboBox::ComboBox(Root& ui_) :
 void ComboBox::update() {
   Button::update();
   label().x(height() / 2);
-
-  if (m_dropdown_state == DropDownState::VISIBLE && !is_focused()) { on_button_depressed(); }
 
   m_sprite_focus.size(width(), height())
     .is_drawn(is_focused());

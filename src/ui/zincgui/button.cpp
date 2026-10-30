@@ -19,6 +19,23 @@ Button::Button(Root& ui_, std::string_view label_) : Sprite::Sprite(ui_), m_labe
 
 void zincgui::Button::update() { Sprite::update(); }
 
+void zincgui::Button::on_hovered() {}
+
+void zincgui::Button::on_unhovered() {
+  using enum Input::MouseButton;
+  using enum Input::MouseAction;
+  using enum ButtonState;
+
+  if (m_state == DISABLED) { return; }
+
+  m_mouse_pressed = false;
+  if (m_switch_mode) {
+    state(m_is_switched ? PRESSED : IDLE);
+  } else {
+    state(IDLE);
+  }
+}
+
 void zincgui::Button::event(Input::InputEventMouseButton& ev) {
   using enum Input::MouseButton;
   using enum Input::MouseAction;

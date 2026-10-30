@@ -84,6 +84,7 @@ namespace zincgui {
       void mark_layout_dirty() { m_layout_dirty = true; }
 
     private:
+      void update_hover_state();
       bool process_mutations();
       void construct_traversal_order(Widget*, i32 always_on_top_layer, std::vector<std::vector<Widget*>>& layers);
       void construct_traversal_order();

@@ -353,3 +353,5 @@ const std::vector<std::string>& zincgui::Input::get_dropped_paths() { return dro
 
 void zincgui::Input::reset_cursor() { SDL_SetCursor(SDL_GetDefaultCursor()); }
 void zincgui::Input::set_cursor(Input::Cursor cursor) { SDL_SetCursor(cursors[(size_t)cursor]); }
+
+bool zincgui::Input::has_mouse_focus() { return (SDL_GetWindowFlags(sdl_window) & SDL_WINDOW_MOUSE_FOCUS) != 0; }

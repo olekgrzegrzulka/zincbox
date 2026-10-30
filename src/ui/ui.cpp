@@ -392,7 +392,7 @@ bool zincbox::ui::update(vec2i window_size) {
     if (!notification_scan_progress) { notification_scan_progress = notifications->push_persistent(""); }
     auto msg =
       tr::format("notification.scan_progress", scan_progress->files_scanned, scan_progress->directories_scanned);
-    notification_scan_progress->label()->text(msg);
+    notification_scan_progress->label().text(msg);
   } else {
     if (notification_scan_progress) {
       notifications->dismiss_after(notification_scan_progress, 10);

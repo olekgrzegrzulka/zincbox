@@ -110,12 +110,26 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
   if (widget->m_deleted) {
     if (m_focused_widget == widget) { set_focused_widget(nullptr); }
     if (m_focus_manager == widget) { m_focus_manager = nullptr; }
-    if (widget->m_parent && widget->m_parent->is_layout_dirty()) { widget->mark_layout_dirty(); }
-    widget->m_window_width = m_window_width;
-    widget->m_window_height = m_window_height;
+
+    // Erase widget from m_hovered_widgets if queued for deletion
+    if (widget->m_hovered) {
+      auto h_it = std::find(m_hovered_widgets.begin(), m_hovered_widgets.end(), widget);
+      if (h_it != m_hovered_widgets.end()) {
+        m_hovered_widgets.erase(h_it);
+        if (widget->m_hovered) {
+          widget->m_hovered = false;
+          widget->on_unhovered();
+        }
+      }
+    }
   }
 
   if (!widget->m_deleted) {
+    widget->m_window_width = m_window_width;
+    widget->m_window_height = m_window_height;
+
+    // if (widget->m_parent && widget->m_parent->is_layout_dirty()) { widget->mark_layout_dirty(); }
+
     if (!widget->m_children_to_add.empty() && !widget->m_deleted) { m_mutated_widgets.insert(widget); }
 
     if (widget->m_is_drawn_on_top) { always_on_top_layer += 1; }
@@ -163,18 +177,6 @@ void zincgui::Root::construct_traversal_order(Widget* widget, i32 always_on_top_
     } else {
       widget->m_hit_test_rect = rect2i{.begin = vec2i(-1, -1), .size = vec2i(0, 0)};
     }
-
-    vec2i widget_top_left = widget->position(Anchor::TOP_LEFT);
-    vec2i widget_bottom_right = widget->position(Anchor::BOTTOM_RIGHT);
-    bool hovered = (m_mouse_pos.x >= widget_top_left.x && m_mouse_pos.x < widget_bottom_right.x) &&
-                   (m_mouse_pos.y >= widget_top_left.y && m_mouse_pos.y < widget_bottom_right.y);
-    bool parent_hovered = !widget->m_parent || widget->m_parent->m_hovered;
-    if (widget->m_updated && widget->is_self_drawn() && hovered && parent_hovered) {
-      // m_hovered_widgets.emplace_back(widget);
-      // widget->m_hovered = true;
-    } else {
-      // widget->m_hovered = false;
-    }
   }
 
   for (auto&& child : widget->children()) {
@@ -218,7 +220,6 @@ void zincgui::Root::construct_traversal_order() {
   m_widget_traversal_order.clear();
   m_deleted_widgets.clear();
   m_mutated_widgets.clear();
-  m_hovered_widgets.clear();
   m_vertex_layers.clear();
   m_vertices_count = 0;
 
@@ -251,6 +252,79 @@ void zincgui::Root::construct_traversal_order() {
     GLsizeiptr size_bytes = static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex));
     glBufferSubData(GL_ARRAY_BUFFER, offset, size_bytes, vertices.data());
     offset += size_bytes;
+  }
+}
+
+void zincgui::Root::update_hover_state() {
+  if (!Input::has_mouse_focus()) {
+    for (auto* w : m_hovered_widgets) {
+      if (w && w->m_hovered) {
+        w->m_hovered = false;
+        w->on_unhovered();
+      }
+    }
+    m_hovered_widgets.clear();
+    return;
+  }
+
+  m_hovered_widgets.clear();
+  bool hover_claimed = false;
+
+  for (auto it = m_widget_traversal_order.rbegin(); it != m_widget_traversal_order.rend(); it += 1) {
+    Widget* w = *it;
+
+    if ((!w->m_updated || !w->m_visible || w->m_deleted)) {
+      if (w->m_hovered) {
+        w->m_hovered = false;
+        w->on_unhovered();
+      }
+      continue;
+    }
+
+    bool inside = false;
+    if (w->m_scissor) {
+      auto s = w->m_hit_test_rect;
+      inside = m_mouse_pos.x >= s.begin.x && m_mouse_pos.x < s.begin.x + s.size.x && m_mouse_pos.y >= s.begin.y &&
+               m_mouse_pos.y < s.begin.y + s.size.y;
+    } else {
+      inside = m_mouse_pos.x >= w->position(Anchor::TOP_LEFT).x &&
+               m_mouse_pos.x < w->position(Anchor::BOTTOM_RIGHT).x &&
+               m_mouse_pos.y >= w->position(Anchor::TOP_LEFT).y && m_mouse_pos.y < w->position(Anchor::BOTTOM_RIGHT).y;
+    }
+
+    if (!hover_claimed && inside) {
+      switch (w->m_hit_test_behavior) {
+      case HitTestBehavior::IGNORE: {
+        if (w->m_hovered) {
+          w->m_hovered = false;
+          w->on_unhovered();
+        }
+        break;
+      }
+      case HitTestBehavior::BLOCK: {
+        if (!w->m_hovered) {
+          w->m_hovered = true;
+          w->on_hovered();
+        }
+        m_hovered_widgets.emplace_back(w);
+        hover_claimed = true;
+        break;
+      }
+      case HitTestBehavior::PASS_THROUGH: {
+        if (!w->m_hovered) {
+          w->m_hovered = true;
+          w->on_hovered();
+        }
+        m_hovered_widgets.emplace_back(w);
+        break;
+      }
+      }
+    } else {
+      if (w->m_hovered) {
+        w->m_hovered = false;
+        w->on_unhovered();
+      }
+    }
   }
 }
 
@@ -335,47 +409,6 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
     construct_traversal_order();
   }
 
-  bool hover_claimed = false;
-
-  for (auto it = m_widget_traversal_order.rbegin(); it != m_widget_traversal_order.rend(); it += 1) {
-    Widget* w = *it;
-
-    if (!w->m_updated || !w->m_visible || w->m_deleted) {
-      w->m_hovered = false;
-      continue;
-    }
-
-    bool inside = false;
-    if (w->m_scissor) {
-      auto s = w->m_hit_test_rect;
-      inside = m_mouse_pos.x >= s.begin.x && m_mouse_pos.x < s.begin.x + s.size.x && m_mouse_pos.y >= s.begin.y &&
-               m_mouse_pos.y < s.begin.y + s.size.y;
-    } else {
-      inside = m_mouse_pos.x >= w->position(Anchor::TOP_LEFT).x &&
-               m_mouse_pos.x < w->position(Anchor::BOTTOM_RIGHT).x &&
-               m_mouse_pos.y >= w->position(Anchor::TOP_LEFT).y && m_mouse_pos.y < w->position(Anchor::BOTTOM_RIGHT).y;
-    }
-
-    if (!hover_claimed && inside) {
-      switch (w->m_hit_test_behavior) {
-      case HitTestBehavior::IGNORE: {
-        w->m_hovered = false;
-      }
-      case HitTestBehavior::BLOCK: {
-        w->m_hovered = true;
-        hover_claimed = true;
-        break;
-      }
-      case HitTestBehavior::PASS_THROUGH: {
-        w->m_hovered = true;
-        break;
-      }
-      }
-    } else {
-      w->m_hovered = false;
-    }
-  }
-
   for (auto& ev : Input::get_event_queue()) {
 
     if (m_focused_widget && m_focused_widget->m_updated) {
@@ -424,6 +457,8 @@ bool zincgui::Root::tick(i32 window_width_, i32 window_height_) {
       }
       m_layout_dirty = false;
     }
+
+    update_hover_state();
 
     for (auto* widget : m_widget_traversal_order) {
       if (widget->m_updated) {
@@ -492,6 +527,11 @@ void zincgui::Root::draw() {
 }
 
 namespace {
+
+  template <typename T> [[nodiscard]] constexpr const void* gl_offset(T offset) noexcept {
+    return std::bit_cast<const void*>(static_cast<uintptr_t>(offset));
+  }
+
   void ensure_buffers(u32& vao, u32& vbo) {
     using zincgui::Vertex;
     if (vao == 0) {
@@ -502,43 +542,43 @@ namespace {
       glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
       glEnableVertexAttribArray(0);
-      glVertexAttribIPointer(0, 1, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, type));
+      glVertexAttribIPointer(0, 1, GL_INT, sizeof(Vertex), gl_offset(offsetof(Vertex, type)));
 
       glEnableVertexAttribArray(1);
-      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, pos));
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, pos)));
 
       glEnableVertexAttribArray(2);
-      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, uv)));
 
       glEnableVertexAttribArray(3);
-      glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, nine_slice_margin));
+      glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, nine_slice_margin)));
 
       glEnableVertexAttribArray(4);
-      glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, nine_slice_scale));
+      glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, nine_slice_scale)));
 
       glEnableVertexAttribArray(5);
-      glVertexAttribIPointer(5, 2, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, widget_size));
+      glVertexAttribIPointer(5, 2, GL_UNSIGNED_INT, sizeof(Vertex), gl_offset(offsetof(Vertex, widget_size)));
 
       glEnableVertexAttribArray(6);
-      glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv_start));
+      glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, uv_start)));
 
       glEnableVertexAttribArray(7);
-      glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv_end));
+      glVertexAttribPointer(7, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, uv_end)));
 
       glEnableVertexAttribArray(8);
-      glVertexAttribIPointer(8, 1, GL_UNSIGNED_INT, sizeof(Vertex), (void*)offsetof(Vertex, atlas_i));
+      glVertexAttribIPointer(8, 1, GL_UNSIGNED_INT, sizeof(Vertex), gl_offset(offsetof(Vertex, atlas_i)));
 
       glEnableVertexAttribArray(9);
-      glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+      glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, color)));
 
       glEnableVertexAttribArray(10);
-      glVertexAttribPointer(10, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, opacity));
+      glVertexAttribPointer(10, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, opacity)));
 
       glEnableVertexAttribArray(11);
-      glVertexAttribPointer(11, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, scissor_begin));
+      glVertexAttribPointer(11, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, scissor_begin)));
 
       glEnableVertexAttribArray(12);
-      glVertexAttribPointer(12, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, scissor_end));
+      glVertexAttribPointer(12, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), gl_offset(offsetof(Vertex, scissor_end)));
     }
   }
 } // namespace

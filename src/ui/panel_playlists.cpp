@@ -143,19 +143,24 @@ WidgetAlbumCover::WidgetAlbumCover(Root& ui_, std::optional<size_t> playlist_id_
 WidgetAlbumCover::~WidgetAlbumCover() { player::signal_on_track_changed.disconnect(m_slot_on_track_changed); }
 
 void WidgetAlbumCover::update() {
-  bool is_hovered = is_mouse_hovering();
-
-  m_hover->is_drawn(is_hovered);
-
-  if (is_hovered && theme::config().panel_playlists.show_title &&
+  if (is_mouse_hovering() && theme::config().panel_playlists.show_title &&
       m_label_title->text_extents().x > m_total_size.x + 8) {
     m_label_title->x(m_label_title->x() - 1);
     if (m_label_title->x() <= -m_label_title->text_extents().x - 8) { m_label_title->x(m_total_size.x + 8); }
-  } else {
-    m_label_title->x(0);
   }
 
   Button::update();
+}
+
+void WidgetAlbumCover::on_hovered() {
+  m_hover->is_drawn(true);
+  Button::on_hovered();
+}
+
+void WidgetAlbumCover::on_unhovered() {
+  m_hover->is_drawn(false);
+  m_label_title->x(0);
+  Button::on_unhovered();
 }
 
 void WidgetAlbumCover::update_highlight_status_from_player() {

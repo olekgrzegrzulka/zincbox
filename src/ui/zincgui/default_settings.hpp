@@ -146,12 +146,20 @@ namespace zincgui::default_settings {
   inline i32 spinner_postfix_offset_x = 1;
   inline i32 spinner_echo_length_initial = 40;
   inline i32 spinner_echo_length = 2;
-  inline std::string spinner_texture_button_idle = "spinner_increase_idle";
-  inline std::string spinner_texture_button_hovered = "spinner_increase_hovered";
-  inline std::string spinner_texture_button_pressed = "spinner_increase_pressed";
-  inline std::string spinner_texture_button_disabled = "spinner_increase_disabled";
-  inline std::string spinner_texture_increase_icon = "spinner_increase_icon";
-  inline std::string spinner_texture_decrease_icon = "spinner_decrease_icon";
+  inline struct {
+      std::string icon = "spinner_increase_icon";
+      std::string button_idle = "spinner_increase_idle";
+      std::string button_hovered = "spinner_increase_hovered";
+      std::string button_pressed = "spinner_increase_pressed";
+      std::string button_disabled = "spinner_increase_disabled";
+  } spinner_texture_increase;
+  inline struct {
+      std::string icon = "spinner_decrease_icon";
+      std::string button_idle = "spinner_decrease_idle";
+      std::string button_hovered = "spinner_decrease_hovered";
+      std::string button_pressed = "spinner_decrease_pressed";
+      std::string button_disabled = "spinner_decrease_disabled";
+  } spinner_texture_decrease;
 
   // ToolTip
   inline i32 tooltip_distance = 16;

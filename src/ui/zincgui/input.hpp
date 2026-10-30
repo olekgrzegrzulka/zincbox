@@ -391,4 +391,6 @@ namespace zincgui::Input {
 
   void reset_cursor();
   void set_cursor(Input::Cursor cursor);
+
+  bool has_mouse_focus();
 }; // namespace zincgui::Input
